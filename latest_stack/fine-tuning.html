@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>05 · Fine-tuning (full vs LoRA) — Latest Stack</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        pre.mermaid {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>LS</span>Latest Stack</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="slm.html">SLM</a>
+                <a href="performance.html">Performance</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Page 5 of 9</p>
+            <h1>Fine-tuning — full, LoRA, QLoRA, adapters, DPO</h1>
+            <p class="lead">Fine-tuning means continuing to train a pre-trained model on your own data so it picks
+                up your task / style / vocabulary. The 2026 default is <em>parameter-efficient</em> fine-tuning
+                (PEFT) — almost always LoRA or QLoRA — because it gets ~95% of full-finetune quality at &lt;5% of
+                the cost.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · What "fine-tuning" actually is</h2>
+            <pre class="mermaid">
+flowchart LR
+  base[Pre-trained base<br/>e.g. Llama-3-8B] --> ft{Fine-tune}
+  data[(Your dataset<br/>prompt → completion pairs)] --> ft
+  ft --> tuned[Tuned model<br/>specialised to your task]
+            </pre>
+            <p>You feed the model <em>your</em> input/output pairs, run a few epochs of supervised next-token
+                prediction (or DPO / KTO for preference data), and end up with weights that prefer your style and
+                schema. Cheaper alternatives — prompting, RAG, few-shot — should be exhausted first.</p>
+        </section>
+
+        <section class="card">
+            <h2>2 · Full fine-tuning vs PEFT (LoRA / QLoRA / adapters)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Approach</th>
+                        <th>What it updates</th>
+                        <th>VRAM (7B model)</th>
+                        <th>Quality</th>
+                        <th>Artifact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Full fine-tune</strong></td>
+                        <td>Every weight</td>
+                        <td>~80 GB (bf16)</td>
+                        <td>Highest ceiling</td>
+                        <td>Whole new 14 GB model</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LoRA</strong></td>
+                        <td>Low-rank adapters on attention proj</td>
+                        <td>~24 GB</td>
+                        <td>~95% of full</td>
+                        <td>~10–200 MB adapter</td>
+                    </tr>
+                    <tr>
+                        <td><strong>QLoRA</strong></td>
+                        <td>LoRA on top of a 4-bit quantised base</td>
+                        <td>~10–16 GB</td>
+                        <td>~95% of full</td>
+                        <td>~10–200 MB adapter</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Adapters (Houlsby)</strong></td>
+                        <td>Tiny MLPs injected per layer</td>
+                        <td>~20 GB</td>
+                        <td>~90% of full</td>
+                        <td>~5–50 MB adapter</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DPO / KTO</strong></td>
+                        <td>Preference-tunes on pairs of "better/worse" answers</td>
+                        <td>~24 GB w/ LoRA</td>
+                        <td>Improves style + helpfulness</td>
+                        <td>Adapter</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Prompt-tuning</strong></td>
+                        <td>Only a short learned prefix embedding</td>
+                        <td>&lt;8 GB</td>
+                        <td>Limited; works on simple tasks</td>
+                        <td>&lt;1 MB</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>3 · How LoRA works in one diagram</h2>
+            <pre class="mermaid">
+flowchart LR
+  x[Input x] --> W[Frozen pre-trained<br/>weight W]
+  x --> A[LoRA A<br/>down-project] --> B[LoRA B<br/>up-project]
+  W --> add((+))
+  B --> add
+  add --> y[Output]
+            </pre>
+            <p>LoRA freezes the original weight matrix <code>W</code> and learns a low-rank update
+                <code>&Delta;W = B·A</code> with <code>rank = r</code> (typically 8–64). Trainable params drop by
+                ~1000×; the adapter can be merged into <code>W</code> at inference for zero overhead.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>4 · When to pick which</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Pick</th>
+                        <th>Why</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>You need it tomorrow on a 24 GB GPU</td>
+                        <td>QLoRA</td>
+                        <td>4-bit base + LoRA fits on one card.</td>
+                    </tr>
+                    <tr>
+                        <td>You have hundreds of customers, each with their own data</td>
+                        <td>LoRA</td>
+                        <td>One frozen base + tiny per-customer adapters. Hot-swap at request time.</td>
+                    </tr>
+                    <tr>
+                        <td>Massive distribution shift (new language, new domain)</td>
+                        <td>Full fine-tune (or continued pre-training)</td>
+                        <td>LoRA's low rank can't move the model far enough.</td>
+                    </tr>
+                    <tr>
+                        <td>Make the model prefer one answer style over another</td>
+                        <td>DPO with LoRA</td>
+                        <td>Preference data is cheaper than gold labels.</td>
+                    </tr>
+                    <tr>
+                        <td>Task is solvable with prompt + 5 examples</td>
+                        <td>Don't fine-tune</td>
+                        <td>Prompting + RAG ship today; fine-tuning is a 2-week detour.</td>
+                    </tr>
+                    <tr>
+                        <td>You need provable IP separation</td>
+                        <td>Full fine-tune</td>
+                        <td>One model per customer; adapter swap is harder to audit.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout"><strong>Default in 2026:</strong> reach for QLoRA first. Move to full fine-tune
+                only when an eval shows LoRA hitting a ceiling.</div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Working QLoRA example (Hugging Face PEFT + TRL)</h2>
+            <pre><code># pip install transformers peft trl bitsandbytes accelerate datasets
+import torch
+from datasets import load_dataset
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from trl import SFTTrainer, SFTConfig
+
+BASE = "meta-llama/Llama-3.2-3B-Instruct"   # any HF causal LM works
+
+# 1. Load base in 4-bit (QLoRA)
+bnb = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16,
+)
+tok = AutoTokenizer.from_pretrained(BASE)
+tok.pad_token = tok.eos_token
+model = AutoModelForCausalLM.from_pretrained(BASE, quantization_config=bnb, device_map="auto")
+model = prepare_model_for_kbit_training(model)
+
+# 2. Attach LoRA adapters
+lora = LoraConfig(
+    r=16, lora_alpha=32, lora_dropout=0.05,
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    bias="none", task_type="CAUSAL_LM",
+)
+model = get_peft_model(model, lora)
+model.print_trainable_parameters()
+# trainable params: 12,058,624 || all params: 3,224,000,000 || trainable%: 0.37%
+
+# 3. Tiny demo dataset — replace with your own JSONL
+ds = load_dataset("HuggingFaceH4/no_robots", split="train_sft").select(range(500))
+
+def fmt(row):
+    msgs = row["messages"]
+    return {"text": tok.apply_chat_template(msgs, tokenize=False)}
+ds = ds.map(fmt)
+
+# 4. Train
+trainer = SFTTrainer(
+    model=model,
+    train_dataset=ds,
+    args=SFTConfig(
+        output_dir="lora-out",
+        per_device_train_batch_size=2,
+        gradient_accumulation_steps=4,
+        num_train_epochs=1,
+        learning_rate=2e-4,
+        bf16=True,
+        logging_steps=10,
+        save_steps=200,
+        max_seq_length=1024,
+    ),
+)
+trainer.train()
+trainer.save_model("lora-out")  # ~50 MB adapter
+</code></pre>
+            <h3>Load and use the adapter</h3>
+            <pre><code>from peft import PeftModel
+base = AutoModelForCausalLM.from_pretrained(BASE, device_map="auto", torch_dtype=torch.bfloat16)
+mdl  = PeftModel.from_pretrained(base, "lora-out")           # hot-attach
+# or: mdl = mdl.merge_and_unload()                            # bake into base for zero overhead
+</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>6 · The decision tree before you start</h2>
+            <pre class="mermaid">
+flowchart TB
+  q1{Can a better prompt + few-shot solve it?} -->|yes| stop1[Ship that. Done.]
+  q1 -->|no| q2{Is the missing info <em>knowledge</em>?}
+  q2 -->|yes| rag[Build RAG first]
+  q2 -->|no — it's style / schema / behaviour| q3{Do you have 500+ clean<br/>input/output pairs?}
+  q3 -->|no| q4[Collect more data,<br/>or generate synthetic pairs]
+  q3 -->|yes| q5{Single GPU?}
+  q5 -->|yes| qlora[QLoRA]
+  q5 -->|no, cluster| full[Full fine-tune or LoRA]
+            </pre>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">LoRA paper (Hu
+                    et al., 2021)</a>
+                <a class="source" href="https://arxiv.org/abs/2305.14314" target="_blank" rel="noopener">QLoRA paper
+                    (Dettmers et al., 2023)</a>
+                <a class="source" href="https://arxiv.org/abs/2305.18290" target="_blank" rel="noopener">DPO paper
+                    (Rafailov et al., 2023)</a>
+                <a class="source" href="https://huggingface.co/docs/peft/" target="_blank" rel="noopener">Hugging Face
+                    PEFT docs</a>
+                <a class="source" href="https://huggingface.co/docs/trl/" target="_blank" rel="noopener">Hugging Face
+                    TRL docs</a>
+                <a class="source" href="https://platform.openai.com/docs/guides/fine-tuning" target="_blank"
+                    rel="noopener">OpenAI — Fine-tuning guide</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/build-with-claude/claude-finetuning"
+                    target="_blank" rel="noopener">Anthropic — Fine-tuning Claude</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

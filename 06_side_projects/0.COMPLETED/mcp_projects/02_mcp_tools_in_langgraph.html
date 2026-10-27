@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP 02 · Use MCP Tools in LangGraph</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="mcp">MCP</span>MCP · 02 In LangGraph</div>
+        <div class="links">
+            <a href="index.html">MCP Hub</a>
+            <a href="01_first_fastmcp_server.html">← 01</a>
+            <a href="03_resources_and_prompts.html">Next: 03 →</a>
+        </div>
+    </div>
+
+    <div class="header mcp">
+        <p class="badge">Build 02 · Beginner+</p>
+        <h1>Plug MCP tools into a LangGraph agent</h1>
+        <p class="subtitle">Use <code>langchain-mcp-adapters</code> to load the tools from build 01's server
+            and hand them to a prebuilt LangGraph <strong>ReAct agent</strong> — the model now calls your MCP
+            tools autonomously.</p>
+    </div>
+
+    <div class="container">
+        <div class="section mcp">
+            <h2>What this build does</h2>
+            <p>The adapter library connects to one or more MCP servers, fetches their tools, and converts each
+                into a LangChain <code>BaseTool</code>. LangGraph's <code>create_react_agent</code> then runs
+                the classic reason → act → observe loop over those tools.</p>
+            <div class="pill-row">
+                <span class="level beginner">Beginner+</span>
+                <span class="tag sky">langchain-mcp-adapters</span>
+                <span class="tag sky">MultiServerMCPClient</span>
+                <span class="tag sky">create_react_agent</span>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>The end-to-end flow</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant A as LangGraph ReAct agent
+    participant LLM as LLM
+    participant C as MultiServerMCPClient
+    participant S as math_server (MCP)
+    U->>A: "What is (3 + 5) × 12?"
+    A->>LLM: prompt + tool schemas
+    LLM-->>A: call add(3, 5)
+    A->>C: invoke tool "add"
+    C->>S: MCP call add(3,5)
+    S-->>C: 8
+    C-->>A: 8
+    A->>LLM: observation = 8
+    LLM-->>A: call multiply(8, 12)
+    A->>C: invoke "multiply"
+    C->>S: MCP call multiply(8,12)
+    S-->>A: 96
+    A->>LLM: observation = 96
+    LLM-->>A: "The answer is 96."
+    A-->>U: "The answer is 96."
+                </pre>
+                <p class="caption">The agent reasons, calls MCP tools through the client, feeds results back,
+                    and repeats until it can answer.</p>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>The code — agent over a local stdio server</h2>
+            <pre><code><span class="c-kw">import</span> asyncio
+<span class="c-kw">from</span> langchain_mcp_adapters.client <span class="c-kw">import</span> MultiServerMCPClient
+<span class="c-kw">from</span> langgraph.prebuilt <span class="c-kw">import</span> create_react_agent
+
+<span class="c-kw">async def</span> <span class="c-fn">main</span>():
+    <span class="c-com"># 1) Describe the server(s) to connect to. stdio = launch as subprocess.</span>
+    client = MultiServerMCPClient({
+        <span class="c-str">"math"</span>: {
+            <span class="c-str">"command"</span>: <span class="c-str">"python"</span>,
+            <span class="c-str">"args"</span>: [<span class="c-str">"math_server.py"</span>],   <span class="c-com"># path to build 01's server</span>
+            <span class="c-str">"transport"</span>: <span class="c-str">"stdio"</span>,
+        },
+    })
+
+    <span class="c-com"># 2) Fetch MCP tools -> LangChain tools.</span>
+    tools = <span class="c-kw">await</span> client.get_tools()
+
+    <span class="c-com"># 3) Build a ReAct agent with those tools.</span>
+    agent = create_react_agent(<span class="c-str">"openai:gpt-4o"</span>, tools)
+
+    <span class="c-com"># 4) Run it. The agent decides which MCP tools to call.</span>
+    result = <span class="c-kw">await</span> agent.ainvoke(
+        {<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"What is (3 + 5) x 12?"</span>}]}
+    )
+    <span class="c-fn">print</span>(result[<span class="c-str">"messages"</span>][-<span class="c-cls">1</span>].content)
+
+asyncio.run(main())</code></pre>
+            <div class="callout sky">
+                <strong>That's the whole integration.</strong> Nothing in the agent code is math-specific — swap
+                the server and the same agent gains entirely different tools. That is the MCP payoff.
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>What <code>get_tools()</code> actually returns</h2>
+            <p>Each MCP tool becomes a LangChain <code>StructuredTool</code> whose name, description, and args
+                schema come straight from the server. You can inspect them:</p>
+            <pre><code>tools = <span class="c-kw">await</span> client.get_tools()
+<span class="c-kw">for</span> t <span class="c-kw">in</span> tools:
+    <span class="c-fn">print</span>(t.name, <span class="c-str">"—"</span>, t.description)
+<span class="c-com"># add — Add two integers and return the sum.</span>
+<span class="c-com"># multiply — Multiply two integers and return the product.</span></code></pre>
+            <p>Because they're ordinary LangChain tools, they work anywhere tools do: <code>bind_tools</code>,
+                custom <code>StateGraph</code> nodes, or <code>ToolNode</code> — not just the prebuilt agent.</p>
+        </div>
+
+        <div class="section mcp">
+            <h2>Using the tools in a custom StateGraph</h2>
+            <p>If you've done the LangGraph projects, you can drop MCP tools into a hand-built graph instead of
+                the prebuilt agent:</p>
+            <pre><code><span class="c-kw">from</span> langgraph.graph <span class="c-kw">import</span> StateGraph, MessagesState, START
+<span class="c-kw">from</span> langgraph.prebuilt <span class="c-kw">import</span> ToolNode, tools_condition
+<span class="c-kw">from</span> langchain.chat_models <span class="c-kw">import</span> init_chat_model
+
+tools = <span class="c-kw">await</span> client.get_tools()
+llm = init_chat_model(<span class="c-str">"openai:gpt-4o"</span>).bind_tools(tools)
+
+<span class="c-kw">def</span> <span class="c-fn">call_model</span>(state: MessagesState):
+    <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: [llm.invoke(state[<span class="c-str">"messages"</span>])]}
+
+g = StateGraph(MessagesState)
+g.add_node(<span class="c-str">"model"</span>, call_model)
+g.add_node(<span class="c-str">"tools"</span>, ToolNode(tools))     <span class="c-com"># executes MCP tool calls</span>
+g.add_edge(START, <span class="c-str">"model"</span>)
+g.add_conditional_edges(<span class="c-str">"model"</span>, tools_condition)
+g.add_edge(<span class="c-str">"tools"</span>, <span class="c-str">"model"</span>)
+graph = g.compile()</code></pre>
+        </div>
+
+        <div class="section mcp">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Fetch tools once, reuse the agent.</strong> Call <code>get_tools()</code> at startup,
+                    not on every request.</li>
+                <li><strong>Name servers meaningfully</strong> in the client dict (<code>"math"</code>,
+                    <code>"github"</code>) — it aids debugging and tracing.
+                </li>
+                <li><strong>Keep the LLM tool-capable.</strong> Use a model that supports function/tool calling
+                    (gpt-4o, Claude, etc.).</li>
+                <li><strong>Watch the loop with LangSmith</strong> to see exactly which MCP tool was chosen and
+                    with what arguments.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="01_first_fastmcp_server.html"><span class="dir">Previous</span>
+                <div class="ttl">← 01 · First server</div>
+            </a>
+            <a class="next" href="03_resources_and_prompts.html"><span class="dir">Next</span>
+                <div class="ttl">03 · Resources &amp; prompts →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>MCP × LangGraph Projects · 02 of 05</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

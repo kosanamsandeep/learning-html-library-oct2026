@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 05 — Tool Use (Function Calling)</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 05 — Tool Use (Function Calling)</h1>
+  <p>The LLM picks an external function to invoke with typed arguments. Then a runtime executes it and feeds the result back.</p>
+  <p><span class="tag">Command</span><span class="tag">Adapter</span><span class="tag">Function calling</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>An LLM alone is read-only. Tool use makes it actuating: it can call <code>get_weather(city)</code>, <code>place_order(sku, qty)</code>, <code>search_docs(query)</code>. The LLM emits a <em>structured</em> call (JSON) which the runtime validates and executes.</p>
+<div class="callout tip"><strong>Mental model:</strong> a manager who never lifts a finger but knows exactly which specialist to call and how to brief them.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart LR
+  U([User]) --> L[LLM with tool schemas]
+  L -->|"function_call JSON"| R[Tool Runtime]
+  R --> T[Concrete tool]
+  T --> R
+  R -->|"tool_result"| L
+  L --> A([Final answer])
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Smart-home command</h2>
+<div class="callout scenario">
+"Hey assistant, if rain is forecast for Bengaluru tonight, close the balcony awning and tell my partner." The agent calls <code>get_forecast("Bengaluru", "tonight")</code>, then conditionally calls <code>set_device("awning", "close")</code> and <code>send_message("partner", ...)</code>. The LLM never closes the awning — it asks the runtime to.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant L as LLM
+  participant R as Runtime
+  participant W as Weather
+  participant H as Home
+  participant M as Messaging
+  U->>L: voice command
+  L->>R: call get_forecast(city,when)
+  R->>W: API
+  W-->>R: rain
+  R-->>L: result
+  L->>R: call set_device("awning","close")
+  R->>H: API
+  L->>R: call send_message(...)
+  R->>M: SMS
+  L-->>U: "Done — awning closed, partner notified."
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>Tool primitive</th></tr>
+  <tr><td>OpenAI / Anthropic / Gemini</td><td>Native <code>tools</code> field with JSON Schema.</td></tr>
+  <tr><td>LangChain</td><td><code>@tool</code> decorator + <code>bind_tools()</code>.</td></tr>
+  <tr><td>LangGraph</td><td><code>ToolNode</code> in graph.</td></tr>
+  <tr><td>Google ADK</td><td><code>FunctionTool</code> / <code>BaseTool</code>.</td></tr>
+  <tr><td>MCP (Ch. 10)</td><td>Tools exposed by an MCP server, not bundled in code.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Command</strong></td><td>Each <code>Tool</code> is a callable command with a JSON schema.</td></tr>
+  <tr><td><strong>Adapter</strong></td><td>Adapts an external API into the agent's tool interface.</td></tr>
+  <tr><td><strong>Registry / Factory</strong></td><td><code>ToolRegistry.get(name)</code> resolves by name.</td></tr>
+  <tr><td><strong>Decorator</strong></td><td>Optional logging / retry around tool calls.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── tools.py        # Tool base + 3 concrete tools (Command/Adapter)
+├── runtime.py      # ToolRegistry + LLM-loop (Mediator-ish)
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>How do you stop the LLM from making up tools?</summary><div>Validate the function name against the registry, validate args against a Pydantic / JSON-Schema, and refuse silently with a structured error fed back into the next LLM turn.</div></details>
+<details class="qa"><summary>Tool use vs MCP?</summary><div>Tool use is the <em>capability</em>. MCP is a <em>standard protocol</em> for exposing tools so any LLM can discover and use them without custom integration.</div></details>
+</section>
+
+</main>
+<footer>Chapter 05 of 21.</footer>
+</body>
+</html>

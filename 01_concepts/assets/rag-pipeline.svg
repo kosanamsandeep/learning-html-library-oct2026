@@ -1,0 +1,45 @@
+<svg width="920" height="560" viewBox="0 0 920 560" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="920" height="560" rx="28" fill="#FFFBF5"/>
+  <text x="460" y="50" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700" fill="#1C1917">RAG pipeline end to end</text>
+  <rect x="46" y="106" width="128" height="84" rx="18" fill="#D7F3EF" stroke="#0F766E" stroke-width="2"/>
+  <text x="110" y="142" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#115E59">Documents</text>
+  <text x="110" y="167" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#115E59">PDFs, DB rows,</text>
+  <text x="110" y="185" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#115E59">wiki, tickets</text>
+  <rect x="204" y="106" width="142" height="84" rx="18" fill="#FFF1E7" stroke="#C2410C" stroke-width="2"/>
+  <text x="275" y="142" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#9A3412">Chunking</text>
+  <text x="275" y="167" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#9A3412">split + enrich</text>
+  <text x="275" y="185" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#9A3412">with metadata</text>
+  <rect x="376" y="106" width="148" height="84" rx="18" fill="#D7F3EF" stroke="#0F766E" stroke-width="2"/>
+  <text x="450" y="142" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#115E59">Embeddings</text>
+  <text x="450" y="167" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#115E59">dense or sparse</text>
+  <text x="450" y="185" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#115E59">vector creation</text>
+  <rect x="554" y="106" width="154" height="84" rx="18" fill="#FFF1E7" stroke="#C2410C" stroke-width="2"/>
+  <text x="631" y="142" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#9A3412">Vector DB</text>
+  <text x="631" y="167" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#9A3412">index + filter +</text>
+  <text x="631" y="185" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#9A3412">metadata search</text>
+  <rect x="738" y="106" width="138" height="84" rx="18" fill="#D7F3EF" stroke="#0F766E" stroke-width="2"/>
+  <text x="807" y="142" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#115E59">Reranker</text>
+  <text x="807" y="167" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#115E59">sort best chunks</text>
+  <text x="807" y="185" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#115E59">for the query</text>
+  <path d="M174 148H204" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M346 148H376" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M524 148H554" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M708 148H738" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <rect x="108" y="304" width="176" height="90" rx="20" fill="#FFFFFF" stroke="#D9CCB8" stroke-width="2"/>
+  <text x="196" y="341" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#1C1917">Query</text>
+  <text x="196" y="366" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#5F564D">user asks question</text>
+  <rect x="320" y="304" width="176" height="90" rx="20" fill="#FFFFFF" stroke="#D9CCB8" stroke-width="2"/>
+  <text x="408" y="341" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#1C1917">Retriever</text>
+  <text x="408" y="366" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#5F564D">top-k candidates</text>
+  <rect x="532" y="304" width="176" height="90" rx="20" fill="#FFFFFF" stroke="#D9CCB8" stroke-width="2"/>
+  <text x="620" y="341" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#1C1917">Prompt Builder</text>
+  <text x="620" y="366" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#5F564D">query + evidence</text>
+  <rect x="744" y="304" width="118" height="90" rx="20" fill="#1C1917"/>
+  <text x="803" y="341" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFF7ED">LLM</text>
+  <text x="803" y="366" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#FDE8DB">answer</text>
+  <path d="M284 349H320" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M496 349H532" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M708 349H744" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <rect x="258" y="452" width="404" height="64" rx="18" fill="#F5EBDD" stroke="#A16207" stroke-width="2"/>
+  <text x="460" y="490" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#854D0E">Cache layer can short-circuit retrieval or generation for cost and latency savings</text>
+</svg>

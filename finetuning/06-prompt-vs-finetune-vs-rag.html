@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06 — Prompt Engineering vs Fine-Tuning vs RAG</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #feca57; }
+  h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #ff6b6b; color: #e1e4f0; }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .hl-box { background: rgba(255,107,107,0.08); border-left: 3px solid #ff6b6b; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .hl-yellow { background: rgba(254,202,87,0.08); border-left: 3px solid #feca57; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .hl-green { background: rgba(85,239,196,0.08); border-left: 3px solid #55efc4; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #ff6b6b; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #feca57; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #ff6b6b; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  ul, ol { color: #c8cbe0; padding-left: 1.25rem; line-height: 2; }
+  .decision-tree { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 0; }
+  .decision-node { background: #232740; border: 1px solid #2d3154; border-radius: 8px; padding: 0.8rem 1rem; font-size: 0.9rem; }
+  .node-question { color: #feca57; font-weight: 600; }
+  .hybrid-diagram { display: flex; align-items: center; gap: 1rem; justify-content: center; flex-wrap: wrap; padding: 1.5rem 0; }
+  .hybrid-box { background: #232740; border-radius: 10px; padding: 1rem 1.5rem; text-align: center; min-width: 120px; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="05-other-peft-methods.html">← 05: Other PEFT</a>
+  <a href="07-practical-guide.html">Next: Practical Guide →</a>
+</div>
+
+<h1>06 · Prompt Engineering vs Fine-Tuning vs RAG</h1>
+<p>Three fundamentally different ways to adapt an LLM to a task. Which one should you use? The answer is often <strong>more than one</strong>.</p>
+
+<h2>📊 The Three Approaches</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Dimension</th><th>Prompt Engineering</th><th>RAG</th><th>Fine-Tuning (PEFT)</th></tr></thead>
+  <tbody>
+    <tr><td><strong>What changes?</strong></td><td>Your input text</td><td>Your retrieval database</td><td>The model weights</td></tr>
+    <tr><td><strong>Updates needed</strong></td><td>Edit prompt (text)</td><td>Update vector DB</td><td>Train adapter</td></tr>
+    <tr><td><strong>Knowledge source</strong></td><td>Prompt context</td><td>Retrieved documents</td><td>Training data</td></tr>
+    <tr><td><strong>Freshness</strong></td><td>Instant (edit prompt)</td><td>Instant (update DB)</td><td>Retraining needed</td></tr>
+    <tr><td><strong>Per-query cost</strong></td><td>Lowest</td><td>Low (retrieval + generation)</td><td>Same as base model</td></tr>
+    <tr><td><strong>Setup cost</strong></td><td>None</td><td>Medium (index + pipeline)</td><td>Medium (dataset + train)</td></tr>
+    <tr><td><strong>Change model behavior</strong></td><td>Limited (by prompt)</td><td>Not directly</td><td>Full control</td></tr>
+    <tr><td><strong>Best for</strong></td><td>Simple instructions, formatting</td><td>Knowledge lookup, evolving data</td><td>Style, behavior, structured output</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>🧭 Decision Framework</h2>
+
+<div class="card">
+<div class="decision-tree">
+
+<div class="decision-node" style="border-left:3px solid #feca57;">
+  <div class="node-question">🤔 Does the task require factual knowledge your model doesn't have?</div>
+  <div style="margin-top:0.3rem;color:#c8cbe0;">
+    <strong>Yes → RAG.</strong> The model knows language but not your specific documents. A vector database + retrieval pipeline is the right tool.
+  </div>
+</div>
+
+<div class="decision-node" style="border-left:3px solid #55efc4;">
+  <div class="node-question">🤔 Does the task require a specific output format or style?</div>
+  <div style="margin-top:0.3rem;color:#c8cbe0;">
+    <strong>Yes → Prompt Engineering first.</strong> Can you get 90% of the way there with a well-crafted prompt and a few examples? If yes, stop there.
+  </div>
+</div>
+
+<div class="decision-node" style="border-left:3px solid #ff6b6b;">
+  <div class="node-question">🤔 Does the task need the model to internalize a behavior or pattern?</div>
+  <div style="margin-top:0.3rem;color:#c8cbe0;">
+    <strong>Yes → Fine-Tuning.</strong> "Always output JSON", "Write in the style of this author", "Use these domain terms precisely" — these benefit from weight changes.
+  </div>
+</div>
+
+<div class="decision-node" style="border-left:3px solid #6c5ce7;">
+  <div class="node-question">🤔 Do you need <strong>all three</strong>?</div>
+  <div style="margin-top:0.3rem;color:#c8cbe0;">
+    <strong>Often, yes.</strong> A production system typically uses prompt engineering for system instructions, RAG for grounding, and fine-tuning for output structure. They're complementary, not competitive.
+  </div>
+</div>
+
+</div>
+</div>
+
+<h2>🏗️ The Critical Distinction: Frontier vs Open-Source Models</h2>
+
+<div class="hl-box" style="border-left-color:#ff6b6b;background:rgba(255,107,107,0.1);">
+  <strong>🚫 You cannot download frontier model weights.</strong> GPT-4o, Claude Opus/Sonnet, Gemini Ultra — these are only accessible via API. Their weights are never on your machine. This means <strong>local fine-tuning (LoRA/QLoRA) is impossible</strong> with these models. You can only use Prompt Engineering + RAG with them.
+</div>
+
+<table>
+  <thead><tr><th></th><th>Frontier Models (API-only)</th><th>Open-Source Models (downloadable)</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Examples</strong></td><td>GPT-4o, Claude Opus/Sonnet, Gemini Ultra</td><td>Llama 3, Mistral, Qwen, Gemma, Phi</td></tr>
+    <tr><td><strong>Weights accessible?</strong></td><td style="color:#ff6b6b;">❌ No — API only</td><td style="color:#55efc4;">✅ Yes — download & run locally</td></tr>
+    <tr><td><strong>Fine-tuning method</strong></td><td>OpenAI/Anthropic's API (expensive, limited control)</td><td>LoRA / QLoRA (cheap, full control)</td></tr>
+    <tr><td><strong>Fine-tuning cost</strong></td><td style="color:#ff6b6b;">$$$$ — $100s–$1000s per job</td><td style="color:#55efc4;">$ — one GPU hour ($0.50–$3)</td></tr>
+    <tr><td><strong>Data privacy</strong></td><td>Data sent to third-party servers</td><td>Entirely offline — data never leaves your machine</td></tr>
+  </tbody>
+</table>
+
+<h2>🏗️ The Two Hybrid Architectures</h2>
+
+<div class="card">
+<h3 style="color:#feca57;">Path A: Working with Frontier Models (API-only)</h3>
+<p>Since you can't fine-tune these locally, the stack is:</p>
+
+<div class="hybrid-diagram">
+  <div class="hybrid-box" style="border:1px solid #6c5ce7;">
+    <div style="font-weight:600;color:#6c5ce7;">1. Prompt</div>
+    <div style="font-size:0.8rem;color:#c8cbe0;">System instruction<br>+ Few-shot examples<br>+ Output formatting</div>
+  </div>
+  <div style="font-size:1.5rem;color:#636e72;">+</div>
+  <div class="hybrid-box" style="border:1px solid #55efc4;">
+    <div style="font-weight:600;color:#55efc4;">2. RAG</div>
+    <div style="font-size:0.8rem;color:#c8cbe0;">Retrieve + inject<br>domain knowledge<br>into the prompt</div>
+  </div>
+  <div style="font-size:1.5rem;color:#636e72;">=</div>
+  <div class="hybrid-box" style="border:1px solid #feca57;background:rgba(254,202,87,0.05);">
+    <div style="font-weight:600;color:#feca57;">Frontier App</div>
+    <div style="font-size:0.8rem;color:#c8cbe0;">Accurate + Grounded<br>(no weight access)</div>
+  </div>
+</div>
+
+<p><strong>Fine-tuning via API:</strong> Both OpenAI and Anthropic offer fine-tuning APIs, but:</p>
+<ul>
+  <li>OpenAI: GPT-4o fine-tuning costs <strong>$25/1M tokens</strong> (training) + <strong>$10/1M tokens</strong> (inference). A single training job can cost <strong>$500–$5000+</strong> depending on data volume.</li>
+  <li>Anthropic: Claude fine-tuning is available via <strong>Claude for Work</strong> / enterprise — also priced at premium rates.</li>
+  <li>You're still sending data to their servers — no privacy benefit.</li>
+  <li>You get a custom model ID, but <strong>no weight access</strong> — you can't run it offline, can't serve it yourself, and are locked into that provider.</li>
+</ul>
+
+<div class="hl-yellow">
+  <strong>💡 Bottom line for frontier models:</strong> Prompt engineering + RAG covers 90%+ of use cases. Only consider API fine-tuning if you have a very specific formatting/behavior need AND the budget. You're usually better off switching to an open-source model + LoRA instead.
+</div>
+</div>
+
+<div class="card">
+<h3 style="color:#55efc4;">Path B: Working with Open-Source Models (downloadable)</h3>
+<p>When you can download the model (Llama 3, Mistral, Qwen, etc.), the full stack is available:</p>
+
+<div class="hybrid-diagram">
+  <div class="hybrid-box" style="border:1px solid #6c5ce7;">
+    <div style="font-weight:600;color:#6c5ce7;">1. Prompt</div>
+    <div style="font-size:0.8rem;color:#c8cbe0;">System prompt<br>+ Instructions<br>+ Few-shot examples</div>
+  </div>
+  <div style="font-size:1.5rem;color:#636e72;">+</div>
+  <div class="hybrid-box" style="border:1px solid #55efc4;">
+    <div style="font-weight:600;color:#55efc4;">2. RAG</div>
+    <div style="font-size:0.8rem;color:#c8cbe0;">Query → Embed →<br>Retrieve top-K docs<br>→ Inject into context</div>
+  </div>
+  <div style="font-size:1.5rem;color:#636e72;">+</div>
+  <div class="hybrid-box" style="border:1px solid #ff6b6b;">
+    <div style="font-weight:600;color:#ff6b6b;">3. Fine-Tune</div>
+    <div style="font-size:0.8rem;color:#c8cbe0;">LoRA / QLoRA adapter<br>trained on your data<br>format + style + domain</div>
+  </div>
+  <div style="font-size:1.5rem;color:#636e72;">=</div>
+  <div class="hybrid-box" style="border:1px solid #feca57;background:rgba(254,202,87,0.05);">
+    <div style="font-weight:600;color:#feca57;">Production LLM</div>
+    <div style="font-size:0.8rem;color:#c8cbe0;">Accurate + Formatted<br>+ Grounded + Offline</div>
+  </div>
+</div>
+
+<div class="hl-yellow">
+  <strong>🎯 Example:</strong> A legal document summarizer using Llama 3 8B + LoRA:<br>
+  • <strong>Fine-tuned</strong> with LoRA (cost: ~$2 on a single GPU) to output structured JSON in legal format<br>
+  • <strong>RAG</strong> retrieves relevant case law and statutes to ground the summary<br>
+  • <strong>Prompt</strong> instructs the model on the specific user's preferences and current task<br>
+  • <strong>Total cost:</strong> ~$2 for training + standard inference compute. Fully offline.
+</div>
+</div>
+
+<h2>📈 When Each One Shines</h2>
+
+<div class="card">
+<h3>✅ Prompt Engineering Wins When:</h3>
+<ul>
+  <li>The task is simple classification or formatting</li>
+  <li>You're prototyping or A/B testing</li>
+  <li>You have no training data</li>
+  <li>The model already "knows" the domain (e.g., a general Q&A bot)</li>
+</ul>
+
+<h3>✅ RAG Wins When:</h3>
+<ul>
+  <li>The knowledge changes frequently (news, products, policies)</li>
+  <li>You need to cite sources for compliance</li>
+  <li>The knowledge base is too large to fit in a prompt</li>
+  <li>You want zero training overhead</li>
+</ul>
+
+<h3>✅ Fine-Tuning Wins When:</h3>
+<ul>
+  <li>You need consistent output format (JSON, specific schema)</li>
+  <li>The model's "default" behavior doesn't match your domain</li>
+  <li>You have a distinct style, tone, or vocabulary</li>
+  <li>You want to reduce prompt length (bake behavior into weights)</li>
+  <li>Prompt engineering hits diminishing returns</li>
+</ul>
+
+<div class="hl-box" style="border-left-color:#ff6b6b;">
+  <strong>⚠️ CRITICAL caveat — This applies ONLY to open-source models you can download.</strong> With frontier API models (GPT-4o, Claude), fine-tuning is either impossible or prohibitively expensive. For those, <strong>prompt engineering + RAG is your only practical stack.</strong> If you hit diminishing returns there, your move isn't "pay for API fine-tuning" — it's <strong>switch to an open-source model + LoRA fine-tuning</strong> instead.
+</div>
+</div>
+
+<h2>📊 Cost Comparison (Real Numbers)</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Scenario</th><th>Prompt Engineering</th><th>RAG</th><th>Fine-Tuning (LoRA)</th></tr></thead>
+  <tbody>
+    <tr><td>Initial setup time</td><td>Minutes–hours</td><td>Days (index + pipeline)</td><td>Hours–days (data prep + train)</td></tr>
+    <tr><td>Per-query cost (7B open model)</td><td>~$0.0002</td><td>~$0.0003 (+ retrieval)</td><td>~$0.0002 (same base)</td></tr>
+    <tr><td>Per-query cost (GPT-4o)</td><td>~$0.01–0.03</td><td>~$0.02–0.05 (+ retrieval)</td><td style="color:#ff6b6b;">N/A (no weights) or ~$0.02–0.06 (via API)</td></tr>
+    <tr><td>Training cost</td><td>$0</td><td>$0 (index once)</td><td><strong style="color:#55efc4;">~$1–5 (open model, QLoRA)</strong> vs <strong style="color:#ff6b6b;">~$500–5000 (GPT-4o API)</strong></td></tr>
+    <tr><td>Update cost</td><td>Edit prompt (free)</td><td>Re-index ($)</td><td>Re-train ($1–5 open / $$$ API)</td></tr>
+    <tr><td>Infrastructure</td><td>None</td><td>Vector DB + embedder</td><td>GPU for training (or API)</td></tr>
+    <tr><td>Skill needed</td><td>Prompt writing</td><td>Search + MLOps</td><td>ML training pipeline</td></tr>
+  </tbody>
+</table>
+
+<div class="hl-green">
+  <strong>⭐ Best practice in 2025:</strong><br>
+  • <strong>With frontier APIs (GPT-4o, Claude):</strong> Use prompt engineering + RAG. Don't fine-tune — you're locked in and overpaying.<br>
+  • <strong>With open-source models (Llama 3, Mistral):</strong> Use prompt + RAG + LoRA fine-tuning for maximum quality, all offline.<br>
+  • <strong>The hybrid move:</strong> Prototype with GPT-4o (prompt + RAG), then distill into a fine-tuned open-source model for production — best of both worlds.
+</div>
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

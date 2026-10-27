@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 16 — Resource-Aware Optimization</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 16 — Resource-Aware Optimization</h1>
+  <p>Pick the smallest model / cheapest path that meets the SLA. Don't pay GPT-flagship prices for "what's 2+2?".</p>
+  <p><span class="tag">Strategy</span><span class="tag">Decorator</span><span class="tag">Cost-aware</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Each request has constraints: latency budget, cost budget, accuracy floor. A resource-aware router picks the model + reasoning depth that fits. Fall back to a cheaper model when the expensive one is rate-limited.</p>
+<div class="callout tip"><strong>Mental model:</strong> a logistics planner — you don't always send Fedex Priority; sometimes ground shipping meets the deadline at 1/3 the cost.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart TD
+  R([Request + budget]) --> J{Complexity classifier}
+  J -->|"trivial"| S[Small model]
+  J -->|"medium"| M[Mid model]
+  J -->|"hard"| L[Flagship model]
+  S --> O([Response])
+  M --> O
+  L --> O
+  L -->|"rate-limited"| M
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Customer-support copilot</h2>
+<div class="callout scenario">
+A 2026 SaaS support tool gets 50k tickets/day. 70% are FAQs (small model, ₹0.001/ticket); 25% need account context (mid model, ₹0.02); 5% are complex billing disputes (flagship, ₹0.30). Resource-aware routing cuts monthly LLM bill from $48k → $9k while preserving CSAT.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant T as Ticket
+  participant Cls as Classifier
+  participant S as Small
+  participant M as Mid
+  participant L as Large
+  T->>Cls: classify complexity
+  alt trivial
+    Cls->>S: handle
+  else medium
+    Cls->>M: handle
+  else hard
+    Cls->>L: handle
+    Note over L: rate-limited?
+    L--xCls: 429
+    Cls->>M: fallback
+  end
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Approach</th><th>How it expresses cost-awareness</th></tr>
+  <tr><td>LangChain</td><td><code>RunnableWithFallbacks</code> + custom routing.</td></tr>
+  <tr><td>LiteLLM / OpenRouter</td><td>Model routing, retries, cost caps across providers.</td></tr>
+  <tr><td>RouteLLM (paper / lib)</td><td>Trains a router to pick the cheaper model when quality is similar.</td></tr>
+  <tr><td>Custom</td><td>Classifier + cascade (this project).</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Strategy</strong></td><td>Each <code>ModelTier</code> is a strategy.</td></tr>
+  <tr><td><strong>Decorator</strong></td><td><code>BudgetTracker</code> wraps a tier and accumulates cost.</td></tr>
+  <tr><td><strong>Chain of Responsibility</strong></td><td>Cascade: try preferred tier → fallback → fallback.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── tiers.py     # Small/Mid/Large + BudgetTracker
+├── router.py    # ResourceAwareRouter (Classifier + cascade)
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>How do you decide a request is "trivial"?</summary><div>Length, presence of action verbs, named entities, history of past similar tickets. Train a tiny classifier (or distil one) — much cheaper than calling the LLM to find out.</div></details>
+<details class="qa"><summary>Won't fallbacks reduce quality?</summary><div>Sometimes. Pair fallbacks with a quality check (regex, secondary critic) — if the cheap answer fails, escalate. Track <em>quality-adjusted cost</em>, not just cost.</div></details>
+</section>
+
+</main>
+<footer>Chapter 16 of 21.</footer>
+</body>
+</html>

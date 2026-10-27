@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P4 · Human-in-the-Loop & Diagnostics — LangGraph Projects</title>
+    <link rel="stylesheet" href="projects.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span>LG</span>P4 · Human-in-the-Loop</div>
+        <div class="links">
+            <a href="index.html">Projects Hub</a>
+            <a href="p3_persistence_memory.html">← P3</a>
+            <a href="p5_agentic_rag.html">Next: P5 →</a>
+        </div>
+    </div>
+
+    <div class="header">
+        <p class="badge">Project 4 · Intermediate</p>
+        <h1>Pause for a human · time-travel · real diagnostics</h1>
+        <p class="subtitle">Agents that take actions (send email, spend money, delete data) need a human gate.
+            You'll use <code>interrupt()</code> to pause mid-graph, resume with <code>Command</code>, rewind
+            with time-travel, and wire LangSmith for production-grade observability.</p>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>What this project does</h2>
+            <p>Build an agent that drafts an action, then <strong>pauses</strong> and waits for a human to
+                approve, edit, or reject before continuing. Because P3 gave us a checkpointer, the graph can
+                stop, persist, and resume hours later from the exact same spot.</p>
+            <div class="pill-row">
+                <span class="level intermediate">Intermediate</span>
+                <span class="tag amber">interrupt()</span>
+                <span class="tag">Command(resume=)</span>
+                <span class="tag">time travel</span>
+                <span class="tag">LangSmith</span>
+            </div>
+            <div class="callout amber">
+                <strong>Prerequisite:</strong> human-in-the-loop <em>requires</em> a checkpointer (P3). The
+                pause works by saving a checkpoint and exiting; the resume reloads it.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The graph — an approval gate</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    START((START)) --> draft["draft_action<br/>LLM proposes a step"]
+    draft --> review["human_review<br/>interrupt() — PAUSE here"]
+    review -->|approve| execute["execute_action"]
+    review -->|edit| execute
+    review -->|reject| draft
+    execute --> END((END))
+                </pre>
+                <p class="caption">Execution halts inside <code>human_review</code>. Nothing irreversible runs
+                    until a human resumes the graph.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The code — pause with <code>interrupt()</code></h2>
+            <pre><code><span class="c-kw">from</span> langgraph.types <span class="c-kw">import</span> interrupt, Command
+<span class="c-kw">from</span> langgraph.graph <span class="c-kw">import</span> StateGraph, START, END
+<span class="c-kw">from</span> langgraph.checkpoint.memory <span class="c-kw">import</span> InMemorySaver
+
+<span class="c-kw">def</span> <span class="c-fn">draft_action</span>(state):
+    proposal = llm.invoke(state[<span class="c-str">"messages"</span>])
+    <span class="c-kw">return</span> {<span class="c-str">"proposal"</span>: proposal.content}
+
+<span class="c-kw">def</span> <span class="c-fn">human_review</span>(state):
+    <span class="c-com"># interrupt() SAVES state and surfaces this payload to the caller, then STOPS.</span>
+    decision = interrupt({
+        <span class="c-str">"question"</span>: <span class="c-str">"Approve this action?"</span>,
+        <span class="c-str">"proposal"</span>: state[<span class="c-str">"proposal"</span>],
+    })
+    <span class="c-com"># Execution RESUMES here when you send Command(resume=...).</span>
+    <span class="c-kw">return</span> {<span class="c-str">"decision"</span>: decision}
+
+<span class="c-kw">def</span> <span class="c-fn">execute_action</span>(state):
+    <span class="c-com"># ... actually perform the side effect, now that a human approved ...</span>
+    <span class="c-kw">return</span> {<span class="c-str">"status"</span>: <span class="c-str">"done"</span>}
+
+builder = StateGraph(State)
+builder.add_node(<span class="c-str">"draft_action"</span>, draft_action)
+builder.add_node(<span class="c-str">"human_review"</span>, human_review)
+builder.add_node(<span class="c-str">"execute_action"</span>, execute_action)
+builder.add_edge(START, <span class="c-str">"draft_action"</span>)
+builder.add_edge(<span class="c-str">"draft_action"</span>, <span class="c-str">"human_review"</span>)
+builder.add_edge(<span class="c-str">"human_review"</span>, <span class="c-str">"execute_action"</span>)
+builder.add_edge(<span class="c-str">"execute_action"</span>, END)
+
+graph = builder.compile(checkpointer=InMemorySaver())</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Run → pause → resume</h2>
+            <pre><code>config = {<span class="c-str">"configurable"</span>: {<span class="c-str">"thread_id"</span>: <span class="c-str">"approval-1"</span>}}
+
+<span class="c-com"># 1) Start. The graph runs until interrupt(), then RETURNS control.</span>
+result = graph.invoke({<span class="c-str">"messages"</span>: [...]}, config)
+<span class="c-fn">print</span>(result[<span class="c-str">"__interrupt__"</span>])     <span class="c-com"># {"question": "Approve...", "proposal": "..."}</span>
+
+<span class="c-com"># 2) Show it to a human. They approve.</span>
+<span class="c-com"># 3) Resume EXACTLY where it paused by sending the human's answer.</span>
+final = graph.invoke(Command(resume=<span class="c-str">"approved"</span>), config)
+<span class="c-fn">print</span>(final[<span class="c-str">"status"</span>])           <span class="c-com"># "done"</span></code></pre>
+            <div class="callout green">
+                <strong>Why this is powerful:</strong> the pause is durable. The process can exit, the user can
+                approve from a web UI three hours later, and a fresh call with the same <code>thread_id</code>
+                continues from the saved checkpoint — no re-running earlier nodes.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The four human-in-the-loop patterns</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>What the human does</th>
+                        <th>How</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Approve / reject</strong></td>
+                        <td>Gate an action</td>
+                        <td><code>interrupt()</code> → resume with yes/no</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Edit state</strong></td>
+                        <td>Fix the proposal before it runs</td>
+                        <td>resume with the edited value</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Review tool call</strong></td>
+                        <td>Inspect/modify args before a tool fires</td>
+                        <td>interrupt before the ToolNode</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Provide input</strong></td>
+                        <td>Answer a clarifying question</td>
+                        <td>interrupt returns the human's text</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Time travel — debug by rewinding</h2>
+            <p>Because every step is checkpointed, you can list the history, pick an earlier checkpoint, and
+                re-run from there — optionally after editing the state. This is the single best debugging tool
+                in LangGraph.</p>
+            <pre><code><span class="c-com"># list every checkpoint for this thread</span>
+history = <span class="c-fn">list</span>(graph.get_state_history(config))
+
+<span class="c-com"># pick a point in the past</span>
+past = history[<span class="c-cls">3</span>]
+
+<span class="c-com"># optionally edit state at that point, then fork a new run from it</span>
+graph.update_state(past.config, {<span class="c-str">"proposal"</span>: <span class="c-str">"a corrected draft"</span>})
+graph.invoke(<span class="c-kw">None</span>, past.config)   <span class="c-com"># resume from the edited past checkpoint</span></code></pre>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    c0["ckpt 0"] --> c1["ckpt 1"] --> c2["ckpt 2"] --> c3["ckpt 3"]
+    c3 -. update_state + invoke .-> f["forked run<br/>(alternate timeline)"]
+                </pre>
+                <p class="caption">Rewind to any checkpoint, change a value, and explore a different outcome.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Diagnostics &amp; observability — the best-practice layer</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>🔭 LangSmith tracing</h3>
+                    <p>Set two env vars and every node, LLM call, tool call, token count, and latency is
+                        recorded in a visual trace.</p>
+                    <pre style="margin:.5rem 0 0"><code>export LANGSMITH_TRACING=true
+export LANGSMITH_API_KEY=ls-...</code></pre>
+                </div>
+                <div class="mini">
+                    <h3>📡 Streaming modes</h3>
+                    <p><code>updates</code> (per-node output), <code>values</code> (full state),
+                        <code>messages</code> (tokens), <code>debug</code> (everything). Mix them:
+                        <code>stream_mode=["updates","messages"]</code>.
+                    </p>
+                </div>
+                <div class="mini">
+                    <h3>♻️ Durable execution</h3>
+                    <p>With a checkpointer, a crashed run resumes from the last completed node instead of
+                        restarting — no duplicated side effects.</p>
+                </div>
+                <div class="mini">
+                    <h3>🚦 Guardrails</h3>
+                    <p>Set <code>recursion_limit</code>, wrap tools in try/except, and gate risky actions behind
+                        <code>interrupt()</code>.
+                    </p>
+                </div>
+            </div>
+            <div class="callout">
+                <strong>Production mindset:</strong> tracing answers "what did the agent actually do and why?",
+                checkpoints answer "can it recover and be inspected?", and interrupts answer "can a human stop
+                it before harm?". Together they make an agent trustworthy.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="p3_persistence_memory.html"><span class="dir">Previous</span>
+                <div class="ttl">← P3 · Persistence &amp; Memory</div>
+            </a>
+            <a class="next" href="p5_agentic_rag.html"><span class="dir">Next</span>
+                <div class="ttl">P5 · Agentic RAG →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>LangGraph Projects · P4 of 6</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 09 — Learning &amp; Adaptation</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 09 — Learning &amp; Adaptation</h1>
+  <p>Agents that get better with experience — supervised, reinforcement, few-shot, fine-tuning, online preference learning.</p>
+  <p><span class="tag">RL</span><span class="tag">Few-shot</span><span class="tag">Online learning</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>"Static" agents do exactly what their prompt says forever. Adaptive agents update some part of their behavior — prompts, retrieved examples, weights, or a policy — based on feedback signals.</p>
+<div class="callout tip"><strong>Mental model:</strong> A new hire who keeps a notebook of "what worked" and looks at it before each new case.</div>
+</section>
+
+<section>
+<h2>Spectrum of learning</h2>
+<div class="mermaid">
+flowchart LR
+  A[Static prompt] --> B[Few-shot examples]
+  B --> C[Memory-augmented online updates]
+  C --> D[Preference learning RLHF/DPO]
+  D --> E[Full fine-tuning / LoRA]
+  classDef cheap fill:#dcfce7,stroke:#14532d;
+  classDef mid fill:#fef3c7,stroke:#78350f;
+  classDef heavy fill:#fce7f3,stroke:#831843;
+  class A,B cheap;
+  class C,D mid;
+  class E heavy;
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Adaptive movie recommender</h2>
+<div class="callout scenario">
+A 2026 streaming app shows the user 5 picks each evening. The user thumbs-up "Tamil action" and ignores "Korean drama." A simple bandit (epsilon-greedy) updates a per-user preference vector every night so tomorrow's picks are 60% action, 20% comedy, 20% exploration. No model retraining; only weights in a key-value store.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant A as Recommender
+  participant S as Pref store
+  U->>A: open app
+  A->>S: load weights
+  S-->>A: action:0.6, drama:0.1, comedy:0.2, ...
+  A-->>U: shows 5 picks
+  U->>A: 👍 on action; 👎 on drama
+  A->>S: update weights (epsilon-greedy)
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>Adaptation hooks</th></tr>
+  <tr><td>DSPy</td><td>Compile/teleprompt — auto-tunes prompts &amp; few-shot examples.</td></tr>
+  <tr><td>OpenAI fine-tuning / Vertex AI tuning</td><td>Supervised, DPO, RLHF.</td></tr>
+  <tr><td>Mem0 / Letta</td><td>Online memory of useful exemplars.</td></tr>
+  <tr><td>Reflexion / Voyager</td><td>Verbal RL — agent rewrites its own prompt with lessons.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Strategy</strong></td><td><code>BanditPolicy</code> swappable (epsilon-greedy, UCB, Thompson).</td></tr>
+  <tr><td><strong>Observer</strong></td><td>Recommender notified on user feedback.</td></tr>
+  <tr><td><strong>Repository</strong></td><td><code>PrefStore</code> abstracts the weight backend.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── bandit.py        # EpsilonGreedy + PrefStore
+├── recommender.py   # Recommender (Observer)
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>Few-shot vs fine-tuning vs RAG?</summary><div>Few-shot — fastest, prompt-only, limited capacity. RAG — facts at runtime, no weight changes. Fine-tuning — style/format/edge cases baked in, slowest to iterate. Most production systems do RAG + few-shot first; fine-tune only when the same patterns recur for thousands of users.</div></details>
+<details class="qa"><summary>Why epsilon-greedy?</summary><div>Simplest exploration policy: explore with prob ε, exploit best-known with prob 1-ε. Easy to ship, easy to reason about, surprisingly competitive on small action spaces.</div></details>
+</section>
+
+</main>
+<footer>Chapter 09 of 21.</footer>
+</body>
+</html>

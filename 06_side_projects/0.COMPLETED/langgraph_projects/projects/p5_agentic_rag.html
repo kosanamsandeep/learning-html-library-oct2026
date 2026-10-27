@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P5 · Agentic RAG — LangGraph Projects</title>
+    <link rel="stylesheet" href="projects.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span>LG</span>P5 · Agentic RAG</div>
+        <div class="links">
+            <a href="index.html">Projects Hub</a>
+            <a href="p4_human_in_the_loop.html">← P4</a>
+            <a href="p6_multi_agent_supervisor.html">Next: P6 →</a>
+        </div>
+    </div>
+
+    <div class="header">
+        <p class="badge">Project 5 · Advanced</p>
+        <h1>RAG that grades itself and self-corrects</h1>
+        <p class="subtitle">Plain RAG retrieves once and hopes for the best. <strong>Agentic RAG</strong> turns
+            retrieval into a graph: decide whether to retrieve, grade the documents, rewrite the question if
+            they're weak, and only then answer. This is the CRAG / Self-RAG pattern.</p>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>What this project does</h2>
+            <p>The agent decides if it even needs the knowledge base. If it retrieves, a grader node judges
+                whether the documents are <em>relevant</em>. Irrelevant? It rewrites the question and tries
+                again. Relevant? It generates an answer grounded in those documents. The loop guards against
+                the two classic RAG failures: <strong>bad retrieval</strong> and <strong>hallucinated
+                    answers</strong>.</p>
+            <div class="pill-row">
+                <span class="level advanced">Advanced</span>
+                <span class="tag pink">retrieve</span>
+                <span class="tag">grade documents</span>
+                <span class="tag">rewrite query</span>
+                <span class="tag">conditional loop</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The graph — note the two decision points</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    START((START)) --> agent["agent<br/>need retrieval?"]
+    agent -->|no, answer directly| END((END))
+    agent -->|yes| retrieve["retrieve<br/>vector search"]
+    retrieve --> grade{"grade_documents<br/>relevant?"}
+    grade -->|relevant| generate["generate answer<br/>grounded in docs"]
+    grade -->|not relevant| rewrite["rewrite_question"]
+    rewrite --> retrieve
+    generate --> END
+                </pre>
+                <p class="caption">Two conditional edges: "retrieve or answer?" and "are these docs good
+                    enough?". The rewrite→retrieve loop is the self-correction.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>State for a RAG graph</h2>
+            <pre><code><span class="c-kw">from</span> typing <span class="c-kw">import</span> Annotated
+<span class="c-kw">from</span> typing_extensions <span class="c-kw">import</span> TypedDict
+<span class="c-kw">from</span> langgraph.graph.message <span class="c-kw">import</span> add_messages
+
+<span class="c-kw">class</span> <span class="c-cls">RAGState</span>(TypedDict):
+    messages: Annotated[list, add_messages]
+    question: <span class="c-kw">str</span>
+    documents: <span class="c-kw">list</span>[<span class="c-kw">str</span>]
+    retries: <span class="c-kw">int</span></code></pre>
+        </div>
+
+        <div class="section">
+            <h2>The grader — a structured-output LLM as judge</h2>
+            <p>The key idea: use the LLM to <em>score</em> retrieval, with a constrained schema so the output is
+                machine-readable.</p>
+            <pre><code><span class="c-kw">from</span> pydantic <span class="c-kw">import</span> BaseModel, Field
+
+<span class="c-kw">class</span> <span class="c-cls">Grade</span>(BaseModel):
+    relevant: <span class="c-kw">bool</span> = Field(description=<span class="c-str">"Do the docs answer the question?"</span>)
+
+grader = llm.with_structured_output(Grade)
+
+<span class="c-kw">def</span> <span class="c-fn">grade_documents</span>(state: RAGState) -> <span class="c-kw">str</span>:
+    docs = <span class="c-str">"\n\n"</span>.join(state[<span class="c-str">"documents"</span>])
+    verdict = grader.invoke(
+        <span class="c-str">f"Question: {state['question']}\n\nDocs:\n{docs}"</span>
+    )
+    <span class="c-kw">if</span> verdict.relevant:
+        <span class="c-kw">return</span> <span class="c-str">"generate"</span>
+    <span class="c-kw">if</span> state[<span class="c-str">"retries"</span>] >= <span class="c-cls">2</span>:        <span class="c-com"># don't loop forever</span>
+        <span class="c-kw">return</span> <span class="c-str">"generate"</span>            <span class="c-com"># answer with what we have</span>
+    <span class="c-kw">return</span> <span class="c-str">"rewrite"</span></code></pre>
+        </div>
+
+        <div class="section">
+            <h2>The nodes</h2>
+            <pre><code><span class="c-kw">def</span> <span class="c-fn">retrieve</span>(state: RAGState) -> <span class="c-kw">dict</span>:
+    docs = retriever.invoke(state[<span class="c-str">"question"</span>])     <span class="c-com"># vector store</span>
+    <span class="c-kw">return</span> {<span class="c-str">"documents"</span>: [d.page_content <span class="c-kw">for</span> d <span class="c-kw">in</span> docs]}
+
+<span class="c-kw">def</span> <span class="c-fn">rewrite_question</span>(state: RAGState) -> <span class="c-kw">dict</span>:
+    better = llm.invoke(
+        <span class="c-str">f"Rewrite this to retrieve better results: {state['question']}"</span>
+    )
+    <span class="c-kw">return</span> {<span class="c-str">"question"</span>: better.content, <span class="c-str">"retries"</span>: state[<span class="c-str">"retries"</span>] + <span class="c-cls">1</span>}
+
+<span class="c-kw">def</span> <span class="c-fn">generate</span>(state: RAGState) -> <span class="c-kw">dict</span>:
+    context = <span class="c-str">"\n\n"</span>.join(state[<span class="c-str">"documents"</span>])
+    answer = llm.invoke(
+        <span class="c-str">f"Answer using ONLY this context.\n\n{context}\n\nQ: {state['question']}"</span>
+    )
+    <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: [answer]}</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Wiring the conditional loop</h2>
+            <pre><code>builder = StateGraph(RAGState)
+builder.add_node(<span class="c-str">"retrieve"</span>, retrieve)
+builder.add_node(<span class="c-str">"rewrite"</span>, rewrite_question)
+builder.add_node(<span class="c-str">"generate"</span>, generate)
+
+builder.add_edge(START, <span class="c-str">"retrieve"</span>)
+<span class="c-com"># grade_documents returns "generate" or "rewrite"</span>
+builder.add_conditional_edges(<span class="c-str">"retrieve"</span>, grade_documents,
+    {<span class="c-str">"generate"</span>: <span class="c-str">"generate"</span>, <span class="c-str">"rewrite"</span>: <span class="c-str">"rewrite"</span>})
+builder.add_edge(<span class="c-str">"rewrite"</span>, <span class="c-str">"retrieve"</span>)   <span class="c-com"># the self-correction loop</span>
+builder.add_edge(<span class="c-str">"generate"</span>, END)
+
+graph = builder.compile()</code></pre>
+            <div class="callout pink" style="border-color:#f472b6;background:#2a0f1d">
+                <strong>This is "agentic":</strong> the workflow makes decisions about its own process —
+                whether to retrieve, whether the context is good, whether to try again — instead of blindly
+                running a fixed pipeline.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Plain RAG vs Agentic RAG</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Plain RAG</th>
+                        <th>Agentic RAG</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Retrieval</td>
+                        <td>Always, once</td>
+                        <td>Only when needed, can repeat</td>
+                    </tr>
+                    <tr>
+                        <td>Bad documents</td>
+                        <td>Answers anyway → hallucination</td>
+                        <td>Detected by grader → rewrite</td>
+                    </tr>
+                    <tr>
+                        <td>Vague questions</td>
+                        <td>Poor results</td>
+                        <td>Rewritten for better recall</td>
+                    </tr>
+                    <tr>
+                        <td>Shape</td>
+                        <td>Linear chain</td>
+                        <td>Graph with loops + branches</td>
+                    </tr>
+                    <tr>
+                        <td>Cost</td>
+                        <td>Lower per call</td>
+                        <td>Higher, but far fewer wrong answers</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Always bound the loop.</strong> A <code>retries</code> counter (or
+                    <code>recursion_limit</code>) prevents infinite rewrite cycles.
+                </li>
+                <li><strong>Grade with structured output.</strong> <code>with_structured_output</code> gives you
+                    a real boolean/enum to branch on, not free text you have to parse.</li>
+                <li><strong>Add a hallucination check.</strong> A second grader can verify the final answer is
+                    actually supported by the documents before returning it (full Self-RAG).</li>
+                <li><strong>Stream the steps.</strong> Users tolerate latency better when they see "Searching… →
+                    Checking sources… → Writing answer".</li>
+                <li><strong>Cache retrieval.</strong> Identical rewritten queries shouldn't hit the vector
+                    store twice.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="p4_human_in_the_loop.html"><span class="dir">Previous</span>
+                <div class="ttl">← P4 · Human-in-the-Loop</div>
+            </a>
+            <a class="next" href="p6_multi_agent_supervisor.html"><span class="dir">Next</span>
+                <div class="ttl">P6 · Multi-Agent Supervisor →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>LangGraph Projects · P5 of 6</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Databases, GraphRAG, and Vector Retrieval Strategies</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">GR</span>
+                <span>Graph and Retrieval Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="rag.html">RAG</a>
+                <a href="systems-comparison.html">Systems Compare</a>
+                <a href="#graph-vs-rdbms">Graph vs RDBMS</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#graph-vs-rdbms">Graph DB vs RDBMS</a>
+            <a href="#when-graph-wins">When graph databases win</a>
+            <a href="#examples">Examples</a>
+            <a href="#graph-rag">Graph DB in RAG</a>
+            <a href="#hybrid-graph-vector">Graph plus vector retrieval</a>
+            <a href="#strategies">Vector retrieval strategies</a>
+            <a href="#bm25">BM25 and sparse retrieval</a>
+            <a href="#hybrid">Hybrid retrieval</a>
+            <a href="#decision-guide">How to choose</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card" id="graph-vs-rdbms">
+                <div>
+                    <p class="eyebrow">Production retrieval design</p>
+                    <h1>Graph databases help when relationships are the main data structure, and they become especially
+                        powerful when combined with vector retrieval in RAG.</h1>
+                    <p><strong>Relational databases</strong> are excellent when the main problem is structured records,
+                        transactions, constraints, and tabular queries. <strong>Graph databases</strong> are excellent
+                        when the main problem is navigating many connected entities and relationships.</p>
+                    <p>For retrieval-augmented generation, a vector database finds semantically similar chunks, while a
+                        graph database can model entities, links, paths, and multi-hop reasoning. Used together, they
+                        can improve precision, explainability, and context assembly.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Simple mental model</h2>
+                    <ul>
+                        <li><strong>RDBMS:</strong> rows, tables, joins, transactions</li>
+                        <li><strong>Graph DB:</strong> nodes, relationships, traversals, paths</li>
+                        <li><strong>Vector DB:</strong> similarity search over embeddings</li>
+                        <li><strong>Hybrid RAG:</strong> combine semantic similarity with explicit relationships</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section" id="when-graph-wins">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Core comparison</p>
+                        <h2>How graph databases differ from relational databases</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>RDBMS</th>
+                                <th>Graph DB like Neo4j</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Primary shape</td>
+                                <td>Tables with rows and columns</td>
+                                <td>Nodes and relationships</td>
+                            </tr>
+                            <tr>
+                                <td>Best at</td>
+                                <td>Transactional business data and structured reporting</td>
+                                <td>Connected data and relationship-heavy queries</td>
+                            </tr>
+                            <tr>
+                                <td>Query style</td>
+                                <td>SQL joins across tables</td>
+                                <td>Traversals across edges and paths</td>
+                            </tr>
+                            <tr>
+                                <td>Performance pattern</td>
+                                <td>Great for record-centric operations</td>
+                                <td>Great for many-hop relationship exploration</td>
+                            </tr>
+                            <tr>
+                                <td>Schema flexibility</td>
+                                <td>Usually more rigid and planned</td>
+                                <td>Often more natural for evolving relationship models</td>
+                            </tr>
+                            <tr>
+                                <td>Typical pain point</td>
+                                <td>Complex joins can become hard to reason about</td>
+                                <td>Not the first choice for classic transactional systems</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Simple rule:</strong> if your question sounds like “find records matching conditions,” an
+                        RDBMS is often enough. If your question sounds like “follow the relationship chain between these
+                        entities,” a graph database becomes much more attractive.</p>
+                </div>
+            </section>
+
+            <section class="section" id="examples">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Examples</p>
+                        <h2>Where graph databases are especially useful</h2>
+                    </div>
+                </div>
+                <div class="grid three">
+                    <div class="card">
+                        <h3>Fraud detection</h3>
+                        <p>Graph databases help uncover suspicious networks such as shared devices, addresses, phone
+                            numbers, and payment methods across multiple accounts. The value is in the relationship
+                            pattern, not just the individual row.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Knowledge graphs</h3>
+                        <p>If you need to model people, companies, products, documents, and how they connect, a graph
+                            model often feels more natural than forcing everything into many join tables.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Recommendation and dependency networks</h3>
+                        <p>Recommendations, supply chains, network topology, and lineage queries often rely on “what is
+                            connected to what” more than on isolated record lookup.</p>
+                    </div>
+                </div>
+                <div class="code-compare" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>RDBMS-style question</h3>
+                        <pre>Find all orders placed by customer 123
+in the last 30 days.</pre>
+                        <p>This is strongly record-centric and is a natural fit for a relational database.</p>
+                    </div>
+                    <div class="code-card">
+                        <h3>Graph-style question</h3>
+                        <pre>Find all customers connected to this
+fraudulent account within 3 hops through
+shared devices, addresses, or cards.</pre>
+                        <p>This is strongly relationship-centric and is a natural fit for a graph traversal engine.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="graph-rag">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">GraphRAG</p>
+                        <h2>How a graph database helps in retrieval augmentation</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>What vector retrieval does well</h3>
+                        <ul class="stack-list">
+                            <li>Finds semantically similar text even when wording differs.</li>
+                            <li>Works well for natural-language question matching.</li>
+                            <li>Scales efficiently for dense similarity search.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What graph retrieval adds</h3>
+                        <ul class="stack-list">
+                            <li>Explicit entity relationships such as who reports to whom or which component depends on
+                                which.</li>
+                            <li>Multi-hop traversal when the answer spans linked entities.</li>
+                            <li>Entity disambiguation, lineage, and evidence paths that are easier to explain.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Why combine them?</h2>
+                    <p>A vector database is strong at <strong>semantic recall</strong>. A graph database is strong at
+                        <strong>relationship reasoning</strong>. Using them together means you can first find relevant
+                        concepts semantically and then expand or constrain context through graph structure.
+                    </p>
+                </div>
+            </section>
+
+            <section class="section" id="hybrid-graph-vector">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Hybrid retrieval</p>
+                        <h2>How graph and vector databases work together in RAG</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Vector search finds the semantically relevant chunks</h3>
+                        <p>The user asks a question. Dense retrieval finds documents or chunks whose meaning matches the
+                            question even if the wording is different.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Entity extraction links chunks to graph nodes</h3>
+                        <p>The retrieved chunks reference entities such as people, products, services, policies, or
+                            incidents. Those entities are mapped into graph nodes and relationships.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Graph traversal expands or filters context</h3>
+                        <p>The system follows relevant relationships such as ownership, dependency, citation,
+                            causality, or hierarchy to assemble richer evidence.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. The final prompt gets evidence with better structure</h3>
+                        <p>The LLM receives not just similar text, but text plus connected facts, paths, and supporting
+                            context that reflect how the knowledge is actually organized.</p>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Benefit</th>
+                                <th>Why it helps</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Better multi-hop answers</td>
+                                <td>The answer may require following linked entities rather than just retrieving one
+                                    chunk.</td>
+                            </tr>
+                            <tr>
+                                <td>Stronger explainability</td>
+                                <td>You can show both the text evidence and the relationship path behind it.</td>
+                            </tr>
+                            <tr>
+                                <td>Cleaner disambiguation</td>
+                                <td>Graph structure helps distinguish entities with similar names or related contexts.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Better context assembly</td>
+                                <td>You can pull supporting entities, parent nodes, or dependency chains around the
+                                    retrieved chunk.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="strategies">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Retrieval landscape</p>
+                        <h2>Various vector and retrieval strategies you should know</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Strategy</th>
+                                <th>Type</th>
+                                <th>What it does</th>
+                                <th>When it is useful</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Flat / brute force</td>
+                                <td>Exact dense search</td>
+                                <td>Compares the query vector against every stored vector</td>
+                                <td>Small corpora, gold-standard evaluation, highest exactness</td>
+                            </tr>
+                            <tr>
+                                <td>HNSW</td>
+                                <td>Approximate nearest neighbor</td>
+                                <td>Uses a graph-based index for fast similarity search</td>
+                                <td>Very common production default for dense retrieval</td>
+                            </tr>
+                            <tr>
+                                <td>IVF Flat</td>
+                                <td>Approximate nearest neighbor</td>
+                                <td>Clusters vectors first, then searches likely clusters</td>
+                                <td>Larger datasets where speed matters</td>
+                            </tr>
+                            <tr>
+                                <td>IVF PQ</td>
+                                <td>Compressed ANN</td>
+                                <td>Combines coarse clustering with quantized vector compression</td>
+                                <td>Very large corpora where memory cost matters</td>
+                            </tr>
+                            <tr>
+                                <td>DiskANN and disk-backed ANN styles</td>
+                                <td>Approximate nearest neighbor</td>
+                                <td>Optimizes large-scale search using storage-aware structures</td>
+                                <td>Massive scale retrieval where RAM is limited</td>
+                            </tr>
+                            <tr>
+                                <td>Metadata filtering</td>
+                                <td>Constraint strategy</td>
+                                <td>Restricts search by source, date, team, product, tenant, or tags</td>
+                                <td>Multi-tenant and policy-sensitive RAG systems</td>
+                            </tr>
+                            <tr>
+                                <td>Reranking</td>
+                                <td>Precision improvement</td>
+                                <td>Reorders retrieved candidates with a stronger ranking model</td>
+                                <td>When recall is okay but final relevance is noisy</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="bm25">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Sparse retrieval</p>
+                        <h2>Where BM25 fits</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Important clarification</h3>
+                        <p><strong>BM25 is not a dense vector ANN index like HNSW or IVF.</strong> It is a lexical or
+                            sparse retrieval strategy that scores documents by query-term relevance and term rarity.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why it still matters</h3>
+                        <p>BM25 is often better when exact terms matter: product ids, legal phrases, error messages,
+                            ticket numbers, medication names, clauses, logs, or code snippets.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Simple distinction:</strong> flat, HNSW, and IVF are mostly about <strong>how to search
+                            dense vectors</strong>. BM25 is about <strong>lexical ranking over terms</strong>. In
+                        production
+                        systems, both can be combined.</p>
+                </div>
+            </section>
+
+            <section class="section" id="hybrid">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Best of both</p>
+                        <h2>Hybrid retrieval often works best in production</h2>
+                    </div>
+                </div>
+                <div class="grid three">
+                    <div class="card">
+                        <h3>Dense plus BM25</h3>
+                        <p>Semantic similarity gives broader recall, while BM25 protects exact token matching.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Vector plus metadata filters</h3>
+                        <p>Restrict retrieval to the right tenant, product area, or document type before ranking.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Vector plus graph traversal</h3>
+                        <p>Use semantic retrieval to find the right topic, then graph expansion to gather connected
+                            evidence.</p>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Most practical conclusion</h2>
+                    <p>The strongest retrieval stack is often not one strategy. It is a measured combination of dense
+                        retrieval, sparse retrieval, filtering, reranking, and sometimes graph-aware expansion.</p>
+                </div>
+            </section>
+
+            <section class="section" id="decision-guide">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Decision guide</p>
+                        <h2>How to choose between them</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Choose an RDBMS when</h3>
+                        <ul class="stack-list">
+                            <li>Your workload is transaction-heavy and record-centric.</li>
+                            <li>Your queries mostly filter, aggregate, and join structured business data.</li>
+                            <li>Relationships are present but not the dominant problem.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Choose a graph database when</h3>
+                        <ul class="stack-list">
+                            <li>Your main value comes from traversing many connected entities.</li>
+                            <li>You need path finding, influence mapping, lineage, or dependency analysis.</li>
+                            <li>Relationship context is first-class, not secondary.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="warning-card">
+                        <h3>Choose pure vector retrieval when</h3>
+                        <ul class="stack-list">
+                            <li>You mainly need semantic similarity over text chunks.</li>
+                            <li>Entity relationships are not central to answer quality.</li>
+                            <li>You want a strong baseline before adding structure.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Choose graph plus vector retrieval when</h3>
+                        <ul class="stack-list">
+                            <li>Questions depend on entities and their relationships.</li>
+                            <li>You need explainable multi-hop context.</li>
+                            <li>You want semantic recall plus structured evidence expansion.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>This page explains when graph databases such as Neo4j are more useful than relational databases, how
+                graph retrieval complements vector databases in RAG, and how flat, HNSW, IVF, BM25, and hybrid
+                retrieval strategies differ.</p>
+            <div class="mini-links">
+                <a href="index.html">Back to home</a>
+                <a href="rag.html">RAG guide</a>
+                <a href="systems-comparison.html">Systems compare</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

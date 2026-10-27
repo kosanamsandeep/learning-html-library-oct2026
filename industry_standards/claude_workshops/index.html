@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Workshops — Code with Claude (CWC) field notes</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../anthropic_building_agents.html">Building Agents</a>
+                <a href="../anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+                <a href="../claude_code_in_sdlc/README.html">Claude Code sample</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">Claude Workshops · CWC 2026</span></p>
+            <h1>Field notes from <code>anthropics/cwc-workshops</code> — every stack, every lever, every "use this
+                when&hellip;"</h1>
+            <p class="lead">Eight workshops, distilled into pro-creator playbooks. Each page lays out the <em>stack</em>
+                (Claude Managed Agents, Skills, MCP, memory stores, Dreaming, Claude Code, evals), the <em>levers</em>
+                the
+                workshop teaches, and the trade-off of using vs. not using each lever — so you know what you gain, and
+                what breaks when you skip it.</p>
+        </section>
+
+        <section class="card">
+            <h2>The shared stack across the eight workshops</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Stack piece</th>
+                        <th>What it is</th>
+                        <th>Where it shows up</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Claude Managed Agents (CMA)</strong></td>
+                        <td>Cloud-managed agent loop with sandboxed code execution, sessions, environments, and
+                            tool-confirmation events. You configure, Anthropic runs.</td>
+                        <td>ship-your-first-managed-agent, agent-decomposition, agent-battle, agents-that-remember,
+                            production-ready-agent, eval-driven-agent-development</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Skills</strong></td>
+                        <td>Folder + <code>SKILL.md</code> the agent loads on demand when its description matches.
+                            Replaces "always do X before Y" prompt bloat.</td>
+                        <td>rightmodel, agent-decomposition, agent-battle</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MCP servers + Vault</strong></td>
+                        <td>External tools (Linear, wiki, game engine) plugged into the agent over Model Context
+                            Protocol; secrets held in a Vault.</td>
+                        <td>agent-decomposition, agent-battle, production-ready-agent</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Memory stores + Dreaming</strong></td>
+                        <td>Persistent filesystem the agent reads/writes across sessions; Dreaming is a batch model run
+                            that consolidates past transcripts into a new store.</td>
+                        <td>agents-that-remember, production-ready-agent</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sub-agents (multi-agent block)</strong></td>
+                        <td>A coordinator agent with a roster of callable sub-agents. Parallel research, isolated
+                            contexts, synthesised result.</td>
+                        <td>production-ready-agent, agent-decomposition</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Evals (programmatic + LLM judge)</strong></td>
+                        <td>Two-layer scoring: deterministic checks (XML, structural metrics, decision probes) plus an
+                            LLM-as-judge with a rubric on rendered output.</td>
+                        <td>rightmodel, agent-decomposition, eval-driven-agent-development, agent-battle</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Claude Code in the loop</strong></td>
+                        <td>Claude Code reads <code>CLAUDE.md</code> and slash commands to act as the workshop's
+                            explain-then-edit pair-programmer.</td>
+                        <td>rightmodel, agent-decomposition, agent-battle, how-we-claude-code</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>The eight workshops</h2>
+            <a class="project" href="rightmodel.html"><strong>W1 · PICKING THE RIGHT MODEL</strong>Use a Claude Code
+                Skill to audit an LLM eval suite, then sweep it across models &times; thinking &times; effort to find
+                the best quality-per-dollar configuration. Plotting + recommendation is the deliverable.</a>
+            <a class="project" href="agent-decomposition.html"><strong>W2 · AGENT DECOMPOSITION
+                    (STOCKPILOT)</strong>Take a 402-line legacy prompt with 12 tools and 3 hardcoded sub-agents, and
+                decompose it into Skills + sandboxed code execution + one well-placed sub-agent on Claude Managed
+                Agents. Score 71% &rarr; 92%.</a>
+            <a class="project" href="how-we-claude-code.html"><strong>W3 · HOW WE CLAUDE CODE</strong>The three-phase
+                AI-assisted product workflow Anthropic uses internally: interview &rarr; spec, four divergent visual
+                designs as static HTML, then a Vite + React app whose components carry a machine-readable DOM
+                contract.</a>
+            <a class="project" href="ship-your-first-managed-agent.html"><strong>W4 · SHIP YOUR FIRST MANAGED
+                    AGENT</strong>Build an SRE incident agent by filling in seven small functions in
+                <code>agent.py</code>: agent &rarr; environment &rarr; session &rarr; events. The agent greps a
+                70k-line log in its sandbox and names the bad commit.</a>
+            <a class="project" href="agent-battle.html"><strong>W5 · AGENT BATTLE (CLAUDE PLAYS
+                    MINECRAFT)</strong>Configure a Managed Agent — system prompt, model, skills, MCP — that drives a
+                local Minecraft bot. Most diamonds wins, fewest tokens breaks ties. Decision-probe evals iterate the
+                config in ~30 seconds before each 5-minute run.</a>
+            <a class="project" href="agents-that-remember.html"><strong>W6 · AGENTS THAT REMEMBER</strong>Goldfish
+                &rarr; colleague in 45 minutes. Show the amnesiac baseline, attach a memory store across two sessions,
+                then run Dreaming over historical transcripts to consolidate a better store.</a>
+            <a class="project" href="eval-driven-agent-development.html"><strong>W7 · EVAL-DRIVEN AGENT
+                    DEVELOPMENT</strong>A PPTX-generating Managed Agent improved through six variants (naive &rarr;
+                visual &rarr; typography &rarr; palette &rarr; density &rarr; QA-loop). Two-layer grader: structural
+                pptx XML metrics + LLM judge on rendered slide images.</a>
+            <a class="project" href="production-ready-agent.html"><strong>W8 · DEAL DESK (PRODUCTION-READY
+                    AGENT)</strong>A chat-first M&amp;A research desk over CMA: coordinator delegates to four parallel
+                sub-agents, reads prior-deal lessons from a memory store, reaches Linear via MCP + Vault, emits a
+                graded investment thesis. Streamed UI, gated tool calls, defined outcomes.</a>
+        </section>
+
+        <section class="card">
+            <h2>How to read these notes</h2>
+            <p>Every page follows the same shape so you can compare designs:</p>
+            <ol>
+                <li><strong>What you build</strong> — the artifact and its size in lines / functions / minutes.</li>
+                <li><strong>The stack</strong> — only the pieces actually used in this workshop.</li>
+                <li><strong>Levers</strong> — the configuration knobs Claude exposes (system prompt, model, skills,
+                    sub-agents, memory, MCP, evals).</li>
+                <li><strong>Use vs don't use</strong> — what each lever buys you, and what breaks if you skip it.</li>
+                <li><strong>Adoption playbook</strong> — how to take the lesson back to your own repo tonight.</li>
+            </ol>
+            <div class="callout anth"><strong>Pro-creator stance:</strong> the lesson behind every workshop is the same
+                — start with the smallest config that could possibly work, measure with an eval, and add a lever only
+                when the measurement says it pays off.</div>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://github.com/anthropics/cwc-workshops" target="_blank"
+                    rel="noopener">github.com/anthropics/cwc-workshops</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/overview" target="_blank"
+                    rel="noopener">Claude Managed Agents — Overview</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/quickstart" target="_blank"
+                    rel="noopener">CMA Quickstart</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/memory" target="_blank"
+                    rel="noopener">CMA — Memory stores</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/dreaming" target="_blank"
+                    rel="noopener">CMA — Dreaming</a>
+                <a class="source" href="https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview"
+                    target="_blank" rel="noopener">Claude Skills — Overview</a>
+                <a class="source" href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank"
+                    rel="noopener">Anthropic — Building effective agents</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

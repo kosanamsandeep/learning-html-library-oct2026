@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNN Basics for Interviews</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="backpropagation.html">Backpropagation</a>
+                <a href="rnn-basics.html">RNN</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What a CNN is</a>
+            <a href="#convolution">Convolution</a>
+            <a href="#relu">ReLU</a>
+            <a href="#relu-intuition">ReLU intuition</a>
+            <a href="#pooling">Pooling</a>
+            <a href="#flattening">Flattening</a>
+            <a href="#full-flow">Full CNN flow</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Neural network foundations</p>
+                    <h1>CNN basics: convolution, ReLU, pooling, and flattening</h1>
+                    <p>A convolutional neural network is built to process grid-like data such as images. Instead of
+                        treating every pixel independently, it learns local patterns like edges, corners, textures, and
+                        shapes, then builds larger concepts from them layer by layer.</p>
+                    <p>The standard interview flow is simple: <strong>convolution detects patterns</strong>,
+                        <strong>ReLU adds nonlinearity</strong>, <strong>pooling compresses spatial
+                            information</strong>, and <strong>flattening prepares features for dense layers</strong>.
+                    </p>
+                </div>
+                <div class="hero-panel">
+                    <h2>One-line flow</h2>
+                    <p class="formula">image -> convolution -> ReLU -> pooling -> repeat -> flatten -> dense ->
+                        prediction</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Why CNNs were important</h3>
+                        <p>Before transformers dominated vision, CNNs were the standard answer for image recognition
+                            because they exploit spatial locality. Nearby pixels usually matter together, and CNN
+                            filters reuse the same weights across the image.</p>
+                    </div>
+                    <div class="card">
+                        <h3>What makes CNNs efficient</h3>
+                        <p>Instead of connecting every input pixel to every neuron immediately, CNNs use small filters
+                            such as 3 x 3 or 5 x 5. That reduces parameters and lets the network detect repeated local
+                            structures anywhere in the image.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="convolution">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Core operation</p>
+                        <h2>How convolution works</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Mechanics</h3>
+                        <p>A small filter slides across the image. At each position it multiplies the local pixels and
+                            filter weights, sums them, and produces one number. Repeating this across the full image
+                            creates a feature map.</p>
+                        <p class="formula">feature(x, y) = sum(local patch * filter weights)</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What the filter learns</h3>
+                        <p>Early filters often learn edges and corners. Deeper layers learn textures, shapes, and object
+                            parts. The key idea is that the same filter can detect the same pattern in many image
+                            locations.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Why convolution is better than a plain dense layer for images:</strong> it preserves
+                        spatial structure and uses parameter sharing. A dense layer would ignore the fact that nearby
+                        pixels are related and would need far more parameters.</p>
+                </div>
+            </section>
+
+            <section class="section" id="relu">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Nonlinearity</p>
+                        <h2>Why ReLU is required</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How ReLU works</h3>
+                        <p>ReLU stands for Rectified Linear Unit. It applies a simple rule to every activation.</p>
+                        <p class="formula">ReLU(x) = max(0, x)</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why it matters</h3>
+                        <p>Without a nonlinear activation, stacking many convolution or dense layers still behaves like
+                            one large linear transformation. That means the network cannot learn complex curved decision
+                            boundaries.</p>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>With ReLU</th>
+                                <th>Without ReLU</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>The network can represent nonlinear patterns.</td>
+                                <td>The entire stack collapses into an effectively linear model.</td>
+                            </tr>
+                            <tr>
+                                <td>Training is usually easier because gradients are simple and computation is cheap.
+                                </td>
+                                <td>The model may stay too weak even if you add many layers.</td>
+                            </tr>
+                            <tr>
+                                <td>Sparse activations can improve efficiency.</td>
+                                <td>You lose one of the main benefits of deep learning.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="checkpoint">
+                    <h2>Most direct interview answer</h2>
+                    <p>ReLU is required because deep models need nonlinearity. Without it, extra layers do not give
+                        extra expressive power in the way people expect from deep learning.</p>
+                </div>
+            </section>
+
+            <section class="section" id="relu-intuition">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Intuition-first</p>
+                        <h2>What ReLU is actually doing</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>ReLU acts like a gate</h3>
+                        <p>Mechanically, ReLU is simple:</p>
+                        <p class="formula">ReLU(x) = max(0, x)</p>
+                        <p>Negative activations are turned into zero. Positive activations pass through unchanged. In
+                            intuitive terms, the network says: if this detected pattern is not strong enough, block it;
+                            if it matters, let it continue.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why a network without ReLU stays limited</h3>
+                        <p>If you stack only linear layers, the result is still one big linear transformation. That
+                            means the network cannot build the curved, conditional decision boundaries needed for real
+                            image recognition.</p>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>Why linear-only stacks collapse</h3>
+                    <pre>Layer 1: y = W1x + b1
+Layer 2: z = W2y + b2
+
+Substitute y into z:
+z = W2(W1x + b1) + b2
+z = (W2W1)x + (W2b1 + b2)
+
+Still linear.
+So 2 linear layers behave like 1 bigger linear layer.
+The same logic holds for many more layers.</pre>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="warning-card">
+                        <h3>What ReLU changes</h3>
+                        <p>ReLU introduces nonlinearity, so different neurons can switch on or off for different kinds
+                            of inputs. That lets the network behave differently in different regions of the input space,
+                            which is what people mean when they say deep networks can learn complex patterns.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why ReLU became the default</h3>
+                        <ul class="stack-list">
+                            <li>It is cheap to compute.</li>
+                            <li>Its gradient stays strong for positive activations.</li>
+                            <li>It creates sparse activations because many values become zero.</li>
+                            <li>It works very well in deep CNN training.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>CNN-specific version:</strong> convolution finds candidate features like edges or
+                        textures. ReLU decides whether those responses are meaningful enough to keep. That is how CNNs
+                        become hierarchical feature detectors instead of just fancy linear filters.</p>
+                </div>
+                <div class="checkpoint">
+                    <h2>Memorize this version</h2>
+                    <p>ReLU is required because without nonlinearity, a deep CNN is mathematically equivalent to one
+                        larger linear model, and one linear model cannot learn the complex visual patterns images
+                        require.</p>
+                </div>
+            </section>
+
+            <section class="section" id="pooling">
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How pooling works</h3>
+                        <p>Pooling downsamples a feature map. In max pooling, for example, a small window such as 2 x 2
+                            moves across the map and keeps only the maximum value from each region.</p>
+                        <p class="formula">2 x 2 region -> keep max value</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why pooling helps</h3>
+                        <ul class="stack-list">
+                            <li>Reduces spatial size and computation.</li>
+                            <li>Makes the network a bit less sensitive to small shifts in input position.</li>
+                            <li>Lets deeper layers focus more on strong signals than exact pixel locations.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Important nuance:</strong> modern CNNs do not always rely heavily on pooling. Some
+                        architectures reduce resolution using strided convolutions instead. Interviews still expect you
+                        to know pooling because it is foundational.</p>
+                </div>
+            </section>
+
+            <section class="section" id="flattening">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How flattening works</h3>
+                        <p>After several convolutional stages, you may have a tensor such as height x width x channels.
+                            Flattening converts that 3D block of features into one long vector.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why flattening is used</h3>
+                        <p>Dense classifier layers expect vector input. Flattening bridges the convolutional feature
+                            extractor and the final prediction head.</p>
+                    </div>
+                </div>
+                <div class="warning-card">
+                    <h3>What flattening does not do</h3>
+                    <p>Flattening does not learn anything by itself. It is just a reshaping step. The learning already
+                        happened in the convolution layers and later dense layers.</p>
+                </div>
+            </section>
+
+            <section class="section" id="full-flow">
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Input image enters</h3>
+                        <p>The image arrives as a pixel grid with one or more channels.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Convolution extracts local patterns</h3>
+                        <p>Filters detect edges, corners, textures, and later more abstract structures.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. ReLU introduces nonlinearity</h3>
+                        <p>This allows deeper combinations of features to represent complex patterns.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Pooling reduces resolution</h3>
+                        <p>Feature maps become smaller and more robust to small spatial shifts.</p>
+                    </div>
+                    <div class="step">
+                        <h3>5. Flatten and classify</h3>
+                        <p>The extracted features are reshaped into a vector and passed to dense layers for the final
+                            class decision.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is convolution preferred over a plain dense layer for images?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because convolution uses local receptive fields and shared weights, which preserve
+                                spatial structure and drastically reduce the number of parameters compared with a fully
+                                connected layer over raw pixels.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What happens if ReLU is removed from a CNN?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>The model loses key nonlinearity, so stacked layers behave much more like a single linear
+                                transformation. That makes the network far less expressive.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is ReLU often described as a gate inside a CNN?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because it blocks negative activations and lets positive ones pass. In practice that
+                                means
+                                the convolution proposes a feature response and ReLU decides whether that response is
+                                strong enough to continue through the network.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your CNN is too large and slow. Which components would you inspect first?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>I would inspect input size, number of filters, pooling or stride strategy, and whether
+                                the flattening-plus-dense head is too large.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You need the model to keep exact location information more carefully. What tradeoff changes?
+                        </h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>I would be cautious with aggressive pooling because pooling intentionally discards some
+                                spatial detail. I might reduce pooling or use strided convolutions selectively.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>CNN interviews usually test whether you understand the job of each stage, not just the names of the
+                layers.</p>
+            <div class="mini-links">
+                <a href="backpropagation.html">Backpropagation</a>
+                <a href="transformer-basics.html">Transformers</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

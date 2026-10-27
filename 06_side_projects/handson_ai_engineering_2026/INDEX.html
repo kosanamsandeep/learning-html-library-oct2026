@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hands-On AI Engineering 2026 — Sample Project Suite</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a33; --ink:#e8ecf7; --muted:#a8b3d1;
+    --accent:#7cf0ff; --good:#7CFFB2; --warn:#ffd166; --bad:#ff6b6b;
+    --line:#2a345a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:linear-gradient(180deg,#070a17,#0b1020);color:var(--ink);line-height:1.55}
+  header{padding:48px 32px;background:radial-gradient(1200px 400px at 20% 0,#1a2452 0,transparent 60%),radial-gradient(800px 300px at 90% 0,#3a1a52 0,transparent 60%);border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:2.4rem;background:linear-gradient(90deg,#7cf0ff,#c084fc);-webkit-background-clip:text;color:transparent}
+  header p{color:var(--muted);max-width:900px}
+  main{padding:32px;max-width:1280px;margin:auto}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:24px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  section h2{margin-top:0;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:8px}
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:.92rem}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{background:#1b2549;color:#cfe1ff;position:sticky;top:0}
+  tr:hover td{background:#192142}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:600}
+  .ok{background:rgba(124,255,178,.12);color:var(--good);border:1px solid rgba(124,255,178,.4)}
+  .warn{background:rgba(255,209,102,.12);color:var(--warn);border:1px solid rgba(255,209,102,.4)}
+  .bad{background:rgba(255,107,107,.12);color:var(--bad);border:1px solid rgba(255,107,107,.4)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  .card{background:#0f1632;border:1px solid var(--line);border-radius:12px;padding:16px;transition:.2s}
+  .card:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .card h3{margin:0 0 6px;color:#fff}
+  .card .tag{font-size:.75rem;color:var(--muted)}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0a0f24;padding:1px 6px;border-radius:4px;color:#ffd6a5;font-size:.88em}
+  .mermaid{background:#0a0f24;border-radius:8px;padding:16px}
+  footer{color:var(--muted);text-align:center;padding:24px;font-size:.85rem;border-top:1px solid var(--line);margin-top:24px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Hands-On AI Engineering — 2026 Sample Project Suite</h1>
+  <p>A locally re-imagined and modernized take on the
+  <a href="https://github.com/kosanamsandeep/Hands-On-AI-Engineering" target="_blank">kosanamsandeep/Hands-On-AI-Engineering</a>
+  collection. Six end-to-end projects, each with its own <code>src/</code>, architecture HTML, ERD diagram, and the
+  state-of-the-art 2026 stack (LangGraph, MCP, hybrid retrieval, vision-LLMs, structured outputs).</p>
+</header>
+
+<main>
+
+<section>
+  <h2>1. Project Suite (each in its own folder with <code>src/</code>)</h2>
+  <div class="grid">
+    <div class="card"><span class="tag">📸 OCR · Vision-LLM · Pydantic</span>
+      <h3><a href="project_A_medical_prescription/architecture.html">A · Medical Prescription Digitizer</a></h3>
+      <p>Hand-written prescription → structured JSON (drug, dose, freq) with RxNorm validation.</p></div>
+    <div class="card"><span class="tag">🤖 Multi-Agent · Orchestration</span>
+      <h3><a href="project_B_multi_agent_financial/architecture.html">B · Multi-Agent Financial Analyst</a></h3>
+      <p>Researcher + Analyst + Writer agents collaborate via supervisor pattern.</p></div>
+    <div class="card"><span class="tag">📚 RAG · Hybrid · Rerank</span>
+      <h3><a href="project_C_hybrid_rag/architecture.html">C · Hybrid RAG (Vector + Graph + BM25)</a></h3>
+      <p>Dense + sparse + KG fusion with cross-encoder reranking.</p></div>
+    <div class="card"><span class="tag">🎬 Multimodal · ColPali</span>
+      <h3><a href="project_D_multimodal_rag/architecture.html">D · Multimodal RAG</a></h3>
+      <p>Text + image + audio + video unified into one ColPali-style index.</p></div>
+    <div class="card"><span class="tag">🎧 Audio · Whisper · TTS</span>
+      <h3><a href="project_E_audio_translator/architecture.html">E · Multilingual Audio Translator</a></h3>
+      <p>Speech-in → translate → speech-out with streaming faster-whisper + Kokoro.</p></div>
+    <div class="card"><span class="tag">🧠 Agentic RAG · LangGraph</span>
+      <h3><a href="project_F_agentic_rag/architecture.html">F · Self-Reflective Agentic RAG</a></h3>
+      <p>Grader → rewriter → generator loop on a stateful LangGraph machine.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. 2026 Technique Evaluation — Original Repo vs. State-of-the-Art</h2>
+  <p>Comparison of the techniques used across the source repo against what is considered <b>best-practice in mid-2026</b>.</p>
+  <table>
+    <thead><tr>
+      <th>Area</th><th>Original Repo Technique</th><th>2026 SOTA</th><th>Status</th><th>Recommendation</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>Embeddings</td><td>OpenAI <code>text-embedding-3</code>, Gemini Embedding 2</td>
+        <td>Matryoshka + late-interaction (ColBERT-v2 / ColPali, NV-Embed-v3, Voyage-3-large)</td>
+        <td><span class="pill warn">Acceptable</span></td>
+        <td>Move to ColPali for visual docs; Matryoshka for cost-tunable dim.</td></tr>
+
+      <tr><td>Vector DB</td><td>ChromaDB, Qdrant</td>
+        <td>Qdrant (HNSW + binary quantization), LanceDB, Turbopuffer (cold-tier)</td>
+        <td><span class="pill ok">Modern</span></td>
+        <td>Add binary quantization → 32× memory savings, &lt;1% recall loss.</td></tr>
+
+      <tr><td>Retrieval</td><td>Plain dense / BM25 fallback</td>
+        <td>Hybrid (dense+BM25) → RRF fusion → cross-encoder rerank → contextual compression</td>
+        <td><span class="pill warn">Partial</span></td>
+        <td>Add Cohere Rerank-3 / BGE-Reranker-v2-Gemma + RRF.</td></tr>
+
+      <tr><td>Chunking</td><td>Fixed-size / recursive splitter</td>
+        <td>Late chunking (Jina), proposition / semantic chunking, agentic chunking</td>
+        <td><span class="pill bad">Outdated</span></td>
+        <td>Switch to late-chunking + semantic boundaries.</td></tr>
+
+      <tr><td>Agent Framework</td><td>LangChain, Agno, AG2, smolagents, Mem0, CrewAI</td>
+        <td>LangGraph (state machines), OpenAI Agents SDK, Microsoft Agent Framework, Pydantic-AI</td>
+        <td><span class="pill ok">Modern</span></td>
+        <td>Prefer LangGraph for control-flow; Pydantic-AI for typed tool I/O.</td></tr>
+
+      <tr><td>Tool / Interop</td><td>Custom Python tools, function-calling</td>
+        <td>Model Context Protocol (MCP) servers + A2A (agent-to-agent) + ERC-8004</td>
+        <td><span class="pill ok">Aligned</span></td>
+        <td>MCP already used (Eagle Eye, GitHub Intel, Hotel Finder) — extend everywhere.</td></tr>
+
+      <tr><td>Structured Output</td><td>Instructor + Pydantic, JSON-mode</td>
+        <td>Native structured-output (OpenAI, Gemini, Mistral) + Outlines / xgrammar / llguidance</td>
+        <td><span class="pill ok">Modern</span></td>
+        <td>Drop Instructor wrapper where native support exists.</td></tr>
+
+      <tr><td>OCR / Document AI</td><td>Mistral Large 3 vision, GLM-OCR via Ollama, LandingAI ADE</td>
+        <td>VLM-only pipelines (GPT-5o-Vision, Gemini 3 Pro Vision, Qwen3-VL-72B), ColPali for retrieval-from-pixels</td>
+        <td><span class="pill ok">Cutting-edge</span></td>
+        <td>Ditch Tesseract entirely; index page screenshots via ColPali.</td></tr>
+
+      <tr><td>Multimodal RAG</td><td>Single ChromaDB index across modalities</td>
+        <td>Modality-specific encoders + unified late-interaction search; video = keyframe + audio + caption tracks</td>
+        <td><span class="pill warn">Partial</span></td>
+        <td>Replace with ColPali (images) + Twelve Labs Marengo (video).</td></tr>
+
+      <tr><td>Memory</td><td>Mem0 (CartMate)</td>
+        <td>Mem0 v2, Letta (MemGPT), Zep Cloud, hierarchical episodic+semantic memory</td>
+        <td><span class="pill ok">Modern</span></td>
+        <td>Add Zep for temporal knowledge graphs of conversations.</td></tr>
+
+      <tr><td>Evaluation</td><td>Mostly absent</td>
+        <td>Ragas-2, DeepEval, Phoenix Arize, LangSmith eval, LLM-as-Judge w/ confidence intervals</td>
+        <td><span class="pill bad">Missing</span></td>
+        <td>Add Ragas (faithfulness, context-precision) + groundedness metrics.</td></tr>
+
+      <tr><td>Observability</td><td>Print logs / Streamlit</td>
+        <td>OpenTelemetry GenAI semantic-conv, Langfuse, Arize Phoenix, OpenLLMetry</td>
+        <td><span class="pill bad">Missing</span></td>
+        <td>Standardize on OTel-GenAI traces + Langfuse dashboards.</td></tr>
+
+      <tr><td>Guardrails / Safety</td><td>None visible</td>
+        <td>NeMo Guardrails 2, Llama-Guard-4, Granite-Guardian, output verifiers</td>
+        <td><span class="pill bad">Missing</span></td>
+        <td>Add input/output guardrails for prompt-injection + PII.</td></tr>
+
+      <tr><td>Serving</td><td>Streamlit / Gradio scripts</td>
+        <td>FastAPI + SSE/streaming + Docker + LiteLLM proxy + vLLM/TGI for OSS models</td>
+        <td><span class="pill warn">Demo-only</span></td>
+        <td>Production: split UI from API, route via LiteLLM.</td></tr>
+
+      <tr><td>Reasoning Models</td><td>O3-mini, Gemini 3 Flash thinking</td>
+        <td>Test-time compute scaling, GPT-5 reasoning, Gemini 3 Pro thinking, DeepSeek-R2</td>
+        <td><span class="pill ok">Modern</span></td>
+        <td>Use reasoning models only for grader/planner steps to control cost.</td></tr>
+
+      <tr><td>Fine-tuning</td><td>Folder exists, mostly empty</td>
+        <td>QLoRA + DPO/KTO + GRPO (post-DeepSeek-R1), Unsloth, Axolotl-2</td>
+        <td><span class="pill warn">Sparse</span></td>
+        <td>Add a GRPO recipe for task-specific reasoning models.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>3. Categorical Coverage Map</h2>
+  <table>
+    <thead><tr><th>Category</th><th># Projects in Source Repo</th><th>Sample Project Built Here</th><th>Folder</th></tr></thead>
+    <tbody>
+      <tr><td>📸 OCR</td><td>3</td><td>Medical Prescription Digitizer</td><td><code>project_A_medical_prescription/</code></td></tr>
+      <tr><td>🤖 AI Agents</td><td>30+</td><td>Multi-Agent Financial Analyst</td><td><code>project_B_multi_agent_financial/</code></td></tr>
+      <tr><td>📚 RAG</td><td>10+</td><td>Hybrid RAG (Vector + Graph + Rerank)</td><td><code>project_C_hybrid_rag/</code></td></tr>
+      <tr><td>🎬 Multimodal</td><td>6</td><td>Multimodal RAG (text+image+audio+video)</td><td><code>project_D_multimodal_rag/</code></td></tr>
+      <tr><td>🎧 Audio</td><td>2</td><td>Multilingual Audio Translator</td><td><code>project_E_audio_translator/</code></td></tr>
+      <tr><td>🧠 Agentic-RAG</td><td>2</td><td>Self-Reflective Agentic RAG (LangGraph)</td><td><code>project_F_agentic_rag/</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>4. Reference 2026 GenAI Stack (used across all 6 sample projects)</h2>
+  <div class="mermaid">
+flowchart LR
+  U[User] -->|HTTPS / SSE| API[FastAPI Gateway]
+  API --> GR[NeMo Guardrails 2]
+  GR --> ORCH[LangGraph Orchestrator]
+  ORCH -->|MCP| TOOLS[(MCP Tool Servers)]
+  ORCH --> RET[Hybrid Retriever]
+  RET --> Q[(Qdrant + BM25)]
+  RET --> KG[(Neo4j KG)]
+  RET --> RR[BGE-Reranker-v2]
+  ORCH --> LLM[GPT-5 / Gemini-3 / Claude-Opus-4.7]
+  LLM --> OUT[Pydantic-AI Structured Out]
+  OUT --> API
+  ORCH -.OTel.-> OBS[Langfuse + Arize Phoenix]
+  ORCH -.eval.-> EV[Ragas-2 / DeepEval]
+  </div>
+</section>
+
+<footer>
+  Built locally as a 2026-modernized study companion to
+  <a href="https://github.com/kosanamsandeep/Hands-On-AI-Engineering" target="_blank">Hands-On-AI-Engineering</a>.
+  All code under <code>practice_projects/handson_ai_engineering_2026/</code>.
+</footer>
+</main>
+
+<script>mermaid.initialize({startOnLoad:true,theme:'dark'});</script>
+</body>
+</html>

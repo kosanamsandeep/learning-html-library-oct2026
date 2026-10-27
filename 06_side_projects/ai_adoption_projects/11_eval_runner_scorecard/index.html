@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Runner &amp; Scorecard</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+  <style>
+    .scorecard-table { width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+    .scorecard-table th, .scorecard-table td { padding:0.6rem 0.8rem; border:1px solid #d1d5db; text-align:center; }
+    .scorecard-table th { background:#e0e7ff; color:#1e1b4b; }
+    .scorecard-table td.pass  { background:#d1fae5; }
+    .scorecard-table td.fail  { background:#fee2e2; }
+    .scorecard-table td.warn  { background:#fef3c7; }
+    .scorecard-table td.metric-good { background:#d1fae5; font-weight:600; color:#065f46; }
+    .scorecard-table td.metric-ok   { background:#fef3c7; font-weight:600; color:#92400e; }
+    .scorecard-table td.metric-bad  { background:#fee2e2; font-weight:600; color:#991b1b; }
+    .inline-scorecard { background:#f8fafc; border:2px solid #e2e8f0; border-radius:0.75rem; padding:1.5rem; margin:1.5rem 0; }
+    .inline-scorecard h4 { margin:0 0 0.5rem; font-size:1rem; color:#334155; }
+    .inline-scorecard .row { display:flex; gap:1.5rem; flex-wrap:wrap; }
+    .inline-scorecard .stat { flex:1; min-width:120px; background:white; border:1px solid #e2e8f0; border-radius:0.5rem; padding:0.75rem; text-align:center; }
+    .inline-scorecard .stat .label { font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; }
+    .inline-scorecard .stat .value { font-size:1.5rem; font-weight:700; margin-top:0.25rem; }
+    .inline-scorecard .stat .value.good { color:#065f46; }
+    .inline-scorecard .stat .value.ok   { color:#92400e; }
+    .inline-scorecard .stat .value.bad  { color:#991b1b; }
+    .example-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1rem 0; }
+    .example-cell { background:white; border:1px solid #e2e8f0; border-radius:0.5rem; padding:1rem; }
+    .example-cell h5 { margin:0 0 0.25rem; font-size:0.9rem; }
+    .example-cell p  { margin:0; font-size:0.85rem; color:#475569; }
+    @media (max-width:640px) { .example-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="../"><span>AI</span>Adoption Projects</a>
+      <div class="top-links">
+        <a href="../">Hub</a>
+        <a href="../../index.html">Workspace</a>
+      </div>
+    </div>
+  </header>
+  <main class="shell">
+
+    <!-- Hero -->
+    <section class="card intro">
+      <h1>Eval Runner &amp; Scorecard</h1>
+      <p class="lead">
+        A modular evaluation harness that feeds a curated corpus through an LLM API, collects responses,
+        compares them against ground-truth labels, and produces a color-coded HTML scorecard with
+        precision, recall, and F1 metrics. Designed for intermediate+ developers who want to
+        systematically measure classifier and extractor quality before shipping to production.
+      </p>
+    </section>
+
+    <!-- Architecture diagram -->
+    <section class="card">
+      <h2>Architecture</h2>
+      <div class="mermaid">
+flowchart LR
+    C[(Corpus)] --> E[Eval Harness]
+    E --> L[LLM API]
+    L --> R[Raw Responses]
+    R --> M[Comparator]
+    M --> S[(Scorecard HTML)]
+    style C fill:#ccfbf1,stroke:#0f766e
+    style E fill:#e0e7ff,stroke:#3730a3
+    style L fill:#fef3c7,stroke:#92400e
+    style R fill:#fce7f3,stroke:#9d174d
+    style M fill:#d1fae5,stroke:#047857
+    style S fill:#e0e7ff,stroke:#3730a3
+      </div>
+    </section>
+
+    <!-- What & Why -->
+    <section class="card">
+      <h2>What &amp; Why</h2>
+
+      <h3>Eval Harness Design</h3>
+      <p>
+        An evaluation harness is the scaffolding that lets you run a large number of test cases through
+        an LLM in a repeatable, auditable way. Instead of ad-hoc prompting, you define a corpus of
+        <strong>input / ground-truth</strong> pairs, feed each one to the model through a consistent
+        prompt template, and collect the raw output for later comparison.
+      </p>
+      <div class="callout info">
+        <strong>Why it matters:</strong> Without a harness, evaluations become manual, inconsistent,
+        and impossible to reproduce. A harness gives you a single command to re-run your entire
+        test suite after any prompt change, model swap, or system prompt update.
+      </div>
+
+      <h3>LLM API Integration</h3>
+      <p>
+        The harness calls the LLM via a generic <code>call_llm()</code> function that abstracts
+        over provider details. This lets you swap between models (GPT, Claude, Gemini, open-source
+        via Ollama, etc.) without touching the evaluation logic. The function accepts a system prompt,
+        a user prompt, and optional parameters (temperature, max tokens), and returns the response text.
+      </p>
+
+      <h3>Classification Metrics</h3>
+      <p>
+        For classification and extraction tasks the most widely used metrics are
+        <strong>precision</strong>, <strong>recall</strong>, and their harmonic mean
+        <strong>F1 score</strong>. Each is computed per label and then macro- or micro-averaged
+        across all labels.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Formula</th><th>What it measures</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Precision</td>
+            <td><code>TP / (TP + FP)</code></td>
+            <td>Of the items the model flagged as positive, how many were truly positive?<br>Penalises <em>false alarms</em>.</td>
+          </tr>
+          <tr>
+            <td>Recall</td>
+            <td><code>TP / (TP + FN)</code></td>
+            <td>Of all the truly positive items, how many did the model catch?<br>Penalises <em>misses</em>.</td>
+          </tr>
+          <tr>
+            <td>F1 Score</td>
+            <td><code>2 &times; P &times; R / (P + R)</code></td>
+            <td>Balanced single-number summary. High F1 means both precision and recall are solid.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Python starter code -->
+    <section class="card">
+      <h2>Python Eval Loop</h2>
+      <p>
+        The core of the harness is a loop that reads the corpus, calls the LLM for each item,
+        classifies the response, and accumulates confusion-matrix counts. The starter below
+        uses a generic <code>call_llm()</code> placeholder &mdash; swap it with any provider
+        SDK (OpenAI, Anthropic, etc.) to get started.
+      </p>
+      <pre><code>import json, csv, os, sys
+from dataclasses import dataclass, field
+from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Corpus item — modify fields to match your task
+# ---------------------------------------------------------------------------
+@dataclass
+class EvalItem:
+    item_id: str
+    text: str
+    ground_truth: str          # expected label or extracted value
+
+
+# ---------------------------------------------------------------------------
+# Generic LLM caller — replace the body with your provider's SDK
+# ---------------------------------------------------------------------------
+def call_llm(system_prompt: str, user_prompt: str, **kwargs) -> str:
+    """
+    Send a prompt to the LLM and return the response text.
+
+    Example with the Anthropic SDK:
+        import anthropic
+        client = anthropic.Anthropic()
+        msg = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+            max_tokens=kwargs.get("max_tokens", 512),
+            temperature=kwargs.get("temperature", 0.0),
+        )
+        return msg.content[0].text
+
+    Example with the OpenAI SDK:
+        from openai import OpenAI
+        client = OpenAI()
+        resp = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user",   "content": user_prompt},
+            ],
+            max_tokens=kwargs.get("max_tokens", 512),
+            temperature=kwargs.get("temperature", 0.0),
+        )
+        return resp.choices[0].message.content
+    """
+    raise NotImplementedError("Replace this function body with your LLM SDK call.")
+
+
+# ---------------------------------------------------------------------------
+# Label extraction from LLM output
+# ---------------------------------------------------------------------------
+def parse_label(raw: str) -> str:
+    """Extract a classification label from the LLM's raw text response."""
+    return raw.strip().split("\n")[0].strip().lower()
+
+
+# ---------------------------------------------------------------------------
+# Classification metrics
+# ---------------------------------------------------------------------------
+@dataclass
+class Metrics:
+    labels: list[str] = field(default_factory=list)
+    precision: dict[str, float] = field(default_factory=dict)
+    recall: dict[str, float] = field(default_factory=dict)
+    f1: dict[str, float] = field(default_factory=dict)
+    support: dict[str, int] = field(default_factory=dict)
+    accuracy: float = 0.0
+    macro_precision: float = 0.0
+    macro_recall: float = 0.0
+    macro_f1: float = 0.0
+
+
+def compute_metrics(
+    ground_truths: list[str],
+    predictions: list[str],
+) -> Metrics:
+    labels = sorted(set(ground_truths) | set(predictions))
+    conf: dict[tuple[str, str], int] = {}
+    for gt, pred in zip(ground_truths, predictions):
+        conf[(gt, pred)] = conf.get((gt, pred), 0) + 1
+
+    m = Metrics(labels=labels)
+
+    for label in labels:
+        tp = conf.get((label, label), 0)
+        fp = sum(conf.get((other, label), 0) for other in labels if other != label)
+        fn = sum(conf.get((label, other), 0) for other in labels if other != label)
+        support = tp + fn
+
+        m.precision[label] = tp / (tp + fp) if (tp + fp) else 0.0
+        m.recall[label]    = tp / (tp + fn) if (tp + fn) else 0.0
+        m.f1[label]        = (2 * m.precision[label] * m.recall[label] /
+                              (m.precision[label] + m.recall[label])
+                              ) if (m.precision[label] + m.recall[label]) else 0.0
+        m.support[label]   = support
+
+    correct = sum(1 for gt, pred in zip(ground_truths, predictions) if gt == pred)
+    m.accuracy = correct / len(ground_truths) if ground_truths else 0.0
+
+    m.macro_precision = sum(m.precision[l] for l in labels) / len(labels) if labels else 0.0
+    m.macro_recall    = sum(m.recall[l]    for l in labels) / len(labels) if labels else 0.0
+    m.macro_f1        = sum(m.f1[l]        for l in labels) / len(labels) if labels else 0.0
+
+    return m
+
+
+# ---------------------------------------------------------------------------
+# Main eval loop
+# ---------------------------------------------------------------------------
+SYSTEM_PROMPT = """You are a content classifier. Given an email, classify its intent
+into exactly one of: support, billing, feature_request, spam, other.
+Reply with ONLY the label — no explanation, no punctuation."""
+
+USER_TEMPLATE = "Classify this email:\n\n{text}\n\nLabel:"
+
+
+def run_eval(corpus: list[EvalItem]) -> Metrics:
+    ground_truths: list[str] = []
+    predictions: list[str] = []
+
+    for i, item in enumerate(corpus):
+        print(f"[{i+1}/{len(corpus)}] {item.item_id} ... ", end="", flush=True)
+        try:
+            user_prompt = USER_TEMPLATE.format(text=item.text)
+            raw = call_llm(SYSTEM_PROMPT, user_prompt, temperature=0.0, max_tokens=64)
+            pred = parse_label(raw)
+        except Exception as exc:
+            print(f"ERROR: {exc}")
+            pred = "__error__"
+
+        ground_truths.append(item.ground_truth)
+        predictions.append(pred)
+        print(pred)
+
+    return compute_metrics(ground_truths, predictions)
+
+
+# ---------------------------------------------------------------------------
+# Corpus loader — adapt to your data format
+# ---------------------------------------------------------------------------
+def load_corpus(path: str) -> list[EvalItem]:
+    items: list[EvalItem] = []
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            items.append(EvalItem(
+                item_id=row["id"],
+                text=row["text"],
+                ground_truth=row["label"].strip().lower(),
+            ))
+    return items
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    corpus_path = sys.argv[1] if len(sys.argv) > 1 else "corpus.csv"
+    corpus = load_corpus(corpus_path)
+    metrics = run_eval(corpus)
+
+    print("\n========== RESULTS ==========")
+    print(f"Accuracy : {metrics.accuracy:.3f}")
+    print(f"Macro-P  : {metrics.macro_precision:.3f}")
+    print(f"Macro-R  : {metrics.macro_recall:.3f}")
+    print(f"Macro-F1 : {metrics.macro_f1:.3f}")
+    print()
+    for label in metrics.labels:
+        print(f"  {label:20s}  P={metrics.precision[label]:.3f}  "
+              f"R={metrics.recall[label]:.3f}  F1={metrics.f1[label]:.3f}  "
+              f"(n={metrics.support[label]})")
+</code></pre>
+
+      <div class="callout tip">
+        <strong>Pro tip:</strong> Use <code>temperature=0.0</code> for evaluations &mdash; you want
+        deterministic output so you can compare runs. Set <code>max_tokens</code> just large enough
+        for a label so the harness stays fast and cheap.
+      </div>
+
+      <p><strong>Expected corpus.csv format:</strong></p>
+      <pre><code>id,text,label
+001,"Urgent: my account was charged twice",billing
+002,"Can you add dark mode to the dashboard?",feature_request
+003,"Get rich fast! Click here",spam
+004,"Your product is great, keep it up!",other</code></pre>
+    </section>
+
+    <!-- Scorecard HTML template -->
+    <section class="card">
+      <h2>HTML Scorecard Template</h2>
+      <p>
+        After computing metrics the harness can render a standalone HTML scorecard. The template below
+        is what the Python script generates &mdash; a self-contained report with colour-coded results.
+      </p>
+      <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;Eval Scorecard &mdash; Intent Classifier&lt;/title&gt;
+  &lt;style&gt;
+    body { font-family: system-ui, sans-serif; background:#f1f5f9; margin:0; padding:2rem; }
+    h1 { color:#1e293b; font-size:1.5rem; margin:0 0 0.25rem; }
+    .subtitle { color:#64748b; margin:0 0 2rem; }
+    .summary { display:flex; gap:1.5rem; flex-wrap:wrap; margin-bottom:2rem; }
+    .stat  { background:white; border-radius:0.75rem; padding:1rem 1.5rem;
+             box-shadow:0 1px 3px rgba(0,0,0,0.08); flex:1; min-width:140px; text-align:center; }
+    .stat .lbl { font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; }
+    .stat .val { font-size:1.75rem; font-weight:700; margin-top:0.25rem; }
+    .stat .val.good { color:#065f46; } .stat .val.ok { color:#92400e; } .stat .val.bad { color:#991b1b; }
+    table { width:100%; border-collapse:collapse; background:white; border-radius:0.75rem;
+            overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    th, td { padding:0.75rem 1rem; text-align:center; border-bottom:1px solid #e2e8f0; }
+    th { background:#e0e7ff; color:#1e1b4b; font-size:0.85rem; text-transform:uppercase; }
+    td.pass  { background:#d1fae5; } td.fail { background:#fee2e2; } td.warn { background:#fef3c7; }
+    td.good { background:#d1fae5; font-weight:600; color:#065f46; }
+    td.ok   { background:#fef3c7; font-weight:600; color:#92400e; }
+    td.bad  { background:#fee2e2; font-weight:600; color:#991b1b; }
+    .footer { margin-top:1.5rem; font-size:0.8rem; color:#94a3b8; text-align:center; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Eval Scorecard &mdash; Intent Classifier&lt;/h1&gt;
+  &lt;p class="subtitle"&gt;Model: claude-sonnet-4-20250514 &amp;bull;
+     Run: 2026-07-14 &amp;bull; Corpus: 120 items&lt;/p&gt;
+
+  &lt;div class="summary"&gt;
+    &lt;div class="stat"&gt;
+      &lt;div class="lbl"&gt;Accuracy&lt;/div&gt;
+      &lt;div class="val good"&gt;91.7%&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="stat"&gt;
+      &lt;div class="lbl"&gt;Macro Precision&lt;/div&gt;
+      &lt;div class="val good"&gt;0.89&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="stat"&gt;
+      &lt;div class="lbl"&gt;Macro Recall&lt;/div&gt;
+      &lt;div class="val ok"&gt;0.85&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="stat"&gt;
+      &lt;div class="lbl"&gt;Macro F1&lt;/div&gt;
+      &lt;div class="val good"&gt;0.87&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;table&gt;
+    &lt;thead&gt;
+      &lt;tr&gt;
+        &lt;th&gt;Label&lt;/th&gt;
+        &lt;th&gt;Support&lt;/th&gt;
+        &lt;th&gt;Correct&lt;/th&gt;
+        &lt;th&gt;Precision&lt;/th&gt;
+        &lt;th&gt;Recall&lt;/th&gt;
+        &lt;th&gt;F1&lt;/th&gt;
+      &lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody&gt;
+      &lt;tr&gt;
+        &lt;td&gt;support&lt;/td&gt;&lt;td&gt;30&lt;/td&gt;&lt;td class="pass"&gt;28&lt;/td&gt;
+        &lt;td class="good"&gt;0.93&lt;/td&gt;&lt;td class="good"&gt;0.90&lt;/td&gt;&lt;td class="good"&gt;0.91&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+        &lt;td&gt;billing&lt;/td&gt;&lt;td&gt;25&lt;/td&gt;&lt;td class="pass"&gt;24&lt;/td&gt;
+        &lt;td class="good"&gt;0.96&lt;/td&gt;&lt;td class="good"&gt;0.92&lt;/td&gt;&lt;td class="good"&gt;0.94&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+        &lt;td&gt;feature_request&lt;/td&gt;&lt;td&gt;20&lt;/td&gt;&lt;td class="warn"&gt;16&lt;/td&gt;
+        &lt;td class="good"&gt;0.89&lt;/td&gt;&lt;td class="ok"&gt;0.80&lt;/td&gt;&lt;td class="ok"&gt;0.84&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+        &lt;td&gt;spam&lt;/td&gt;&lt;td&gt;25&lt;/td&gt;&lt;td class="pass"&gt;25&lt;/td&gt;
+        &lt;td class="good"&gt;1.00&lt;/td&gt;&lt;td class="good"&gt;1.00&lt;/td&gt;&lt;td class="good"&gt;1.00&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+        &lt;td&gt;other&lt;/td&gt;&lt;td&gt;20&lt;/td&gt;&lt;td class="fail"&gt;12&lt;/td&gt;
+        &lt;td class="ok"&gt;0.67&lt;/td&gt;&lt;td class="bad"&gt;0.60&lt;/td&gt;&lt;td class="bad"&gt;0.63&lt;/td&gt;
+      &lt;/tr&gt;
+    &lt;/tbody&gt;
+  &lt;/table&gt;
+
+  &lt;div class="footer"&gt;
+    Generated by Eval Runner &amp;bull; Timestamp: 2026-07-14T12:00:00Z
+  &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+      <div class="callout info">
+        <strong>Colour convention:</strong>
+        <span style="display:inline-block;background:#d1fae5;padding:0.1rem 0.5rem;border-radius:4px;font-weight:600;">Green</span>
+        &rarr; metric &ge; 0.90,
+        <span style="display:inline-block;background:#fef3c7;padding:0.1rem 0.5rem;border-radius:4px;font-weight:600;">Amber</span>
+        &rarr; 0.70&ndash;0.89,
+        <span style="display:inline-block;background:#fee2e2;padding:0.1rem 0.5rem;border-radius:4px;font-weight:600;">Red</span>
+        &rarr; &lt; 0.70.
+      </div>
+    </section>
+
+    <!-- Precision vs Recall vs F1 -->
+    <section class="card">
+      <h2>Precision vs. Recall vs. F1: Tradeoffs</h2>
+      <p>
+        Choosing the right metric depends entirely on the <em>cost</em> of a false positive versus
+        the cost of a false negative in your specific application. There is almost always a tension:
+        improving precision tends to hurt recall, and vice versa.
+      </p>
+
+      <h3>Concrete Scenarios</h3>
+      <div class="example-grid">
+        <div class="example-cell">
+          <h5>Spam Filtering</h5>
+          <p><strong>Optimise for precision.</strong> A false positive (marking a legitimate email as spam)
+          is far worse than letting an occasional spam message through. Users will tolerate a few spam
+          emails in their inbox; they will <em>not</em> tolerate missing an important message. Here,
+          high precision is worth sacrificing some recall.</p>
+        </div>
+        <div class="example-cell">
+          <h5>Cancer Screening</h5>
+          <p><strong>Optimise for recall.</strong> Missing a positive case (false negative) could cost
+          a life. A higher false-positive rate is acceptable because follow-up tests can rule out the
+          healthy patients. The model needs to catch as many true positives as possible, even if it
+          means more false alarms.</p>
+        </div>
+        <div class="example-cell">
+          <h5>Search Relevance</h5>
+          <p><strong>Balance both (F1).</strong> A search engine that returns only perfect results
+          (high precision) but misses most of the relevant documents (low recall) frustrates users.
+          One that returns everything (high recall) but buries the best results in noise also
+          frustrates users. F1 measures the sweet spot between the two.</p>
+        </div>
+        <div class="example-cell">
+          <h5>Sentiment Routing</h5>
+          <p><strong>Macro F1.</strong> When a negative review is routed to the support team while
+          a positive one is dropped, both false positives and false negatives have moderate but
+          <em>asymmetric</em> costs. Macro F1 gives equal weight to each class and reveals whether
+          the model is performing consistently across all sentiment levels.</p>
+        </div>
+      </div>
+
+      <h3>When to Watch Each Metric</h3>
+      <table>
+        <thead>
+          <tr><th>If you care about&hellip;</th><th>Focus on&hellip;</th><th>Because&hellip;</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Not wasting users' time</td>
+            <td><strong>Precision</strong></td>
+            <td>Precision penalises false positives — alerts that go to the wrong team, misrouted
+                tickets, irrelevant search results shown to the user.</td>
+          </tr>
+          <tr>
+            <td>Not missing critical items</td>
+            <td><strong>Recall</strong></td>
+            <td>Recall penalises false negatives — a support escalation that was ignored, a
+                compliance violation that wasn't flagged, a bug report that was classified as
+                "other."</td>
+          </tr>
+          <tr>
+            <td>Overall model health</td>
+            <td><strong>F1 + Accuracy</strong></td>
+            <td>F1 balances precision and recall. Accuracy gives a quick sanity check but can be
+                misleading on imbalanced datasets (a model that always predicts "other" on a
+                95%-other corpus has 95% accuracy but 0% recall for minority classes).</td>
+          </tr>
+          <tr>
+            <td>Rare-class performance</td>
+            <td><strong>Per-label F1 + Macro F1</strong></td>
+            <td>Macro F1 averages per-label F1 scores, treating small classes the same as large
+                ones. If macro F1 is much lower than weighted F1, your model is failing on
+                under-represented categories.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warning">
+        <strong>Watch out for accuracy paradox:</strong> On a severely imbalanced dataset (e.g., 98%
+        class A, 2% class B), a model that always predicts A gets 98% accuracy but is useless.
+        Always examine per-class precision, recall, and F1 &mdash; not just the top-line number.
+      </div>
+    </section>
+
+    <!-- Prose outro -->
+    <section class="card">
+      <h2>Putting It All Together</h2>
+      <p>
+        Building an eval runner is one of the highest-leverage investments you can make in an
+        LLM-powered product. The pattern is always the same:
+      </p>
+      <ol>
+        <li><strong>Curate a corpus</strong> of realistic inputs with human-verified ground-truth labels.</li>
+        <li><strong>Run the harness</strong> to collect model predictions for every item.</li>
+        <li><strong>Compare</strong> predictions to ground truth and compute confusion-matrix metrics.</li>
+        <li><strong>Generate a scorecard</strong> that makes regressions visible at a glance.</li>
+        <li><strong>Iterate</strong> on prompts, examples, or model choice and re-run.</li>
+      </ol>
+      <p>
+        With the starter code above you can have a working eval loop in minutes. Swap in your
+        own corpus, your own <code>call_llm()</code> implementation, and your own label-extraction
+        logic, and you will have a repeatable, auditable evaluation pipeline that grows with your project.
+      </p>
+    </section>
+
+  </main>
+</body>
+</html>

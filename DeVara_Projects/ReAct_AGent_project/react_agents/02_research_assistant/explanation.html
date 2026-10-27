@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>02 · Research Assistant (ReAct, async FastAPI)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../../assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <a class="back" href="../../index.html">← Portfolio home</a>
+  <h1><span class="pill mid">Intermediate</span> 02 · Research Assistant (ReAct)</h1>
+  <p>Search → Read → Summarise → Save. End-to-end autonomous research, served via async FastAPI.</p>
+</header>
+<main>
+
+<h2>📖 Story mode — the junior journalist on deadline</h2>
+<div class="callout good">
+<b>The scene.</b> Your editor drops a sticky note on your desk: <i>“Electric vehicles in India — 800-word piece, by 5 pm.”</i>
+You’re a <b>junior journalist with four habits</b>: (1) make a list of leads, (2) run to the library for each, (3) take notes, (4) draft the article and file it.
+That’s exactly what the agent does.
+</div>
+
+<h3>What happens when you press “Research”</h3>
+<ol>
+<li><b>You type:</b> <code>POST /research { "topic": "electric vehicles in India" }</code>.</li>
+<li><b>Plan:</b> the agent’s prompt tells the LLM to first emit a <b>3–5 step plan</b> — e.g. <i>“policy, top sellers, charging gaps, future outlook.”</i></li>
+<li><b>Search</b> (per step): <code>search_skill</code> calls DuckDuckGo via <code>asyncio.to_thread</code> → gets a handful of URLs.</li>
+<li><b>Read</b> (per URL): <code>reader_skill</code> uses <code>httpx.AsyncClient</code> (native async — many URLs in parallel) to fetch and strip HTML.</li>
+<li><b>Summarise:</b> <code>summarise_skill</code> sends the cleaned text back to the LLM → a 2-sentence note per source.</li>
+<li><b>Write:</b> the agent stitches all notes into a structured Markdown report with citations.</li>
+<li><b>Save:</b> <code>save_skill</code> uses <code>aiofiles</code> to write <code>data/output/&lt;topic&gt;.md</code> → returns the file path in the response.</li>
+</ol>
+
+<div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor U as 🙋 You
+    participant API as ⚡ FastAPI /research
+    participant A as 🧠 ReAct Agent
+    participant S as 🔍 search_skill
+    participant R as 📄 reader_skill
+    participant Z as ✍️ summarise_skill
+    participant F as 💾 save_skill
+    U->>API: topic = "EVs in India"
+    API->>A: run(topic)
+    A->>A: Plan 4 sub-topics
+    loop for each sub-topic
+        A->>S: search(query)
+        S-->>A: list of URLs
+        A->>R: read(urls)  (httpx async, parallel)
+        R-->>A: cleaned text
+        A->>Z: summarise(text)
+        Z-->>A: 2-sentence note
+    end
+    A->>A: Stitch notes → report.md
+    A->>F: save(report)
+    F-->>A: file_path
+    A-->>API: {report, file_path}
+    API-->>U: JSON response
+</div>
+
+<div class="callout warn">
+<b>One-line recall trick:</b> <i>“Plan → search → read → summarise → write → save.”</i>
+Six verbs, four skills, one Markdown file at the end.
+</div>
+
+<h2>Folder structure</h2>
+<pre>
+02_research_assistant/
+├── agents/
+│   ├── base_agent.py
+│   ├── research_agent.py
+│   └── skills/
+│       ├── search_skill.py     # async DuckDuckGo
+│       ├── reader_skill.py     # async httpx + BeautifulSoup
+│       ├── summarise_skill.py  # async LLM digest
+│       └── save_skill.py       # async aiofiles writer
+├── core/                        # config, logger
+├── data/
+│   ├── prompts/react_research.txt
+│   └── reports/                 # auto-created
+├── models/model_client.py
+├── workflows/research_workflow.py
+├── tests/test_agents.py
+├── main.py                      # FastAPI: POST /research
+├── requirements.txt
+├── .env.example
+└── explanation.html
+</pre>
+
+<h2>Why these 4 skills?</h2>
+<table>
+<tr><th>Skill</th><th>Lib</th><th>Why</th><th>Inspiration</th></tr>
+<tr><td><code>web_search</code></td><td>duckduckgo-search</td><td>Free, no key, returns ranked URLs.</td><td>gpt-researcher</td></tr>
+<tr><td><code>read_url</code></td><td>httpx + BS4 (async)</td><td>Lets the agent inspect content, not just snippets.</td><td>crewAI-tools</td></tr>
+<tr><td><code>summarise</code></td><td>LangChain LLM</td><td>Compresses long pages so the loop stays cheap.</td><td>map-reduce summariser</td></tr>
+<tr><td><code>save_report</code></td><td>aiofiles</td><td>Side-effect: real file written to <code>data/reports/</code>.</td><td>AutoGPT file plugin</td></tr>
+</table>
+
+<h2>Architecture</h2>
+<div class="mermaid">
+flowchart LR
+    Client -->|POST /research| API[FastAPI async]
+    API --> WF[workflows.research_workflow]
+    WF --> Agent[ReAct ResearchAgent]
+    Agent --> S[skills.web_search]
+    Agent --> R[skills.read_url]
+    Agent --> Sum[skills.summarise]
+    Agent --> Save[skills.save_report]
+    Save --> FS[(data/reports/*.md)]
+    Agent --> LLM[(ChatOpenAI)]
+</div>
+
+<h2>Sequence (one /research call)</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant U as Client
+    participant API as /research
+    participant A as Agent
+    participant S as web_search
+    participant R as read_url
+    participant Sm as summarise
+    participant Sv as save_report
+    U->>API: {"topic":"RAG 2025"}
+    API->>A: await run(topic)
+    A->>S: query
+    S-->>A: 5 URLs
+    A->>R: url #1
+    R-->>A: text
+    A->>R: url #2
+    R-->>A: text
+    A->>Sm: combined notes
+    Sm-->>A: 200-word digest
+    A->>Sv: digest
+    Sv-->>A: data/reports/report_2026...md
+    A-->>API: file path
+    API-->>U: JSON
+</div>
+
+<h2>Run</h2>
+<pre>cd react_agents/02_research_assistant
+pip install -r requirements.txt
+copy .env.example .env
+python main.py
+# POST http://127.0.0.1:8002/research  body: {"topic":"latest in RAG 2025"}</pre>
+
+<h2>Why async matters here</h2>
+<table>
+<tr><th>Step</th><th>I/O profile</th><th>Async benefit</th></tr>
+<tr><td>web_search</td><td>blocking lib</td><td>wrapped with <code>asyncio.to_thread</code></td></tr>
+<tr><td>read_url</td><td>HTTP</td><td>true async via <code>httpx.AsyncClient</code></td></tr>
+<tr><td>summarise</td><td>LLM API</td><td>uses <code>llm.ainvoke</code></td></tr>
+<tr><td>save_report</td><td>disk</td><td><code>aiofiles</code> keeps loop free</td></tr>
+</table>
+
+<div class="callout good">A single uvicorn worker can comfortably serve dozens of concurrent research jobs because every step is non-blocking.</div>
+
+</main>
+<footer>react_agents · 02_research_assistant</footer>
+</body>
+</html>

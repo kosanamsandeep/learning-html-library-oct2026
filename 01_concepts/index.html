@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI and ML Interview Starter Guide</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">AI</span>
+                <span>AI Engineer Interview Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="#track-stats">Stats and Metrics</a>
+                <a href="#track-ml">Classical ML</a>
+                <a href="#track-training">Training</a>
+                <a href="#track-arch">Architectures</a>
+                <a href="#track-nlp">NLP and Embeddings</a>
+                <a href="#track-systems">Production Systems</a>
+                <a href="#track-devops">DevOps and Tools</a>
+                <a href="#track-companions">Companion Docs</a>
+                <a href="cp-index.html">Cross-Platform AI</a>
+                <a href="lg-index.html">LangGraph Journey</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="shell">
+                <div class="hero-card">
+                    <div>
+                        <p class="eyebrow">Full-stack AI engineer interview preparation</p>
+                        <h1>46 core topic pages organized into 7 tracks, plus companion collections for cross-platform
+                            comparisons and LangGraph examples.</h1>
+                        <p>This site covers the complete arc interviewers follow: statistics and evaluation metrics,
+                            classical ML algorithms including regression, classification, and clustering, neural network
+                            training fundamentals, CNN, RNN, and transformer architectures, NLP representation methods,
+                            production AI systems including RAG, MCP, gRPC, and LangGraph, plus modern vision topics
+                            including multimodal LLMs, video generation, and deployment tools including Docker,
+                            Kubernetes, and web frameworks. It also acts as the unified launch point for the separate
+                            cross-platform comparison docs and the LangGraph explicit example journey.</p>
+                        <p>Every page includes clear explanations, tradeoff discussions, failure analysis, and
+                            scenario-based interview questions.</p>
+                        <div class="hero-actions">
+                            <a class="button-link primary" href="statistics-basics.html">Start from statistics</a>
+                            <a class="button-link secondary" href="evaluation-metrics.html">Jump to metrics</a>
+                            <a class="button-link secondary" href="#track-companions">Open companion docs</a>
+                        </div>
+                    </div>
+                    <aside class="hero-panel">
+                        <h2>Recommended reading order</h2>
+                        <ul>
+                            <li><strong>Track 1 — Stats:</strong> descriptive vs inferential statistics, then evaluation
+                                metrics with precision, recall, F1, Type 1 and 2 errors, AUC.</li>
+                            <li><strong>Track 2 — Classical ML:</strong> regression with assumptions, classification
+                                algorithms, clustering algorithms, and time series forecasting.</li>
+                            <li><strong>Track 3 — Training:</strong> SGD and backpropagation.</li>
+                            <li><strong>Track 4 — Architectures:</strong> start with CNN and sequence-model intuition,
+                                then move into transformer components, and only then go to modern vision and multimodal
+                                systems.</li>
+                            <li><strong>Track 5 — NLP:</strong> CountVectorizer vs TF-IDF vs Word2Vec, GloVe vs BERT
+                                embeddings.</li>
+                            <li><strong>Track 6 — Production:</strong> RAG, graph plus vector retrieval, MCP, gRPC,
+                                LangGraph, systems comparison.
+                            </li>
+                            <li><strong>Track 7 — DevOps:</strong> FastAPI vs Flask, LangServe vs app frameworks,
+                                Python design patterns, project structure, SOLID, dependency injection, status codes,
+                                logging, config and secrets, architecture choices, testing styles, Docker cheat sheet,
+                                kubectl cheat sheet.</li>
+                            <li><strong>Companion docs:</strong> use the companion section below for architecture
+                                comparisons across AI stacks and the LangGraph hands-on learning journey.</li>
+                        </ul>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════════ TRACK 1: Statistics and Metrics ════════ -->
+        <section class="section" id="track-stats">
+            <div class="shell">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Track 1</p>
+                        <h2>Statistics and evaluation metrics</h2>
+                    </div>
+                    <p>Interviewers test statistical reasoning before they test algorithms. Start here.</p>
+                </div>
+                <div class="grid three">
+                    <a class="card" href="statistics-basics.html">
+                        <span class="tag">Stats</span>
+                        <h3>Descriptive vs Inferential Statistics</h3>
+                        <p>Mean, median, variance, skewness, p-values, hypothesis testing, confidence intervals, and key
+                            probability distributions.</p>
+                    </a>
+                    <a class="card" href="evaluation-metrics.html">
+                        <span class="tag">Metrics</span>
+                        <h3>Evaluation Metrics End to End</h3>
+                        <p>Confusion matrix, Type 1 and Type 2 errors, precision, recall, F1, AUC-ROC, AUC-PR, MSE,
+                            RMSE, MAE, R-squared, cross-validation.</p>
+                    </a>
+                    <a class="card" href="ml-math-formulas.html">
+                        <span class="tag">Math</span>
+                        <h3>Essential Math for ML</h3>
+                        <p>Linear algebra, calculus, probability, optimization formulas with ML context. Dot products,
+                            chain rule, Bayes theorem, gradient descent, Adam, cross-entropy, and more.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════════ TRACK 2: Classical ML ════════ -->
+        <section class="section" id="track-ml">
+            <div class="shell">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Track 2</p>
+                        <h2>Classical machine learning algorithms</h2>
+                    </div>
+                    <p>Regression, classification, clustering, and forecasting are core interview topics. Know the algo
+                        mechanics, assumptions, and tradeoffs.</p>
+                </div>
+                <div class="grid three">
+                    <a class="card" href="regression.html">
+                        <span class="tag">Supervised</span>
+                        <h3>Regression Algorithms</h3>
+                        <p>Linear regression, five key assumptions and what breaks when they are violated, Ridge, Lasso,
+                            Elastic Net, tree-based regression, and the bias-variance tradeoff.</p>
+                    </a>
+                    <a class="card" href="classification.html">
+                        <span class="tag">Supervised</span>
+                        <h3>Classification Algorithms</h3>
+                        <p>Logistic regression, decision trees, random forest, SVM, KNN, Naive Bayes, gradient boosting,
+                            XGBoost, and when to use which.</p>
+                    </a>
+                    <a class="card" href="clustering.html">
+                        <span class="tag">Unsupervised</span>
+                        <h3>Clustering Algorithms</h3>
+                        <p>K-Means, DBSCAN, hierarchical clustering, GMM, silhouette score, and how to evaluate clusters
+                            without ground-truth labels.</p>
+                    </a>
+                    <a class="card" href="time-series-forecasting.html">
+                        <span class="tag warm">Forecasting</span>
+                        <h3>Time Series Forecasting</h3>
+                        <p>ARIMA, SARIMA, Holt-Winters, forecasting metrics, transformations, and when deep learning is
+                            justified.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════════ TRACK 3: Training Fundamentals ════════ -->
+        <section class="section" id="track-training">
+            <div class="shell">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Track 3</p>
+                        <h2>Neural network training fundamentals</h2>
+                    </div>
+                    <p>Know how optimization and gradient computation work before diving into architectures.</p>
+                </div>
+                <div class="grid three">
+                    <a class="card" href="stochastic-gradient-descent.html">
+                        <span class="tag">Optimization</span>
+                        <h3>Stochastic Gradient Descent</h3>
+                        <p>What stochastic means, batch vs mini-batch, update rule, learning rate, and when to use
+                            momentum or Adam.</p>
+                    </a>
+                    <a class="card" href="backpropagation.html">
+                        <span class="tag">Training</span>
+                        <h3>Backpropagation</h3>
+                        <p>Chain rule, forward and backward pass, how gradients move through layers, vanishing and
+                            exploding gradients.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════════ TRACK 4: Architectures ════════ -->
+        <section class="section" id="track-arch">
+            <div class="shell">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Track 4</p>
+                        <h2>Neural network architectures and modern vision systems</h2>
+                    </div>
+                    <p>This track is easiest to study in three layers: core architectures, transformer building blocks,
+                        and modern vision or multimodal systems built on top of them.</p>
+                </div>
+
+                <div class="note">
+                    <p><strong>Group 1 — Core architectures:</strong> learn the basic building blocks first. CNN
+                        explains
+                        image feature extraction, RNN explains sequence memory, and the comparison page shows why the
+                        field moved toward transformers.</p>
+                </div>
+                <div class="grid three">
+                    <a class="card" href="cnn-basics.html">
+                        <span class="tag">Vision</span>
+                        <h3>CNN Basics</h3>
+                        <p>Convolution, ReLU and why it is required, pooling, flattening, and the full image
+                            classification flow.</p>
+                    </a>
+                    <a class="card" href="rnn-basics.html">
+                        <span class="tag">Sequences</span>
+                        <h3>RNN Basics</h3>
+                        <p>Hidden state, unrolling through time, BPTT, and why recurrence struggles with long-range
+                            dependencies.</p>
+                    </a>
+                    <a class="card" href="ann-rnn-lstm-transformer.html">
+                        <span class="tag warm">Comparison</span>
+                        <h3>ANN vs RNN vs LSTM vs Transformer</h3>
+                        <p>Architecture evolution: how each design solves its predecessor's limitations, vanishing
+                            gradients, sequential bottlenecks, and why transformers dominate.</p>
+                    </a>
+                </div>
+
+                <div class="note" style="margin-top: 18px;">
+                    <p><strong>Group 2 — Transformer family:</strong> once the transition to transformers is clear,
+                        study the transformer core, then its encoder-only, encoder-decoder, and decoder-only forms,
+                        along with the key supporting concepts.</p>
+                </div>
+                <div class="grid three">
+                    <a class="card" href="transformer-basics.html">
+                        <span class="tag">Transformer</span>
+                        <h3>Transformer Basics</h3>
+                        <p>Tokenization, embeddings, self-attention, feed-forward layers, residual paths, and logits.
+                        </p>
+                    </a>
+                    <a class="card" href="encoder-only.html">
+                        <span class="tag">Transformer</span>
+                        <h3>Encoder to Encoder</h3>
+                        <p>How a pure encoder stack builds contextual vectors for classification and retrieval.</p>
+                    </a>
+                    <a class="card" href="encoder-decoder.html">
+                        <span class="tag">Transformer</span>
+                        <h3>Encoder Decoder</h3>
+                        <p>Cross-attention and why translation and summarization benefit from separate encoder and
+                            decoder.</p>
+                    </a>
+                    <a class="card" href="positional-embeddings.html">
+                        <span class="tag warm">Core</span>
+                        <h3>Positional Embeddings</h3>
+                        <p>Why attention is permutation-invariant and how position encoding fixes that.</p>
+                    </a>
+                    <a class="card" href="activation-functions.html">
+                        <span class="tag warm">Core</span>
+                        <h3>Activation Functions</h3>
+                        <p>Why nonlinear activations matter, GELU in transformers, and what breaks without them.</p>
+                    </a>
+                    <a class="card" href="gpt-level.html">
+                        <span class="tag">Transformer</span>
+                        <h3>GPT-Level View</h3>
+                        <p>Decoder-only generation, causal masking, scaling laws, and practical LLM evaluation.</p>
+                    </a>
+                </div>
+
+                <div class="note" style="margin-top: 18px;">
+                    <p><strong>Group 3 — Modern vision and multimodal systems:</strong> these pages explain how current
+                        vision models, multimodal assistants, inference systems, and image or video generation extend
+                        the architecture ideas above into real products.</p>
+                </div>
+                <div class="grid three">
+                    <a class="card" href="vision-model-evolution.html">
+                        <span class="tag">Vision</span>
+                        <h3>Vision Model Evolution</h3>
+                        <p>Why modern vision models are so accurate, how they are built, and how the field evolved from
+                            handcrafted features to CNNs, ViTs, and foundation models.</p>
+                    </a>
+                    <a class="card" href="multimodal-vision-llms.html">
+                        <span class="tag">Multimodal</span>
+                        <h3>How Vision LLMs Work</h3>
+                        <p>Vision encoders, projector layers, multimodal reasoning, VQA, OCR, grounding, and how LLMs
+                            perform image and video understanding tasks.</p>
+                    </a>
+                    <a class="card" href="vision-inference-speed.html">
+                        <span class="tag warm">Serving</span>
+                        <h3>Why Vision Inference Is Fast</h3>
+                        <p>Efficient backbones, GPU parallelism, quantization, batching, compiled runtimes, and why
+                            video inference is still more expensive than image inference.</p>
+                    </a>
+                    <a class="card" href="image-video-generation.html">
+                        <span class="tag">Generative</span>
+                        <h3>Image and Video Generation</h3>
+                        <p>Why short video from images looks so good now, how diffusion and temporal consistency work,
+                            and what remains hard in production CV.</p>
+                    </a>
+                    <a class="card" href="vision-roadmap.html">
+                        <span class="tag warm">Roadmap</span>
+                        <h3>Vision and Multimodal Roadmap</h3>
+                        <p>A practical roadmap from CNN basics to detection, segmentation, vision transformers,
+                            multimodal LLMs, video understanding, and production deployment.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════════ TRACK 5: NLP and Embeddings ════════ -->
+        <section class="section" id="track-nlp">
+            <div class="shell">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Track 5</p>
+                        <h2>NLP representation and embeddings</h2>
+                    </div>
+                    <p>From sparse bag-of-words vectors to contextual transformer embeddings.</p>
+                </div>
+                <div class="grid three">
+                    <a class="card" href="vectorization-methods.html">
+                        <span class="tag">Classical</span>
+                        <h3>CountVectorizer vs TF-IDF vs Word2Vec</h3>
+                        <p>Internal workings, advantages, weaknesses, and when each is the better choice.</p>
+                    </a>
+                    <a class="card" href="embedding-evolution.html">
+                        <span class="tag">Modern</span>
+                        <h3>GloVe vs Word2Vec vs BERT Embeddings</h3>
+                        <p>From static dense embeddings to contextual representations and why the field moved forward.
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════════ TRACK 6: Production Systems ════════ -->
+        <section class="section" id="track-systems">
+            <div class="shell">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Track 6</p>
+                        <h2>Production AI systems: RAG, protocols, and orchestration</h2>
+                    </div>
+                    <p>From model basics to real-world application architecture, retrieval pipelines, and deployment
+                        patterns.</p>
+                </div>
+                <div class="grid three">
+                    <a class="card" href="rag.html">
+                        <span class="tag warm">RAG</span>
+                        <h3>RAG End to End</h3>
+                        <p>Vector DB choices, indexing, chunking, reranking, inference, caching, evaluation with RAGAS
+                            and DeepEval, and hallucination control with CoT, ToT, and guardrails.</p>
+                    </a>
+                    <a class="card" href="mcp-server.html">
+                        <span class="tag warm">Protocol</span>
+                        <h3>MCP Server End to End</h3>
+                        <p>Host-client-server flow, HTTP vs MCP, FastAPI vs MCP mental model, and React tools vs MCP
+                            comparison.</p>
+                    </a>
+                    <a class="card" href="grpc.html">
+                        <span class="tag warm">Protocol</span>
+                        <h3>gRPC Explained</h3>
+                        <p>Protocol Buffers, HTTP/2, streaming, and practical differences from REST APIs.</p>
+                    </a>
+                    <a class="card" href="langgraph.html">
+                        <span class="tag warm">Orchestration</span>
+                        <h3>LangGraph End to End</h3>
+                        <p>Nodes, edges, shared state, end-to-end agent flow, and comparison to custom tool
+                            orchestration.</p>
+                    </a>
+                    <a class="card" href="systems-comparison.html">
+                        <span class="tag warm">Decision guide</span>
+                        <h3>MCP vs LangGraph vs gRPC</h3>
+                        <p>One-line distinctions, decision matrix, pairwise comparisons, and how they work together.</p>
+                    </a>
+                    <a class="card" href="graph-rag-vector-strategies.html">
+                        <span class="tag warm">Retrieval</span>
+                        <h3>Graph Databases and Vector Retrieval Strategies</h3>
+                        <p>Neo4j vs RDBMS, GraphRAG with vector databases, and how flat, HNSW, IVF, BM25, and hybrid
+                            retrieval differ.</p>
+                    </a>
+                    <a class="card" href="nearest-neighbor-vs-ann.html">
+                        <span class="tag warm">Vector DB</span>
+                        <h3>Nearest Neighbor vs ANN Index Search</h3>
+                        <p>Exact nearest neighbor vs approximate nearest neighbor, HNSW, IVF, distance metrics,
+                            recall-latency tradeoffs, and practical tuning examples for vector databases.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════════ TRACK 7: DevOps and Tools ════════ -->
+        <section class="section" id="track-devops">
+            <div class="shell">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Track 7</p>
+                        <h2>DevOps, frameworks, and deployment tools</h2>
+                    </div>
+                    <p>Practical tools for building, containerizing, and deploying AI applications in production.</p>
+                </div>
+                <div class="grid three">
+                    <a class="card" href="fastapi-flask.html">
+                        <span class="tag warm">Frameworks</span>
+                        <h3>FastAPI vs Flask</h3>
+                        <p>Advantages of each, WSGI vs ASGI, auto-docs, Pydantic validation, async support, and
+                            when to choose which for ML serving.</p>
+                    </a>
+                    <a class="card" href="langserve-frameworks.html">
+                        <span class="tag warm">Serving</span>
+                        <h3>LangServe vs FastAPI vs Streamlit vs Gradio</h3>
+                        <p>What LangServe actually is, how it differs from backend frameworks and UI tools, and what
+                            each framework teaches you.</p>
+                    </a>
+                    <a class="card" href="python-design-patterns-testing.html">
+                        <span class="tag warm">Engineering</span>
+                        <h3>Python Design Patterns and TDD vs BDD</h3>
+                        <p>KISS, DRY, YAGNI, Singleton in context, scalable Python design choices, and a simple
+                            explanation of TDD and BDD.</p>
+                    </a>
+                    <a class="card" href="python-project-structure.html">
+                        <span class="tag warm">Architecture</span>
+                        <h3>Python Project Structure for Scalable Apps</h3>
+                        <p>A practical folder layout for routes, services, repositories, tests, BDD feature files,
+                            and step definitions.</p>
+                    </a>
+                    <a class="card" href="python-solid-principles.html">
+                        <span class="tag warm">Principles</span>
+                        <h3>SOLID Principles in Python</h3>
+                        <p>Single responsibility, dependency inversion, and how to apply SOLID without over-designing
+                            Python code.</p>
+                    </a>
+                    <a class="card" href="python-dependency-injection.html">
+                        <span class="tag warm">Patterns</span>
+                        <h3>Python Dependency Injection with FastAPI</h3>
+                        <p>Provider functions, explicit dependencies, fakes, and overrides for cleaner service
+                            boundaries and tests.</p>
+                    </a>
+                    <a class="card" href="python-architecture-comparison.html">
+                        <span class="tag warm">Architecture</span>
+                        <h3>Monolith vs Modular Monolith vs Microservices</h3>
+                        <p>How to choose an application shape for Python AI systems based on scale, team size, and
+                            operational cost.</p>
+                    </a>
+                    <a class="card" href="http-status-logging.html">
+                        <span class="tag warm">Operations</span>
+                        <h3>HTTP Status Codes and Logging Levels</h3>
+                        <p>Why 1xx to 5xx matter, when to use 4xx vs 5xx, and how debug, info, warning, error, and
+                            critical logs should be used.</p>
+                    </a>
+                    <a class="card" href="python-config-secrets.html">
+                        <span class="tag warm">Operations</span>
+                        <h3>Python Config, Environment Variables, and Secrets</h3>
+                        <p>How to manage runtime settings safely, validate them early, and keep secrets out of source
+                            code.</p>
+                    </a>
+                    <a class="card" href="docker-cheatsheet.html">
+                        <span class="tag warm">Containers</span>
+                        <h3>Docker Commands Cheat Sheet</h3>
+                        <p>Build, run, debug, compose, multi-stage builds, GPU containers, and production
+                            deployment patterns.</p>
+                    </a>
+                    <a class="card" href="kubectl-cheatsheet.html">
+                        <span class="tag warm">Orchestration</span>
+                        <h3>Kubectl Commands Cheat Sheet</h3>
+                        <p>Pods, deployments, services, scaling, secrets, debugging, HPA, rolling updates,
+                            and GPU workload manifests.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="track-companions">
+            <div class="shell">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Unified access</p>
+                        <h2>Companion documentation collections</h2>
+                    </div>
+                    <p>These are separate doc sets in sibling folders, surfaced here so this homepage becomes the single
+                        entry point for the full learning workspace.</p>
+                </div>
+                <div class="grid three">
+                    <a class="card" href="cp-index.html">
+                        <span class="tag warm">Comparisons</span>
+                        <h3>Cross-Platform AI Comparison Guide</h3>
+                        <p>LLM providers, RAG strategies, coding AI tools, agentic frameworks, orchestration platforms,
+                            feature stores, caching, and enterprise agent development kits.</p>
+                    </a>
+                    <a class="card" href="lg-index.html">
+                        <span class="tag warm">Hands-on journey</span>
+                        <h3>LangGraph Explicit Example Guide</h3>
+                        <p>A step-by-step LangGraph learning path from stateful workflows to routing, loops, tools,
+                            memory, and a complete agent build.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════════ Quick Revision ════════ -->
+        <section class="section">
+            <div class="shell">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Fast revision</p>
+                        <h2>Interview-ready mental checkpoints</h2>
+                    </div>
+                </div>
+                <div class="grid three">
+                    <div class="example">
+                        <h3>Statistics and metrics</h3>
+                        <p>Descriptive summarizes data. Inferential makes claims about a population. Accuracy misleads
+                            on imbalanced data. F1 balances precision and recall. Type 1 is a false positive. Type 2 is
+                            a miss.</p>
+                    </div>
+                    <div class="example">
+                        <h3>Classical ML</h3>
+                        <p>Linear regression has five testable assumptions. Lasso selects features. Random forest
+                            reduces variance. XGBoost often wins on tabular data. K-Means assumes spherical clusters.
+                        </p>
+                    </div>
+                    <div class="example">
+                        <h3>Training</h3>
+                        <p>Backpropagation computes gradients via the chain rule. SGD uses them to update parameters.
+                            They are not the same thing.</p>
+                    </div>
+                    <div class="example">
+                        <h3>Architectures</h3>
+                        <p>CNNs exploit spatial locality with shared filters. RNNs carry state over time but struggle
+                            long-range. Transformers use attention to relate any two tokens directly.</p>
+                    </div>
+                    <div class="example">
+                        <h3>NLP representations</h3>
+                        <p>CountVectorizer counts words. TF-IDF weights importance. Word2Vec learns semantics. BERT
+                            gives contextual embeddings where meaning changes with context.</p>
+                    </div>
+                    <div class="example">
+                        <h3>Production systems</h3>
+                        <p>RAG quality depends on retrieval, reranking, grounding, and evaluation. MCP standardizes tool
+                            discovery. gRPC is contract-first RPC. LangGraph manages stateful agent workflows.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="shell">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview mode</p>
+                        <h2>How to use these pages for preparation</h2>
+                    </div>
+                </div>
+                <div class="quick-recap">
+                    <div class="card">
+                        <h3>Read in track order</h3>
+                        <p>Start with statistics and metrics, then classical ML, then training, then architectures,
+                            then NLP, then production systems, and finally DevOps and deployment tools.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Practice tradeoff language</h3>
+                        <p>Precision vs recall, Lasso vs Ridge, RNN vs transformer, dense vs sparse retrieval, MCP vs
+                            custom integrations. Interviews reward crisp comparisons.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Use the questionnaire sections aloud</h3>
+                        <p>If you can answer the scenario questions cleanly without looking, you are close to interview
+                            ready.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>45 core pages covering statistics, classical ML, neural networks, transformers, modern vision,
+                multimodal systems, production AI systems, and DevOps tools, plus companion documentation collections
+                for cross-platform comparisons and LangGraph examples. Open locally in any browser.</p>
+            <div class="mini-links">
+                <a href="statistics-basics.html">Statistics</a>
+                <a href="evaluation-metrics.html">Metrics</a>
+                <a href="regression.html">Regression</a>
+                <a href="classification.html">Classification</a>
+                <a href="transformer-basics.html">Transformers</a>
+                <a href="vision-model-evolution.html">Vision</a>
+                <a href="vision-roadmap.html">Vision Roadmap</a>
+                <a href="rag.html">RAG</a>
+                <a href="docker-cheatsheet.html">Docker</a>
+                <a href="kubectl-cheatsheet.html">Kubectl</a>
+                <a href="cp-index.html">Cross-Platform AI</a>
+                <a href="lg-index.html">LangGraph Journey</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

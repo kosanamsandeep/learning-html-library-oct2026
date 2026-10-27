@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilot 05 · DevOps / SRE Copilot</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="cop">CP</span>Copilot · 05 DevOps/SRE</div>
+        <div class="links">
+            <a href="index.html">Copilots Hub</a>
+            <a href="04_data_analyst_copilot.html">← 04</a>
+            <a href="06_builder_copilot.html">Next: 06 →</a>
+        </div>
+    </div>
+
+    <div class="header cop">
+        <p class="badge">Build 05 · Advanced · "An on-call buddy"</p>
+        <h1>🛠️ DevOps / SRE Copilot</h1>
+        <p class="subtitle">A copilot that triages incidents: it pulls logs, metrics, and cluster state through
+            tools, correlates the signals against runbooks, proposes a <strong>root cause</strong> and a
+            <strong>fix</strong>, and can apply it — only with human approval.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section cop">
+            <h2>The story — why this copilot exists</h2>
+            <p>It's 3 a.m. A pod is crash-looping, an alert fires, and a sleepy engineer starts the same ritual:
+                check logs, describe the pod, look at recent deploys, grep the runbook. Mean-time-to-resolution
+                bleeds away in context-gathering before anyone even forms a hypothesis.</p>
+            <p>An SRE copilot does that legwork in seconds: it gathers every relevant signal in parallel,
+                correlates them, and presents a ranked root-cause hypothesis with a suggested fix — turning a
+                30-minute investigation into a 30-second briefing.</p>
+            <div class="callout fuchsia">
+                <strong>Inspired by:</strong> <code>k8sgpt-ai/k8sgpt</code> and
+                <code>robusta-dev/holmesgpt</code> — popular projects that bring LLM diagnosis to Kubernetes and
+                observability.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The triage flow</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    AL["🚨 Alert / on-call asks 'why is checkout down?'"] --> AG["SRE Copilot (agent)"]
+    AG --> GATHER["Gather signals in parallel"]
+    GATHER --> L["pod logs"]
+    GATHER --> M["metrics (CPU/mem/latency)"]
+    GATHER --> K["k8s state (events, restarts)"]
+    GATHER --> DEP["recent deploys"]
+    L --> CORR["Correlate + match runbooks (RAG)"]
+    M --> CORR
+    K --> CORR
+    DEP --> CORR
+    CORR --> RC["Ranked root-cause hypothesis + fix"]
+    RC --> APPROVE{"Apply fix?"}
+    APPROVE -->|human approves| ACT["kubectl rollout undo / scale"]
+    APPROVE -->|no| REPORT["Post briefing to Slack"]
+                </pre>
+                <p class="caption">Read-only diagnosis is automatic; any change to the cluster goes through an
+                    explicit human approval.</p>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — read-only diagnostic tools</h2>
+            <pre><code><span class="c-kw">from</span> langchain_core.tools <span class="c-kw">import</span> tool
+<span class="c-kw">import</span> subprocess
+
+<span class="c-kw">def</span> <span class="c-fn">_sh</span>(cmd: <span class="c-cls">list</span>[<span class="c-cls">str</span>]) -> <span class="c-cls">str</span>:
+    <span class="c-kw">return</span> subprocess.run(cmd, capture_output=<span class="c-kw">True</span>, text=<span class="c-kw">True</span>, timeout=<span class="c-cls">20</span>).stdout
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">pod_logs</span>(namespace: <span class="c-cls">str</span>, pod: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Return the last 200 log lines for a pod."""</span>
+    <span class="c-kw">return</span> _sh([<span class="c-str">"kubectl"</span>, <span class="c-str">"logs"</span>, <span class="c-str">"-n"</span>, namespace, pod, <span class="c-str">"--tail=200"</span>])
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">describe_pod</span>(namespace: <span class="c-cls">str</span>, pod: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Show events and status for a pod (restarts, OOMKilled, etc.)."""</span>
+    <span class="c-kw">return</span> _sh([<span class="c-str">"kubectl"</span>, <span class="c-str">"describe"</span>, <span class="c-str">"pod"</span>, <span class="c-str">"-n"</span>, namespace, pod])
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">recent_deploys</span>(namespace: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""List recent rollout history for the namespace."""</span>
+    <span class="c-kw">return</span> _sh([<span class="c-str">"kubectl"</span>, <span class="c-str">"rollout"</span>, <span class="c-str">"history"</span>, <span class="c-str">"deploy"</span>, <span class="c-str">"-n"</span>, namespace])
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">search_runbooks</span>(symptom: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Find runbook steps matching a symptom (RAG over the ops wiki)."""</span>
+    <span class="c-kw">return</span> runbook_retriever.invoke(symptom)</code></pre>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — the diagnosing agent</h2>
+            <pre><code><span class="c-kw">from</span> langgraph.prebuilt <span class="c-kw">import</span> create_react_agent
+
+SYSTEM = (
+    <span class="c-str">"You are an SRE copilot. Investigate the incident using the tools. "</span>
+    <span class="c-str">"Gather logs, pod state, and recent deploys, cross-check runbooks, then "</span>
+    <span class="c-str">"output: (1) most likely root cause, (2) evidence, (3) a recommended fix. "</span>
+    <span class="c-str">"NEVER change the cluster yourself — only recommend. Be concise."</span>
+)
+
+sre = create_react_agent(
+    <span class="c-str">"openai:gpt-4o"</span>,
+    tools=[pod_logs, describe_pod, recent_deploys, search_runbooks],
+    prompt=SYSTEM,
+)
+
+briefing = sre.invoke({<span class="c-str">"messages"</span>: [(<span class="c-str">"user"</span>,
+    <span class="c-str">"Checkout is throwing 500s in namespace 'prod'. What's wrong?"</span>)]})
+<span class="c-fn">print</span>(briefing[<span class="c-str">"messages"</span>][-<span class="c-cls">1</span>].content)
+<span class="c-com"># → "Root cause: deploy #47 set memory limit too low → pods OOMKilled.</span>
+<span class="c-com">#    Evidence: 'OOMKilled' in describe, restarts=8, deploy 6m ago.</span>
+<span class="c-com">#    Fix: kubectl rollout undo deploy/checkout -n prod"</span></code></pre>
+            <div class="callout fuchsia">
+                <strong>Diagnosis is safe; action is gated.</strong> Reading state can be fully autonomous.
+                Anything that mutates the cluster (rollback, scale, delete) must require explicit human
+                approval — the difference between a helpful copilot and an outage amplifier.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>Applying a fix — behind approval</h2>
+            <pre><code><span class="c-kw">from</span> langgraph.types <span class="c-kw">import</span> interrupt
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">rollback</span>(namespace: <span class="c-cls">str</span>, deploy: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Roll a deployment back to its previous revision (needs approval)."""</span>
+    ok = interrupt({<span class="c-str">"action"</span>: <span class="c-str">"rollback"</span>, <span class="c-str">"deploy"</span>: deploy, <span class="c-str">"ns"</span>: namespace})
+    <span class="c-kw">if</span> ok != <span class="c-str">"approve"</span>:
+        <span class="c-kw">return</span> <span class="c-str">"Rollback cancelled."</span>
+    <span class="c-kw">return</span> _sh([<span class="c-str">"kubectl"</span>, <span class="c-str">"rollout"</span>, <span class="c-str">"undo"</span>, <span class="c-str">f"deploy/{deploy}"</span>, <span class="c-str">"-n"</span>, namespace])</code></pre>
+        </div>
+
+        <div class="section cop">
+            <h2>Advantages this copilot brings</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Advantage</th>
+                        <th>Why it matters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Lower MTTR</td>
+                        <td>Signal-gathering and correlation happen in seconds.</td>
+                    </tr>
+                    <tr>
+                        <td>Less on-call toil</td>
+                        <td>The boring investigation is automated; humans decide.</td>
+                    </tr>
+                    <tr>
+                        <td>Knowledge capture</td>
+                        <td>Runbooks become an active resource, not a dusty wiki.</td>
+                    </tr>
+                    <tr>
+                        <td>Consistent triage</td>
+                        <td>Every incident gets the same thorough first look.</td>
+                    </tr>
+                    <tr>
+                        <td>Junior-friendly</td>
+                        <td>Less-experienced engineers get expert-level starting points.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section cop">
+            <h2>Best practices &amp; guardrails</h2>
+            <ul>
+                <li><strong>Read-only by default;</strong> mutations always require human approval.</li>
+                <li><strong>Scope credentials tightly</strong> — a dedicated, least-privilege service account.</li>
+                <li><strong>Time-box and sandbox tool calls</strong> so one hung command can't stall triage.</li>
+                <li><strong>Keep humans accountable</strong> — the copilot recommends; an engineer owns the
+                    action.</li>
+                <li><strong>Log the full investigation</strong> for the post-mortem and to improve runbooks.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="04_data_analyst_copilot.html"><span class="dir">Previous</span>
+                <div class="ttl">← 04 · Data Analyst</div>
+            </a>
+            <a class="next" href="06_builder_copilot.html"><span class="dir">Next</span>
+                <div class="ttl">06 · Builder Copilot →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Copilots · 05 of 06</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

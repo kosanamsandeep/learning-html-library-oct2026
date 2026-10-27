@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>07 · Performance optimisation — Latest Stack</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        pre.mermaid {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>LS</span>Latest Stack</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="slm.html">SLM</a>
+                <a href="litserve.html">LitServe</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Page 7 of 9</p>
+            <h1>Performance optimisation — making LLMs fast and cheap</h1>
+            <p class="lead">LLM inference is dominated by two costs: <strong>memory bandwidth</strong> (reading the
+                weights and KV cache from GPU HBM every token) and <strong>compute</strong> (matrix multiplies).
+                Every optimisation either shrinks the weights, reuses computation, or processes more requests per
+                forward pass.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · The full toolkit at a glance</h2>
+            <pre class="mermaid">
+flowchart TB
+  subgraph Shrink the weights
+    q[Quantisation<br/>FP16 -> INT8/INT4]
+    p[Pruning / distillation]
+  end
+  subgraph Reuse computation
+    kv[KV-cache reuse]
+    pc[Prompt caching]
+    spec[Speculative decoding]
+    pa[PagedAttention]
+  end
+  subgraph Saturate the GPU
+    cb[Continuous batching]
+    fa[FlashAttention 2/3]
+    ts[Tensor parallelism]
+  end
+  subgraph Skip the GPU
+    cpu[CPU inference<br/>llama.cpp GGUF]
+    edge[Edge runtimes<br/>ONNX, TFLite, MLX]
+  end
+            </pre>
+        </section>
+
+        <section class="card">
+            <h2>2 · Quantisation — the biggest single win</h2>
+            <p>Replace 16-bit weights with 8-, 4-, or 2-bit integers. Memory drops linearly, bandwidth-bound layers
+                speed up almost as much, quality loss is small if you use a good scheme.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Format</th>
+                        <th>Bits</th>
+                        <th>Speed vs FP16</th>
+                        <th>Quality</th>
+                        <th>Use case</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>FP16 / BF16</td>
+                        <td>16</td>
+                        <td>1×</td>
+                        <td>Reference</td>
+                        <td>Training, baseline</td>
+                    </tr>
+                    <tr>
+                        <td>FP8 (Hopper / Blackwell)</td>
+                        <td>8</td>
+                        <td>~1.7×</td>
+                        <td>Very close to FP16</td>
+                        <td>New GPUs (H100, B200)</td>
+                    </tr>
+                    <tr>
+                        <td>INT8 (SmoothQuant, LLM.int8())</td>
+                        <td>8</td>
+                        <td>~1.8×</td>
+                        <td>Near-FP16</td>
+                        <td>Any GPU</td>
+                    </tr>
+                    <tr>
+                        <td>INT4 (GPTQ, AWQ)</td>
+                        <td>4</td>
+                        <td>~2.5–3×</td>
+                        <td>~1–2 pt benchmark drop</td>
+                        <td>Single-GPU serving</td>
+                    </tr>
+                    <tr>
+                        <td>GGUF Q4_K_M / Q5_K_M</td>
+                        <td>~4–5</td>
+                        <td>Runs on CPU</td>
+                        <td>Good</td>
+                        <td>llama.cpp / Ollama / edge</td>
+                    </tr>
+                    <tr>
+                        <td>BitNet / 1.58-bit</td>
+                        <td>~1.6</td>
+                        <td>Massive</td>
+                        <td>Requires native-trained models</td>
+                        <td>Research / future edge</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>3 · Throughput tricks (server side)</h2>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>Continuous batching</h3>
+                    <p>Add new requests into the batch every token, evict finished ones. vLLM / TGI / TensorRT-LLM
+                        do this. 10–20× throughput vs static batching.</p>
+                </div>
+                <div class="mini good">
+                    <h3>PagedAttention</h3>
+                    <p>Treat the KV cache like virtual memory pages instead of one contiguous block. Eliminates
+                        fragmentation; vLLM's core trick.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Speculative decoding</h3>
+                    <p>A small draft model proposes K tokens; the big model verifies in one forward pass. 2–3× faster
+                        on the same hardware, identical output.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Prompt / prefix caching</h3>
+                    <p>If many requests share the same system prompt, cache its KV state. Anthropic and OpenAI both
+                        expose this; vLLM does it automatically.</p>
+                </div>
+                <div class="mini good">
+                    <h3>FlashAttention 2/3</h3>
+                    <p>Fused attention kernel that streams tiles through SRAM. 2–4× faster, less memory. Now the
+                        default in PyTorch / vLLM.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Tensor / pipeline parallelism</h3>
+                    <p>Shard weights across multiple GPUs. Needed once the model doesn't fit on one card.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · GPU vs CPU — when to leave the GPU</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Workload</th>
+                        <th>Pick</th>
+                        <th>Why</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Single-user 7B chat at &gt; 30 tok/s</td>
+                        <td>GPU (or Apple Silicon MLX, Groq LPU)</td>
+                        <td>Bandwidth wins.</td>
+                    </tr>
+                    <tr>
+                        <td>Single-user 7B chat at 8–15 tok/s</td>
+                        <td>CPU + llama.cpp (GGUF Q4)</td>
+                        <td>Acceptable for chat, $0 GPU bill.</td>
+                    </tr>
+                    <tr>
+                        <td>Many concurrent users</td>
+                        <td>GPU with vLLM / TGI</td>
+                        <td>Batching only pays on GPU.</td>
+                    </tr>
+                    <tr>
+                        <td>Embeddings / reranking</td>
+                        <td>GPU (small batch) or CPU (low QPS)</td>
+                        <td>Tiny models batch well on CPU too.</td>
+                    </tr>
+                    <tr>
+                        <td>Mobile / browser</td>
+                        <td>WebGPU, CoreML, ONNX Runtime Mobile, MLC LLM</td>
+                        <td>No server at all.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>5 · Caching — the cheapest 10× you'll ever get</h2>
+            <ul>
+                <li><strong>Response cache</strong> — hash the full prompt; return prior answer for identical inputs.
+                </li>
+                <li><strong>Semantic cache</strong> — embed the prompt; return a prior answer if cosine sim &gt; 0.95.
+                    (GPTCache, Redis Vector.)</li>
+                <li><strong>Prompt-prefix cache</strong> — server-side KV reuse for shared system prompts. Free
+                    50–90% latency on the prefix.</li>
+                <li><strong>Tool-call cache</strong> — memoise deterministic tools (currency conversion, lookups) for
+                    a TTL.</li>
+                <li><strong>Embedding cache</strong> — embeddings are deterministic per (text, model); cache by hash.
+                </li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>6 · A practical playbook in order</h2>
+            <ol>
+                <li><strong>Measure first.</strong> Profile with <code>nvtop</code>, vLLM metrics, OpenTelemetry. Find
+                    the bottleneck.</li>
+                <li><strong>Add prompt caching.</strong> Anthropic / OpenAI APIs: one flag. Self-hosted vLLM: automatic.
+                </li>
+                <li><strong>Quantise to INT8 or INT4 (AWQ).</strong> 2–3× free.</li>
+                <li><strong>Switch to vLLM / TGI / TensorRT-LLM.</strong> Continuous batching + PagedAttention.</li>
+                <li><strong>Turn on speculative decoding</strong> if your model + draft pair are supported.</li>
+                <li><strong>Right-size the model.</strong> A fine-tuned 3B will beat an unmodified 70B on a narrow task
+                    at 1/30 the cost.</li>
+                <li><strong>Move embeddings + reranking off the LLM GPU</strong> onto cheap CPUs or Inferentia.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>7 · Quick example — quantise + serve with vLLM</h2>
+            <pre><code># Quantise a model to AWQ INT4 (one-time)
+pip install autoawq
+python -c "
+from awq import AutoAWQForCausalLM
+from transformers import AutoTokenizer
+m = AutoAWQForCausalLM.from_pretrained('meta-llama/Llama-3.1-8B-Instruct')
+t = AutoTokenizer.from_pretrained('meta-llama/Llama-3.1-8B-Instruct')
+m.quantize(t, quant_config={'w_bit': 4, 'q_group_size': 128, 'zero_point': True})
+m.save_quantized('Llama-3.1-8B-Instruct-AWQ')
+t.save_pretrained('Llama-3.1-8B-Instruct-AWQ')
+"
+
+# Serve with vLLM (continuous batching, paged attention, prefix cache — all on)
+pip install vllm
+vllm serve ./Llama-3.1-8B-Instruct-AWQ \
+  --quantization awq \
+  --enable-prefix-caching \
+  --max-num-seqs 256 \
+  --gpu-memory-utilization 0.9
+</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://arxiv.org/abs/2208.07339" target="_blank" rel="noopener">LLM.int8() —
+                    Dettmers et al.</a>
+                <a class="source" href="https://arxiv.org/abs/2210.17323" target="_blank" rel="noopener">GPTQ paper</a>
+                <a class="source" href="https://arxiv.org/abs/2306.00978" target="_blank" rel="noopener">AWQ paper</a>
+                <a class="source" href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">vLLM /
+                    PagedAttention paper</a>
+                <a class="source" href="https://arxiv.org/abs/2307.08691" target="_blank"
+                    rel="noopener">FlashAttention-2</a>
+                <a class="source" href="https://arxiv.org/abs/2302.01318" target="_blank" rel="noopener">Speculative
+                    decoding (Chen et al.)</a>
+                <a class="source" href="https://docs.vllm.ai/" target="_blank" rel="noopener">vLLM docs</a>
+                <a class="source" href="https://github.com/huggingface/text-generation-inference" target="_blank"
+                    rel="noopener">HuggingFace TGI</a>
+                <a class="source" href="https://github.com/NVIDIA/TensorRT-LLM" target="_blank" rel="noopener">NVIDIA
+                    TensorRT-LLM</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching"
+                    target="_blank" rel="noopener">Anthropic — Prompt caching</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample 2 — Codex (OpenAI) in your SDLC</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../openai_agents_sdk.html">Agents SDK</a>
+                <a href="../claude_code_in_sdlc/README.html">Claude Code sample</a>
+                <a href="../multi_scenario_playbook.html">Scenarios</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag oai">Sample 2 · Codex CLI + Agents SDK</span></p>
+            <h1>Drop Codex into a real Python repo — <code>AGENTS.md</code> + a small Agents-SDK orchestrator</h1>
+            <p class="lead">A second small example, this time on the OpenAI side. Codex CLI is the local agent that
+                lives in your terminal; the OpenAI Agents SDK is the Python framework you use when you need an in-app
+                agent. Both share a convention: <code>AGENTS.md</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>What is in this sample</h2>
+            <pre><code>codex_in_sdlc/
+├── README.html             ← you are here
+├── AGENTS.md               ← project-wide rules Codex CLI / Agents SDK read
+├── requirements.txt
+├── src/
+│   └── reviewer.py         ← a small "code reviewer" agent built on the SDK
+└── tests/
+    └── test_reviewer_smoke.py</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Two ways to use Codex on the same repo</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Surface</th>
+                        <th>What it is</th>
+                        <th>When to reach for it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Codex CLI</strong></td>
+                        <td>An interactive terminal agent (<code>npm i -g @openai/codex</code> or
+                            <code>brew install codex</code>) that opens a session in your repo and reads
+                            <code>AGENTS.md</code>.</td>
+                        <td>Local refactors, scaffolding, one-off "explain this script" sessions, sandboxed experiments.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>OpenAI Agents SDK</strong></td>
+                        <td>A Python package — <code>pip install openai-agents</code> — to build agents that ship with
+                            your application.</td>
+                        <td>Anything that runs in production: support bots, automated reviewers, RAG agents, ETL
+                            helpers.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout oai"><strong>One contract, two surfaces:</strong> a well-written <code>AGENTS.md</code>
+                plus narrow, well-named tools work for both.</div>
+        </section>
+
+        <section class="card">
+            <h2><code>AGENTS.md</code> — what we put in it</h2>
+            <p>The convention is simple: a top-level file describing the repo, its commands, and its conventions. Codex
+                CLI loads it automatically; you can also pass it as a system prompt fragment when invoking the Agents
+                SDK.</p>
+            <pre><code># Project: review-bot
+
+## What this is
+A small example of an automated code reviewer using the OpenAI Agents SDK.
+
+## Build &amp; test
+- Python 3.11+
+- Install: `pip install -r requirements.txt`
+- Run smoke tests: `pytest -q`
+
+## Conventions
+- Type hints on every public function.
+- Tools live in `src/` next to the agent that owns them.
+- All file paths passed to tools must be absolute (lessons from Anthropic's
+  SWE-bench post — relative paths break when the agent changes directory).
+
+## Don't touch
+- `src/reviewer.py:SYSTEM_PROMPT` — owned by the prompt-eval CI job.
+
+## When in doubt
+Open a PR. Never run a tool against production data from this repo.</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>The reviewer agent — built with the SDK</h2>
+            <p><code>src/reviewer.py</code> sketches a one-agent workflow that reads a diff, runs tests, and writes a
+                review. It uses <code>@function_tool</code> to expose three Python functions to the model.</p>
+
+            <h3>Why this shape?</h3>
+            <ul>
+                <li><strong>Augmented LLM</strong> first (one agent + tools) — start simple per Anthropic's guidance.
+                </li>
+                <li><strong>Junior-developer docstrings</strong> on every tool (when to use, when not to use, an
+                    example).</li>
+                <li><strong>Absolute paths</strong> for file arguments — poka-yoke against the relative-path failure
+                    mode.</li>
+                <li><strong>Stop conditions</strong> — the runner caps turns; the reviewer agent has a single explicit
+                    "I'm done" tool to call.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Hello-world flow</h2>
+            <ol>
+                <li>Set <code>OPENAI_API_KEY</code>.</li>
+                <li>Run <code>python -m src.reviewer review path/to/diff.patch</code> from this folder.</li>
+                <li>The agent reads the diff, runs tests, drafts a review, and prints it.</li>
+                <li>You read the review, decide what to merge, and (in your real repo) post the comments via your CI.
+                </li>
+            </ol>
+            <p class="quiet">In this sample we keep the entry point as a <code>__main__</code> stub and don't actually
+                call the OpenAI API — the file is a <em>template</em>. The smoke test confirms the structure without
+                spending tokens.</p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this sample</h2>
+            <ul>
+                <li><a href="AGENTS.md">AGENTS.md</a> — the convention file.</li>
+                <li><a href="src/reviewer.py">src/reviewer.py</a> — the agent + tools.</li>
+                <li><a href="tests/test_reviewer_smoke.py">tests/test_reviewer_smoke.py</a> — smoke tests.</li>
+                <li><a href="requirements.txt">requirements.txt</a></li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Adoption checklist for your real repo</h2>
+            <ol>
+                <li>Add <code>AGENTS.md</code> at root with the build/test commands.</li>
+                <li>If you use Codex CLI, install it (<code>npm i -g @openai/codex</code>) and run <code>codex</code> in
+                    the repo. Check that it reads <code>AGENTS.md</code> on the first turn.</li>
+                <li>Pick one in-app agentic feature (a reviewer, a Q&amp;A bot, a deploy assistant) and build it with
+                    the Agents SDK as a single agent first.</li>
+                <li>Add tracing — when an agent goes wrong in production, the trace is your debugger.</li>
+                <li>Add a guardrail before going live: a small parallel check that refuses unsafe input or
+                    schema-invalid output.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://github.com/openai/codex" target="_blank"
+                    rel="noopener">github.com/openai/codex</a>
+                <a class="source" href="https://openai.com/index/introducing-codex/" target="_blank"
+                    rel="noopener">OpenAI — Introducing Codex</a>
+                <a class="source" href="https://openai.github.io/openai-agents-python/" target="_blank"
+                    rel="noopener">OpenAI Agents SDK docs</a>
+                <a class="source" href="https://platform.openai.com/docs/guides/function-calling" target="_blank"
+                    rel="noopener">OpenAI function calling guide</a>
+                <a class="source" href="https://agents.md/" target="_blank" rel="noopener">agents.md — convention
+                    site</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

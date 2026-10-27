@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Side Projects — FastAPI, LangGraph, Testing, Asyncio</title>
+    <style>
+        :root {
+            --bg: #f7f7fb;
+            --paper: #ffffff;
+            --ink: #18181b;
+            --muted: #5f6472;
+            --line: #dadde7;
+            --accent: #4338ca;
+            --accent-soft: #e0e7ff;
+            --green: #047857;
+            --green-soft: #d1fae5;
+            --shadow: 0 18px 40px rgba(24, 24, 27, 0.08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.6;
+            background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+        }
+
+        .shell {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem;
+        }
+
+        header {
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.88);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .brand {
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .brand span {
+            display: inline-grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            margin-right: 0.5rem;
+            border-radius: 6px;
+            color: white;
+            background: var(--accent);
+        }
+
+        .top-links {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .top-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.92rem;
+        }
+
+        .hero {
+            padding-top: 3rem;
+            padding-bottom: 2rem;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+        }
+
+        h1 {
+            max-width: 860px;
+            margin: 0.3rem 0 0.75rem;
+            font-size: clamp(2rem, 5vw, 3.4rem);
+            line-height: 1.06;
+        }
+
+        .lead {
+            max-width: 780px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 1.08rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .card {
+            display: block;
+            min-height: 260px;
+            padding: 1.35rem;
+            color: var(--ink);
+            text-decoration: none;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+
+        .card h2 {
+            margin: 0.4rem 0 0.5rem;
+            font-size: 1.45rem;
+        }
+
+        .card p {
+            margin: 0 0 1rem;
+            color: var(--muted);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.18rem 0.5rem;
+            border-radius: 999px;
+            color: var(--accent);
+            background: var(--accent-soft);
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .tag.green {
+            color: var(--green);
+            background: var(--green-soft);
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 1.1rem;
+            color: var(--muted);
+        }
+
+        .note {
+            margin-top: 1.25rem;
+            padding: 1rem 1.2rem;
+            color: var(--muted);
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+
+        code {
+            font-family: "Cascadia Mono", "Consolas", monospace;
+            font-size: 0.9em;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            padding: 0.05rem 0.32rem;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>SP</span>Side Projects</a>
+            <nav class="top-links">
+                <a href="fastapi_projects/index.html">FastAPI</a>
+                <a href="langgraph_projects/index.html">LangGraph</a>
+                <a href="testing_projects/index.html">Testing</a>
+                <a href="asyncio_projects/index.html">Asyncio</a>
+                <a href="handle_requests/index.html">HTTP/Requests</a>
+                <a href="typing_annotations/index.html">Typing</a>
+                <a href="autogen_projects/index.html">AutoGen</a>
+                <a href="crewai_projects/index.html">CrewAI</a>
+                <a href="mcp_projects/index.html">MCP</a>
+                <a href="copilots/index.html">Copilots</a>
+                <a href="cyber_security_designs/index.html">Cyber Security</a>
+                <a href="graph_db/index.html">Graph DB</a>
+                <a href="redis_db/index.html">Redis</a>
+                <a href="personify/index.html">Personify</a>
+                <a href="agent_frameworks_comparison/index.html">Agents Compare</a>
+                <a href="../README.html">Workspace</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Applied builds · Framework-focused learning</p>
+            <h1>Side projects grouped by technology, so each track is easy to grow</h1>
+            <p class="lead">This folder is the practical lab for the workspace. FastAPI projects live in
+                <code>fastapi_projects/</code>, LangGraph agents live in <code>langgraph_projects/</code>, and
+                pytest-based testing builds live in <code>testing_projects/</code>, and async Python examples live in
+                <code>asyncio_projects/</code>. Each track has its own index so new stacks can be added without mixing
+                files at the root.
+            </p>
+        </section>
+
+        <section class="grid" aria-label="Project tracks">
+            <a class="card" href="fastapi_projects/index.html">
+                <span class="tag">FASTAPI PROJECTS</span>
+                <h2>Production-minded API builds</h2>
+                <p>Six projects from beginner routes to async databases, httpx aggregation, JWT auth, and a
+                    production-style service with settings, logging, health checks, background tasks, and tests.</p>
+                <ul>
+                    <li>FastAPI vs Flask</li>
+                    <li>Async / await explained</li>
+                    <li>httpx patterns</li>
+                    <li>Swagger, DI, testing, deployment practices</li>
+                </ul>
+            </a>
+
+            <a class="card" href="langgraph_projects/index.html">
+                <span class="tag green">LANGGRAPH PROJECTS</span>
+                <h2>Stateful agent workflows</h2>
+                <p>Task-by-task LangGraph learning journey covering state, accumulation, nodes, routing, loops,
+                    tools, memory, and a complete research assistant-style agent.</p>
+                <ul>
+                    <li>Sequential chains vs stateful graphs</li>
+                    <li>StateGraph progression</li>
+                    <li>Routing and loops</li>
+                    <li>Tools, memory, and full-agent composition</li>
+                </ul>
+            </a>
+
+            <a class="card" href="testing_projects/index.html">
+                <span class="tag">TESTING PROJECTS</span>
+                <h2>Python testing, beginner to advanced</h2>
+                <p>Ten progressive pytest projects: from your first assertion to mocks, TDD, database integration,
+                    FastAPI tests, real end-to-end runs, property-based testing, and a full test pyramid example.</p>
+                <ul>
+                    <li>Why testing matters (and what breaks without it)</li>
+                    <li>Unit, integration, and end-to-end tests explained</li>
+                    <li>Fixtures, parametrize, mocking, coverage</li>
+                    <li>TDD vs test-after, and how to choose</li>
+                </ul>
+            </a>
+
+            <a class="card" href="asyncio_projects/index.html">
+                <span class="tag">ASYNCIO PROJECTS</span>
+                <h2>Async Python concurrency</h2>
+                <p>Five projects from beginner <code>async</code>/<code>await</code> to concurrent API calls, queue
+                    workers, resilient orchestration, and a TCP chat server with many clients on one event loop.</p>
+                <ul>
+                    <li>Event loop, coroutine, task, await, gather</li>
+                    <li>Timeouts, retries, semaphores, cancellation</li>
+                    <li>Producer-consumer queues and backpressure</li>
+                    <li>Async streams and TCP servers</li>
+                </ul>
+            </a>
+
+            <a class="card" href="handle_requests/index.html">
+                <span class="tag green">HANDLE REQUESTS</span>
+                <h2>HTTP, requests, gRPC, curl & Auth</h2>
+                <p>The full tour of sending a request and getting a response: how the <code>requests</code>
+                    library works, every HTTP verb and payload type, status codes 1xx–5xx with memory tricks,
+                    REST vs gRPC, curl ↔ Python translation, and every auth method explained.</p>
+                <ul>
+                    <li>requests internals + verbs + payloads</li>
+                    <li>Status codes 1xx → 5xx with mnemonics</li>
+                    <li>HTTP vs gRPC, curl ↔ requests cheat sheet</li>
+                    <li>Cookies, JWT, OAuth, Basic, mTLS — when to use which</li>
+                </ul>
+            </a>
+
+            <a class="card" href="typing_annotations/index.html">
+                <span class="tag">TYPING CHEAT SHEET</span>
+                <h2>Python type annotations — every one, with examples</h2>
+                <p>A single-page reference for every annotation in <code>typing</code>: primitives,
+                    containers, <code>Optional</code>, <code>Union</code>, <code>Callable</code>,
+                    <code>TypeVar</code>, <code>Literal</code>, <code>TypedDict</code>, <code>Protocol</code>,
+                    <code>Self</code>, and more — with practice quizzes.
+                </p>
+                <ul>
+                    <li>The three-bucket mental model</li>
+                    <li>Old <code>typing.List</code> vs modern <code>list[X]</code></li>
+                    <li>Generics, Protocols, TypedDicts</li>
+                    <li>Look-at-it practice questions with answers</li>
+                </ul>
+            </a>
+        </section>
+
+        <section class="note"
+            style="margin-top:1.5rem;background:linear-gradient(135deg,#eef2ff,#fff7ed);border-color:#c7d2fe">
+            <strong style="color:#4338ca">⭐ New — Agentic frameworks compared:</strong> LangGraph vs AutoGen vs
+            CrewAI, with incremental basic→advanced builds for each and a side-by-side
+            <a href="agent_frameworks_comparison/index.html" style="color:#4338ca;font-weight:700">"what stands
+                first"</a>
+            decision guide.
+        </section>
+
+        <section class="grid" aria-label="Agent framework tracks" style="margin-top:1rem">
+            <a class="card" href="agent_frameworks_comparison/index.html">
+                <span class="tag green">AGENTS · COMPARE</span>
+                <h2>LangGraph vs AutoGen vs CrewAI</h2>
+                <p>The same research-assistant task built in all three frameworks, a feature-by-feature
+                    comparison table, abstraction-level diagrams, and a decision flowchart for which one stands
+                    first for your use case.</p>
+                <ul>
+                    <li>One-sentence summary of each framework</li>
+                    <li>Identical task coded three ways</li>
+                    <li>Feature matrix with winners highlighted</li>
+                    <li>"What stands first" decision guide</li>
+                </ul>
+            </a>
+
+            <a class="card" href="autogen_projects/index.html">
+                <span class="tag">AUTOGEN PROJECTS</span>
+                <h2>Conversational multi-agent (v0.4)</h2>
+                <p>Microsoft AutoGen from a single <code>AssistantAgent</code> to multi-agent group chats:
+                    teams, tools, <code>SelectorGroupChat</code>, human-in-the-loop, state save/load, and
+                    OpenTelemetry tracing.</p>
+                <ul>
+                    <li>Single agent + model clients</li>
+                    <li>RoundRobin teams &amp; termination conditions</li>
+                    <li>Function/tool calling with reflection</li>
+                    <li>Selector teams, UserProxy, observability</li>
+                </ul>
+            </a>
+
+            <a class="card" href="crewai_projects/index.html">
+                <span class="tag">CREWAI PROJECTS</span>
+                <h2>Role-based agent crews</h2>
+                <p>CrewAI from one <code>Agent</code>/<code>Task</code>/<code>Crew</code> to sequential and
+                    hierarchical crews, built-in &amp; custom tools, event-driven <code>Flows</code>, memory,
+                    and planning.</p>
+                <ul>
+                    <li>Role / goal / backstory agents</li>
+                    <li>Sequential vs hierarchical process</li>
+                    <li>SerperDevTool &amp; custom <code>@tool</code></li>
+                    <li>Flows, memory, planning, AgentOps</li>
+                </ul>
+            </a>
+
+            <a class="card" href="mcp_projects/index.html">
+                <span class="tag green">MCP × LANGGRAPH</span>
+                <h2>Model Context Protocol tools</h2>
+                <p>Five builds for the "USB-C of AI tools": write MCP servers with <code>FastMCP</code>, plug
+                    their tools into a <code>LangGraph</code> agent via <code>langchain-mcp-adapters</code>, add
+                    resources &amp; prompts, and consume ready-made public servers.</p>
+                <ul>
+                    <li>Build a FastMCP server (<code>@mcp.tool</code>)</li>
+                    <li>Use MCP tools in a LangGraph ReAct agent</li>
+                    <li>Resources, prompts &amp; multi/remote servers</li>
+                    <li>Public servers (registry, Smithery), auth, memory</li>
+                </ul>
+            </a>
+
+            <a class="card" href="copilots/index.html">
+                <span class="tag green">COPILOTS</span>
+                <h2>6 purpose-built AI copilots</h2>
+                <p>Rebuild the ideas behind the most-starred copilots on GitHub: a docs Q&amp;A bot, an
+                    auto PR reviewer, a support agent, a talk-to-your-DB analyst, an SRE incident copilot, and a
+                    multi-agent software builder — each with the story, architecture, and advantages.</p>
+                <ul>
+                    <li>Docs Q&amp;A (RAG) &amp; code-review copilots</li>
+                    <li>Support agent with tools + escalation (HITL)</li>
+                    <li>NL→SQL analyst &amp; DevOps incident triage</li>
+                    <li>Capstone: multi-agent builder that ships code</li>
+                </ul>
+            </a>
+        </section>
+
+        <section class="note"
+            style="margin-top:1.5rem;background:linear-gradient(135deg,#fff1f2,#fef2f2);border-color:#fecdd3">
+            <strong style="color:#be123c">🛡️ New — Cyber Security Designs:</strong> a defensive engineering
+            track for the Python + FastAPI + <code>requests</code> stack — injection, auth/IDOR, secrets &amp;
+            TLS, API abuse, supply chain &amp; SSRF, plus an
+            <a href="cyber_security_designs/index.html" style="color:#be123c;font-weight:700">ethical hacker's
+                playbook</a> that maps each attack phase to a defense.
+        </section>
+
+        <section class="grid" aria-label="Security track" style="margin-top:1rem">
+            <a class="card" href="cyber_security_designs/index.html">
+                <span class="tag green">CYBER SECURITY DESIGNS</span>
+                <h2>Build best-in-class, low-vulnerability apps</h2>
+                <p>Think like an ethical hacker, defend like an architect. Six disciplines map the OWASP Top 10
+                    onto the exact code you write — with vulnerable-vs-hardened examples for FastAPI, Pydantic,
+                    JWT, and the <code>requests</code> library, and paste-into-PR checklists.</p>
+                <ul>
+                    <li>Injection, validation &amp; output encoding</li>
+                    <li>Auth, JWT pitfalls &amp; IDOR/BOLA (the #1 API risk)</li>
+                    <li>Secrets, TLS, headers, CORS, rate limiting &amp; SSRF</li>
+                    <li>Supply chain, secure SDLC &amp; an ethical hacker playbook</li>
+                </ul>
+            </a>
+        </section>
+
+        <section class="note"
+            style="margin-top:1.5rem;background:linear-gradient(135deg,#ecfdf5,#f0fdfa);border-color:#a7f3d0">
+            <strong style="color:#0b7a5d">◆ New — Graph DB Mastery:</strong> go from zero to expert on graph
+            databases and Cypher — free local Neo4j setup, a paste-in practice dataset, basics → advanced queries,
+            performance tuning, the real power vs other databases, and
+            <a href="graph_db/index.html" style="color:#0b7a5d;font-weight:700">14 graded practice tests</a>
+            to prove you've mastered it.
+        </section>
+
+        <section class="grid" aria-label="Graph database track" style="margin-top:1rem">
+            <a class="card" href="graph_db/index.html">
+                <span class="tag green">GRAPH DB MASTERY</span>
+                <h2>Knowledge graphs &amp; Cypher, zero to expert</h2>
+                <p>An 8-chapter track on graph databases with Neo4j: install it free locally, load a social +
+                    e-commerce dataset, and learn Cypher incrementally with mermaid diagrams, memorable
+                    mnemonics, recommendation/fraud/GraphRAG use cases, and graded quizzes.</p>
+                <ul>
+                    <li>Free local setup (Desktop / Docker / Aura)</li>
+                    <li>Think in graphs vs relational/document DBs</li>
+                    <li>Cypher: MATCH → traversals → shortestPath, indexes, GDS</li>
+                    <li>When to use a graph DB (and when not) + practice tests</li>
+                </ul>
+            </a>
+        </section>
+
+        <section class="note"
+            style="margin-top:1.5rem;background:linear-gradient(135deg,#fef2f2,#fff7f6);border-color:#f3c5bf">
+            <strong style="color:#dc382d">◆ New — Redis Mastery:</strong> go from zero to expert on Redis — free
+            local install, every core data structure, a paste-in store dataset, the patterns Redis is famous for
+            (caching, sessions, rate limiting, leaderboards, queues, pub/sub), persistence &amp; performance, and
+            <a href="redis_db/index.html" style="color:#dc382d;font-weight:700">15 graded practice tests</a>
+            to prove you've mastered it.
+        </section>
+
+        <section class="grid" aria-label="Redis track" style="margin-top:1rem">
+            <a class="card" href="redis_db/index.html">
+                <span class="tag green">REDIS MASTERY</span>
+                <h2>In-memory data store, zero to expert</h2>
+                <p>An 8-chapter track on Redis: install it free locally, talk to it with <code>redis-cli</code>,
+                    master strings/lists/hashes/sets/sorted-sets, load a store dataset, and build the real patterns
+                    (cache-aside, sessions, rate limiting, leaderboards, queues) with mermaid diagrams and graded
+                    quizzes.</p>
+                <ul>
+                    <li>Free local setup (Docker / WSL / native / Redis Cloud)</li>
+                    <li>Think in keys &amp; structures vs SQL/Mongo/graph</li>
+                    <li>Data types, TTLs, atomic ops, transactions, Lua, streams</li>
+                    <li>When to use Redis (and when not) + practice tests</li>
+                </ul>
+            </a>
+        </section>
+
+        <section class="note"
+            style="margin-top:1.5rem;background:linear-gradient(135deg,#eef0fb,#f5f3ff);border-color:#c7cdf3">
+            <strong style="color:#4338ca">◆ New — Personify-Service, explained:</strong> a guided reading of a
+            real-world Domain-Driven Design Python micro-service (Tornado + Postgres + Mongo + MinIO). See the
+            layered architecture, end-to-end request lifecycle, the design patterns it uses, how to read the
+            codebase, and a
+            <a href="personify/index.html" style="color:#4338ca;font-weight:700">self-assessment to gauge your level</a>
+            — all with mermaid diagrams and real code.
+        </section>
+
+        <section class="grid" aria-label="Personify code reading guide" style="margin-top:1rem">
+            <a class="card" href="personify/index.html">
+                <span class="tag green">CODE READING · DDD</span>
+                <h2>Personify-Service, read like an architect</h2>
+                <p>A 5-chapter walkthrough of a production-shaped service: the four DDD layers and the dependency
+                    rule, a request traced socket-to-database, the patterns (Repository, Unit of Work, Factory,
+                    Adapter, DI, Generics) with real excerpts, and a reading method you can reuse on any codebase.</p>
+                <ul>
+                    <li>DDD layers: interfaces · app · domain · infra</li>
+                    <li>Request lifecycle: handler → service → UoW → repository → DB</li>
+                    <li>8 design patterns named, located &amp; justified</li>
+                    <li>"Where do I stand?" self-assessment + best-practice checklist</li>
+                </ul>
+            </a>
+        </section>
+
+        <section class="note">
+            <strong>Naming rule:</strong> keep this folder for practical build tracks. Add future stacks as sibling
+            folders such as <code>django_projects/</code> or <code>streamlit_projects/</code>
+            instead of placing files directly under <code>06_side_projects/</code>.
+        </section>
+    </main>
+</body>
+
+</html>

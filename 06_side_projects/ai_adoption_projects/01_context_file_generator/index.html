@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Context File Generator</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="brand" href="../"><span>AI</span>AI Adoption Projects</a>
+  <div class="nav-links">
+    <a href="../">Hub</a>
+    <a href="../02_minimal_mcp_server/">MCP Server</a>
+    <a href="../03_agent_audit_trail_hook/">Audit Hook</a>
+    <a href="../04_agent_router/">Agent Router</a>
+  </div>
+</nav>
+
+<main class="shell">
+  <section class="hero">
+    <p class="eyebrow">Project 01</p>
+    <h1>Context File Generator</h1>
+    <p class="subtitle">
+      A CLI script that reads a canonical <code>CLAUDE.md</code> and auto-generates
+      <code>.cursorrules</code>, <code>copilot-instructions.md</code>, and <code>CODEX.md</code> —
+      keeping every AI tool in your ecosystem singing from the same songsheet.
+    </p>
+  </section>
+
+  <section class="card">
+    <span class="tag">OVERVIEW</span>
+    <h2>Why generate context files?</h2>
+    <p>
+      Modern developers work with multiple AI coding assistants: Claude Code for architecture-level work,
+      Cursor for inline editing, GitHub Copilot for autocomplete, and custom agents that need a CODEX.
+      Each tool reads its own context file with a different format, location, and scope.
+    </p>
+    <p>
+      Without a <strong>single source of truth</strong>, teams drift: conventions fixed in
+      <code>CLAUDE.md</code> never make it to <code>.cursorrules</code>, Copilot gets different
+      instructions, and new hires are confused about which file to trust. The generator solves this by
+      treating <code>CLAUDE.md</code> as the canonical file and rendering every tool-specific format
+      from it on every change.
+    </p>
+    <div class="callout">
+      <strong>Core principle:</strong> One canonical context file, many tool-specific renderings.
+      Never repeat your project conventions again.
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="tag indigo">ARCHITECTURE</span>
+    <h2>Generation pipeline</h2>
+
+    <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    A[CLAUDE.md<br/>Canonical Source] --> B[Context File Generator]
+    B --> C[.cursorrules<br/>Cursor IDE]
+    B --> D[copilot-instructions.md<br/>GitHub Copilot]
+    B --> E[CODEX.md<br/>Custom Agents]
+    B --> F[cline.md<br/>Cline / Continue]
+    B --> G[.windsurfrules<br/>Windsurf]
+
+    subgraph Templates["Template Renderer"]
+        T1["Jinja2 / string<br/>templates"]
+    end
+
+    B --> Templates
+
+    style A fill:#ccfbf1,stroke:#0f766e,stroke-width:2px
+    style B fill:#e0e7ff,stroke:#4338ca,stroke-width:2px
+    style C fill:#fef3c7,stroke:#d97706
+    style D fill:#fef3c7,stroke:#d97706
+    style E fill:#fef3c7,stroke:#d97706
+    style F fill:#fef3c7,stroke:#d97706
+    style G fill:#fef3c7,stroke:#d97706
+</pre>
+      <div class="caption">CLAUDE.md passes through template rendering to produce every tool-specific context file.</div>
+    </div>
+
+    <p>The generator is a Python CLI that:</p>
+    <ol>
+      <li><strong>Parses</strong> CLAUDE.md, extracting sections like "Project Overview", "Tech Stack", "Conventions", "Architecture Decisions", and "Testing Patterns".</li>
+      <li><strong>Maps</strong> each section to the target file format — for example, architecture decisions become a tree-sitter context comment in <code>.cursorrules</code>, while they become a bullet list in <code>copilot-instructions.md</code>.</li>
+      <li><strong>Renders</strong> each target file through a Jinja2 template that respects the exact file format, comment style, and structure expected by each tool.</li>
+      <li><strong>Writes</strong> the rendered files to the project root, with a summary of what changed.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <span class="tag green">STARTER CODE</span>
+    <h2>Python CLI — context_file_generator.py</h2>
+    <p>The script below reads <code>CLAUDE.md</code>, loads Jinja2 templates from a <code>templates/</code>
+    folder, and writes out all target context files. Run it with <code>python generate.py</code> or
+    as a pre-commit hook to keep files in sync.</p>
+
+<pre><code><span class="c-com">#!/usr/bin/env python3</span>
+<span class="c-com">"""context_file_generator.py — Read CLAUDE.md, write every tool context file."""</span>
+
+<span class="c-kw">import</span> pathlib
+<span class="c-kw">import</span> re
+<span class="c-kw">import</span> argparse
+<span class="c-kw">from</span> datetime <span class="c-kw">import</span> date
+<span class="c-kw">from</span> jinja2 <span class="c-kw">import</span> Environment, FileSystemLoader
+
+<span class="c-com"># ---------- canonical source ----------</span>
+ROOT = pathlib.Path(__file__).resolve().parent
+CLAUDEMD = ROOT / <span class="c-str">"CLAUDE.md"</span>
+TEMPLATES = ROOT / <span class="c-str">"templates"</span>
+OUTPUTS = {
+    <span class="c-str">".cursorrules"</span>:           TEMPLATES / <span class="c-str">"cursorrules.j2"</span>,
+    <span class="c-str">"copilot-instructions.md"</span>: TEMPLATES / <span class="c-str">"copilot.j2"</span>,
+    <span class="c-str">"CODEX.md"</span>:                TEMPLATES / <span class="c-str">"codex.j2"</span>,
+    <span class="c-str">"cline.md"</span>:                TEMPLATES / <span class="c-str">"cline.j2"</span>,
+    <span class="c-str">".windsurfrules"</span>:          TEMPLATES / <span class="c-str">"windsurf.j2"</span>,
+}
+
+
+<span class="c-kw">def</span> <span class="c-fn">parse_claude_md</span>(text: <span class="c-kw">str</span>) <span class="c-kw">-&gt;</span> <span class="c-kw">dict</span>:
+    <span class="c-com">"""Extract structured sections from CLAUDE.md into a dict."""</span>
+    sections = {}
+    current_heading = <span class="c-str">"_meta"</span>
+    sections[current_heading] = []
+    <span class="c-kw">for</span> line <span class="c-kw">in</span> text.splitlines():
+        <span class="c-kw">if</span> line.startswith(<span class="c-str">"## "</span>):
+            current_heading = line.strip(<span class="c-str">"# "</span>)
+            sections[current_heading] = []
+        <span class="c-kw">else</span>:
+            sections.setdefault(current_heading, []).append(line)
+    <span class="c-com"># Flatten each section to a single string</span>
+    <span class="c-kw">return</span> {k: <span class="c-str">"\n"</span>.join(v).strip() <span class="c-kw">for</span> k, v <span class="c-kw">in</span> sections.items()}
+
+
+<span class="c-kw">def</span> <span class="c-fn">render_all</span>(ctx: <span class="c-kw">dict</span>) -&gt; <span class="c-kw">list</span>[<span class="c-kw">tuple</span>[<span class="c-kw">str</span>, <span class="c-kw">str</span>]]:
+    <span class="c-com">"""Render each target file from Jinja2 templates."""</span>
+    env = Environment(loader=FileSystemLoader(str(TEMPLATES)))
+    ctx[<span class="c-str">"generated_at"</span>] = date.today().isoformat()
+    results = []
+    <span class="c-kw">for</span> out_path, tmpl_rel <span class="c-kw">in</span> OUTPUTS.items():
+        tmpl_name = tmpl_rel.name
+        template = env.get_template(tmpl_name)
+        rendered = template.render(ctx)
+        out_file = ROOT / out_path
+        out_file.write_text(rendered)
+        results.append((out_path, len(rendered)))
+    <span class="c-kw">return</span> results
+
+
+<span class="c-kw">def</span> <span class="c-fn">main</span>():
+    parser = argparse.ArgumentParser(description=<span class="c-str">"Generate all AI context files"</span>)
+    parser.add_argument(<span class="c-str">"--source"</span>, default=CLAUDEMD, help=<span class="c-str">"Path to CLAUDE.md"</span>)
+    parser.add_argument(<span class="c-str">"--check"</span>, action=<span class="c-str">"store_true"</span>,
+                        help=<span class="c-str">"Exit 1 if any generated file is stale"</span>)
+    args = parser.parse_args()
+
+    source_text = pathlib.Path(args.source).read_text()
+    ctx = parse_claude_md(source_text)
+    ctx[<span class="c-str">"project_name"</span>] = ROOT.name
+
+    results = render_all(ctx)
+    <span class="c-kw">for</span> path, size <span class="c-kw">in</span> results:
+        print(f<span class="c-str">"  ✓ {path}  ({size} chars)"</span>)
+    print(f<span class="c-str">"\nGenerated {len(results)} context files."</span>)
+
+
+<span class="c-kw">if</span> __name__ == <span class="c-str">"__main__"</span>:
+    main()
+</code></pre>
+
+    <h3>Template example — <code>templates/copilot.j2</code></h3>
+<pre><code><span class="c-com">&lt;!-- Generated {{ generated_at }} from CLAUDE.md — do not edit directly --&gt;</span>
+
+<span class="c-com">## Project: {{ project_name }}</span>
+
+<span class="c-com">### Tech Stack</span>
+{{ tech_stack | default("Not documented") }}
+
+<span class="c-com">### Coding Conventions</span>
+- Indentation: {{ conventions.indentation | default("2 spaces") }}
+- Line length: {{ conventions.line_length | default("100") }}
+- Naming: {{ conventions.naming | default("snake_case for vars, PascalCase for classes") }}
+
+<span class="c-com">### Test Patterns</span>
+{{ testing_patterns | default("Use pytest with fixtures") }}
+
+<span class="c-com">### Architecture Decisions</span>
+{{ architecture_decisions | default("See ADR docs") }}
+</code></pre>
+  </section>
+
+  <section class="card">
+    <span class="tag amber">WHAT EACH TOOL NEEDS</span>
+    <h2>Context file format differences</h2>
+    <p>Each AI coding tool has a different context file format, location, and scope. Here is what you
+    need to know to write templates for each one:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>File</th>
+          <th>Format</th>
+          <th>Location</th>
+          <th>Scope</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Claude Code</strong></td>
+          <td><code>CLAUDE.md</code></td>
+          <td>Markdown, with <code>##</code> sections as instructions</td>
+          <td>Project root</td>
+          <td>Global agent context, project-level</td>
+        </tr>
+        <tr>
+          <td><strong>Cursor</strong></td>
+          <td><code>.cursorrules</code></td>
+          <td>Markdown, no YAML frontmatter</td>
+          <td>Project root</td>
+          <td>Inline editing, Ctrl+K, chat</td>
+        </tr>
+        <tr>
+          <td><strong>Copilot</strong></td>
+          <td><code>copilot-instructions.md</code></td>
+          <td>Markdown with <code>&lt;!-- HTML comments --&gt;</code> for metadata</td>
+          <td><code>.github/</code> or root</td>
+          <td>Autocomplete and Copilot Chat</td>
+        </tr>
+        <tr>
+          <td><strong>CODEX</strong></td>
+          <td><code>CODEX.md</code></td>
+          <td>Markdown with structured metadata header</td>
+          <td>Project root</td>
+          <td>Custom agent systems, multi-agent orchestration</td>
+        </tr>
+        <tr>
+          <td><strong>Windsurf</strong></td>
+          <td><code>.windsurfrules</code></td>
+          <td>Plain text with rule-based syntax</td>
+          <td>Project root</td>
+          <td>Windsurf IDE agent</td>
+        </tr>
+        <tr>
+          <td><strong>Cline / Continue</strong></td>
+          <td><code>cline.md</code></td>
+          <td>Markdown</td>
+          <td>Project root or <code>.cline/</code></td>
+          <td>VSCode extension agent context</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout indigo">
+      <strong>Tip:</strong> Keep a <code>templates/</code> directory in your repo so the mapping is
+      explicit and version-controlled. Add a <code>pre-commit</code> hook that re-runs the generator
+      whenever <code>CLAUDE.md</code> changes.
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="tag">STEP-BY-STEP</span>
+    <h2>How to adopt this project</h2>
+    <div class="steps">
+      <div class="step-row">
+        <div class="num">1</div>
+        <div><strong>Write your canonical CLAUDE.md</strong> — include Project Overview, Tech Stack, Conventions, Architecture Decisions, Testing Patterns, Deployment, and any domain-specific rules.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">2</div>
+        <div><strong>Create Jinja2 templates</strong> for each target tool (see the starter above). Each template maps the sections from your canonical file into the format that tool expects.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">3</div>
+        <div><strong>Run the generator</strong> — <code>python generate.py</code> reads CLAUDE.md and writes every output file. Use <code>--check</code> in CI to fail if outputs are stale.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">4</div>
+        <div><strong>Commit all generated files</strong> — reviewers can see exactly what each tool sees. When CLAUDE.md changes, re-run the generator and commit the diff.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">5</div>
+        <div><strong>Add a pre-commit hook</strong> that auto-generates on <code>git commit</code> if CLAUDE.md has changed, so nobody forgets.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="pager">
+    <a href="../" class="prev">
+      <div class="dir">Back</div>
+      <div class="ttl">Project Hub</div>
+    </a>
+    <a href="../02_minimal_mcp_server/" class="next">
+      <div class="dir">Next Project</div>
+      <div class="ttl">Minimal MCP Server</div>
+    </a>
+  </div>
+</main>
+
+<footer>
+  AI Adoption Projects &mdash; Educational explainers for agentic engineering workflows.
+</footer>
+
+</body>
+</html>

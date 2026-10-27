@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06 — Verified Tools & MCP Directory</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0b0e14; --surface:#11151d; --surface2:#161b26; --border:#232a38; --text:#e6e8ee; --dim:#8a93a6; --mute:#5c6575; --accent:#4fd1c5; --accent2:#7aa2f7; --amber:#e9b949; --rose:#e06c75; --green:#98c379; --violet:#a78bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .tag{ display:inline-block; font-size:0.65rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:0.25em 0.7em; border-radius:100px; margin-right:0.4em; vertical-align:middle; }
+  .tag-v{ background:rgba(152,219,121,0.12); color:var(--green); border:1px solid rgba(152,219,121,0.25); }
+  .tag-h{ background:rgba(167,139,250,0.12); color:var(--violet); border:1px solid rgba(167,139,250,0.25); }
+  .tag-a{ background:rgba(233,185,73,0.12); color:var(--amber); border:1px solid rgba(233,185,73,0.25); }
+  .tag-s{ background:rgba(224,108,117,0.12); color:var(--rose); border:1px solid rgba(224,108,117,0.25); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(79,209,197,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(233,185,73,0.06); }
+  .callout.danger{ border-left-color:var(--rose); background:rgba(224,108,117,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  .prev:hover{ color:var(--accent); }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← AI Industry Radar</a> · Module 06</div>
+  <h1>Verified Tools &amp; <em style="color:var(--green);font-style:normal;">MCP Directory</em></h1>
+  <p>A single, honest directory — what's worth your time, what needs verification first, and what to skip. Sourced from ~75 screenshots, each tagged by the trust filter that held up across all four batches.</p>
+
+  <h2>🟢 Install / Do First (Verified, High Value)</h2>
+  <table>
+    <thead><tr><th>Tool / Action</th><th>Why</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Run <code>/checkup</code> in Claude Code</strong></td><td>Cleans unused skills/MCPs/plugins, dedupes CLAUDE.md, breaks up root CLAUDE.md into nested files, turns off slow hooks. Directly fixes your context-bloat problem.</td><td><span class="tag tag-v">Verified</span> Boris Cherny</td></tr>
+      <tr><td><strong>Test nested subagents</strong></td><td>Agents kick off fresh-context subagents (orchestrator → worker → sub-worker). Use depth ≤ 3 in practice.</td><td><span class="tag tag-v">Verified</span> Boris Cherny</td></tr>
+      <tr><td><strong>codebase-memory-mcp</strong></td><td>AST knowledge graph for code exploration; ~10× fewer tokens vs file exploration. 158 languages, local, no Docker. Works with Claude Code / Cursor / Aider / Gemini CLI.</td><td><span class="tag tag-v">Verified</span> arXiv:2603.27277</td></tr>
+      <tr><td><strong>Context7 MCP</strong></td><td>Docs-grounding — feeds current library docs to the agent, kills hallucinated APIs. 20-minute setup.</td><td><span class="tag tag-v">Verified</span> MCP ecosystem</td></tr>
+      <tr><td><strong>Filesystem MCP</strong></td><td>Standard, safe file access for agents. Low risk, broadly useful.</td><td><span class="tag tag-v">Verified</span></td></tr>
+      <tr><td><strong>Compact context files</strong> (pattern)</td><td>Generate routes.md / pages.md / lib.md / schema.md / components.md so the agent skips the exploration phase. Claims 30–50K token savings.</td><td><span class="tag tag-h">High value</span> practice</td></tr>
+      <tr><td><strong>"Investigate before asking" plan-mode prompt</strong></td><td>Steal the prompt pattern: investigate → produce goal / assumptions / plan before implementing.</td><td><span class="tag tag-h">High value</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>🟡 Worth Evaluating (Real, Credible — Verify Details)</h2>
+  <table>
+    <thead><tr><th>Tool / Topic</th><th>Why</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Google ADK 2.0</strong></td><td>Real Google framework: graph execution, routing, fan-out/fan-in, loops, retry, Task API delegation. Compare against your LangGraph supervisor.</td><td><span class="tag tag-a">Verify</span> real, hype aside</td></tr>
+      <tr><td><strong>Graphify</strong></td><td>Local codebase knowledge graph so agents don't re-read everything. ~60K★ — verify repo/stars/commits on GitHub.</td><td><span class="tag tag-a">Verify</span></td></tr>
+      <tr><td><strong>RTK</strong></td><td>Compresses terminal output 60–90% before it enters context. ~60K★.</td><td><span class="tag tag-a">Verify</span></td></tr>
+      <tr><td><strong>addyosmani/agent-skills</strong></td><td>Production-grade engineering skills for coding agents. Named, credible author (Google Chrome team).</td><td><span class="tag tag-h">High value</span> verify stars</td></tr>
+      <tr><td><strong>loops.elorm.xyz</strong></td><td>26 pre-built agent workflows / kickoffs with exit conditions. Endorsed by Peter Steinberger (credible).</td><td><span class="tag tag-h">High value</span> endorsed</td></tr>
+      <tr><td><strong>Kimi K2.7 setups</strong></td><td>VS Code extension + CLI, or OpenAI-compatible API (<code>base_url: moonshot.cn</code>, model <code>kimi-k2.7-code</code>). Set a daily spending budget first.</td><td><span class="tag tag-a">Verify</span> base URL/model ID</td></tr>
+      <tr><td><strong>Gemini free tier via AI Studio</strong></td><td>Free API keys, OpenAI-compatible endpoint — another cheap backend to benchmark. Confirm current model ID/quota on aistudio.google.com.</td><td><span class="tag tag-a">Verify</span> limits change</td></tr>
+      <tr><td><strong>Blacksmith agent sandboxes</strong></td><td>Isolated execution environments for agents (CI integration). Endorsed by Steinberger.</td><td><span class="tag tag-a">Verify</span> site</td></tr>
+      <tr><td><strong>Vercel Labs "Find Skills"</strong></td><td>Ask Claude "got any good skills for X" → auto-wires relevant skills.</td><td><span class="tag tag-a">Verify</span> repo path</td></tr>
+    </tbody>
+  </table>
+
+  <h2>🔴 Skip / Don't Trust</h2>
+  <table>
+    <thead><tr><th>Content</th><th>Why</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><strong>"Gemma 4 12B coder-fable5" GGUF</strong></td><td>Uploaded by an individual (<code>yuxinlu1</code>), not Google/Unsloth. "Fable5" name collides with Claude Fable 5 — a red flag for a misleading community mashup. Verify against Google's actual releases before trusting specs.</td><td><span class="tag tag-s">Don't trust</span></td></tr>
+      <tr><td><strong>"Anthropic engineer: 70% self-improving loops"</strong></td><td>Unnamed source, unverifiable, classic engagement-bait structure.</td><td><span class="tag tag-s">Skip</span></td></tr>
+      <tr><td><strong>"ex-Anthropic engineer left for Google"</strong></td><td>No name attached to a specific, checkable claim. Likely fabricated detail.</td><td><span class="tag tag-s">Skip</span></td></tr>
+      <tr><td><strong>"10 free AI tools" numbered thread</strong></td><td>Suspiciously round stats ("120ms, billions of requests"), "production-ready" with no benchmarks, Show-more cutoffs. Several repos unverifiable.</td><td><span class="tag tag-s">Skip</span> unless GitHub-checked</td></tr>
+      <tr><td><strong>Laguna S 2.1 / DGX benchmark post</strong></td><td>Unverified account, no linked repo/paper. Only interesting if you're choosing multi-GPU serving infra.</td><td><span class="tag tag-s">Skip</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>The Trust Filter — Your Repeatable Heuristic</h2>
+  <div class="callout warn"><strong>The pattern that held across all four batches:</strong><br/>
+  ✅ <strong>Trust</strong>: content from named, independently verifiable practitioners — Boris Cherny, Harrison Chase, Peter Steinberger, Sundar Pichai, Addy Osmani, Arpit Bhayani, Vercel, Anthropic, OpenAI.<br/>
+  ⚠️ <strong>Verify before trusting</strong>: anonymous-account claims, unusually-named community uploads, "quietly found" framings, round numbers with no linked benchmarks.<br/>
+  📋 <strong>Check yourself:</strong> GitHub stars + recent commits, official blog, arXiv, Hugging Face org page (not user page).</div>
+
+  <h2>Reading List — Graph Theory &amp; Network Science (Verified Real)</h2>
+  <div class="card">
+    <p>A legitimately high-quality academic list, directly relevant to GraphRAG and agent orchestration:</p>
+    <ul>
+      <li><strong>Barabási</strong> — Network Science (free online)</li>
+      <li><strong>Easley &amp; Kleinberg</strong> — Networks, Crowds, and Markets</li>
+      <li><strong>Diestel</strong> — Graph Theory</li>
+      <li><strong>Kleinberg &amp; Tardos</strong> — Algorithm Design</li>
+      <li><strong>Spielman</strong> — Spectral graph theory notes</li>
+      <li><strong>Roughgarden</strong> — Algorithms (Stanford)</li>
+      <li><strong>CS224W</strong> — Stanford "Machine Learning with Graphs"</li>
+      <li><strong>NetworkX / PyTorch Geometric</strong> — practical tooling</li>
+    </ul>
+  </div>
+
+  <div class="callout"><strong>Your 20-minute MCP upgrades:</strong> Context7 (docs grounding) + Filesystem (safe file access) + Notion/Figma if you use them. That's the highest-value, lowest-risk MCP work from the whole collection.</div>
+
+  <a class="prev" href="05-finetuning-alignment.html">← Back: Fine-Tuning &amp; Alignment</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#11151d',primaryColor:'#161b26',primaryBorderColor:'#4fd1c5',primaryTextColor:'#e6e8ee',lineColor:'#4fd1c5',secondaryColor:'#0b0e14'}});</script>
+</body>
+</html>

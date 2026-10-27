@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01 — Agent Evolution: Frameworks → Harnesses</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0b0e14; --surface:#11151d; --surface2:#161b26; --border:#232a38; --text:#e6e8ee; --dim:#8a93a6; --mute:#5c6575; --accent:#4fd1c5; --accent2:#7aa2f7; --amber:#e9b949; --rose:#e06c75; --green:#98c379; --violet:#a78bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; }
+  .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; }
+  strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .tag{ display:inline-block; font-size:0.65rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:0.25em 0.7em; border-radius:100px; margin-right:0.4em; vertical-align:middle; }
+  .tag-v{ background:rgba(152,219,121,0.12); color:var(--green); border:1px solid rgba(152,219,121,0.25); }
+  .tag-h{ background:rgba(167,139,250,0.12); color:var(--violet); border:1px solid rgba(167,139,250,0.25); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(79,209,197,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(233,185,73,0.06); }
+  .callout.danger{ border-left-color:var(--rose); background:rgba(224,108,117,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+  @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; }
+  li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← AI Industry Radar</a> · Module 01</div>
+  <h1>Agent Evolution: <em style="color:var(--accent);font-style:normal;">Frameworks → Harnesses</em></h1>
+  <p><span class="tag tag-v">Verified</span> The single most substantively important shift in the agent-tooling world — described by LangChain's own founder, Harrison Chase.</p>
+
+  <h2>The Headline Shift</h2>
+  <div class="callout">
+    <strong>Harrison Chase (LangChain founder):</strong> "The agent industry has shifted from <em>agent frameworks</em> (langchain, ai sdk, llama index) to <em>agent harnesses</em> (deepagents, claude agent SDK, EVE)."
+  </div>
+  <p>A <strong>framework</strong> gives you building blocks — chains, memory, tool bindings. A <strong>harness</strong> is a complete, opinionated runtime that already includes the agent loop, context management, and tool execution conventions. The trend: teams increasingly reach for a working harness and add structure only when evals prove it helps, rather than assembling raw primitives.</p>
+
+  <h2>Workflows vs Agents — the Architectural Split</h2>
+  <table>
+    <thead><tr><th></th><th>Workflow</th><th>Agent</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Definition</strong></td><td>LLMs + tools orchestrated through <em>predefined</em> code paths</td><td>LLM dynamically directs its own process and tool use</td></tr>
+      <tr><td><strong>When to choose</strong></td><td>Tasks decompose cleanly; you want predictability, lower latency, lower cost</td><td>Open-ended problems where you cannot enumerate steps in advance</td></tr>
+      <tr><td><strong>Default advice</strong></td><td colspan="2"><strong>Start with a single LLM call + retrieval + good examples. Add complexity only when measurements show it improves the outcome.</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h2>The 5 Workflow Patterns (Anthropic)</h2>
+  <div class="card">
+    <p>Boris Cherny's widely-quoted line — <em>"You're not supposed to write code anymore. You're supposed to build a graph that writes itself"</em> — distills the same idea: agent systems are graphs, and each pattern is a recognisable graph shape.</p>
+    <table>
+      <thead><tr><th>Pattern</th><th>Shape</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Prompt chaining</strong></td><td>Step → gate → step → gate</td><td>Linear tasks, later steps depend on earlier output; trade latency for accuracy</td></tr>
+        <tr><td><strong>Routing</strong></td><td>Classify → dispatch to specialised handler</td><td>Distinct categories; different prompts, tools, or model tiers (cheap model for easy)</td></tr>
+        <tr><td><strong>Parallelisation</strong></td><td>Fan-out → aggregate (sectioning OR voting)</td><td>Independent subtasks; multi-perspective reviews; guardrails alongside main answer</td></tr>
+        <tr><td><strong>Orchestrator-workers</strong></td><td>Central LLM delegates to dynamic workers</td><td>Subtasks can't be predicted up front (e.g. refactor across unknown files)</td></tr>
+        <tr><td><strong>Evaluator-optimiser</strong></td><td>Generate → critique → loop until pass</td><td>Clear rubric + iteration helps (translation, search, codegen)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout" style="margin-top:1rem;"><strong>Rule of thumb:</strong> fixed steps → chaining · known categories → routing · independent work → parallelisation · unknown shape → orchestrator-workers · needs iteration → evaluator-optimiser.</div>
+  </div>
+
+  <h2>The 4 Loop Types (Verified — maps to real Claude Code features)</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph TB
+    subgraph LOOPS["The Four Agentic Loops"]
+        T["🔁 Turn-Based<br/>user prompt → gather context →<br/>take action → check work"]
+        G["🎯 Goal-Based<br/>/goal command · evaluator model ·<br/>loop until goal met or tries exhausted"]
+        Ti["⏰ Time-Based<br/>/loop locally · /schedule in cloud ·<br/>interval-triggered"]
+        P["⚡ Proactive<br/>event/schedule-triggered · no human present ·<br/>triage → fix → review · dynamic workflows"]
+    end
+  </div>
+  </div>
+  <ul>
+    <li><strong>Turn-based</strong> — what you think of as "the chatbot loop." Classic request → respond.</li>
+    <li><strong>Goal-based</strong> — the agent keeps working until an <em>evaluator</em> confirms the goal is met, or a retry budget is exhausted. <span class="tag tag-h">Directly maps to your evaluator-node work.</span></li>
+    <li><strong>Time-based</strong> — Claude Code's real <code>/loop</code> and <code>/schedule</code> features. Interval-triggered background work.</li>
+    <li><strong>Proactive</strong> — event/schedule-triggered with no human present: triage → fix → review. This is Peter Steinberger's "maintain your repos, wake up every 5 minutes" workflow.</li>
+  </ul>
+
+  <h2>Nested Subagents — Context-Managed Delegation</h2>
+  <p><span class="tag tag-v">Verified</span> Boris Cherny shipped <strong>nested subagent support</strong> in Claude Code (v2.1.172, June 2026). The motivation is <strong>context management</strong>: each subagent gets a fresh context window, so deep work doesn't bloat the parent's context.</p>
+  <div class="card">
+    <h3>Key facts</h3>
+    <ul>
+      <li>Agents can kick off agents (orchestrator → worker → sub-worker).</li>
+      <li>Capped at <code>depth = 5</code> — but independent testing showed the cap is a <em>soft</em> guideline, not a hard guarantee (testers probed to depth 9–30).</li>
+      <li>The practically-useful depth is <strong>3 levels</strong> (orchestrator → worker → sub-worker) per field testing.</li>
+      <li>Each subagent's activity is observable (the "can we watch?" answer was "Yep!").</li>
+    </ul>
+    <div class="callout warn" style="margin-top:1rem;"><strong>Why it matters:</strong> This is the exact pattern behind Anthropic's multi-agent research system — a parent agent delegates to sub-agents <em>as tools</em>, sub-agents run in parallel, and results roll back up. For your LangGraph Supervisor work, this is the canonical delegation model to replicate.</div>
+  </div>
+
+  <h2>Multi-Agent Research — the Real Failure Mode</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph TB
+      P["Parent agent<br/>(orchestrator)"] --> S1["Sub-agent as tool<br/>research"]
+      P --> S2["Sub-agent as tool<br/>research"]
+      P --> S3["Sub-agent as tool<br/>research"]
+      S1 --> R1["results"]
+      S2 --> R2["results"]
+      S3 --> R3["results"]
+      R1 & R2 & R3 --> P
+      P --> W["Parent synthesises<br/>final answer"]
+  </div>
+  </div>
+  <div class="callout danger"><strong>The over-communication failure mode:</strong> "Overbuilt multi-agent systems spend too much time talking back and forth… not making progress." The more sub-agents chat, the more tokens and latency burn without advancing the answer. <strong>Practical guidance:</strong> keep inter-agent communication minimal; delegate bounded, parallelisable work; let the parent do the synthesis. This is also why your RAG chatbot's orchestrator should keep sub-agent chatter on a budget.</div>
+
+  <h2>When to Use a Fully Autonomous Agent</h2>
+  <div class="grid2">
+    <div class="card" style="border-left:3px solid var(--green);"><strong>✅ Use an agent</strong> when the number of steps is unknown, the LLM must decide based on tool outputs, and the environment is trusted enough to let the loop run.</div>
+    <div class="card" style="border-left:3px solid var(--amber);"><strong>⚠️ Stay with a workflow</strong> when the steps are predictable — cheaper, faster, easier to debug.</div>
+  </div>
+  <div class="card" style="border-left:3px solid var(--rose);"><strong>🚫 Avoid an agent</strong> when the cost of a wrong action is high (irrevocable writes, real money) and you haven't invested in guardrails, sandboxing, and human-in-the-loop checkpoints.</div>
+
+  <div class="callout">
+    <strong>📌 Takeaway for your projects:</strong> Agent systems should be built as <strong>workflows first</strong> (predictable paths), with the autonomous agent loop reserved for genuinely open-ended steps. When you do delegate, delegate to fresh-context subagents (the nested pattern), keep communication bounded, and always have a stop condition: max steps, time budget, or an explicit completion signal.
+  </div>
+
+  <a class="next" href="02-production-runtime.html">Next: Production Runtime — Why MCP Isn't Enough →</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#11151d',primaryColor:'#161b26',primaryBorderColor:'#4fd1c5',primaryTextColor:'#e6e8ee',lineColor:'#4fd1c5',secondaryColor:'#0b0e14'}});</script>
+</body>
+</html>

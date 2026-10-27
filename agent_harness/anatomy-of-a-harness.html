@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anatomy of a harness</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        :root {
+            --accent: #6d28d9;
+            --accent-soft: #ede9fe;
+        }
+
+        pre.mermaid {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>AH</span>Agent Harness</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="what-is-an-agent-harness.html">Concept</a>
+                <a href="anatomy-of-a-harness.html">Anatomy</a>
+                <a href="harness-vs-framework-vs-app.html">Layers</a>
+                <a href="harness-showdown.html">Showdown</a>
+                <a href="build-your-own-harness.html">Build one</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Agent harness · page 2 of 5</p>
+            <h1>Anatomy of a harness — the parts that turn a model into an agent</h1>
+            <p class="lead">Every harness has the same skeleton: a <strong>loop</strong>, a set of <strong>tools</strong>,
+                <strong>context management</strong>, and <strong>guardrails</strong> — plus the extras that make it
+                pleasant: memory, subagents, skills, hooks, and a plug-in protocol for more tools. We'll tour each part
+                using <strong>Claude Code</strong> as the worked example, because it's a harness you've already lived
+                inside. Nothing here is Claude-specific — it's the generic anatomy, with real names attached.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · The skeleton at a glance</h2>
+            <pre class="mermaid">
+flowchart TB
+  subgraph H[THE HARNESS]
+    L[Agentic loop<br/>reason → act → observe → repeat]
+    T[Tools<br/>read · edit · run · search · web · agents]
+    C[Context management<br/>window · compaction · trimming]
+    G[Guardrails<br/>permissions · sandbox · stopping rules]
+    M[Memory<br/>CLAUDE.md · memory files · session logs]
+    S[Subagents &amp; skills<br/>parallel workers · packaged procedures]
+    K[Hooks / events<br/>fire before &amp; after actions]
+    P[Protocol plug-ins<br/>MCP servers → more tools]
+  end
+  L --- T --- P
+  L --- C --- M
+  L --- G
+  L --- S
+  L --- K
+  Model[Frontier model<br/>brain] --> L
+  L --> World[Your repo · shell · web · APIs]
+            </pre>
+        </section>
+
+        <section class="card">
+            <h2>2 · The agentic loop</h2>
+            <p>The harness repeatedly: takes the current context, asks the model what to do next, and — if the model
+                requests a tool — executes it and feeds the result back. It ends when the model signals completion, a
+                limit trips (max iterations, max tokens), or a guardrail intervenes.</p>
+            <ul>
+                <li><strong>Stop conditions</strong> matter more than people think. A good harness distinguishes "I'm
+                    done" from "I'm stuck" and can hand control back to a human instead of spinning.</li>
+                <li><strong>Workflows as harnesses:</strong> newer systems let the harness dynamically spin up a small
+                    multi-agent fleet per task (a "dynamic workflow" is really a harness the harness wrote for one job —
+                    splitting a big task across sub-agents, each with isolated context).</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>3 · Tools — the agent-computer interface</h2>
+            <p>The harness decides <em>what the model can touch</em>, then describes each tool well enough that the model
+                calls it correctly. Anthropic calls this the <strong>agent-computer interface (ACI)</strong>: the quality
+                of your tool names, descriptions, and schemas is a bigger lever on agent reliability than the model
+                choice. Claude Code's built-ins are the classic set:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Capability</th>
+                        <th>Claude Code tool</th>
+                        <th>Why the harness exposes it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Read the world</td>
+                        <td><code>Read</code>, <code>Glob</code>, <code>Grep</code></td>
+                        <td>Model sees the actual repo, not a guess</td>
+                    </tr>
+                    <tr>
+                        <td>Change the world</td>
+                        <td><code>Write</code> / <code>Edit</code></td>
+                        <td>Precise, reviewable file edits</td>
+                    </tr>
+                    <tr>
+                        <td>Run the world</td>
+                        <td><code>Bash</code></td>
+                        <td>Tests, builds, scripts — the verification loop</td>
+                    </tr>
+                    <tr>
+                        <td>See the web</td>
+                        <td><code>WebFetch</code>, <code>WebSearch</code></td>
+                        <td>Docs, current events, external state</td>
+                    </tr>
+                    <tr>
+                        <td>Do work in parallel</td>
+                        <td><code>Task</code> (subagents)</td>
+                        <td>Fan-out research while the main thread keeps focus</td>
+                    </tr>
+                    <tr>
+                        <td>Run packaged procedures</td>
+                        <td><code>Skill</code></td>
+                        <td>Invoke a documented, reusable workflow on demand</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>4 · Context management</h2>
+            <p>The model can only "see" what's in its context window — so context is the scarcest resource, and the
+                harness is its curator. This is increasingly its own discipline, often called <strong>context
+                    engineering</strong>.</p>
+            <ul>
+                <li><strong>What goes in:</strong> the system prompt (identity, rules), project instructions, tool
+                    definitions, the relevant files and command output, conversation history.</li>
+                <li><strong>What's kept out:</strong> irrelevance. The best harnesses <em>don't</em> dump your whole repo
+                    in; they read on demand and let the model search.</li>
+                <li><strong>What happens when it overflows:</strong> <em>compaction</em> — the harness summarises the
+                    conversation so far and continues on a shorter thread, keeping the task alive across tens of
+                    thousands of tokens.</li>
+                <li><strong>Persistence:</strong> memories that survive the session live in files — e.g. a project
+                    <code>CLAUDE.md</code>, memory directories, per-agent memory JSON — re-injected at session start.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>5 · Guardrails: permissions, modes, hooks</h2>
+            <p>A harness is only as trustworthy as its brakes. This is where "agent" diverges from "autonomous script".</p>
+            <ul>
+                <li><strong>Permission modes</strong> — read-only (plan), ask-on-every-action (default), or auto-run for
+                    trusted actions. The user stays in control of anything irreversible.</li>
+                <li><strong>Hooks</strong> — the harness fires events around its own behaviour (<em>before a tool runs,
+                    after a tool runs, on user prompt, on stop, before compaction, at session start</em>). Hooks let you
+                    inject policy: block a dangerous command, run a formatter after every edit, enforce that no file
+                    outside a path is touched. Hooks are <em>executed by the harness, not the model</em> — that's what
+                    makes them trustworthy policy.</li>
+                <li><strong>Sandboxing</strong> — run tools in a container/worktree so a mistake can't nuke the real
+                    repo.</li>
+                <li><strong>Stopping rules &amp; iteration caps</strong> — budget for how long the loop may run.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>6 · Memory &amp; continuity</h2>
+            <p>Between turns and between sessions, the harness is what remembers:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mechanism</th>
+                        <th>Scope</th>
+                        <th>Used for</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>CLAUDE.md</code> / <code>AGENTS.md</code></td>
+                        <td>Project</td>
+                        <td>Standing instructions, conventions, do/don't</td>
+                    </tr>
+                    <tr>
+                        <td>Global user memory</td>
+                        <td>Across projects</td>
+                        <td>Your preferences, workflow, identity</td>
+                    </tr>
+                    <tr>
+                        <td>Memory folders</td>
+                        <td>Agent-scoped</td>
+                        <td>Facts the agent accumulated about the work</td>
+                    </tr>
+                    <tr>
+                        <td>Session logs / transcripts</td>
+                        <td>Ephemeral → auditable</td>
+                        <td>Resume, review, learn from past runs</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>7 · Subagents, skills, and MCP — the extensibility layer</h2>
+            <ul>
+                <li><strong>Subagents:</strong> smaller, purpose-built agents with their own system prompt and a trimmed
+                    toolset, spawned by the main agent for parallel or isolated work. Isolation of context is the superpower
+                    — subagent A's mess doesn't pollute subagent B.</li>
+                <li><strong>Skills:</strong> a folder + <code>SKILL.md</code> that packages a reusable procedure (with
+                    assets and scripts) the model can load on demand. Skills make the harness teachable.</li>
+                <li><strong>MCP (Model Context Protocol):</strong> the open standard that lets any harness connect to
+                    external tools/servers — databases, browsers, internal APIs — with one protocol instead of bespoke
+                    integrations. MCP is the harness's USB port.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>8 · "You've been inside a harness all along"</h2>
+            <p>If this tour feels like a description of a house you already live in, that's the correct reaction — it is.
+                Every Claude Code session you've run exercised all of these parts: the loop that kept going after a test
+                failed, the permission prompt that stopped a risky command, the compaction when the conversation got
+                long, the <code>CLAUDE.md</code> that shaped the answers, the subagents and skills you've wired in. You
+                weren't using "an AI" — you were operating a harness. Once you see it, you can't unsee it, and that's
+                the point of this page.</p>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="quiet">Component inventory is grounded in Claude Code's public docs and Anthropic engineering
+                posts; the generic framing (ACI, context engineering) follows Anthropic's tool-use and building-agents
+                guidance.</p>
+            <div class="sources">
+                <a class="source" href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener">Claude Code docs</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/claude-code/hooks" target="_blank" rel="noopener">Claude Code hooks</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/claude-code/mcp" target="_blank" rel="noopener">Claude Code + MCP</a>
+                <a class="source" href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/build-with-claude/agentic-sdks" target="_blank" rel="noopener">Anthropic agentic SDKs</a>
+                <a class="source" href="https://www.anthropic.com/engineering/built-multi-agent-research-system" target="_blank" rel="noopener">Anthropic · multi-agent research system</a>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

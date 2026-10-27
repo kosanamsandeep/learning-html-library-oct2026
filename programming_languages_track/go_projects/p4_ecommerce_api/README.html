@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go P4 — E-commerce API</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Go projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p4_ecommerce_api/README.html">Python p4</a>
+                <a href="../../rust_projects/p4_ecommerce_api/README.html">Rust p4</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go · P4</span></p>
+            <h1>E-commerce API — DTO pattern, JSON tags, and the wire/domain seam</h1>
+            <p class="lead">Go's <code>encoding/json</code> uses struct tags to control the wire format. That makes DTOs
+                feel native: keep one set of structs for the API contract, another for the domain, and a small mapper
+                between them.</p>
+        </section>
+
+        <section class="card">
+            <h2>The seam in two screens</h2>
+            <pre><code>// internal — never reaches the wire
+type Product struct {
+    ID          int
+    Name        string
+    PriceCent   int
+    StockCount  int
+    internalSKU string   // private (lowercase) — also skipped by json
+}
+
+// the wire shape
+type ProductDTO struct {
+    ID    int     `json:"id"`
+    Name  string  `json:"name"`
+    Price float64 `json:"price"`
+    Stock int     `json:"stock"`
+}</code></pre>
+            <ul>
+                <li><strong>Tags drive serialisation.</strong> <code>json:"price"</code> renames the field on the wire;
+                    omitting a tag uses the field name; lowercase fields are skipped by <code>encoding/json</code>.</li>
+                <li><strong>Money stays in cents internally,</strong> mapped to a float for the wire. Same lesson as the
+                    Python original.</li>
+                <li><strong>The mapper is one function.</strong> <code>toProductDTO(p Product) ProductDTO</code>. No
+                    magic, no auto-binding library required.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd go_projects/p4_ecommerce_api
+go run .</code></pre>
+            <p>Files: <a href="main.go">main.go</a> · <a href="go.mod">go.mod</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

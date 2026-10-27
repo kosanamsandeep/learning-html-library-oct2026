@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cross-Platform AI Comparison Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            line-height: 1.7;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 30%, #312e81 60%, #1e3a5c 100%);
+            padding: 80px 40px;
+            text-align: center;
+            border-bottom: 3px solid #8b5cf6;
+        }
+
+        .hero h1 {
+            font-size: 3em;
+            background: linear-gradient(90deg, #f472b6, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+        }
+
+        .hero p {
+            font-size: 1.3em;
+            color: #c4b5fd;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .intro {
+            background: #1e1e3f;
+            border: 1px solid #3730a3;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .intro h2 {
+            color: #a78bfa;
+            margin-bottom: 12px;
+        }
+
+        .intro p {
+            color: #c4b5fd;
+            font-size: 1.05em;
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+
+        .topic-card {
+            background: linear-gradient(145deg, #1a1a2e, #1e1e3f);
+            border: 1px solid #374151;
+            border-radius: 14px;
+            padding: 28px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topic-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--card-color), transparent);
+        }
+
+        .topic-card:hover {
+            border-color: var(--card-color);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(139, 92, 246, 0.15);
+        }
+
+        .topic-card .icon {
+            font-size: 2.2em;
+            margin-bottom: 12px;
+        }
+
+        .topic-card h3 {
+            color: #e0e7ff;
+            font-size: 1.2em;
+            margin-bottom: 8px;
+        }
+
+        .topic-card p {
+            color: #9ca3af;
+            font-size: 0.92em;
+            line-height: 1.5;
+        }
+
+        .topic-card .tags {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .topic-card .tag {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a5b4fc;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #6b7280;
+            border-top: 1px solid #1f2937;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="hero">
+        <h1>Cross-Platform AI Comparison</h1>
+        <p>The complete landscape of LLMs, frameworks, tools, and strategies — compared, contrasted, and demystified</p>
+    </div>
+    <div class="container">
+        <div class="intro">
+            <h2>Think Like an Architect</h2>
+            <p>Knowing one tool isn't enough. A pro thinker understands the <strong>entire ecosystem</strong> — which
+                LLM for which task, which framework for which pattern, which strategy for which scale. These guides give
+                you that bird's-eye view so you can make informed decisions, not just follow tutorials.</p>
+        </div>
+        <div class="topic-grid">
+            <a href="llm_providers.html" class="topic-card" style="--card-color: #f472b6;">
+                <div class="icon">🧠</div>
+                <h3>LLM Provider Stacks</h3>
+                <p>OpenAI, Claude, Gemini, DeepSeek, Llama, Mistral — their architectures, strengths, pricing models,
+                    and when to use each.</p>
+                <div class="tags">
+                    <span class="tag">GPT-4</span>
+                    <span class="tag">Claude Opus</span>
+                    <span class="tag">Gemini 2.5</span>
+                    <span class="tag">DeepSeek-V3</span>
+                    <span class="tag">Llama 4</span>
+                </div>
+            </a>
+            <a href="rag_strategies.html" class="topic-card" style="--card-color: #60a5fa;">
+                <div class="icon">📚</div>
+                <h3>RAG Strategies Compared</h3>
+                <p>Naive RAG, Advanced RAG, Modular RAG, GraphRAG, Agentic RAG — when each shines and when each fails.
+                </p>
+                <div class="tags">
+                    <span class="tag">Vector Search</span>
+                    <span class="tag">Hybrid</span>
+                    <span class="tag">Re-ranking</span>
+                    <span class="tag">GraphRAG</span>
+                </div>
+            </a>
+            <a href="coding_ai_tools.html" class="topic-card" style="--card-color: #34d399;">
+                <div class="icon">💻</div>
+                <h3>Coding AI Tools</h3>
+                <p>Codex/GPT, Claude Code, Cursor, GitHub Copilot, open-source alternatives — the coding assistant
+                    battle.</p>
+                <div class="tags">
+                    <span class="tag">Codex</span>
+                    <span class="tag">Claude Code</span>
+                    <span class="tag">Copilot</span>
+                    <span class="tag">Cody</span>
+                </div>
+            </a>
+            <a href="agentic_frameworks.html" class="topic-card" style="--card-color: #f59e0b;">
+                <div class="icon">🤖</div>
+                <h3>Agentic Frameworks</h3>
+                <p>ReAct, LangGraph, AutoGen, CrewAI, OpenAI Agents SDK — patterns for building autonomous AI agents.
+                </p>
+                <div class="tags">
+                    <span class="tag">ReAct</span>
+                    <span class="tag">LangGraph</span>
+                    <span class="tag">AutoGen</span>
+                    <span class="tag">CrewAI</span>
+                </div>
+            </a>
+            <a href="orchestration_platforms.html" class="topic-card" style="--card-color: #a78bfa;">
+                <div class="icon">🔗</div>
+                <h3>Orchestration Platforms</h3>
+                <p>LangChain, LlamaIndex, Haystack, Semantic Kernel — the middleware that connects LLMs to your
+                    application.</p>
+                <div class="tags">
+                    <span class="tag">LangChain</span>
+                    <span class="tag">LlamaIndex</span>
+                    <span class="tag">Haystack</span>
+                    <span class="tag">Semantic Kernel</span>
+                </div>
+            </a>
+            <a href="feature_stores_caching.html" class="topic-card" style="--card-color: #ef4444;">
+                <div class="icon">⚡</div>
+                <h3>Feature Stores & Caching</h3>
+                <p>Redis, Feast, Tecton — why caching matters, how feature stores work, and semantic caching for LLMs.
+                </p>
+                <div class="tags">
+                    <span class="tag">Redis</span>
+                    <span class="tag">Feature Store</span>
+                    <span class="tag">Semantic Cache</span>
+                    <span class="tag">Vector Cache</span>
+                </div>
+            </a>
+            <a href="agent_dev_kits.html" class="topic-card" style="--card-color: #2dd4bf;">
+                <div class="icon">🏗️</div>
+                <h3>Google ADK & Agent Platforms</h3>
+                <p>Google ADK, AWS Bedrock Agents, Azure AI Agent Service, Vertex AI — enterprise agent development
+                    kits.</p>
+                <div class="tags">
+                    <span class="tag">Google ADK</span>
+                    <span class="tag">AWS Bedrock</span>
+                    <span class="tag">Azure AI</span>
+                    <span class="tag">Vertex AI</span>
+                </div>
+            </a>
+        </div>
+    </div>
+    <footer>
+        <p>Cross-Platform AI Comparison Guide — Think architecturally, decide wisely</p>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 01 — Prompt Chaining</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 01 — Prompt Chaining</h1>
+  <p>Also called the <strong>Pipeline</strong> pattern. Big task → smaller prompts → output of one feeds the next.</p>
+  <p><span class="tag">Pipeline</span><span class="tag">Chain of Responsibility</span><span class="tag">Decomposition</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it (in plain English)?</h2>
+<p>An LLM is bad at solving a huge, fuzzy task in one shot. Prompt chaining splits the task into ordered <em>focused</em> steps. Each step has one job, one prompt, one schema-checked output. The next step receives that output as its input.</p>
+<div class="callout tip">
+  <strong>Mental model:</strong> a factory assembly line. Each station does one thing well; the part keeps moving forward.
+</div>
+</section>
+
+<section>
+<h2>How the pattern flows</h2>
+<div class="mermaid">
+flowchart LR
+  U([User goal]) --> S1[Step 1: Extract / Clean]
+  S1 --> S2[Step 2: Analyze]
+  S2 --> S3[Step 3: Generate Draft]
+  S3 --> S4[Step 4: Polish &amp; Format]
+  S4 --> O([Final output])
+  classDef step fill:#dbeafe,stroke:#1e3a8a,color:#0f172a;
+  class S1,S2,S3,S4 step;
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Quarterly Earnings Brief</h2>
+<div class="callout scenario">
+A buy-side analyst on June 2026 drops a 90-page Q1 earnings PDF into an internal app at 6:55 AM and needs a one-page brief by 7:15 AM, before the morning call. A monolithic prompt fails (truncates, hallucinates numbers). A chain wins:
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as Analyst
+  participant App as Briefing Agent
+  participant L as LLM
+  U->>App: Upload Q1 2026 earnings PDF
+  App->>L: Step 1 — Extract revenue / EPS / guidance (JSON)
+  L-->>App: structured numbers
+  App->>L: Step 2 — Compare vs Q1 2025 (delta table)
+  L-->>App: deltas
+  App->>L: Step 3 — Draft 5-bullet executive summary
+  L-->>App: draft
+  App->>L: Step 4 — Tone polish + add risk callout
+  L-->>App: final brief
+  App-->>U: One-page Markdown brief at 7:12 AM
+</div>
+</section>
+
+<section>
+<h2>Frameworks that implement chaining</h2>
+<table>
+  <tr><th>Framework</th><th>How chaining is expressed</th><th>2026 sweet spot</th></tr>
+  <tr><td>LangChain</td><td><code>RunnableSequence</code> with <code>|</code> operator (LCEL).</td><td>Quick linear pipelines.</td></tr>
+  <tr><td>LangGraph</td><td>Linear graph of nodes with shared state.</td><td>When some steps may need to loop / branch later.</td></tr>
+  <tr><td>Google ADK</td><td><code>SequentialAgent</code> orchestrator.</td><td>Vertex / Gemini deployments.</td></tr>
+  <tr><td>CrewAI</td><td>Tasks chained via <code>context</code> field.</td><td>Role-flavored sequential work.</td></tr>
+  <tr><td>Plain Python</td><td>OOP Pipeline (this project).</td><td>Maximum control, zero deps.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used in the project</h2>
+<table>
+  <tr><th>Design pattern</th><th>Where it appears</th></tr>
+  <tr><td><strong>Pipeline / Pipe-Filter</strong></td><td><code>Pipeline</code> class composes ordered <code>Stage</code>s.</td></tr>
+  <tr><td><strong>Template Method</strong></td><td><code>Stage</code> base class defines <code>run()</code>; concrete stages override <code>_execute()</code>.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td><code>BaseLLM</code> interface lets us swap mock / real providers.</td></tr>
+  <tr><td><strong>Dataclass DTO</strong></td><td><code>BriefContext</code> carries shared state, is immutable per stage hop.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py            # entry point, wires the pipeline
+├── pipeline.py        # Pipeline + Stage base class (Template Method)
+├── stages.py          # 4 concrete chain steps
+└── requirements.txt</code></pre>
+<p>Run it: <code>cd project &amp;&amp; python main.py</code></p>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>When should I NOT use prompt chaining?</summary><div>When the task fits comfortably in one prompt and a single round-trip is cheaper. Chaining adds latency = N × call. Also avoid when steps are independent — use Parallelization (Ch. 3) instead.</div></details>
+<details class="qa"><summary>How do you stop error propagation between steps?</summary><div>Validate each stage's output (Pydantic schema or regex), retry/fallback inside the stage, and pass a typed DTO between stages so a downstream step can reject malformed input early.</div></details>
+<details class="qa"><summary>Chaining vs LangGraph — what's different?</summary><div>Pure chaining is a DAG with no cycles. LangGraph adds explicit state, branches, and loops, so reflection and human-in-the-loop become natural extensions of the chain.</div></details>
+</section>
+
+</main>
+<footer>Chapter 01 of 21 — Agentic Design Patterns interview prep.</footer>
+</body>
+</html>

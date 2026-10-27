@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industry Standards — Agents, Tools, Skills, and SDLC Integration</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="#guides">Guides</a>
+                <a href="#workshops">Claude Workshops</a>
+                <a href="#sdlc">SDLC samples</a>
+                <a href="#stay-updated">Stay updated</a>
+                <a href="../README.html">Workspace</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Best practices · Anthropic · OpenAI · GitHub Copilot</p>
+            <h1>Industry standards for building agents, tools, skills — and shipping them through your SDLC</h1>
+            <p class="lead">Every page on this track is grounded in <strong>official</strong> guidance from Anthropic,
+                OpenAI, and GitHub. We summarise the decisions that matter, link back to the source, and pair the theory
+                with two runnable sample projects: one wiring <strong>Claude Code</strong> into the SDLC, one wiring
+                <strong>OpenAI Codex</strong> into the SDLC.
+            </p>
+        </section>
+
+        <section class="card" id="guides">
+            <h2>Best-practice guides</h2>
+            <a class="project" href="2026-08-19-agentic-2026-playbook/index.html"><strong>NEW · THE AGENTIC ENGINEERING
+                    PLAYBOOK (AUG 2026)</strong>The methodologies that came into the light over mid-2026 and are already
+                paying off: Claude Code <em>Dynamic Workflows</em> (Claude writes its own multi-agent harness —
+                <code>ultracode</code>, six orchestration patterns), <em>Spec-Driven Development</em> / GitHub Spec Kit
+                (the spec is the source of truth), the <em>80% problem</em> &amp; context infrastructure, the
+                cost-ordered <em>verification funnel</em>, and the Codex-side playbook (plan-first, worktrees,
+                <code>/goal</code>). <em>(dated module, Aug 2026)</em>
+            </a>
+            <a class="project" href="anthropic_building_agents.html"><strong>ANTHROPIC · BUILDING EFFECTIVE
+                    AGENTS</strong>Workflows vs agents, the five workflow patterns (chaining, routing, parallelisation,
+                orchestrator-workers, evaluator-optimiser), eval scorers, and when to actually reach for an autonomous
+                agent.</a>
+            <a class="project" href="anthropic_tools_and_skills.html"><strong>ANTHROPIC · TOOLS &amp;
+                    SKILLS</strong>Prompt-engineering your tools (the agent-computer interface), and the new Skills
+                format — folder + <code>SKILL.md</code> — plus tool-use evals for teaching Claude reusable
+                workflows.</a>
+            <a class="project" href="openai_agents_sdk.html"><strong>OPENAI · AGENTS SDK + FUNCTION
+                    CALLING</strong>Agents, handoffs, guardrails, sessions, sandbox agents. Function tools with
+                auto-generated schemas. Responses API vs Agents SDK.</a>
+            <a class="project" href="github_copilot_best_practices.html"><strong>GITHUB · COPILOT BEST
+                    PRACTICES</strong>Where Copilot shines vs where it fails, inline vs Chat, prompt engineering,
+                validation, and the coding-agent workflow.</a>
+            <a class="project" href="multi_scenario_playbook.html"><strong>SCENARIO PLAYBOOK</strong>Six concrete
+                scenarios — support bot, code reviewer, RAG knowledge bot, data ETL agent, multi-agent research crew,
+                voice assistant — mapped to the right pattern, the right tools, and the right framework.</a>
+            <a class="project" href="llm_context_management.html"><strong>LLM CONTEXT MANAGEMENT</strong>How ChatGPT,
+                Claude, and Gemini keep a chat going for months without crashing — prompt caching, sliding windows,
+                background memory extraction. Everything that happens under the hood.
+            </a>
+            <a class="project" href="prompt_management_lifecycle.html"><strong>PROMPT MANAGEMENT LIFECYCLE</strong>From
+                authoring to production iteration — versioning, evals, staged rollouts, monitoring, model drift
+                detection, and closing the loop. The discipline that turns prompt engineering into software engineering.
+            </a>
+            <a class="project" href="claude_code_hooks.html"><strong>CLAUDE CODE HOOKS</strong>Lifecycle automation
+                for agentic coding — shell hooks that fire on file read/write, commands, and session exit to enforce
+                policy, run formatters, block dangerous operations, and integrate with your toolchain.
+            </a>
+            <a class="project" href="claude_code_loops.html"><strong>CLAUDE CODE LOOPS</strong>Recurring tasks and
+                autonomous iteration — the /loop command, ScheduleWakeup dynamic pacing, CronCreate durable scheduling,
+                and loop-until-dry patterns for polling deploys, monitoring CI, and periodic evals.
+            </a>
+            <a class="project" href="2026-08-03-boris-cherny-opus5-elicitation/index.html"><strong>NEW · BORIS CHERNY ON
+                    OPUS 5 &amp; CLAUDE CODE</strong>The elicitation era: press-delete ablations, verification loops,
+                goal-oriented prompting, dynamic workflows at thousand-agent scale, self-maintaining routines, and the
+                three-layer injection defense. How the senior engineer's job shifts from context engineering to task
+                elicitation. <em>(dated module, Aug 2026)</em>
+            </a>
+            <a class="project" href="autogpt_godmode_comparison.html"><strong>AUTOGPT, GODMODE &amp; CODING AGENTS</strong>A
+                side-by-side comparison of AutoGPT, Godmode, Claude Code, Codex CLI, GitHub Copilot, and Cursor — what
+                each is, how they use API keys, and when to use which.
+            </a>
+        </section>
+
+        <section class="card" id="workshops">
+            <h2>Claude Workshops (CWC 2026) — pro-creator field notes</h2>
+            <p>Eight workshops from <a href="https://github.com/anthropics/cwc-workshops" target="_blank"
+                    rel="noopener">anthropics/cwc-workshops</a>, distilled to: the stack, the levers, and — most
+                importantly — what you gain or break when you skip each lever.</p>
+            <a class="project" href="claude_workshops/index.html"><strong>CLAUDE WORKSHOPS · HUB</strong>One page
+                per workshop: <em>rightmodel</em>, <em>agent-decomposition</em>, <em>how-we-claude-code</em>,
+                <em>ship-your-first-managed-agent</em>, <em>agent-battle</em>, <em>agents-that-remember</em>,
+                <em>eval-driven-agent-development</em>, <em>production-ready deal-desk</em>. Each with explicit
+                "use vs don't use" trade-off tables.</a>
+        </section>
+
+        <section class="card" id="sdlc">
+            <h2>SDLC integration — runnable sample projects</h2>
+            <a class="project" href="claude_code_in_sdlc/README.html"><strong>SAMPLE 1 · CLAUDE CODE IN YOUR
+                    SDLC</strong>How to wire Claude Code into a Python repo: <code>CLAUDE.md</code> rules, a custom
+                Skill, slash commands, and a checked-in workflow that pairs the agent with pytest and ruff.</a>
+            <a class="project" href="codex_in_sdlc/README.html"><strong>SAMPLE 2 · CODEX (OPENAI) IN YOUR
+                    SDLC</strong>How to wire Codex CLI + OpenAI Agents SDK into the same repo: <code>AGENTS.md</code>,
+                function tools, a small orchestrator, and a CI-friendly review loop.</a>
+        </section>
+
+        <section class="card">
+            <h2>Real-world reference — India Future Portfolio</h2>
+            <p>An investment workflow built on Claude Code, applying all five Anthropic workflow patterns.
+                <a href="../../stock_analysis_claude_v2/portfolio_system_architecture.html">Architecture reference</a>
+                — documented with full industry-standards compliance matrix, <a href="../../stock_analysis_claude_v2/.claude/skills/portfolio-daily.md">11-phase skill</a>, 63+ eval tests, and an explicit simplicity-first evolution narrative.
+            </p>
+            <ul>
+                <li><strong>Prompt chaining:</strong> 11 phases with gates between each</li>
+                <li><strong>Evaluator-optimiser:</strong> Phase 5c–5d with rubric + regeneration loop</li>
+                <li><strong>Parallelisation:</strong> Per-stock intelligence via separate web searches</li>
+                <li><strong>Full scorer taxonomy:</strong> All 11 Anthropic eval scorers in use</li>
+                <li><strong>Tool ACI:</strong> When-to-use/when-not-to documented per tool</li>
+                <li><strong>Failure-mode design:</strong> Explicit error paths in every phase</li>
+            </ul>
+        </section>
+
+        <section class="card" id="stay-updated">
+            <h2>Stay updated &amp; motivated</h2>
+            <a class="project" href="stay_updated_motivated.html"><strong>LEARNING PATH · STAY UPDATED &amp;
+                    MOTIVATED</strong>The official channels to follow, a weekly cadence that actually fits a working
+                week, and a small motivation system that keeps you shipping when the news cycle gets loud.</a>
+        </section>
+
+        <section class="card">
+            <h2>How this track fits the rest of the workspace</h2>
+            <ul>
+                <li><a href="../system_design_academy/ai_engineering/index.html">system_design_academy /
+                        ai_engineering</a> — you build agentic patterns from scratch (router, planner, ReAct, reflector,
+                    multi-agent).</li>
+                <li><a href="../07_learning_projects/p10_genai_rag_platform/README.html">07_learning_projects /
+                        p10_genai_rag_platform</a> — the full RAG project.</li>
+                <li><strong>industry_standards</strong> — this folder. The <em>shipping</em> layer: how official
+                    providers say to do this, and how to put their tools into your day job.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>A note on sources</h2>
+            <p class="quiet">All claims on this track are summarised from public, official sources (Anthropic
+                engineering posts, OpenAI Agents SDK docs, GitHub Copilot docs, Claude / Codex repos). Each page lists
+                its source links at the bottom, and we do not reproduce the original text verbatim. Always treat the
+                linked source as the authoritative version — vendor docs change.</p>
+        </section>
+    </main>
+</body>
+
+</html>

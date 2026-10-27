@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2 · Fixtures and parametrize — shopping cart</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>T</span>Testing Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p1_hello_pytest/README.html">Prev: P1</a>
+                <a href="../p3_exceptions_edge_cases/README.html">Next: P3</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 2 · Beginner</p>
+            <h1>Fixtures and parametrize — write less, cover more</h1>
+            <p class="lead">In P1 every test set up its own data. That gets old fast. Here you meet the two pytest
+                features that remove most of that repetition: <strong>fixtures</strong> for shared setup and
+                <strong>parametrize</strong> for running the same test with many inputs.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Your shopping cart needs to be tested with many products, many quantities, many discount values, and a
+                few invalid inputs. If you wrote one function per case, you would end up with hundreds of nearly
+                identical tests. Instead, you write a few smart tests and let pytest do the multiplication.</p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>cart.py</code></td>
+                        <td>A small <code>ShoppingCart</code> class with add, remove, total, and discount.</td>
+                    </tr>
+                    <tr>
+                        <td><code>conftest.py</code></td>
+                        <td>Shared fixtures (catalog, empty cart, pre-loaded cart). Auto-discovered by pytest.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_cart.py</code></td>
+                        <td>Tests that consume the fixtures and use parametrize.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Mental model — fixtures are dependency injection for tests</h2>
+            <p>You declare what a test needs by adding it as a function parameter. Pytest looks up a fixture with
+                that name and builds it for you.</p>
+            <div class="flow">
+                <div class="step">Fixture <code>catalog</code></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Fixture <code>empty_cart</code></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Fixture <code>cart_with_items</code></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Test asks for one of these</div>
+            </div>
+            <p>Fixtures can depend on other fixtures, so you build up complex objects in tiny reusable pieces.</p>
+        </section>
+
+        <section class="card">
+            <h2>Core code — the fixtures</h2>
+            <pre><code>@pytest.fixture
+def catalog():
+    return {
+        "A1": Product("A1", "Notebook", 5.00),
+        "B2": Product("B2", "Pen", 1.50),
+        "C3": Product("C3", "Backpack", 49.99),
+    }
+
+@pytest.fixture
+def empty_cart(catalog):
+    return ShoppingCart(catalog=catalog)
+
+@pytest.fixture
+def cart_with_items(empty_cart):
+    empty_cart.add("A1", 2)
+    empty_cart.add("B2", 4)
+    return empty_cart</code></pre>
+            <p>Any test that asks for <code>empty_cart</code> gets a brand new cart. Tests cannot accidentally
+                pollute each other because each fixture call is independent by default.</p>
+        </section>
+
+        <section class="card">
+            <h2>Core code — parametrize replaces copy-paste</h2>
+            <pre><code>@pytest.mark.parametrize(
+    "sku,quantity,expected_total",
+    [
+        ("A1", 1, 5.00),
+        ("A1", 3, 15.00),
+        ("B2", 10, 15.00),
+        ("C3", 1, 49.99),
+    ],
+)
+def test_total_for_single_product(empty_cart, sku, quantity, expected_total):
+    empty_cart.add(sku, quantity)
+    assert empty_cart.total() == expected_total</code></pre>
+            <p>This single function generates four tests. Pytest reports each one independently, so when a case
+                fails, you know exactly which input broke.</p>
+        </section>
+
+        <section class="card">
+            <h2>conftest.py — fixtures shared across files</h2>
+            <p>If a fixture lives in <code>conftest.py</code>, every test file in that folder (and child folders)
+                can use it without any import. This is how real teams keep test data DRY.</p>
+            <div class="callout"><strong>Tip:</strong> if you find yourself importing setup helpers everywhere,
+                move them into a fixture in <code>conftest.py</code>. The test file becomes pure intent.</div>
+        </section>
+
+        <section class="card">
+            <h2>Fixture scopes — control how often setup runs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scope</th>
+                        <th>Fresh instance per…</th>
+                        <th>Use when</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>function</code> (default)</td>
+                        <td>Each test</td>
+                        <td>Most cases. Maximum isolation.</td>
+                    </tr>
+                    <tr>
+                        <td><code>class</code></td>
+                        <td>Test class</td>
+                        <td>Tests in a class share state on purpose.</td>
+                    </tr>
+                    <tr>
+                        <td><code>module</code></td>
+                        <td>Each file</td>
+                        <td>Expensive setup shared by a file.</td>
+                    </tr>
+                    <tr>
+                        <td><code>session</code></td>
+                        <td>Whole test run</td>
+                        <td>One-time setup like a Docker container or a temp DB.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 06_side_projects/testing_projects/p2_fixtures_parametrize
+pip install -r requirements.txt
+
+pytest -v
+# Run only the parametrized total test, all cases:
+pytest -v -k test_total_for_single_product
+# Run only the case with sku=A1 and quantity=3:
+pytest -v -k "A1-3"</code></pre>
+            <p>The bracketed labels you see in pytest output (for example
+                <code>test_total_for_single_product[A1-3-15.00]</code>) come from the parametrize values.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>What you should take away from P2</h2>
+            <ul>
+                <li><strong>Fixtures</strong> remove repeated setup. Tests stay short and focused.</li>
+                <li><strong>Parametrize</strong> turns one test into many. Bug fixes become a one-line addition.</li>
+                <li><strong>conftest.py</strong> shares fixtures without imports.</li>
+                <li><strong>Scopes</strong> let you control how often setup runs, but default to function scope.</li>
+            </ul>
+            <div class="callout"><strong>Interview-ready answer:</strong> "Pytest fixtures are dependency injection
+                for tests. I declare them in <code>conftest.py</code> and any test in the package can request them
+                by name. For repeated input cases I use <code>@pytest.mark.parametrize</code>, which expands one
+                function into N independently reported tests."</div>
+        </section>
+
+        <section class="card">
+            <h2>Reading order</h2>
+            <ol>
+                <li>Read <code>cart.py</code> to understand the small domain.</li>
+                <li>Read <code>conftest.py</code> to see how fixtures stack.</li>
+                <li>Read <code>test_cart.py</code> top to bottom — notice how short each test is.</li>
+                <li>Run <code>pytest -v</code> and observe the parametrized labels.</li>
+                <li>Continue to <a href="../p3_exceptions_edge_cases/README.html">P3 · Exceptions and edge cases</a>.
+                </li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

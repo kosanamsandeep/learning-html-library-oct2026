@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go P10 — GenAI RAG Platform</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Go projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p10_genai_rag_platform/README.html">Python p10</a>
+                <a href="../../rust_projects/p10_genai_rag_platform/README.html">Rust p10</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go · P10 · Capstone</span></p>
+            <h1>RAG end-to-end — chunker, embedder interface, vector store, generator</h1>
+            <p class="lead">All the patterns from p1-p9 wired into a tiny RAG pipeline. The embedder is an interface so
+                you can swap a deterministic hash embedder for a real OpenAI client. Ingest runs in parallel across a
+                goroutine pool.</p>
+        </section>
+
+        <section class="card">
+            <h2>The pipeline</h2>
+            <div class="flow">
+                <div class="step">documents</div>
+                <div class="arrow">→</div>
+                <div class="step">chunker</div>
+                <div class="arrow">→</div>
+                <div class="step">Embedder<br><small>interface</small></div>
+                <div class="arrow">→</div>
+                <div class="step">VectorStore</div>
+                <div class="arrow">→</div>
+                <div class="step">cosine search</div>
+                <div class="arrow">→</div>
+                <div class="step">generate</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Why this is a great Go fit (and a real production pattern)</h2>
+            <ol>
+                <li><strong>The embedder is the seam.</strong> One interface — <code>Embed(text) []float64</code> +
+                    <code>Dim()</code>. Swap fake, OpenAI, Ollama, BedRock without touching the rest of the code.</li>
+                <li><strong>Worker pool ingest.</strong> N workers pulling chunks from a buffered channel. Easy
+                    backpressure. This is exactly the shape used by real ingest pipelines that fan out to remote
+                    embedding APIs.</li>
+                <li><strong>Concurrency-safe store.</strong> A single mutex around an append-only slice. Predictable,
+                    cache-friendly, and good enough for hundreds of thousands of chunks.</li>
+                <li><strong>No GC pressure surprises.</strong> Vectors are <code>[]float64</code> slices — flat,
+                    contiguous memory. The same shape NumPy gives Python, but native here.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Where Rust would beat Go</h2>
+            <p>If your store grows past a few million vectors, the cosine loop becomes the bottleneck. That's where
+                teams swap the store for a Rust crate (HNSW, FAISS-rs, LanceDB) or a dedicated vector DB (Qdrant, also
+                Rust). The Go service stays — it just calls into the Rust index over a network or FFI boundary. See <a
+                    href="../../bootcamp/why_go_rust.html">Bootcamp 1</a> for the layered pattern.</p>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd go_projects/p10_genai_rag_platform
+go run .</code></pre>
+            <p>Files: <a href="main.go">main.go</a> · <a href="go.mod">go.mod</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,1387 @@
+
+########## ch1 (pdf p42) ##########
+
+In terms of organizational processes, agile working patterns provide a framework for
+adapting to change. The agile community has also developed technical tools and pat‐
+terns that are helpful when developing software in a frequently-changing environ‐
+ment, such as test-driven development (TDD) and refactoring.
+Most discussions of these agile techniques focus on a fairly small, local scale (a couple
+of source code files within the same application). In this book, we search for ways of
+increasing agility on the level of a larger data system, perhaps consisting of several
+different applications or services with different characteristics. For example, how
+would you “refactor” Twitter’s architecture for assembling home timelines (“Describ‐
+ing load” on page 9) from approach 1 to approach 2?
+The ease with which you can modify a data system, and adapt it to changing require‐
+ments, is closely linked to its simplicity and its abstractions: simple and easy-to-
+understand systems are usually easier to modify than complex ones. But since this is
+such an important idea, we will use a different word to refer to agility on a data sys‐
+tem level: evolvability [34].
+Summary
+In this chapter, we have explored some fundamental ways of thinking about data-
+intensive applications. These principles will guide us through the rest of the book,
+when we dive into deep technical detail.
+An application has to meet various requirements in order to be useful. There are
+functional requirements (what it should do, e.g. allow data to be stored, retrieved,
+searched and processed in various ways), and some non-functional requirements
+(general properties like security, reliability, compliance, scalability, compatibility and
+maintainability). In this chapter we discussed reliability, scalability and maintainabil‐
+ity in detail.
+Reliability means making systems work correctly, even when faults occur. Faults can
+be in hardware (typically random and uncorrelated), software (bugs are typically sys‐
+tematic and hard to deal with), and humans (who inevitably make mistakes from
+time to time). Fault tolerance techniques can hide certain types of fault from the end
+user.
+Scalability means having strategies for keeping performance good, even when load
+increases. In order to discuss scalability, we first need ways of describing load and
+performance quantitatively. We briefly looked at Twitter’s home timelines as an
+example of describing load, and response time percentiles as a way of measuring per‐
+formance. In a scalable system, you can add processing capacity in order to remain
+reliable under high load.
+20 
+| 
+Chapter 1: Reliable, Scalable and Maintainable Applications
+
+
+Maintainability has many facets, but in essence it’s about making life better for the
+engineering and operations teams who need to work with the system. Good abstrac‐
+tions can help reduce complexity and make the system easier to modify and adapt for
+new use cases. Good operability means having good visibility into the system’s health,
+and having effective ways of managing it.
+There is unfortunately no quick answer to making applications reliable, scalable or
+maintainable. However, there are certain patterns and techniques which keep re-
+appearing in various different kinds of application. In the next few chapters we will
+take a look at some examples of data systems, and analyze how they work towards
+those goals.
+Later in the book, in Part III, we will look at patterns for systems that consist of sev‐
+eral components working together, such as the one in Figure 1-1.
+References
+[1] Michael Stonebraker and Uğur Çetintemel: “One Size Fits All: An Idea Whose
+Time Has Come and Gone,” at 21st International Conference on Data Engineering
+(ICDE), April 2005.
+[2] Walter L Heimerdinger and Charles B Weinstock: “A Conceptual Framework for
+System Fault Tolerance,” Technical Report CMU/SEI-92-TR-033, Software Engineer‐
+ing Institute, Carnegie Mellon University, October 1992.
+[3] Ding Yuan, Yu Luo, Xin Zhuang, et al.: “Simple Testing Can Prevent Most Criti‐
+cal Failures: An Analysis of Production Failures in Distributed Data-Intensive Sys‐
+tems,” at 11th USENIX Symposium on Operating Systems Design and Implementation
+(OSDI), October 2014.
+[4] Yury Izrailevsky and Ariel Tseitlin: “The Netflix Simian Army,” techblog.net‐
+flix.com, 19 July 2011.
+[5] Daniel Ford, François Labelle, Florentina I Popovici, et al.: “Availability in Glob‐
+ally Distributed Storage Systems,” at 9th USENIX conference on Operating Systems
+Design and Implementation (OSDI), October 2010.
+[6] Brian Beach: “Hard Drive Reliability Update – Sep 2014,” backblaze.com, 23 Sep‐
+tember 2014.
+[7] Laurie Voss: “AWS: The Good, the Bad and the Ugly,” blog.awe.sm, 18 December
+2012.
+[8] Haryadi S Gunawi, Mingzhe Hao, Tanakorn Leesatapornwongsa, et al.: “What
+Bugs Live in the Cloud?,” at 5th ACM Symposium on Cloud Computing (SoCC),
+November 2014. doi:10.1145/2670979.2670986
+Summary 
+| 
+21
+
+
+[9] Nelson Minar: “Leap Second crashes half the internet,” somebits.com, 3 July 2012.
+[10] Amazon Web Services: “Summary of the Amazon EC2 and Amazon RDS Ser‐
+vice Disruption in the US East Region,” aws.amazon.com, 29 April 2011.
+[11] Richard I Cook: “How Complex Systems Fail,” Cognitive Technologies Labora‐
+tory, April 2000.
+[12] Jay Kreps: “Getting Real About Distributed System Reliability,” blog.empathy‐
+box.com, 19 March 2012.
+[13] David Oppenheimer, Archana Ganapathi, and David A Patterson: “Why do
+internet services fail, and what can be done about it?,” at 4th USENIX Symposium on
+Internet Technologies and Systems (USITS), March 2003.
+[14] Nathan Marz: “Principles of Software Engineering, Part 1,” nathanmarz.com, 2
+April 2013.
+[15] Michael Jurewitz: “The Human Impact of Bugs,” jury.me, 15 March 2013.
+[16] Raffi Krikorian: “Timelines at Scale,” at QCon San Francisco, November 2012.
+[17] Martin Fowler: Patterns of Enterprise Application Architecture. Addison Wesley,
+November 2002. ISBN: 978-0321127426
+[18] Kelly Sommers: “After all that run around, what caused 500ms disk latency even
+when we replaced physical server? Slight unbalance in rack causing vibration.” twit‐
+ter.com, 13 November 2014.
+[19] Giuseppe DeCandia, Deniz Hastorun, Madan Jampani, et al.: “Dynamo: Ama‐
+zon’s Highly Available Key-Value Store,” at 21st ACM Symposium on Operating Sys‐
+tems Principles (SOSP), October 2007.
+[20] Greg Linden: “Make Data Useful,” at Stanford University Data Mining Class
+(CS345), December 2006.
+[21] Tammy Everts: “The Real Cost of Slow Time vs Downtime,” webperformanceto‐
+day.com, 12 November 2014.
+[22] Jake Brutlag: “Speed matters for Google web search,” googleresearch.blog‐
+spot.co.uk, 22 June 2009.
+[23] Tyler Treat: “Everything You Know About Latency Is Wrong,” bravenew‐
+geek.com, 12 December 2015.
+[24] Jeffrey Dean and Luiz André Barroso: “The Tail at Scale,” Communications of the
+ACM, 
+volume 
+56, 
+number 
+2, 
+pages 
+74–80, 
+February 
+2013. 
+doi:
+10.1145/2408776.2408794
+[25] Graham Cormode, Vladislav Shkapenyuk, Divesh Srivastava, and Bojian Xu:
+“Forward Decay: A Practical Time Decay Model for Streaming Systems,” at 25th
+22 
+| 
+Chapter 1: Reliable, Scalable and Maintainable Applications
+
+
+########## ch2 (pdf p84) ##########
+
+be combined and reused in different queries. It’s less convenient for simple one-off
+queries, but it can cope better if your data is complex.
+Summary
+Data models are a huge subject, and in this chapter we have taken a quick look at a
+broad variety of different models. We didn’t have space to go into all the details of
+each model, but hopefully the overview has been enough to whet your appetite to
+find out more about the model that best fits your application’s requirements.
+Historically, data started out being represented as one big tree (the hierarchical
+model), but that wasn’t good for representing many-to-many relationships, so the
+relational model was invented to solve that problem. More recently, developers found
+that some applications don’t fit well in the relational model either. New non-
+relational “NoSQL” data stores have diverged in two main directions:
+1. Document databases target use cases where data comes in self-contained docu‐
+ments, and relationships between one document and another are rare.
+2. Graph databases go in the opposite direction, targeting use cases where anything
+is potentially related to everything.
+All three models (document, relational and graph) are widely used today, and each is
+good in its respective domain. One model can be emulated in terms of another
+model, but the result is often awkward. That’s why we have different systems for dif‐
+ferent purposes, not a single one-size-fits-all solution.
+One thing that document and graph databases have in common is that they typically
+don’t enforce a schema for the data they store, which can make it easier to adapt
+applications to changing requirements.
+Each data model comes with its own query language or framework, and we discussed
+several examples: SQL, MapReduce, MongoDB’s aggregation pipeline, Cypher,
+SPARQL and Datalog. We also touched on CSS and XSL/XPath, which aren’t data‐
+base query languages, but have interesting parallels.
+Although we have covered a lot of ground, there are still many data models left
+unmentioned. To give just a few brief examples:
+• Researchers working with genome data often need to perform sequence-
+similarity searches, which means taking one very long string (representing a
+DNA molecule) and matching it against a large database of strings that are simi‐
+lar, but not identical. None of the databases described above can handle this kind
+of usage, which is why researchers have written specialized genome database
+software like GenBank [46].
+62 
+| 
+Chapter 2: Data Models and Query Languages
+
+
+• Particle physicists have been doing Big Data-style large scale data analysis for
+decades, and projects like the Large Hadron Collider (LHC) now work with hun‐
+dreds of petabytes! At such scale, custom solutions are required, to stop the hard‐
+ware cost spiraling out of control [47].
+• Full-text search is arguably a kind of data model that is frequently used alongside
+databases. Information Retrieval is a large specialist subject that we won’t cover
+in great detail in this book, but we’ll touch on search indexes in Chapter 3 and
+Part III.
+We have to leave it there for now. In the next chapter we will discuss some of the
+trade-offs that come into play when implementing the data models described in this
+chapter.
+References
+[1] Edgar F Codd: “A Relational Model of Data for Large Shared Data Banks,” Com‐
+munications of the ACM, volume 13, number 6, pages 377–387, June 1970. doi:
+10.1145/362384.362685
+[2] Michael Stonebraker and Joseph M Hellerstein: “What Goes Around Comes
+Around,” in Readings in Database Systems, Fourth Edition, MIT Press, pages 2–41,
+2005. ISBN: 9780262693141
+[3] Pramod J Sadalage and Martin Fowler: NoSQL Distilled. Addison-Wesley, August
+2012. ISBN: 9780321826626
+[4] Eric Evans: “NoSQL: What’s in a name?,” blog.sym-link.com, 30 October 2009.
+[5] James Phillips: “Surprises in our NoSQL adoption survey,” blog.couchbase.com, 8
+February 2012.
+[6] Michael Wagner: SQL/XML:2006 – Evaluierung der Standardkonformität ausge‐
+wählter 
+Datenbanksysteme. 
+Diplomica 
+Verlag, 
+Hamburg, 
+2010. 
+ISBN:
+978-3-8366-4609-3
+[7] “XML Data in SQL Server,” SQL Server 2012 documentation, technet.micro‐
+soft.com, 2013.
+[8] “PostgreSQL 9.3.1 Documentation,” The PostgreSQL Global Development
+Group, 2013.
+[9] “The MongoDB 2.4 Manual,” MongoDB, Inc., 2013.
+[10] “RethinkDB 1.11 Documentation,” www.rethinkdb.com, 2013.
+[11] “Apache CouchDB 1.6 Documentation,” docs.couchdb.org, 2014.
+Summary 
+| 
+63
+
+
+[12] Lin Qiao, Kapil Surlaker, Shirshanka Das, et al.: “On Brewing Fresh Espresso:
+LinkedIn’s Distributed Data Serving Platform,” at ACM International Conference on
+Management of Data (SIGMOD), June 2013.
+[13] Rick Long, Mark Harrington, Robert Hain, and Geoff Nicholls: IMS Primer.
+IBM Redbook SG24-5352-00, IBM International Technical Support Organization,
+January 2000.
+[14] Stephen D Bartlett: “IBM’s IMS — Myths, Realities, and Opportunities,” The
+Clipper Group Navigator, TCG2013015LI, July 2013.
+[15] Sarah Mei: “Why you should never use MongoDB,” sarahmei.com, 11 Novem‐
+ber 2013.
+[16] J S Knowles and D M R Bell: “The CODASYL Model,” in Databases - Role and
+Structure: an advanced course, edited by P M Stocker, P M D Gray, and M P Atkin‐
+son, Cambridge University Press, pages 19–56, 1984. ISBN: 0521254302
+[17] Charles W Bachman: “The Programmer as Navigator,” Communications of the
+ACM, 
+volume 
+16, 
+number 
+11, 
+pages 
+653–658, 
+November 
+1973. 
+doi:
+10.1145/355611.362534
+[18] Joseph M Hellerstein, Michael Stonebraker, and James Hamilton: “Architecture
+of a Database System,” Foundations and Trends in Databases, volume 1, number 2,
+pages 141–259, November 2007. doi:10.1561/1900000002
+[19] Sandeep Parikh and Kelly Stirman: “Schema design for time series data in Mon‐
+goDB,” blog.mongodb.org, 30 October 2013.
+[20] Martin Fowler: “Schemaless data structures,” martinfowler.com, 7 January 2013.
+[21] Amr Awadallah: “Schema-on-Read vs. Schema-on-Write,” at Berkeley EECS
+RAD Lab retreat, Santa Cruz, CA, May 2009.
+[22] Martin Odersky: “The Trouble With Types,” at Strange Loop, September 2013.
+[23] Conrad Irwin: “MongoDB — confessions of a PostgreSQL lover,” at
+HTML5DevConf, October 2013.
+[24] “Percona Toolkit Documentation: pt-online-schema-change,” Percona Ireland
+Ltd., 2013.
+[25] Rany Keddo, Tobias Bielohlawek, and Tobias Schmidt: “Large Hadron Migra‐
+tor,” SoundCloud, 2013.
+[26] James C Corbett, Jeffrey Dean, Michael Epstein, et al.: “Spanner: Google’s
+Globally-Distributed Database,” at 10th USENIX Symposium on Operating System
+Design and Implementation (OSDI), October 2012.
+[27] Donald K Burleson: “Reduce I/O with Oracle cluster tables,” dba-oracle.com.
+64 
+| 
+Chapter 2: Data Models and Query Languages
+
+
+########## ch3 (pdf p122) ##########
+
+the total sales per store yesterday, you just need to look at the totals along the appro‐
+priate dimension — no need to scan millions of rows.
+The disadvantage is that it doesn’t have the same flexibility as querying the raw data.
+For example, there is no way of calculating which proportion of sales comes from
+items that cost more than $100, because the price isn’t one of the dimensions. Most
+data warehouses therefore try to keep as much raw data as possible, and use aggre‐
+gates such as data cubes only as a performance boost for certain queries.
+Summary
+In this chapter we tried to get to the bottom of the questions of data storage and
+retrieval. What happens when you store some data in a database, and what does the
+database do when you query for the data again later?
+On a high level, we saw that storage engines fall into two broad categories: those opti‐
+mized for transaction processing (OLTP), and those optimized for analytics. There
+are big differences between the access patterns in those use cases:
+• OLTP systems are typically user-facing, which means that they may see a huge
+volume of requests. In order to handle the load, applications usually only touch a
+small number of records in each query. The application requests records using
+some kind of key, and the storage engine uses an index to find the data for the
+requested key. Disk seek time is often the bottleneck here.
+• Data warehouses and similar analytic systems are less well-known, because they
+are primarily used by business analysts, not by end users. They handle a much
+lower volume of queries than OLTP systems, but each query is typically very
+demanding, requiring many millions of records to be scanned in a short time.
+Disk bandwidth (not seek time) is often the bottleneck here, and column-
+oriented storage is an increasingly popular solution for this kind of workload.
+On the OLTP side, we saw storage engines from two main schools of thought:
+• The log-structured school, which only permits appending to files and deleting
+obsolete files, but never updates a file that has been written. Bitcask, SSTables,
+LSM-Trees, LevelDB, Cassandra, HBase, Lucene and others belong to this group.
+• The update-in-place school, which treats the disk as fixed-size pages which can
+be overwritten. B-trees are the biggest example of this philosophy, being used in
+all major relational databases and also many non-relational ones.
+Log-structured storage engines are a comparatively recent development. Their key
+idea is that they systematically turn random-access writes into sequential writes on
+disk, which enables higher write throughput due to the performance characteristics
+of hard drives and SSDs.
+100 
+| 
+Chapter 3: Storage and Retrieval
+
+
+Finishing off the OLTP side, we did a brief tour through some more complicated
+indexing structures, and databases that are optimized for keeping all data in memory.
+We then took a detour from the internals of storage engines, to look at the high-level
+architecture of a typical data warehouse. This background illustrated why analytic
+workloads are so different from OLTP: when your queries require sequentially scan‐
+ning across a large number of rows, indexes are much less relevant. Instead it
+becomes important to encode data very compactly, to minimize the amount of data
+that the query needs to read from disk. We discussed how column-oriented storage
+helps achieve this goal.
+As an application developer, if you’re armed with this knowledge about the internals
+of storage engines, you are in a much better position to know which tool is best suited
+for your particular application. If you need to adjust a database’s tuning parameters,
+this understanding allows you to imagine what effect a higher or a lower value may
+have.
+Although this chapter couldn’t make you an expert in tuning any one particular stor‐
+age engine, it has hopefully equipped you with enough vocabulary and ideas that you
+can make sense of the documentation for the database of your choice.
+References
+[1] Alfred V Aho, John E Hopcroft, and Jeffrey D Ullman: Data Structures and Algo‐
+rithms. Addison-Wesley, 1983. ISBN: 0-201-00023-7
+[2] Thomas H Cormen, Charles E Leiserson, Ronald L Rivest, and Clifford Stein:
+Introduction to Algorithms, 3rd edition. MIT Press, 2009. ISBN: 978-0-262-53305-8
+[3] Justin Sheehy and David Smith: “Bitcask: A Log-Structured Hash Table for Fast
+Key/Value Data,” Basho Technologies, April 2010.
+[4] Yinan Li, Bingsheng He, Robin Jun Yang, Qiong Luo, and Ke Yi: “Tree Indexing
+on Solid State Drives,” Proceedings of the VLDB Endowment, volume 3, number 1,
+pages 1195–1206, September 2010.
+[5] Goetz Graefe: “Modern B-Tree Techniques,” Foundations and Trends in Data‐
+bases, volume 3, number 4, pages 203–402, August 2011. doi:10.1561/1900000028
+[6] Jeffrey Dean and Sanjay Ghemawat: “LevelDB implementation notes,” lev‐
+eldb.googlecode.com.
+[7] Dhruba Borthakur: “The History of RocksDB,” hivedata.com, 26 November 2013.
+[8] Matteo Bertozzi: “Apache HBase I/O – HFile,” blog.cloudera.com, 29 June 2012.
+Summary 
+| 
+101
+
+
+[9] Fay Chang, Jeffrey Dean, Sanjay Ghemawat, et al.: “Bigtable: A Distributed Stor‐
+age System for Structured Data,” at 7th USENIX Symposium on Operating System
+Design and Implementation (OSDI), November 2006.
+[10] Patrick O’Neil, Edward Cheng, Dieter Gawlick, and Elizabeth O’Neil: “The Log-
+Structured Merge-Tree (LSM-Tree),” Acta Informatica, volume 33, number 4, pages
+351–385, June 1996. doi:10.1007/s002360050048
+[11] Mendel Rosenblum and John K Ousterhout: “The Design and Implementation
+of a Log-Structured File System,” ACM Transactions on Computer Systems, volume
+10, number 1, pages 26–52, February 1992. doi:10.1145/146941.146943
+[12] Adrien Grand: “What is in a Lucene index?,” at Lucene/Solr Revolution, Novem‐
+ber 2013.
+[13] Deepak Kandepet: “Hacking Lucene - the Index Format,” hackerlabs.org, 1
+October 2011.
+[14] Michael McCandless: “Visualizing Lucene’s segment merges,” blog.mikemc‐
+candless.com, 11 February 2011.
+[15] Burton H Bloom: “Space/Time Trade-offs in Hash Coding with Allowable
+Errors,” Communications of the ACM, volume 13, number 7, pages 422–426, July
+1970. doi:10.1145/362686.362692
+[16] Rudolf Bayer and Edward M McCreight: “Organization and Maintenance of
+Large Ordered Indices,” Boeing Scientific Research Laboratories, Mathematical and
+Information Sciences Laboratory, report no. 20, July 1970.
+[17] Douglas Comer: “The Ubiquitous B-tree,” ACM Computing Surveys, volume 11,
+number 2, pages 121–137, June 1979. doi:10.1145/356770.356776
+[18] Emmanuel Goossaert: “Coding for SSDs,” codecapsule.com, 12 February 2014.
+[19] C Mohan and Frank Levine: “ARIES/IM: An efficient and high concurrency
+index management method using write-ahead logging,” at ACM International Con‐
+ference on Management of Data (SIGMOD), pages 371–380, June 1992. doi:
+10.1145/130283.130338
+[20] Howard Chu: “LDAP at Lightning Speed,” at BuildStuffLT, Vilnius, Lithuania,
+November 2014.
+[21] Bradley C Kuszmaul: “A Comparison of Fractal Trees to Log-Structured Merge
+(LSM) Trees,” tokutek.com, 22 April 2014.
+[22] Manos Athanassoulis, Michael S Kester, Lukas M Maas, et al.: “Designing Access
+Methods: The RUM Conjecture,” at 19th International Conference on Extending
+Database Technology (EDBT), March 2016. doi:10.5441/002/edbt.2016.42
+[23] Kevin Tseng: “LevelDB Benchmarks,” leveldb.googlecode.com, July 2011.
+102 
+| 
+Chapter 3: Storage and Retrieval
+
+
+########## ch4 (pdf p157) ##########
+
+• In Erlang OTP it is surprisingly hard to make changes to record schemas (despite
+the system having many features designed for high availability); rolling upgrades
+are possible but need to be planned carefully [52]. An experimental new maps
+datatype (a JSON-like structure, introduced in Erlang R17 in 2014) may make
+this easier in future [53].
+Summary
+In this chapter we looked at several ways of turning data structures into bytes on the
+network or bytes on disk. We saw how the details of these encodings affects not only
+their efficiency, but more importantly also the architecture of applications and your
+options for deploying them.
+In particular, many services need to support rolling upgrades, where a new version of
+a service is gradually deployed to a few nodes at a time, rather than deploying to all
+nodes simultaneously. Rolling upgrades allow new versions of a service to be released
+without downtime (thus, encouraging frequent small releases over rare big releases),
+and make deployments less risky (allowing faulty releases to be detected and rolled
+back before they affect a large number of users). These properties are hugely benefi‐
+tial for evolvability, the ease of making changes to an application.
+During rolling upgrades, or for various other reasons, we must assume that different
+nodes are running the different versions of our application’s code. Thus, it is impor‐
+tant that all data flowing around the system is encoded in a way which provides back‐
+ward compatibility (new code can read old data) and forward compatibility (old code
+can read new data).
+We discussed several data encoding formats and discussed their compatibility prop‐
+erties:
+• Programming-language-specific encodings are restricted to a single program‐
+ming language, and often fail to provide forward and backward compatibility.
+• Textual formats like JSON, XML and CSV are widespread, and their compatibil‐
+ity depends on how you use them. They have optional schema languages, which
+are sometimes helpful, and sometimes a hindrance. These formats are somewhat
+vague about datatypes, so you have to be careful with things like numbers and
+binary strings.
+• Binary schema-driven formats like Thrift, Protocol Buffers and Avro allow com‐
+pact, efficient encoding with clearly defined forward and backward compatibility
+semantics. The schema can be useful for documentation and code generation in
+statically typed languages. However, they have the downside that data needs to be
+decoded before it is human-readable.
+Summary 
+| 
+135
+
+
+We also discussed several modes of data flow, illustrating different scenarios in which
+data encodings are important:
+• Databases, where the process writing to the database encodes the data, and the
+process reading from the database decodes it.
+• RPC and REST APIs, where the client encodes a request, the server decodes the
+request and encodes a response, and the client finally decodes the response.
+• Asynchronous message-passing (using message brokers or actors), where nodes
+communicate by sending each other messages that are encoded by the sender
+and decoded by the recipient.
+We can conclude that with a bit of care, backward/forward compatibility and rolling
+upgrades are quite achievable. May your application’s evolution be rapid and your
+deployments be frequent.
+References
+[1] “Java Object Serialization Specification,” docs.oracle.com, 2010.
+[2] “Ruby 2.2.0 API Documentation,” ruby-doc.org, Dec 2014.
+[3] “The Python 3.4.3 Standard Library reference manual,” docs.python.org, Feb
+2015.
+[4] “EsotericSoftware/kryo,” github.com, Oct 2014.
+[5] “CWE-502: Deserialization of Untrusted Data,” Common Weakness Enumera‐
+tion, cwe.mitre.org, 30 July 2014.
+[6] Steve Breen: “What Do WebLogic, WebSphere, JBoss, Jenkins, OpenNMS, and
+Your Application Have in Common? This Vulnerability,” foxglovesecurity.com, 6
+November 2015.
+[7] Patrick McKenzie: “What The Rails Security Issue Means For Your Startup,” kal‐
+zumeus.com, 31 January 2013.
+[8] Eishay Smith: “jvm-serializers wiki,” github.com, Nov 2014.
+[9] “XML is a poor copy of S-expressions,” c2.com wiki.
+[10] Matt Harris: “Snowflake: An update and some very important information,”
+email to Twitter Development Talk mailing list, 19 October 2010.
+[11] Shudi (Sandy) Gao, C M Sperberg-McQueen, and Henry S Thompson: “XML
+Schema 1.1,” W3C Recommendation, May 2001.
+[12] Francis Galiegue, Kris Zyp, and Gary Court: “JSON Schema,” IETF Internet-
+Draft, February 2013.
+136 
+| 
+Chapter 4: Encoding and Evolution
+
+
+[13] Yakov Shafranovich: “RFC 4180: Common Format and MIME Type for
+Comma-Separated Values (CSV) Files,” October 2005.
+[14] “MessagePack specification,” msgpack.org.
+[15] Mark Slee, Aditya Agarwal, and Marc Kwiatkowski: “Thrift: Scalable Cross-
+Language Services Implementation,” Facebook technical report, April 2007.
+[16] “Protocol Buffers Developer Guide,” Google Inc., developers.google.com.
+[17] Igor Anishchenko: “Thrift vs Protocol Buffers vs Avro - Biased Comparison,”
+slideshare.net, 17 September 2012.
+[18] “A matrix of the features each individual language library supports,”
+wiki.apache.org.
+[19] Martin Kleppmann: “Schema evolution in Avro, Protocol Buffers and Thrift,”
+martin.kleppmann.com, 5 December 2012.
+[20] “Apache Avro 1.7.7 Documentation,” avro.apache.org, July 2014.
+[21] Doug Cutting, Chad Walters, Jim Kellerman, et al.: “[PROPOSAL] new subpro‐
+ject: Avro,” email thread on hadoop-general mailing list, mail-archives.apache.org,
+April 2009.
+[22] Tony Hoare: “Null References: The Billion Dollar Mistake,” at QCon London,
+March 2009.
+[23] Aditya Auradkar and Tom Quiggle: “Introducing Espresso — LinkedIn’s hot
+new distributed document store,” engineering.linkedin.com, 21 January 2015.
+[24] Jay Kreps: “Putting Apache Kafka to use: a practical guide to building a stream
+data platform (part 2),” blog.confluent.io, 25 February 2015.
+[25] Gwen Shapira: “The problem of managing schemas,” radar.oreilly.com, 4
+November 2014.
+[26] “Apache Pig 0.14.0 Documentation,” pig.apache.org, November 2014.
+[27] John Larmouth: ASN.1 Complete. Morgan Kaufmann, 1999. ISBN:
+0-12233-435-3
+[28] Russell Housley, Warwick Ford, Tim Polk, and David Solo: “RFC 2459: Internet
+X.509 Public Key Infrastructure: Certificate and CRL Profile,” IETF Network Work‐
+ing Group, Standards Track, January 1999.
+[29] Lev Walkin: “Question: Extensibility and dropping fields,” lionet.info, 21 Sep‐
+tember 2010.
+[30] Jesse James Garrett: “Ajax: A New Approach to Web Applications,” adaptive‐
+path.com, 18 February 2005.
+Summary 
+| 
+137
+
+
+########## ch5 (pdf p208) ##########
+
+Summary
+In this chapter, we looked at the issue of replication, that is: keeping a copy of the
+same data on several machines. Replication can serve several purposes:
+• High availability: keeping the system running, even when one machine (or sev‐
+eral machines, or an entire datacenter) goes down.
+• Disconnected operation: allowing an application to continue working when there
+is a network interruption.
+• Latency: placing data geographically close to users, so that users can interact with
+it faster.
+• Scalability: being able to handle a higher volume of reads than a single machine
+could handle, by performing reads on replicas.
+Despite being a simple goal — a copy of the same data on several machines — replica‐
+tion turns out to be a remarkably tricky problem. It requires carefully thinking about
+concurrency and about all the things that can go wrong, and dealing with the conse‐
+quences of those faults. At a minimum, we need to deal with unavailable nodes and
+network interruptions (and that’s not even considering the more insidious kinds of
+fault, such as silent data corruption due to software bugs).
+We discussed three main approaches to replication:
+1. Single-leader replication: Clients send all writes to a single node (the leader),
+which sends a stream of data change events to the other replicas (followers).
+Reads can be performed on any replica, but reads from followers might be stale.
+2. Multi-leader replication: Clients send each write to one of several leader nodes,
+any of which can accept writes. The leaders send streams of data change events to
+each other, and to any follower nodes.
+3. Leaderless replication: Clients send each write to several nodes, and read from
+several nodes in parallel in order to detect and correct nodes with stale data.
+Each has advantages and disadvantages. Single-leader replication is popular because
+it is fairly easy to understand and there is no conflict resolution to worry about.
+Multi-leader and leaderless replication can be more robust in the presence of faulty
+nodes, network interruptions and latency spikes — at the cost of being harder to rea‐
+son about, and providing only very weak consistency guarantees.
+Replication can be synchronous or asynchronous, which has a profound effect on the
+system behavior when there is a fault. Although asynchronous replication can be fast
+when the system is running smoothly, it’s important to figure out what happens
+when replication lag increases and servers fail. If a leader fails, and you promote an
+186 
+| 
+Chapter 5: Replication
+
+
+asynchronously updated follower to be the new leader, recently committed data may
+be lost.
+We looked at some strange effects that can be caused by replication lag, and we dis‐
+cussed a few consistency models which are helpful for deciding how an application
+should behave under replication lag:
+• Read-after-write consistency: a user should always see data that they submitted
+themselves.
+• Monotonic reads: after a user has seen the data at one point in time, they
+shouldn’t later see the data from some earlier point in time.
+• Consistent prefix reads: users should see the data in a state that makes causal
+sense, for example seeing a question and its reply in the correct order.
+Finally, we discussed the concurrency issues that are inherent in multi-leader and
+leaderless replication approaches: because they allow multiple writes to happen con‐
+currently, conflicts may occur. We examined an algorithm that a database might use
+to determine whether one operation happened before another, or whether they hap‐
+pened concurrently. We also touched on methods for resolving conflicts by merging
+together concurrent updates.
+In the next chapter we will continue looking at data that is distributed across multiple
+machines, through the counterpart of replication: splitting a large dataset into parti‐
+tions.
+References
+[1] Bruce G Lindsay, Patricia Griffiths Selinger, C Galtieri, et al.: “Notes on Dis‐
+tributed Databases,” IBM Research, Research Report RJ2571(33471), July 1979.
+[2] “Oracle Active Data Guard Real-Time Data Protection and Availability.” Oracle
+White Paper, June 2013.
+[3] “AlwaysOn Availability Groups.” In SQL Server Books Online, Microsoft, 2012.
+[4] Lin Qiao, Kapil Surlaker, Shirshanka Das, et al.: “On Brewing Fresh Espresso:
+LinkedIn’s Distributed Data Serving Platform,” at ACM International Conference on
+Management of Data (SIGMOD), June 2013.
+[5] Jun Rao: “Intra-cluster Replication for Apache Kafka,” at ApacheCon North
+America, February 2013.
+[6] “Highly Available Queues.” In RabbitMQ Server Documentation, Pivotal Software,
+Inc., 2014.
+Summary 
+| 
+187
+
+
+[7] Yoshinori Matsunobu: “Semi-Synchronous Replication at Facebook,” yoshinori‐
+matsunobu.blogspot.co.uk, 1 April 2014.
+[8] “Percona Xtrabackup - Documentation.” Percona LLC, 2014.
+[9] Jesse Newland: “GitHub availability this week,” github.com, 14 September 2012.
+[10] Mark Imbriaco: “Downtime last Saturday,” github.com, 26 December 2012.
+[11] John Hugg: “‘All in’ with determinism for performance and testing in dis‐
+tributed systems,” at Strange Loop, September 2015.
+[12] Amit Kapila: “WAL Internals Of PostgreSQL,” at PostgreSQL Conference
+(PGCon), May 2012.
+[13] MySQL Internals Manual. Oracle, 2014.
+[14] Yogeshwer Sharma, Philippe Ajoux, Petchean Ang, et al.: “Wormhole: Reliable
+Pub-Sub to Support Geo-replicated Internet Services,” at 12th USENIX Symposium
+on Networked Systems Design and Implementation (NSDI), May 2015.
+[15] “Oracle GoldenGate 12c: Real-time access to real-time information.” Oracle
+White Paper, October 2013.
+[16] Shirshanka Das, Chavdar Botev, Kapil Surlaker, et al.: “All Aboard the Data‐
+bus!,” at ACM Symposium on Cloud Computing (SoCC), October 2012.
+[17] Greg Sabino Mullane: “Version 5 of Bucardo database replication system,”
+blog.endpoint.com, 23 June 2014.
+[18] Werner Vogels: “Eventually Consistent,” ACM Queue, volume 6, number 6,
+pages 14–19, October 2008. doi:10.1145/1466443.1466448
+[19] Douglas B Terry: “Replicated Data Consistency Explained Through Baseball,”
+Microsoft Research, Technical Report MSR-TR-2011-137, October 2011.
+[20] Douglas B Terry, Alan J Demers, Karin Petersen, et al.: “Session Guarantees for
+Weakly Consistent Replicated Data,” at 3rd International Conference on Parallel and
+Distributed Information Systems (PDIS), pages 140–149, September 1994. doi:
+10.1109/PDIS.1994.331722
+[21] Terry Pratchett: Reaper Man: A Discworld Novel. Victor Gollancz, 1991. ISBN:
+0-575-04979-0
+[22] “Tungsten Replicator.” Continuent, Inc., 2014.
+[23] “BDR 0.10.0 Documentation,” The PostgreSQL Global Development Group,
+bdr-project.org, 2015.
+[24] Robert Hodges: “If You *Must* Deploy Multi-Master Replication, Read This
+First,” scale-out-blog.blogspot.co.uk, 30 March 2012.
+188 
+| 
+Chapter 5: Replication
+
+
+########## ch6 (pdf p230) ##########
+
+different nodes of the database cluster. Queries that involve scanning over large parts
+of the dataset particularly benefit from such parallel execution.
+Fast parallel execution of data warehouse queries is a specialized topic, and given the
+business importance of analytics, it gets a lot of commercial interest. We will touch
+on some techniques for parallel query execution in Chapter 10. For a more detailed
+overview of techniques used in parallel databases, please see the literature references
+[1, 30].
+Summary
+In this chapter we explored different ways of partitioning a large dataset into smaller
+subsets. This is necessary when you have so much data that storing and processing it
+on a single machine is no longer feasible.
+The main goal of partitioning is to spread the data and the query load evenly across
+multiple machines, avoiding hot spots (nodes with disproportionately high load).
+This requires choosing a partitioning scheme that is appropriate to your data, and
+rebalancing the partitions from time to time as nodes are added or removed from the
+cluster.
+We discussed two main approaches to partitioning:
+• Key range partitioning, where keys are sorted, and a partition owns all the keys
+from some minimum up to some maximum. This has the advantage that effi‐
+cient range queries are possible, but there is a risk of hot spots if the application
+often accesses keys that are close together in the sorted order.
+In this approach, partitions are typically rebalanced dynamically, by splitting the
+range into two sub-ranges when a partition gets too big.
+• Hash partitioning, where a hash function is applied to each key, and a partition
+owns a range of hashes. This destroys the ordering of keys, making range queries
+inefficient, but may distribute load more evenly.
+When partitioning by hash, it is common to create a fixed number of partitions
+in advance, to assign several partitions to each node, and to move entire parti‐
+tions from one node to another when nodes are added or removed.
+Hybrid approaches are also possible, for example with a compound key: using one
+part of the key to identify the partition, and another part for the sort order.
+We also discussed the interaction between partitioning and secondary indexes. A sec‐
+ondary index also needs to be partitioned, and there are two possibilities for doing
+this:
+208 
+| 
+Chapter 6: Partitioning
+
+
+• Document-partitioned index: the secondary indexes are stored in the same parti‐
+tion as the primary key and value. This means that only a single partition needs
+to be updated on write, but a read of the secondary index requires a scatter/
+gather across all partitions.
+• Term-partitioned index (global index): the secondary indexes are partitioned sep‐
+arately, using the indexed values. An entry in the secondary index may include
+records from all partitions of the primary key. When a document is written, sev‐
+eral partitions of the secondary index need to be updated; however, a read can be
+served from a single partition.
+Finally, we discussed techniques for routing queries to the appropriate partition,
+which range from simple partition-aware load balancing to sophisticated parallel
+query execution engines.
+By design, every partition operates mostly independently — that’s what allows a par‐
+titioned database to scale to multiple machines. However, operations that need to
+write to several partitions can be difficult to reason about: for example, what happens
+if the write to one partition succeeds, but another fails? In the next chapter we will
+turn to the topic of transactions, which can make multi-write operations easier to rea‐
+son about.
+References
+[1] David J DeWitt and Jim N Gray: “Parallel database systems: The future of high
+performance database systems,” Communications of the ACM, volume 35, number 6,
+pages 85–98, June 1992. doi:10.1145/129888.129894
+[2] Lars George: “HBase vs. BigTable Comparison,” larsgeorge.com, 24 November
+2009.
+[3] “The Apache HBase Reference Guide,” Apache Software Foundation,
+hbase.apache.org, 2014.
+[4] MongoDB, Inc.: “New Hash-based Sharding Feature in MongoDB 2.4,”
+blog.mongodb.org, 10 April 2013.
+[5] Ikai Lan: “App Engine datastore tip: monotonically increasing values are bad,”
+ikaisays.com, 25 January 2011.
+[6] David Karger, Eric Lehman, Tom Leighton, et al.: “Consistent Hashing and Ran‐
+dom Trees: Distributed Caching Protocols for Relieving Hot Spots on the World
+Wide Web,” at 29th Annual ACM Symposium on Theory of Computing (STOC),
+pages 654–663, 1997. doi:10.1145/258533.258660
+Summary 
+| 
+209
+
+
+[7] John Lamping and Eric Veach: “A Fast, Minimal Memory, Consistent Hash Algo‐
+rithm,” arxiv.org, June 2014.
+[8] Eric Redmond: “A Little Riak Book,” Version 1.4.0, Basho Technologies, Septem‐
+ber 2013.
+[9] “Couchbase 2.5 Administrator Guide,” Couchbase, Inc., 2014.
+[10] Avinash Lakshman and Prashant Malik: “Cassandra — A Decentralized Struc‐
+tured Storage System,” at 3rd ACM SIGOPS International Workshop on Large Scale
+Distributed Systems and Middleware (LADIS), October 2009.
+[11] Jonathan Ellis: “Facebook’s Cassandra paper, annotated and compared to
+Apache Cassandra 2.0,” datastax.com, 12 September 2013.
+[12] “CQL for Cassandra 2.0,” DataStax, Inc., 2014.
+[13] Samuel Axon: “3% of Twitter’s Servers Dedicated to Justin Bieber,” masha‐
+ble.com, 7 September 2010.
+[14] “Riak 1.4.8 Docs,” Basho Technologies, Inc., 2014.
+[15] Richard Low: “The sweet spot for Cassandra secondary indexing,” wentnet.com,
+21 October 2013.
+[16] Zachary Tong: “Customizing your document routing,” elasticsearch.org, 3 June
+2013.
+[17] “Apache Solr Reference Guide,” Apache Software Foundation, 2014.
+[18] Andrew Pavlo: “H-Store Frequently Asked Questions,” hstore.cs.brown.edu,
+October 2013.
+[19] “Amazon DynamoDB Developer Guide,” Amazon Web Services, Inc., 2014.
+[20] Rusty Klophaus: “Difference between 2I and Search,” email to riak-users mailing
+list, lists.basho.com, 25 October 2011.
+[21] Donald K Burleson: “Object partitioning in Oracle,” dba-oracle.com, 8 Novem‐
+ber 2000.
+[22] Eric Evans: “Rethinking Topology in Cassandra,” at ApacheCon Europe, Novem‐
+ber 2012.
+[23] Brandon Williams: “Virtual nodes in Cassandra 1.2,” datastax.com, 4 December
+2012.
+[24] Rafał Kuć: “Reroute API Explained,” elasticsearchserverbook.com, 30 September
+2013.
+[25] “Project Voldemort documentation,” project-voldemort.com.
+210 
+| 
+Chapter 6: Partitioning
+
+
+########## ch7 (pdf p279) ##########
+
+makes query latency much more predictable and less variable. In particular, read-
+only queries can run on a consistent snapshot without requiring any locks, which is
+very appealing for read-heavy workloads.
+Compared to serial execution, serializable snapshot isolation is not limited to the
+throughput of a single CPU core: FoundationDB distributes the detection of seriali‐
+zation conflicts across multiple machines, allowing it to scale to very high through‐
+put. Even though data may be partitioned across multiple machines, transactions can
+read and write data in multiple partitions, while still preserving serializable isolation
+[54].
+The rate of aborts significantly affects the overall performance of SSI. For example, a
+transaction that reads and writes data over a long period of time is likely to run into
+conflicts and abort, so SSI requires that read-write transactions be fairly short (long-
+running read-only transactions may be ok, depending on the implementation). How‐
+ever, SSI is probably less sensitive to slow transactions than two-phase locking or
+serial execution.
+Summary
+Transactions are an abstraction layer that allow an application to pretend that certain
+concurrency problems and certain kinds of hardware and software fault don’t exist. A
+large class of errors is reduced down to a simple transaction abort, and the applica‐
+tion just needs to try again.
+In this chapter we saw many examples of problems that transactions help prevent.
+Not all applications are susceptible to all those problems: an application with very
+simple access patterns, such as reading and writing only a single record, can probably
+manage without transactions. However, for more complex access patterns, transac‐
+tions can hugely reduce the number of potential error cases you need to think about.
+Many NoSQL systems abandoned transactions in the name of scalability, availability
+and performance. Unfortunately this means that applications using such data systems
+either need to implement their own transaction management — which is unlikely,
+because it’s hard to implement correctly — or accept that their data is approximate.
+Without transactions, various error scenarios (processes crashing, network interrup‐
+tions, power outage, disk full, unexpected concurrency, etc) mean that data can
+become inconsistent in various ways. For example, denormalized data can easily go
+out of sync with the source data. Without transactions, it becomes very difficult to
+reason about the effect that complex interacting accesses can have on the database.
+In this chapter, we went particularly deep into the topic of concurrency control. We
+discussed several widely-used isolation levels, in particular read committed, snapshot
+Summary 
+| 
+257
+
+
+isolation (sometimes called repeatable read) and serializable. We characterised those
+isolation levels by discussing various examples of race conditions:
+Dirty reads
+One client reads another client’s writes before they have been committed. The
+read committed isolation level and stronger levels prevent dirty reads.
+Dirty writes
+One client overwrites data that another client has written, but not yet committed.
+Almost all transaction implementations prevent dirty writes.
+Read skew (non-repeatable reads)
+A client sees different parts of the database at different points in time. This is
+most commonly prevented with snapshot isolation, which allows a transaction to
+read from a consistent snapshot at one point in time. It is usually implemented
+with multi-version concurrency control (MVCC).
+Lost updates
+Two clients concurrently perform a read-modify-write cycle. One overwrites the
+other’s write without incorporating its changes, so data is lost. Some implemen‐
+tations of snapshot isolation prevent this.
+Write skew
+A transaction reads something, makes a decision based on the value it saw, and
+writes the decision to the database. However, by the time the write is made, the
+premise of the decision is no longer true. Only serializable isolation prevents this.
+Phantom reads
+A transaction reads objects that match some search condition. Another client
+makes a write that affects the results of that search. Snapshot isolation prevents
+straightforward phantom reads, but phantoms in the context of write skew
+require special treatment, such as index-range locks.
+Weak isolation levels protect against some of those anomalies, and leave you, the
+application developer, to handle others manually (e.g. using explicit locking). Only
+serializable isolation protects against all of these issues. We discussed three different
+approaches to implementing serializable transactions:
+1. Literally executing transactions in a serial order. If you can make each transac‐
+tion very fast to execute, and the transaction throughput is low enough to process
+on a single CPU core, this is a simple and effective option.
+2. Two-phase locking. For decades this has been the standard way of implementing
+serializability, but many applications avoid using it because of its performance
+characteristics.
+258 
+| 
+Chapter 7: Transactions
+
+
+3. Serializable snapshot isolation, a fairly new algorithm that avoids most of the
+downsides of the previous approaches. It uses an optimistic approach, allowing
+transactions to proceed without blocking. When a transaction wants to commit,
+it is checked, and aborted if the execution was not serializable.
+The examples in this chapter used a relational data model. However, as discussed in
+“The need for multi-object transactions” on page 222, transactions are a valuable
+database feature, no matter which data model is used.
+Most of the ideas and algorithms in this chapter apply no matter whether the data‐
+base is running on a single machine, or replicated and partitioned across multiple
+machines. However, there is an additional set of difficult challenges that arises if you
+try to implement transactions in distributed databases. We’ll discuss those in the next
+two chapters.
+References
+[1] Donald D Chamberlin, Morton M Astrahan, Michael W Blasgen, et al.: “A His‐
+tory and Evaluation of System R,” Communications of the ACM, volume 24, number
+10, pages 632–646, October 1981. doi:10.1145/358769.358784
+[2] Jim N Gray, Raymond A Lorie, Gianfranco R Putzolu, and Irving L Traiger:
+“Granularity of Locks and Degrees of Consistency in a Shared Data Base,” in Model‐
+ling in Data Base Management Systems: Proceedings of the IFIP Working Conference
+on Modelling in Data Base Management Systems, edited by G.M. Nijssen, Elsevier/
+North Holland Publishing, pages 364–394, 1976. Also in Readings in Database Sys‐
+tems, edited by Joseph M. Hellerstein and Michael Stonebraker, 4th edition, MIT
+Press, 2005. ISBN: 978-0-262-69314-1
+[3] Kapali P Eswaran, Jim N Gray, Raymond A Lorie, and Irving L Traiger: “The
+Notions of Consistency and Predicate Locks in a Database System,” Communications
+of the ACM, volume 19, number 11, pages 624–633, November 1976.
+[4] “ACID transactions are incredibly helpful.” FoundationDB, LLC, 2013.
+[5] John D Cook: “ACID versus BASE for database transactions,” johndcook.com, 6
+July 2009.
+[6] Gavin Clarke: “NoSQL’s CAP theorem busters: We don’t drop ACID,” theregis‐
+ter.co.uk, 22 November 2012.
+[7] Theo Härder and Andreas Reuter: “Principles of Transaction-Oriented Database
+Recovery,” ACM Computing Surveys, volume 15, number 4, pages 287–317, Decem‐
+ber 1983. doi:10.1145/289.291
+Summary 
+| 
+259
+
+
+########## ch8 (pdf p324) ##########
+
+(e.g. about timing) are defeated due to unusual circumstances. Theoretical analysis
+and empirical testing are equally important.
+Summary
+In this chapter we have discussed a wide range of problems that can occur in dis‐
+tributed systems, including:
+• Whenever you try to send a packet over the network, it may be lost or arbitrarily
+delayed. Likewise, the reply may be lost or delayed, so if you don’t get a reply,
+you have no idea whether the message got through.
+• A node’s clock may be significantly out of sync with other nodes (despite your
+best efforts to set up NTP), it may suddenly jump forward or back in time, and
+relying on it is dangerous because you most likely don’t have a good measure of
+your clock’s error interval.
+• A process may pause for a substantial amount of time at any point in its execu‐
+tion (perhaps due to a stop-the-world garbage collector), be declared dead by
+other nodes, and then come back to life again without realizing that it was
+paused.
+All of these can be summarized as partial failures. Whenever software tries to do any‐
+thing involving other nodes, there is the possibility that it may occasionally fail, or
+randomly go slow, or not respond at all (and eventually time out). In distributed sys‐
+tems, we try to build tolerance of partial failures into software, so that the system as a
+whole may continue functioning, even when some of its constituent parts are broken.
+To tolerate faults, the first step is to detect the fault, but even that is hard. Most sys‐
+tems don’t have an accurate mechanism of detecting whether a node has failed, so
+most distributed algorithms rely on timeouts to determine whether a remote node is
+still available. However, timeouts can’t distinguish between network and node fail‐
+ures, and variable network delay sometimes causes a node to be falsely suspected of
+crashing. Moreover, sometimes a node can be in a degraded state: for example, a Gig‐
+abit network interface could suddenly drop to 1 kilobit/s throughput due to a driver
+bug [90]. Such a system that is ‘limping’, but not dead, can be even more difficult to
+deal with than a cleanly failed node.
+Once a fault is detected, making a system tolerate it is not easy either: there is no
+global variable, no shared memory, no common knowledge or any other kind of
+shared state between the machines. Nodes can’t even agree what time it is, let alone
+anything more profound. The only way how information can flow from one node to
+another is by sending it over the unreliable network. Major decisions cannot be safely
+made by a single node, so we require protocols that enlist the help from other nodes
+and try to get a majority quorum to agree.
+302 
+| 
+Chapter 8: The Trouble with Distributed Systems
+
+
+If you’re used to writing software in the idealized mathematical perfection of a single
+computer, where the same operation always deterministically returns the same result,
+then moving to the messy physical reality of distributed systems can be a bit of a
+shock. Conversely, distributed systems engineers will often regard a problem as triv‐
+ial if it can be solved on a single computer [5], and indeed a single computer can do a
+lot nowadays [91]. If you can avoid opening Pandora’s box, and simply keep things
+on a single machine, it is generally worth doing so.
+However, as discussed in the introduction to Part II, scalability is not the only reason
+for wanting to use a distributed system. Fault tolerance and low latency (by placing
+data geographically close to users) are equally important goals, and those things can‐
+not be achieved with a single node.
+In this chapter we also went on some tangents to explore whether the unreliability of
+networks, clocks and processes is an inevitable law of nature. We saw that it isn’t: it is
+possible to give hard real-time response guarantees and bounded delay in networks,
+but doing so is very expensive and results in lower utilization of hardware resources.
+Most non-safety-critical systems choose cheap and unreliable over expensive and
+reliable.
+We also touched on supercomputers, which assume reliable components, and thus
+have to be stopped and restarted entirely when a component does fail. By contrast,
+distributed systems can run forever without being interrupted at the service level,
+because all faults and maintenance can be handled at the node level — at least in
+theory. (In practice, if a bad configuration change is rolled out to all nodes, that will
+still bring a distributed system to its knees.)
+This chapter has been all about problems, and has given us a bleak outlook. In the
+next chapter we will move on to solutions, and discuss some algorithms that have
+been designed to cope with all the problems in distributed systems.
+References
+[1] Mark Cavage: “There’s Just No Getting around It: You’re Building a Distributed
+System,” 
+ACM 
+Queue, 
+volume 
+11, 
+number 
+4, 
+April 
+2013. 
+doi:
+10.1145/2466486.2482856
+[2] Jay Kreps: “Getting Real About Distributed System Reliability,” blog.empathy‐
+box.com, 19 March 2012.
+[3] Sydney Padua: The Thrilling Adventures of Lovelace and Babbage: The (Mostly)
+True Story of the First Computer. Particular Books, April 2015. ISBN:
+978-0-141-98151-2
+[4] Coda Hale: “You Can’t Sacrifice Partition Tolerance,” codahale.com, 7 October
+2010.
+Summary 
+| 
+303
+
+
+[5] Jeff Hodges: “Notes on Distributed Systems for Young Bloods,” somethingsimi‐
+lar.com, 14 January 2013.
+[6] Antonio Regalado: “Who Coined ‘Cloud Computing'?,” technologyreview.com,
+31 October 2011.
+[7] Luiz André Barroso, Jimmy Clidaras, and Urs Hölzle: “The Datacenter as a Com‐
+puter: An Introduction to the Design of Warehouse-Scale Machines, Second Edi‐
+tion,” Synthesis Lectures on Computer Architecture, volume 8, number 3, Morgan &
+Claypool Publishers, July 2013. doi:10.2200/S00516ED2V01Y201306CAC024, ISBN:
+978-1627050104
+[8] David Fiala, Frank Mueller, Christian Engelmann, et al.: “Detection and Correc‐
+tion of Silent Data Corruption for Large-Scale High-Performance Computing,” at
+International Conference for High Performance Computing, Networking, Storage and
+Analysis (SC12), November 2012.
+[9] Glenn K Lockwood: “Hadoop’s Uncomfortable Fit in HPC,” glennklock‐
+wood.blogspot.co.uk, 16 May 2014.
+[10] Arjun Singh, Joon Ong, Amit Agarwal, et al.: “Jupiter Rising: A Decade of Clos
+Topologies and Centralized Control in Google’s Datacenter Network,” at Annual
+Conference of the ACM Special Interest Group on Data Communication (SIGCOMM),
+pages 183–197, August 2015. doi:10.1145/2785956.2787508
+[11] John von Neumann: “Probabilistic Logics and the Synthesis of Reliable Organ‐
+isms from Unreliable Components,” in Automata Studies (AM-34), Claude E Shan‐
+non and John McCarthy, Editors. Princeton University Press, 1956. ISBN:
+9780691079165
+[12] Richard W Hamming: The Art of Doing Science and Engineering. Taylor & Fran‐
+cis, 1997. ISBN: 9056995006
+[13] Claude E Shannon: “A Mathematical Theory of Communication,” The Bell Sys‐
+tem Technical Journal, volume 27, number 3, pages 379–423 and 623–656, July 1948.
+[14] Peter Bailis and Kyle Kingsbury: “The Network is Reliable,” ACM Queue, vol‐
+ume 12, number 7, July 2014. doi:10.1145/2639988.2639988
+[15] Joshua B Leners, Trinabh Gupta, Marcos K Aguilera, and Michael Walfish:
+“Taming uncertainty in distributed systems with help from the network,” at 10th
+European Conference on Computer Systems (EuroSys), April 2015. doi:
+10.1145/2741948.2741976
+[16] Phillipa Gill, Navendu Jain, and Nachiappan Nagappan: “Understanding Net‐
+work Failures in Data Centers: Measurement, Analysis, and Implications,” at ACM
+SIGCOMM Conference, pages 350–361, August 2011. doi:10.1145/2018436.2018477
+[17] Mark Imbriaco: “Downtime last Saturday,” github.com, 26 December 2012.
+304 
+| 
+Chapter 8: The Trouble with Distributed Systems
+
+
+########## ch9 (pdf p385) ##########
+
+actively participate in voting. They are therefore able to serve read requests that do
+not need to be linearizable.
+Membership services
+ZooKeeper and friends can be seen as part of a long history of research into member‐
+ship services, which goes back to the 1980s and has been important for building
+highly reliable systems, e.g. for air traffic control [110].
+A membership service determines which nodes are currently active and live members
+of a cluster. As we saw throughout Chapter 8, due to unbounded network delays it’s
+not possible to reliably detect whether another node has failed. However, if you cou‐
+ple failure detection with consensus, nodes can come to an agreement about which
+node is alive and which is not.
+It could still happen that a node is incorrectly declared dead by consensus, even
+though it is actually alive. But it is nevertheless very useful for a system to have agree‐
+ment on which nodes constitute the current membership. For example, choosing a
+leader could mean simply choosing the lowest-numbered among the current mem‐
+bers. This is not possible if different nodes have divergent opinions on who the cur‐
+rent members are.
+Summary
+In this chapter we examined the topics of consistency and consensus from several dif‐
+ferent angles. We looked in depth at linearizability, a popular consistency model: its
+goal is to make replicated data appear as though there was only a single copy, and to
+make all operations act on it atomically. Although linearizability is appealing because
+it is easy to understand — it makes a database behave like a variable in a single-
+threaded program — it has the downside of being slow, especially in environments
+with large network delays.
+We also explored causality, which imposes an ordering on events in a system (what
+happened before what, based on cause and effect). Unlike linearizability, which puts
+all operations in a single, totally ordered timeline, causality provides us with a weaker
+consistency model: some things can be concurrent, so the version history is like a
+timeline with branching and merging. Causal consistency does not have the coordi‐
+nation overhead of linearizability, and is much less sensitive to network problems.
+However, even if we capture the causal ordering (for example using Lamport time‐
+stamps), we saw that some things cannot be implemented this way: in “Timestamp
+ordering is not sufficient” on page 337 we considered the example of ensuring that a
+username is unique, and rejecting concurrent registrations for the same username. If
+one node is going to accept a registration, it needs to somehow know that another
+Summary 
+| 
+363
+
+
+node isn’t concurrently in the process of registering the same name. This problem led
+us towards consensus.
+We saw that achieving consensus means to decide something in a way that all nodes
+agree what was decided, and such that the decision is irrevocable. With some digging,
+it turns out that a wide range of problems are actually reducible to consensus, and
+equivalent to each other (in the sense that if you have a solution for one of them, you
+can easily transform it into a solution for one of the others):
+Linearizable compare-and-set register
+The register needs to atomically decide whether to set its value, based on whether
+its current value equals the parameter given in the operation.
+Atomic transaction commit
+A database must decide whether to commit or abort a distributed transaction.
+Total order broadcast
+The messaging system must decide on the order in which to deliver messages.
+Locks and leases
+When several clients are racing to grab a lock or lease, the lock decides which one
+successfully acquired it.
+Membership/coordination service
+Given a failure detector (e.g. timeouts), the system must decide which nodes are
+alive, and which should be considered dead because their session timed out.
+Uniqueness constraint
+When several transactions concurrently try to create conflicting records with the
+same key, the constraint must decide which one to allow and which should fail
+with a constraint violation.
+All of these are straightforward if you only have a single node, or if you are willing to
+assign the decision-making capability to a single node. This is what happens in a
+single-leader database: all the power to make decisions is vested in the leader, which
+is why such databases are able to provide linearizable operations, uniqueness con‐
+straints, a totally ordered replication log, and more.
+However, if that single leader fails, or if a network interruption makes the leader
+unreachable, such a system becomes unable to make any progress. There are three
+ways of handling that situation:
+1. Wait for the leader to recover, and accept that the system will be blocked in the
+meantime. Many XA/JTA transaction coordinators choose this option. This
+approach does not solve consensus because it does not satisfy the termination
+property: if the leader does not recover, the system can be blocked forever.
+364 
+| 
+Chapter 9: Consistency and Consensus
+
+
+2. Manually failover by having humans choose a new leader node, and reconfigur‐
+ing the system to use it. Many relational databases take this approach. It is a kind
+of consensus by “act of God” — the human operator, outside of the computer
+system, makes the decision. The speed of failover is limited by the speed at which
+humans can act, which is generally slower than computers.
+3. Use an algorithm to automatically choose a new leader. This requires a consen‐
+sus algorithm; any system that performs automatic failover without using a pro‐
+ven consensus algorithm is likely to behave badly in adverse network conditions
+[107].
+Although a single-leader database can provide linearizability without executing a
+consensus algorithm on every write, it still requires consensus to maintain its leader‐
+ship and for leadership changes. Thus, in some sense, having a leader only “kicks the
+can down the road”: consensus is still required, only in a different place, and less fre‐
+quently. The good news is that fault-tolerant algorithms and systems for consensus
+exist, and we briefly discussed them in this chapter.
+Tools like ZooKeeper play an important role in providing an “outsourced” consen‐
+sus, failure detection and membership service that applications can use. It’s not easy
+to use, but it is much better than trying to develop your own algorithms that can
+withstand all the problems discussed in Chapter 8. If you find yourself wanting to do
+one of those things that is reducible to consensus, and you want it to be fault-tolerant,
+then it is advisable to use something like ZooKeeper.
+Nevertheless, not every system necessarily requires consensus: for example, leaderless
+and multi-leader replication systems typically do not use global consensus. The con‐
+flicts that occur in these systems (see “Handling write conflicts” on page 164) are a
+consequence of not having consensus across different leaders. But maybe that’s ok:
+maybe we simply need to cope without linearizability, and learn to work better with
+data that has branching and merging version histories.
+This chapter referenced a large body of research on the theory of distributed systems.
+Although the theoretical papers and proofs are not always easy to understand, and
+sometimes make unrealistic assumptions, they are incredibly valuable for informing
+practical work in this field: they help us reason about what can and cannot be done,
+and help us find the counter-intuitive ways in which distributed systems are often
+flawed. If you have the time, the references are well worth exploring.
+This brings us to the end of Part II of this book, in which we covered replication
+(Chapter 5), partitioning (Chapter 6), transactions (Chapter 7), distributed system
+failure models (Chapter 8), and finally consistency and consensus (Chapter 9). Now
+that we have laid a firm foundation of theory, in Part III we will turn once again to
+more practical systems, and discuss how to build powerful applications from hetero‐
+geneous building blocks.
+Summary 
+| 
+365
+
+
+########## ch10 (pdf p438) ##########
+
+If such simple filtering and mapping operations are expressed in a declarative way,
+the query optimizer can take advantage of column-oriented storage layouts (see
+“Column-oriented storage” on page 93) and read only the required columns from
+disk. Hive, Spark DataFrames and Impala also use vectorized execution (see “Mem‐
+ory bandwidth and pipelined execution” on page 96): iterating over data in a tight
+inner loop that is friendly to CPU caches, and avoiding function calls. Spark gener‐
+ates JVM bytecode [79] and Impala uses LLVM to generate native code for these
+inner loops [40].
+By incorporating declarative aspects in their high-level APIs, and having query opti‐
+mizers that can take advantage of them during execution, batch processing frame‐
+works begin to look more like MPP databases (and can achieve comparable
+performance). At the same time, by having the extensibility of being able to run arbi‐
+trary code and read data in arbitrary formats, they retain their flexibility advantage.
+Specialization for different domains
+While the extensibility of being able to run arbitrary code is useful, there are also
+many common cases where standard processing patterns keep reoccurring, and so it
+is worth having reusable implementations of the common building blocks. Tradition‐
+ally, MPP databases have served the needs of business intelligence analysts and busi‐
+ness reporting, but that is just one among many domains in which batch processing
+is used.
+Another domain of increasing importance is statistical and numerical algorithms,
+which are needed for machine learning applications. Reusable implementations are
+emerging: for example, Mahout implements various algorithms for machine learning
+on top of MapReduce, Spark and Flink, while MADlib implements similar function‐
+ality inside a relational MPP database (Greenplum/HAWK) [55].
+Also useful are spatial algorithms, for example k-nearest neighbors [80] which
+searches for items that are close to a given item in some multidimensional space — a
+kind of similarity search. Approximate search is also important for genome analysis
+algorithms, which need to find strings that are similar but not identical [81].
+Batch processing engines are being used for distributed execution of algorithms from
+an increasingly wide range of domains. As batch processing systems gain built-in
+functionality and high-level declarative operators, and as MPP databases become
+more programmable and flexible, the two are beginning to look more alike: in the
+end, they are all just systems for storing and processing data.
+Summary
+In this chapter we explored the topic of batch processing. We started by looking at
+Unix tools such as awk, grep and sort, and we saw how the design philosophy of
+416 
+| 
+Chapter 10: Batch Processing
+
+
+those tools is carried forward into MapReduce and more recent dataflow engines.
+Some of those design principles include: inputs are immutable, outputs are intended
+to become the input to another (as yet unknown) program, and complex problems
+are solved by composing small tools that “do one thing well”.
+In the Unix world, the uniform interface that allows one program to be composed
+with another is files and pipes; in MapReduce, that interface is a distributed filesys‐
+tem. We saw that dataflow engines add their own pipe-like data transport mecha‐
+nisms to avoid materializing intermediate state to the distributed filesystem, but the
+initial input and the final output of a job is still usually HDFS.
+The the two main problem that distributed batch processing frameworks need to
+solve are partitioning and fault tolerance:
+Partitioning
+In MapReduce, mappers are partitioned according to input file blocks. The out‐
+put of mappers is re-partitioned, sorted and merged into a configurable number
+of reducer partitions. The purpose of this process is to bring all the related data,
+e.g. all the records with the same key, together in the same place.
+Post-MapReduce dataflow engines try to avoid sorting unless it is required, but
+they otherwise take a broadly similar approach to partitioning.
+Fault tolerance
+MapReduce frequently writes to disk, which makes it easy for a job to recover
+from an individual failed task without restarting the entire job, but which slows
+down execution in the failure-free case. Dataflow engines perform less materiali‐
+zation of intermediate state and keep more in memory, which means that they
+need to recompute more data if a node fails. Deterministic operators reduce the
+amount of data that needs to be recomputed.
+We discussed several join algorithms for MapReduce, most of which are also inter‐
+nally used in MPP databases and dataflow engines. They also provide a good illustra‐
+tion of how partitioned algorithms work:
+Sort-merge joins
+Each of the inputs being joined goes through a mapper that extracts the join key.
+By partitioning, sorting and merging, all the records with the same key end up
+going to the same call of the reduce function. This function can then output the
+joined records.
+Broadcast hash joins
+One of the two join inputs is small, so it is not partitioned and it can be entirely
+loaded into a hash table. Thus, you can start a mapper for each partition of the
+large join input, load the hash table for the small input into each mapper, and
+Summary 
+| 
+417
+
+
+then scan over the large input one record at a time, querying the hash table for
+each record.
+Partitioned hash joins
+If the two join inputs are partitioned in the same way (using the same key, same
+hash function, and same number of partitions), then the hash-table approach can
+be used independently for each partition.
+Distributed batch processing engines have a deliberately restricted programming
+model: callback functions (such as mappers and reducers) are assumed to be stateless,
+and to have no externally visible side-effects besides their designated output. This
+allows the framework to hide some of the hard distributed systems problems: in the
+face of crashes and network issues, tasks can be retried safely, and the output from
+any failed tasks is discarded. If several tasks for a partition succeed, only one of them
+actually makes its output visible.
+Therefore, your code in a batch processing job does not need to worry about imple‐
+menting fault tolerance mechanisms: the framework can guarantee that the final out‐
+put of a job is the same as if no faults had occurred, even though in reality various
+tasks perhaps had to be retried. These reliable semantics are much stronger than what
+you usually have in online services that handle user requests, and that write to data‐
+bases as a side-effect of processing a request.
+The distinguishing feature of a batch processing jobs is that it reads some input data
+and produces some output data, without modifying the input — in other words, the
+output is derived from the input. Crucially, the input data is bounded: it has a known,
+fixed size — for example, it consists of a set of log files at some point in time, or a
+snapshot of a database’s contents. Because it is bounded, a job knows when it has fin‐
+ished reading the entire input, and so a job eventually completes when it is done.
+In the next chapter, we will turn to stream processing, in which the input is unboun‐
+ded — that is, you still have a job, but its inputs are never-ending streams of data. In
+this case, a job is never complete, because at any time there may still be more work
+coming in. We shall see that stream and batch processing are similar at some level,
+but the assumption of unbounded streams also changes a lot about how we build sys‐
+tems.
+References
+[1] Jeffrey Dean and Sanjay Ghemawat: “MapReduce: Simplified Data Processing on
+Large Clusters,” at 6th USENIX Symposium on Operating System Design and Imple‐
+mentation (OSDI), December 2004.
+[2] Joel Spolsky: “The Perils of JavaSchools,” joelonsoftware.com, 25 December 2005.
+418 
+| 
+Chapter 10: Batch Processing
+
+
+########## ch11 (pdf p484) ##########
+
+last write with the value. Thus, you can tell whether an update has already been
+applied, and avoid performing the same update again.
+The state handling in Storm’s Trident is based on a similar idea [65]. Relying on
+idempotence implies several assumptions: restarting a failed task must replay the
+same messages in the same order (a log-based message broker does this), the process‐
+ing must be deterministic, and no other node may concurrently update the same
+value [80].
+When failing over from one processing node to another, fencing may be required (see
+“The leader and the lock” on page 293) to prevent interference from a node that is
+thought to be dead but is actually alive. Despite all those caveats, idempotent opera‐
+tions can be an effective way of achieving exactly-once semantics with only a small
+overhead.
+Rebuilding state after a failure
+Any stream process that requires state — for example, any windowed aggregations
+(such as counters, averages and histograms) and any tables and indexes used for joins
+— must ensure that this state can be recovered after a failure.
+One option is to keep the state in a remote datastore and replicate it, although (as
+discussed in “Stream-table join (stream enrichment)” on page 457) having to query a
+remote database for each individual message can be slow. A better option is to keep
+state local to the stream processor, and to replicate it periodically. Then, when the
+stream processor is recovering from a failure, the new task can read the replicated
+state, and resume processing without data loss.
+For example, Flink periodically captures snapshots of operator state and writes them
+to durable storage such as HDFS [76, 77]; Samza and Kafka Streams replicate state
+changes by sending them to a dedicated Kafka topic with log compaction, similar to
+change data capture [71, 81].
+In some cases, it may not even be necessary to replicate the state, because it can be
+rebuilt from the input streams. For example, if the state consists of aggregations over
+a fairly short window, it may be fast enough to simply replay the input events corre‐
+sponding to that window. If the state is a local replica of a database, maintained by
+change data capture, the database can also be rebuilt from the log-compacted change
+stream (see “Log compaction” on page 441).
+Summary
+In this chapter we have discussed event streams, what purposes they serve and how to
+process them. In some ways, stream processing is very much like the batch processing
+we discussed in Chapter 10, but done continuously on an unbounded (never-ending)
+462 
+| 
+Chapter 11: Stream Processing
+
+
+stream rather than on a fixed-size input. From this perspective, message brokers and
+event logs serve as the streaming equivalent of a filesystem.
+We spent some time comparing two types of message broker:
+AMQP/JMS-style message brokers
+The broker assigns individual messages to consumers, and consumers acknowl‐
+edge individual messages when they have been successfully processed. Messages
+are deleted from the broker once they have been acknowledged. This approach is
+appropriate as an asynchronous form of RPC (see also “Message passing data
+flow” on page 132), for example in a task queue, where the exact order of mes‐
+sage processing is not important, and where there is no need to go back and read
+old messages again after they have been processed.
+Log-based message brokers
+The broker assigns all messages in a partition to the same consumer node, and
+always delivers messages in the same order. Parallelism is achieved through par‐
+titioning, and consumers track their progress by checkpointing the offset of the
+last message they have processed. The broker retains messages on disk, so it is
+possible to jump back and re-read old messages if necessary.
+The log-based approach has similarities to replication logs found in databases (see
+Chapter 5) and log-structured storage engines (see Chapter 3). We saw that this
+approach is especially appropriate for stream processing systems that consume input
+streams and generate derived state or derived output streams.
+In terms of where streams come from, we discussed several possibilities: user activity
+events, sensors providing periodic readings, and data feeds (e.g. market data in
+finance) are naturally represented as streams. We saw that it can also be useful to
+think of the writes to a database as a stream: it can capture the changelog, i.e. the his‐
+tory of all changes made to a database, either implicitly through change data capture
+or explicitly through event sourcing. Log compaction allows the stream to retain a
+full copy of the contents of a database.
+Representing databases as streams opens up powerful opportunities for integrating
+systems. You can keep derived data systems such as search indexes, caches and ana‐
+lytics systems continually up-to-date by consuming the log of changes and applying
+them to the derived system. You can even build fresh views onto existing data by
+starting from scratch and consuming the log of changes from the beginning all the
+way to the present.
+The facilities for maintaining state as streams and replaying messages are also the
+basis for the techniques that enable streaming joins and fault tolerance in various
+stream processing frameworks. We discussed several purposes of stream processing,
+including searching for event patterns (complex event processing), computing win‐
+Summary 
+| 
+463
+
+
+dowed aggregations (stream analytics), and keeping derived data systems up-to-date
+(materialized views).
+We then discussed the difficulties of reasoning about time in a stream processor,
+including the distinction between processing time and event timestamps, and the
+problem of dealing with straggler events that arrive after you thought your window
+was complete.
+We distinguished three types of join that may appear in stream processes:
+Stream-stream joins
+Matching two events that occur within some window of time — for example, two
+actions taken by the same user within 30 minutes of each other.
+Stream-table joins
+One input stream consists of activity events, while the other is a database change‐
+log. The changelog keeps a local copy of the database up-to-date, while activity
+events query the database and output an enriched activity event.
+Table-table joins
+Both input streams are database changelogs. In this case, every change on one
+side is joined with the latest state of the other side. The result is a stream of
+changes to the materialized view of the two tables.
+Finally, we discussed techniques for achieving fault tolerance and exactly-once
+semantics in a stream processor. As with batch processing, we need to discard the
+partial output of any failed tasks. However, since a stream process is long-running
+and produces output continuously, we can’t simply discard all output. Instead, a
+finer-grained recovery mechanism can be used, based on microbatching, checkpoint‐
+ing, transactions, or idempotent writes.
+References
+[1] Tyler Akidau, Robert Bradshaw, Craig Chambers, et al.: “The Dataflow Model: A
+Practical Approach to Balancing Correctness, Latency, and Cost in Massive-Scale,
+Unbounded, Out-of-Order Data Processing,” Proceedings of the VLDB Endowment,
+volume 8, number 12, pages 1792–1803, August 2015. doi:10.14778/2824032.2824076
+[2] Harold Abelson, Gerald Jay Sussman, and Julie Sussman: Structure and Interpre‐
+tation of Computer Programs, Second Edition. MIT Press, July 1996. ISBN:
+9780262510875, online at mitpress.mit.edu.
+[3] Joseph M Hellerstein and Michael Stonebraker: Readings in Database Systems,
+Fourth Edition. MIT Press, January 2005. ISBN: 978-0-262-69314-1, red‐
+book.cs.berkeley.edu.
+464 
+| 
+Chapter 11: Stream Processing
+

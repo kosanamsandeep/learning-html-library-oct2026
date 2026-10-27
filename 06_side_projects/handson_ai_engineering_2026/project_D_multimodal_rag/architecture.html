@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<title>Project D · Multimodal RAG · Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+ :root{--accent:#7cf0ff;--line:#2a345a;--panel:#121a33;--ink:#e8ecf7;--muted:#a8b3d1}
+ body{margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:#070a17;color:var(--ink);line-height:1.55}
+ header{padding:36px 28px;background:radial-gradient(900px 320px at 0 0,#1a2452 0,transparent 60%);border-bottom:1px solid var(--line)}
+ header h1{margin:0;color:#fff;font-size:1.9rem}header .tag{color:var(--accent);font-size:.85rem}
+ main{padding:28px;max-width:1200px;margin:auto}
+ section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px}
+ section h2{margin-top:0;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:8px}
+ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem}
+ th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+ th{background:#1b2549;color:#cfe1ff}tr:hover td{background:#192142}
+ code{background:#0a0f24;padding:1px 6px;border-radius:4px;color:#ffd6a5}
+ .mermaid{background:#0a0f24;border-radius:8px;padding:16px}
+ .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:600}
+ .ok{background:rgba(124,255,178,.12);color:#7CFFB2;border:1px solid rgba(124,255,178,.4)}
+ .warn{background:rgba(255,209,102,.12);color:#ffd166;border:1px solid rgba(255,209,102,.4)}
+ .bad{background:rgba(255,107,107,.12);color:#ff6b6b;border:1px solid rgba(255,107,107,.4)}
+ a{color:var(--accent)} .crumbs{margin-bottom:14px;color:var(--muted)}
+</style></head><body>
+<header><div class="crumbs"><a href="../INDEX.html">← Back to Suite Index</a></div>
+<div class="tag">🎬 Multimodal · ColPali-style · ChromaDB</div>
+<h1>Project D — Multimodal RAG</h1>
+<p style="color:var(--muted);max-width:900px">Ingest text, image, audio and video,
+search them in one index, and answer questions with the original media re-attached
+so a vision-LLM can ground its response.</p></header>
+<main>
+
+<section><h2>1 · Ingestion Pipeline</h2>
+<div class="mermaid">
+flowchart LR
+  T[*.txt / *.md] --> TXT[paragraph chunker]
+  IMG[*.png / *.jpg] --> CAP[GPT-5-Vision caption]
+  AUD[*.mp3 / *.wav] --> WHIS[faster-whisper transcript]
+  VID[*.mp4 / *.mov] --> KF[OpenCV keyframes / 5s]
+  KF --> CAP
+  TXT --> EMB[BGE-Large embedder]
+  CAP --> EMB
+  WHIS --> EMB
+  EMB --> CHR[(ChromaDB<br/>modality metadata)]
+</div>
+</section>
+
+<section><h2>2 · Query Path</h2>
+<div class="mermaid">
+flowchart LR
+  Q[Question] --> R[Chroma similarity search<br/>optional modality filter]
+  R --> CTX[Hits w/ media_uri]
+  CTX --> VLM[GPT-5-Vision<br/>text + re-attached images]
+  VLM --> ANS[Cited answer]
+</div>
+</section>
+
+<section><h2>3 · ERD</h2>
+<div class="mermaid">
+erDiagram
+  ASSET ||--o{ MM_CHUNK : decomposes_to
+  ASSET    { string asset_id PK
+             string source_path
+             string mime_type }
+  MM_CHUNK { string chunk_id PK
+             string asset_id FK
+             string modality
+             text   text
+             string media_uri
+             vector embedding }
+</div>
+</section>
+
+<section><h2>4 · 2026 Stack Evaluation</h2>
+<table><thead><tr><th>Layer</th><th>Choice</th><th>Status</th><th>Note</th></tr></thead><tbody>
+<tr><td>Image retrieval</td><td>VLM caption + text embedding</td><td><span class="pill warn">OK</span></td><td>SOTA: ColPali / SigLIP-2 page embeddings.</td></tr>
+<tr><td>Audio</td><td>faster-whisper</td><td><span class="pill ok">SOTA</span></td><td>Drop-in upgrade: Whisper-Large-v3 Turbo, NVIDIA Canary.</td></tr>
+<tr><td>Video</td><td>Keyframe + audio fusion</td><td><span class="pill warn">Basic</span></td><td>Upgrade: Twelve Labs Marengo / Pegasus.</td></tr>
+<tr><td>Vector DB</td><td>ChromaDB persistent</td><td><span class="pill ok">Modern</span></td><td>Prod: Qdrant / LanceDB for scale.</td></tr>
+<tr><td>Generator</td><td>GPT-5-Vision (image re-attach)</td><td><span class="pill ok">SOTA</span></td><td>Original media beats caption-only.</td></tr>
+<tr><td>Eval</td><td>Missing</td><td><span class="pill bad">Add</span></td><td>Multimodal eval: MM-Bench, video-MME.</td></tr>
+</tbody></table>
+</section>
+
+</main>
+<script>mermaid.initialize({startOnLoad:true,theme:'dark'});</script>
+</body></html>

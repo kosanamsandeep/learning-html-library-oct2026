@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>05 — The Codex & Cross-Tool Playbook</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38; --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575; --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f; --green:#a3e077; --violet:#c09bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← Agentic Engineering Playbook</a> · Module 05</div>
+  <h1>The Codex &amp; <em style="color:var(--violet);font-style:normal;">Cross-Tool Playbook</em></h1>
+  <p>The same 2026 shift on the OpenAI side — from <strong>"Prompt → Code"</strong> to <strong>"Goal → Loop → Review → Iterate → Converge"</strong> — plus the practical discipline of running several agent tools side by side.</p>
+
+  <h2>The plan-first decision rule</h2>
+  <div class="callout"><strong>The rule that saves half an hour of bad diffs:</strong>
+    <ul style="margin-top:0.5rem;">
+      <li><strong>Simple, single-file changes</strong> go direct — "if you can name the file and the change in one sentence, skip planning." (Add a debounce to <code>SearchBar.tsx</code>.)</li>
+      <li><strong>Complex or cross-cutting tasks</strong> use plan mode first — "if you find yourself writing a paragraph to explain the task, plan mode will save you." (Refactor the auth flow.)</li>
+    </ul>
+    Start with <em>"show me the plan first"</em> before <em>"implement this."</em>
+  </div>
+
+  <h2>Worktrees for parallel sessions</h2>
+  <div class="card">
+    <p>Running 4–6 Codex sessions per codebase is now ordinary. The recommended pattern is <strong>git worktrees</strong>, not branch-switching:</p>
+    <pre><code>git worktree add ../proj-feat-auth feat/auth
+git worktree add ../proj-fix-cors  fix/cors
+(cd ../proj-feat-auth &amp;&amp; codex)</code></pre>
+    <ul>
+      <li>Each worktree gets its own <code>node_modules</code>, build cache, and test cache — sessions don't thrash each other.</li>
+      <li>Trade-off: significantly more disk (10 GB+ on a 2 GB repo with 5 worktrees).</li>
+    </ul>
+  </div>
+
+  <h2><code>/goal</code> for multi-day tasks</h2>
+  <div class="card">
+    <ul>
+      <li>Enable via <code>goals = true</code> under <code>[features]</code> in <code>~/.codex/config.toml</code>.</li>
+      <li><code>/goal &lt;objective&gt;</code> declares a goal; bare <code>/goal</code> checks status; <code>/goal pause</code> / <code>/goal resume</code> / <code>/goal clear</code> manage the thread.</li>
+      <li>Best for: large migrations touching 40+ files, incident postmortems, spikes you must drop and resume without re-explaining.</li>
+      <li>Overkill for anything finishable in one sitting — <code>codex resume --last</code> suffices.</li>
+    </ul>
+  </div>
+
+  <h2>The OMX workflow layer — clarify → plan → own → team</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph LR
+    A["$deep-interview<br/>clarify requirements + non-goals"] --> B["$ralplan<br/>stabilize the plan + tradeoffs"]
+    B --> C["$ralph<br/>one owner agent to completion"]
+    B --> D["$team<br/>parallel workers, after plan is locked"]
+  </div>
+  </div>
+  <div class="card">
+    <p>A community methodology layered on Codex with four fixed entry points that enforce an action order: <strong>don't start coding immediately — clarify first, lock the plan, then decide between one agent pushing through or a parallel team.</strong></p>
+  </div>
+
+  <h2>External memory &amp; loops — CodexLoop</h2>
+  <div class="card">
+    <p>Community tooling that fixes two known failure modes of long AI tasks — <strong>goal degradation</strong> (models take the shortest path, producing demos without tests/docs) and <strong>long-task amnesia</strong>:</p>
+    <ul>
+      <li><strong>Persistent checklists</strong> — the AI reviews results each round, discovers new work, updates a todo list.</li>
+      <li><strong>Automatic review loops</strong> — Review → Decide → Act, evaluating whether output matches the goal.</li>
+      <li><strong>Deferred ideas file</strong> (<code>deferred.md</code>) — captures new ideas without letting the agent diverge.</li>
+      <li><strong>Audit logs</strong> — every action, decision, and reason recorded for traceability.</li>
+      <li><strong>Explicit gates / reviews / checklists</strong> as "engineering constraints" against shortcut-taking (mocks instead of real implementations, skipped tests).</li>
+    </ul>
+  </div>
+
+  <h2>AGENTS.md vs Skills vs Subagents</h2>
+  <table>
+    <thead><tr><th>Tool</th><th>Use for</th><th>Don't use for</th></tr></thead>
+    <tbody>
+      <tr><td><strong>AGENTS.md</strong></td><td>Durable repo rules: structure, build/test/lint commands, conventions, definition of done</td><td>Long manuals — put the full policy in docs or skills. "Put the map in AGENTS.md."</td></tr>
+      <tr><td><strong>Skills</strong></td><td>Repeatable workflows: release checks, code review, doc publishing</td><td>One-off task instructions</td></tr>
+      <tr><td><strong>Subagents</strong></td><td>Parallel research, multi-lens PR review (security, bugs, test flakiness, maintainability separately)</td><td>Tightly coupled edits that need one focused thread</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Cross-tool &amp; governance practice</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Cross-tool workflows:</strong> e.g. Claude Code coordinates while Codex applies mechanical changes; Codex <code>code-review</code>/<code>code-remediate</code> run as self-contained local loops reading PR evidence via <code>gh</code>.</li>
+      <li><strong>AI gateways</strong> route agent CLI requests across providers with failover chains, per-call audit trails, cost budgets, and <strong>guardrail scanners</strong> — secret detection, prompt-injection detection (critical since agents read third-party code), PII, and hallucination detection with tool-call results as ground truth.</li>
+      <li><strong>Skills are now first-class:</strong> workspace plugin sharing with access controls, marketplace install/upgrade, remote plugin bundle caching.</li>
+      <li><strong>Large-repo hygiene:</strong> ask for a map before edits ("map the repo, list entrypoints and test commands. Do not edit."), constrain search scope, define done criteria explicitly (weak "improve this page" vs strong "shorten the intro, keep H2 structure, no code blocks"), and include scope + non-goals.</li>
+    </ul>
+  </div>
+
+  <div class="callout warn"><strong>⚠️ The trap:</strong> the same 2026 lesson applies across every tool — structure beats raw capability. Teams extracting the most value aren't the ones with the most expensive models; they're the ones with disciplined workflows that play to agent strengths and design around their weaknesses.</div>
+
+  <div class="card">
+    <h3>Sources</h3>
+    <p style="font-size:0.85rem;color:var(--mute);">
+      · <a href="https://developers.openai.com/cookbook/examples/codex/iterating-development-workflows-with-codex">OpenAI Cookbook · Iterating Development Workflows with Codex</a><br>
+      · <a href="https://ofox.ai/blog/codex-cli-real-world-coding-workflow/">Codex CLI workflow: the setup senior devs use in 2026</a><br>
+      · <a href="https://github.com/outlinedriven/odin-codex-plugin">ODIN · Outline-Driven Development for Codex CLI</a> (OMX layers)<br>
+      · <a href="https://docs.kanaries.net/topics/AICoding/codex-how-to-use">How to use Codex: CLI, AGENTS.md, Skills, large-repo workflows</a><br>
+      · <a href="https://futureagi.com/blog/ai-gateway-codex-cli-governance-cost-provider-flexibility-2026/">AI gateway for Codex CLI in 2026 · governance playbook</a>
+    </p>
+  </div>
+
+  <a class="prev" href="04-verification-funnel.html">← Back: The Verification Funnel</a>
+  <a class="next" href="index.html">Back to hub →</a>
+
+</div>
+</body>
+</html>

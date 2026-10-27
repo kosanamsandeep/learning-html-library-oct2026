@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CountVectorizer vs TF-IDF vs Word2Vec</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="transformer-basics.html">Basics</a>
+                <a href="rag.html">RAG</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">Why text needs vectorization</a>
+            <a href="#count">CountVectorizer</a>
+            <a href="#tfidf">TF-IDF</a>
+            <a href="#word2vec">Word2Vec</a>
+            <a href="#comparison">Direct comparison</a>
+            <a href="#which-better">Which is better and when</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Representation learning</p>
+                    <h1>CountVectorizer vs TF-IDF vs Word2Vec</h1>
+                    <p>Before transformers and modern embedding APIs, classical text vectorization methods were the main way to convert text into numbers a machine learning model could use. These approaches still matter because they are fast, interpretable, and often useful baselines.</p>
+                    <p>The main question each method answers is: <strong>how should text be represented numerically so similar text ends up with useful mathematical structure?</strong></p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Simple map</h2>
+                    <p class="formula">CountVectorizer = raw term counts
+TF-IDF = importance-weighted counts
+Word2Vec = learned semantic embeddings</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Why text cannot go directly into classic ML</h3>
+                        <p>Most classical machine learning models need numeric input. Raw text must first be transformed into vectors so the model can compute similarity, weights, or class boundaries.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why the representation matters</h3>
+                        <p>A bad representation loses meaning or creates noisy features. A good representation preserves the signals that matter for the downstream task such as topic, sentiment, or semantic similarity.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="count">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Method 1</p>
+                        <h2>CountVectorizer</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works internally</h3>
+                        <p>CountVectorizer builds a vocabulary from the corpus and creates one feature per word or token. Each document becomes a sparse vector where the value is simply the number of times that token appears.</p>
+                        <p class="formula">document -> vocabulary positions -> token counts</p>
+                    </div>
+                    <div class="card">
+                        <h3>Advantages</h3>
+                        <ul class="stack-list">
+                            <li>Very simple and fast to build.</li>
+                            <li>Highly interpretable because features map directly to words.</li>
+                            <li>Works surprisingly well for straightforward classification baselines.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="warning-card">
+                    <h3>Main weakness</h3>
+                    <p>It treats all words as independent symbols and ignores meaning. It also overvalues very common words unless additional filtering is used.</p>
+                </div>
+            </section>
+
+            <section class="section" id="tfidf">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Method 2</p>
+                        <h2>TF-IDF</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works internally</h3>
+                        <p>TF-IDF starts from term counts, then downweights tokens that appear in many documents and upweights tokens that are distinctive for a particular document.</p>
+                        <p class="formula">TF-IDF(term, doc) = TF(term, doc) x IDF(term)</p>
+                    </div>
+                    <div class="card">
+                        <h3>Advantages</h3>
+                        <ul class="stack-list">
+                            <li>Better than raw counts when frequent common words dominate the corpus.</li>
+                            <li>Still sparse and interpretable.</li>
+                            <li>Often a strong baseline for search, topic classification, and document similarity.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="warning-card">
+                    <h3>Main weakness</h3>
+                    <p>It still does not understand semantic similarity. Words like <strong>car</strong> and <strong>automobile</strong> remain unrelated unless they literally co-occur through features such as n-grams or other processing.</p>
+                </div>
+            </section>
+
+            <section class="section" id="word2vec">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Method 3</p>
+                        <h2>Word2Vec embeddings</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works internally</h3>
+                        <p>Word2Vec learns dense vector representations by predicting context. In CBOW it predicts a target word from surrounding words. In Skip-Gram it predicts surrounding words from a target word. Words used in similar contexts get similar vectors.</p>
+                        <p class="formula">similar context -> similar embedding space location</p>
+                    </div>
+                    <div class="card">
+                        <h3>Advantages</h3>
+                        <ul class="stack-list">
+                            <li>Captures semantic relationships better than bag-of-words methods.</li>
+                            <li>Dense vectors are compact compared to huge sparse vocab vectors.</li>
+                            <li>Can reveal useful similarity structure such as king - man + woman ≈ queen.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="warning-card">
+                    <h3>Main weakness</h3>
+                    <p>Word2Vec gives one vector per word type, not one vector per word occurrence. That means it cannot fully resolve context-specific meaning like <strong>bank</strong> in river bank versus financial bank.</p>
+                </div>
+            </section>
+
+            <section class="section" id="comparison">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>CountVectorizer</th>
+                                <th>TF-IDF</th>
+                                <th>Word2Vec</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Vector type</td>
+                                <td>Sparse</td>
+                                <td>Sparse</td>
+                                <td>Dense</td>
+                            </tr>
+                            <tr>
+                                <td>Uses frequency?</td>
+                                <td>Yes, raw count</td>
+                                <td>Yes, weighted by inverse document frequency</td>
+                                <td>Not as raw frequency features; learned through context prediction</td>
+                            </tr>
+                            <tr>
+                                <td>Captures semantics?</td>
+                                <td>No</td>
+                                <td>Very limited</td>
+                                <td>Yes, to a meaningful extent</td>
+                            </tr>
+                            <tr>
+                                <td>Interpretability</td>
+                                <td>Very high</td>
+                                <td>High</td>
+                                <td>Lower</td>
+                            </tr>
+                            <tr>
+                                <td>Best for</td>
+                                <td>Simple classification baselines and keyword-heavy tasks</td>
+                                <td>Search, retrieval baselines, document weighting</td>
+                                <td>Semantic similarity and word meaning relationships</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="which-better">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Decision guide</p>
+                        <h2>Which one is better and when?</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>When CountVectorizer can be enough</h3>
+                        <ul class="stack-list">
+                            <li>You need a quick baseline.</li>
+                            <li>The task depends heavily on exact words.</li>
+                            <li>You want maximum interpretability.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>When TF-IDF is usually better than raw counts</h3>
+                        <ul class="stack-list">
+                            <li>The corpus contains many common repeated words.</li>
+                            <li>You want a stronger classic retrieval or classification baseline.</li>
+                            <li>You still need interpretable sparse features.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>When Word2Vec is better</h3>
+                        <ul class="stack-list">
+                            <li>You care about semantic similarity rather than exact lexical overlap.</li>
+                            <li>You want compact dense representations.</li>
+                            <li>You want the model to recognize that related words may carry similar meaning.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why one is not always universally best</h3>
+                        <ul class="stack-list">
+                            <li>Classic sparse methods often win on transparency and exact-term tasks.</li>
+                            <li>Word2Vec wins on semantics, but loses some explainability and context precision.</li>
+                            <li>The best method depends on whether your task values exact lexical cues or semantic understanding more.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Most honest summary</h2>
+                    <p><strong>CountVectorizer</strong> is the simplest baseline. <strong>TF-IDF</strong> is usually a smarter bag-of-words baseline. <strong>Word2Vec</strong> is the better semantic representation among these three, but it is still older than contextual embeddings from transformers.</p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is TF-IDF often preferred over raw counts?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because TF-IDF reduces the weight of globally common terms and emphasizes terms that are more distinctive for a document, which usually improves signal quality over raw counts.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is Word2Vec more semantic than TF-IDF?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because Word2Vec learns from word context. Words that appear in similar contexts receive similar vectors, so it can capture semantic relatedness beyond exact token overlap.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You need a fast interpretable baseline for classifying short support tickets. What do you start with?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Start with TF-IDF or CountVectorizer plus a linear classifier. They are fast, interpretable, and usually strong first baselines for short text classification.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You need to detect that “refund issue” and “money back problem” are related even with different wording. Which method helps more?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Word2Vec helps more because it captures semantic similarity through context, while CountVectorizer and TF-IDF depend more heavily on exact word overlap.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Use this page to understand the progression from simple sparse text features to learned dense semantic representations.</p>
+            <div class="mini-links">
+                <a href="transformer-basics.html">Transformers</a>
+                <a href="rag.html">RAG</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

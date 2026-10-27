@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activation Functions in Transformers</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="transformer-basics.html">Basics</a>
+                <a href="positional-embeddings.html">Positional Embeddings</a>
+                <a href="gpt-level.html">GPT Level</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#why">Why activations matter</a>
+            <a href="#diagram">Visual intuition</a>
+            <a href="#common">Common choices</a>
+            <a href="#example">Example</a>
+            <a href="#impact">Impact at scale</a>
+            <a href="#why-this-way">Why this way</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro">
+                <p class="eyebrow">Core dependency</p>
+                <h1>Why activation functions matter in transformers</h1>
+                <p><strong>Short answer:</strong> attention mixes information across tokens, but activation functions
+                    inside the MLP block create nonlinear transformations. Without them, the network loses much of its
+                    expressive power.</p>
+            </section>
+
+            <section class="section" id="why">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Linear layers alone are limited</h3>
+                        <p>Two linear layers in a row can be rewritten as one linear layer. That means you do not gain
+                            meaningful extra representational power unless a nonlinear activation sits between them.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Activations make feature selection possible</h3>
+                        <p>The activation decides which intermediate features are amplified, softened, or suppressed for
+                            each token representation.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="diagram">
+                <div class="diagram-card">
+                    <img src="assets/activation-functions.svg"
+                        alt="Plot-style illustration comparing GELU, SiLU, and ReLU and explaining their role in transformer MLP layers.">
+                </div>
+            </section>
+
+            <section class="section" id="common">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Activation</th>
+                                <th>Behavior</th>
+                                <th>Why it matters</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>ReLU</td>
+                                <td>Hard zero for negative values.</td>
+                                <td>Simple and cheap, but can be less smooth and can discard too much signal.</td>
+                            </tr>
+                            <tr>
+                                <td>GELU</td>
+                                <td>Smoothly gates activations according to magnitude.</td>
+                                <td>Common in transformers because it keeps optimization smooth and expressive.</td>
+                            </tr>
+                            <tr>
+                                <td>SiLU / Swish</td>
+                                <td>Multiplies input by a sigmoid gate.</td>
+                                <td>Also smooth and effective, especially in some modern large models.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="example">
+                <div class="example">
+                    <h2>Example: ambiguous phrase interpretation</h2>
+                    <p>Suppose attention has already gathered evidence that the word "bank" might refer to a river bank
+                        or a financial bank. The MLP with a good activation function can transform the mixed evidence
+                        into higher-level features that separate these two meanings depending on surrounding context
+                        such as "river", "loan", or "deposit".</p>
+                </div>
+            </section>
+
+            <section class="section" id="impact">
+                <div class="checkpoint">
+                    <h2>Why this matters at GPT scale</h2>
+                    <p>At large parameter counts, small architectural choices compound. The activation affects
+                        optimization smoothness, gradient flow, sparsity patterns, and how easily the model learns
+                        subtle semantic distinctions in its MLP channels.</p>
+                </div>
+            </section>
+
+            <section class="section" id="why-this-way">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Design logic</p>
+                        <h2>Why do transformers prefer GELU-like nonlinearities?</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Why this design works well</h3>
+                        <ul class="stack-list">
+                            <li>Smooth activations keep gradients less abrupt than hard thresholding.</li>
+                            <li>They preserve more nuanced small-magnitude signals when those signals are still
+                                informative.</li>
+                            <li>That matters in deep transformer MLPs where subtle feature interactions accumulate over
+                                many layers.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What weaker choices fail at</h3>
+                        <ul class="stack-list">
+                            <li>No activation at all collapses the MLP into a linear transform.</li>
+                            <li>Hard-threshold activations can discard useful negative or weak features too
+                                aggressively.</li>
+                            <li>Bad activation choices can make optimization noisier and reduce expressiveness.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is the feed-forward sublayer not just a small detail?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because attention mostly decides what information to gather, while the MLP decides how to
+                                transform that gathered information into richer features. A large amount of transformer
+                                capacity lives in these nonlinear token-wise projections.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why would GELU often outperform plain ReLU in transformers?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because GELU applies a smoother gating behavior instead of a hard cutoff. That tends to
+                                preserve optimization stability and nuanced feature information in deep networks.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You replace GELU with a linear identity and model quality drops. How do you explain that?
+                        </h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>The MLP lost its nonlinearity, so it can no longer synthesize complex token features. The
+                                block became closer to one large linear projection, reducing expressive power.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>An interviewer asks why attention alone cannot separate all ambiguous meanings. What should
+                            you say?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Attention can gather contextual evidence, but nonlinear transformations are needed to
+                                reshape that evidence into decision-useful internal features. Ambiguity resolution often
+                                depends on this second stage.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Next recommended page: GPT-level evaluation.</p>
+            <div class="mini-links">
+                <a href="gpt-level.html">Continue</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

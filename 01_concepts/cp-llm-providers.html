@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>LLM Provider Stacks Compared</title>
+</head>
+
+<body>
+<header class="site-header">
+    <div class="shell">
+        <a class="brand" href="index.html">
+            <span class="brand-mark">AI</span>
+            <span>AI Engineer Interview Guide</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </nav>
+    </div>
+</header>
+
+    <main class="cp-container">
+    <div class="cp-hero"><h1>🧠 LLM Provider Stacks Compared</h1>
+        <p>Every major LLM provider's architecture, models, strengths, and ideal use cases</p></div>
+
+    
+        <div class="section">
+            <h2>Understanding the LLM Stack</h2>
+            <p>Each provider doesn't just offer a model — they provide a <strong>full stack</strong>: infrastructure,
+                base models, fine-tuning capabilities, APIs, and developer tools. Understanding the stack helps you
+                choose not just the best model, but the best ecosystem.</p>
+            <div class="stack-diagram">
+                <div class="stack-layers">
+                    <div class="stack-layer layer-app">Application Layer (Agents, RAG, Chatbots)</div>
+                    <div class="stack-layer layer-api">API & SDK Layer (REST, SDKs, Playground)</div>
+                    <div class="stack-layer layer-model">Model Layer (Foundation Models, Fine-tuned Variants)</div>
+                    <div class="stack-layer layer-infra">Infrastructure Layer (Training Clusters, Serving GPUs)</div>
+                </div>
+                <div class="stack-label">Every provider builds at all 4 levels — the differences are in philosophy and
+                    capability</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Major Providers</h2>
+
+            <div class="provider-card" style="--pcolor: #10b981;">
+                <h3>🟢 OpenAI (GPT Series)</h3>
+                <div class="models">
+                    <span class="model-tag">GPT-4o</span>
+                    <span class="model-tag">GPT-4.1</span>
+                    <span class="model-tag">o3 / o4-mini (reasoning)</span>
+                    <span class="model-tag">GPT-4o-mini</span>
+                    <span class="model-tag">DALL-E 3</span>
+                    <span class="model-tag">Whisper</span>
+                    <span class="model-tag">Codex (legacy)</span>
+                </div>
+                <ul class="strengths">
+                    <li>Largest developer ecosystem and community</li>
+                    <li>Best-in-class function calling and structured outputs</li>
+                    <li>Reasoning models (o3, o4-mini) for complex multi-step problems</li>
+                    <li>Multimodal: text, image, audio, video understanding</li>
+                    <li>Assistants API with built-in RAG, code interpreter, tools</li>
+                    <li>Fine-tuning available for GPT-4o and mini models</li>
+                </ul>
+                <p style="margin-top:12px; color:#9ca3af; font-size:0.9em;"><strong>Best for:</strong> General-purpose
+                    applications, rapid prototyping, production apps needing reliability. The "safe default" choice.</p>
+            </div>
+
+            <div class="provider-card" style="--pcolor: #f59e0b;">
+                <h3>🟡 Anthropic (Claude Series)</h3>
+                <div class="models">
+                    <span class="model-tag">Claude Opus 4</span>
+                    <span class="model-tag">Claude Sonnet 4</span>
+                    <span class="model-tag">Claude Haiku 3.5</span>
+                    <span class="model-tag">Claude (extended thinking)</span>
+                </div>
+                <ul class="strengths">
+                    <li>Best-in-class for long-form reasoning and analysis</li>
+                    <li>200K context window (effectively unlimited for most tasks)</li>
+                    <li>Superior at coding tasks — consistently tops benchmarks</li>
+                    <li>Constitutional AI: safer, less likely to produce harmful outputs</li>
+                    <li>Extended Thinking mode for complex multi-step reasoning</li>
+                    <li>Excellent at following complex instructions precisely</li>
+                    <li>Computer use capability (agentic desktop interaction)</li>
+                </ul>
+                <p style="margin-top:12px; color:#9ca3af; font-size:0.9em;"><strong>Best for:</strong> Complex
+                    reasoning, coding, long document analysis, safety-critical apps, enterprise use.</p>
+            </div>
+
+            <div class="provider-card" style="--pcolor: #60a5fa;">
+                <h3>🔵 Google (Gemini Series)</h3>
+                <div class="models">
+                    <span class="model-tag">Gemini 2.5 Pro</span>
+                    <span class="model-tag">Gemini 2.5 Flash</span>
+                    <span class="model-tag">Gemini 2.0 Flash</span>
+                    <span class="model-tag">Gemma 3 (open)</span>
+                </div>
+                <ul class="strengths">
+                    <li>Massive context: 1M+ tokens (entire codebases in one prompt)</li>
+                    <li>Natively multimodal (text, image, video, audio, code)</li>
+                    <li>Deep Google Cloud integration (Vertex AI, BigQuery, GCS)</li>
+                    <li>Grounding with Google Search built-in</li>
+                    <li>Agent Development Kit (ADK) for orchestration</li>
+                    <li>Cost-efficient Flash models for high-volume tasks</li>
+                    <li>Gemma open-weight models for self-hosting</li>
+                </ul>
+                <p style="margin-top:12px; color:#9ca3af; font-size:0.9em;"><strong>Best for:</strong> Multimodal tasks,
+                    long-context processing, Google Cloud workloads, cost-sensitive high-volume apps.</p>
+            </div>
+
+            <div class="provider-card" style="--pcolor: #a78bfa;">
+                <h3>🟣 DeepSeek</h3>
+                <div class="models">
+                    <span class="model-tag">DeepSeek-V3</span>
+                    <span class="model-tag">DeepSeek-R1 (reasoning)</span>
+                    <span class="model-tag">DeepSeek-Coder-V2</span>
+                </div>
+                <ul class="strengths">
+                    <li>Extremely cost-efficient: 90%+ cheaper than GPT-4 for similar quality</li>
+                    <li>Mixture-of-Experts (MoE) architecture — 671B params but activates only 37B</li>
+                    <li>R1 reasoning model rivals o1/o3 at fraction of the cost</li>
+                    <li>Open-weight: self-host for full control and no API costs</li>
+                    <li>Excellent at coding and mathematics</li>
+                    <li>Trained on multilingual data (strong Chinese + English)</li>
+                </ul>
+                <p style="margin-top:12px; color:#9ca3af; font-size:0.9em;"><strong>Best for:</strong> Cost-sensitive
+                    deployments, self-hosting, coding tasks, when you need GPT-4 quality at GPT-3.5 prices.</p>
+            </div>
+
+            <div class="provider-card" style="--pcolor: #f87171;">
+                <h3>🔴 Meta (Llama Series)</h3>
+                <div class="models">
+                    <span class="model-tag">Llama 4 Maverick</span>
+                    <span class="model-tag">Llama 4 Scout</span>
+                    <span class="model-tag">Llama 3.3 70B</span>
+                    <span class="model-tag">Llama 3.1 405B</span>
+                    <span class="model-tag">Code Llama</span>
+                </div>
+                <ul class="strengths">
+                    <li>Fully open-weight: download, modify, fine-tune, deploy anywhere</li>
+                    <li>Massive community: thousands of fine-tuned variants available</li>
+                    <li>No API costs when self-hosted</li>
+                    <li>Commercial license (unlike many open models)</li>
+                    <li>Llama 4 uses MoE for efficiency</li>
+                    <li>Available on every cloud (AWS, Azure, GCP, etc.)</li>
+                </ul>
+                <p style="margin-top:12px; color:#9ca3af; font-size:0.9em;"><strong>Best for:</strong> Self-hosting,
+                    custom fine-tuning, data privacy requirements, when you can't send data to external APIs.</p>
+            </div>
+
+            <div class="provider-card" style="--pcolor: #2dd4bf;">
+                <h3>🔷 Mistral AI</h3>
+                <div class="models">
+                    <span class="model-tag">Mistral Large 2</span>
+                    <span class="model-tag">Mistral Medium</span>
+                    <span class="model-tag">Mixtral 8x22B</span>
+                    <span class="model-tag">Mistral Small</span>
+                    <span class="model-tag">Codestral</span>
+                </div>
+                <ul class="strengths">
+                    <li>European company (GDPR-friendly, EU data residency)</li>
+                    <li>MoE pioneers: efficient large models via sparse activation</li>
+                    <li>Strong multilingual (especially European languages)</li>
+                    <li>Open-weight models with commercial licenses</li>
+                    <li>Codestral: dedicated code model with fill-in-the-middle</li>
+                    <li>Competitive quality at lower price points</li>
+                </ul>
+                <p style="margin-top:12px; color:#9ca3af; font-size:0.9em;"><strong>Best for:</strong> European
+                    deployments, multilingual apps, cost-efficient MoE deployments, code generation.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Head-to-Head Comparison</h2>
+            <div style="overflow-x:auto;">
+                <table class="comparison-table">
+                    <tr>
+                        <th>Dimension</th>
+                        <th>OpenAI</th>
+                        <th>Claude</th>
+                        <th>Gemini</th>
+                        <th>DeepSeek</th>
+                        <th>Llama</th>
+                        <th>Mistral</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Reasoning</strong></td>
+                        <td class="good">Excellent (o3)</td>
+                        <td class="good">Excellent (Opus)</td>
+                        <td class="good">Excellent (2.5 Pro)</td>
+                        <td class="good">Excellent (R1)</td>
+                        <td class="mid">Good</td>
+                        <td class="mid">Good</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Coding</strong></td>
+                        <td class="good">Excellent</td>
+                        <td class="good">Best-in-class</td>
+                        <td class="good">Excellent</td>
+                        <td class="good">Excellent</td>
+                        <td class="mid">Good</td>
+                        <td class="good">Very Good</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Context Window</strong></td>
+                        <td class="mid">128K</td>
+                        <td class="good">200K</td>
+                        <td class="good">1M+</td>
+                        <td class="mid">128K</td>
+                        <td class="mid">128K</td>
+                        <td class="mid">128K</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cost (relative)</strong></td>
+                        <td class="low">$$$$</td>
+                        <td class="low">$$$$</td>
+                        <td class="mid">$$</td>
+                        <td class="good">$</td>
+                        <td class="good">Free (self-host)</td>
+                        <td class="mid">$$</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multimodal</strong></td>
+                        <td class="good">Full</td>
+                        <td class="mid">Vision + Text</td>
+                        <td class="good">Full (native)</td>
+                        <td class="mid">Text + Code</td>
+                        <td class="mid">Vision + Text</td>
+                        <td class="mid">Vision + Text</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Self-Hostable</strong></td>
+                        <td class="low">No</td>
+                        <td class="low">No</td>
+                        <td class="mid">Gemma only</td>
+                        <td class="good">Yes (open)</td>
+                        <td class="good">Yes (open)</td>
+                        <td class="good">Yes (open)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Function Calling</strong></td>
+                        <td class="good">Best-in-class</td>
+                        <td class="good">Excellent</td>
+                        <td class="good">Excellent</td>
+                        <td class="mid">Good</td>
+                        <td class="mid">Varies by host</td>
+                        <td class="good">Very Good</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Safety/Alignment</strong></td>
+                        <td class="good">Strong</td>
+                        <td class="good">Best-in-class</td>
+                        <td class="good">Strong</td>
+                        <td class="mid">Moderate</td>
+                        <td class="mid">Depends on fine-tune</td>
+                        <td class="mid">Moderate</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Decision Framework — Which to Choose?</h2>
+            <div class="decision-box">
+                <h4>Choose based on your PRIMARY constraint:</h4>
+                <p><strong>💰 Budget is tight →</strong> DeepSeek R1/V3 (API) or Llama/Mistral (self-hosted)</p>
+                <p><strong>🔒 Data privacy required →</strong> Llama 4 or Mistral (self-hosted, no data leaves your
+                    servers)</p>
+                <p><strong>🧠 Maximum reasoning →</strong> Claude Opus 4 (extended thinking) or OpenAI o3</p>
+                <p><strong>📄 Huge documents →</strong> Gemini 2.5 Pro (1M context) or Claude (200K context)</p>
+                <p><strong>🎨 Multimodal (images/video) →</strong> Gemini 2.5 (native multimodal) or GPT-4o</p>
+                <p><strong>🏢 Enterprise/safety →</strong> Claude (Constitutional AI) or OpenAI (strongest compliance)
+                </p>
+                <p><strong>💻 Pure coding →</strong> Claude Opus 4 or DeepSeek-Coder</p>
+                <p><strong>🌍 European/GDPR →</strong> Mistral (EU company, EU data residency)</p>
+                <p><strong>🚀 Fastest prototyping →</strong> OpenAI (best docs, largest ecosystem, most integrations)
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧠 Pro Thinker Analysis</h2>
+            <div class="highlight">
+                <p><strong>The landscape is converging on quality but diverging on strategy.</strong> All frontier
+                    models are "good enough" for most tasks. The real differentiators are: (1) <em>cost structure</em> —
+                    open models are free to run, (2) <em>ecosystem lock-in</em> — OpenAI's tooling is richest, (3)
+                    <em>specialized capabilities</em> — Claude for coding/reasoning, Gemini for context/multimodal, (4)
+                    <em>deployment flexibility</em> — open models for privacy.</p>
+            </div>
+            <p><strong>The smart approach:</strong> Don't marry one provider. Use a router pattern —
+                send simple tasks to cheap models (GPT-4o-mini, DeepSeek), complex reasoning to Opus/o3,
+                and long documents to Gemini. LangChain and LiteLLM make provider-switching trivial.</p>
+        </div>
+
+        <div class="cp-nav-footer">
+            <a href="cp-index.html">← Overview</a>
+            <a href="cp-rag-strategies.html">Next: RAG Strategies →</a>
+        </div>
+    </div>
+
+    </main>
+
+<footer class="site-footer">
+    <div class="shell">
+        <p>Part of the AI and ML Interview Starter Guide. Open locally in any browser.</p>
+        <div class="mini-links">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </div>
+    </div>
+</footer>
+</body>
+
+</html>

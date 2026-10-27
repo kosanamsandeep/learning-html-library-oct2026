@@ -1,0 +1,26 @@
+<svg width="920" height="470" viewBox="0 0 920 470" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="920" height="470" rx="28" fill="#FFFBF5"/>
+  <text x="460" y="54" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#1C1917">Activation functions in transformer MLP blocks</text>
+
+  <line x1="90" y1="380" x2="830" y2="380" stroke="#5F564D" stroke-width="2"/>
+  <line x1="140" y1="90" x2="140" y2="390" stroke="#5F564D" stroke-width="2"/>
+
+  <path d="M140 380C200 380 220 380 250 380C280 380 300 380 330 380C360 380 380 320 410 250C440 180 470 150 510 150C550 150 610 150 830 150" stroke="#C2410C" stroke-width="4" stroke-linecap="round"/>
+  <path d="M140 380C240 380 280 380 330 380C380 380 430 320 480 250C530 180 590 120 830 105" stroke="#0F766E" stroke-width="4" stroke-linecap="round" stroke-dasharray="12 10"/>
+  <path d="M140 380L430 380L830 90" stroke="#7C3AED" stroke-width="4" stroke-linecap="round" opacity="0.55"/>
+
+  <text x="780" y="145" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#C2410C">GELU</text>
+  <text x="760" y="98" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#0F766E">SiLU / Swish</text>
+  <text x="760" y="74" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#7C3AED">ReLU</text>
+
+  <rect x="560" y="250" width="276" height="118" rx="22" fill="#FFFFFF" stroke="#D9CCB8" stroke-width="2"/>
+  <text x="698" y="286" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#1C1917">Why GELU became common</text>
+  <text x="698" y="314" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#5F564D">Smooth gate instead of hard cutoff</text>
+  <text x="698" y="338" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#5F564D">Retains small negative signals when useful</text>
+
+  <rect x="178" y="110" width="256" height="148" rx="22" fill="#FFFFFF" stroke="#D9CCB8" stroke-width="2"/>
+  <text x="306" y="145" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#1C1917">Transformer MLP pattern</text>
+  <text x="306" y="176" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#5F564D">x -> W1 -> activation -> W2</text>
+  <text x="306" y="205" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#5F564D">Without activation, both layers collapse</text>
+  <text x="306" y="230" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#5F564D">into one linear map.</text>
+</svg>

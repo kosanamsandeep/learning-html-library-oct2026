@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>04 · WebSockets vs WebRTC — Latest Stack</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        pre.mermaid {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>LS</span>Latest Stack</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="voice-bots.html">Voice bots</a>
+                <a href="multimodal.html">Multimodal</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Page 4 of 9</p>
+            <h1>WebSockets vs WebRTC — pick on latency budget and topology</h1>
+            <p class="lead"><strong>WebSocket</strong> is a long-lived TCP connection (RFC 6455) for bi-directional
+                text/binary messages between a client and a server. <strong>WebRTC</strong> (W3C) is a peer-to-peer
+                stack for low-latency audio, video, and data over UDP with NAT traversal built in. They look similar
+                from 50,000 ft and solve very different problems up close.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · How each one is wired</h2>
+            <pre class="mermaid">
+flowchart LR
+  subgraph WebSocket
+    c1[Client] ---|TCP / TLS<br/>persistent| s1[Server]
+  end
+  subgraph WebRTC
+    c2[Peer A] ---|UDP / SRTP<br/>P2P media+data| c3[Peer B]
+    sig[Signalling server<br/>WS / HTTP] -.SDP+ICE.-> c2
+    sig -.SDP+ICE.-> c3
+    stun[STUN / TURN] -.NAT.-> c2
+    stun -.NAT.-> c3
+  end
+            </pre>
+        </section>
+
+        <section class="card">
+            <h2>2 · The differences that actually matter</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>WebSocket</th>
+                        <th>WebRTC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Transport</td>
+                        <td>TCP (ordered, reliable)</td>
+                        <td>UDP (DTLS / SRTP); optional reliable <code>DataChannel</code></td>
+                    </tr>
+                    <tr>
+                        <td>Topology</td>
+                        <td>Client &harr; server</td>
+                        <td>Peer &harr; peer (or via SFU)</td>
+                    </tr>
+                    <tr>
+                        <td>Typical latency</td>
+                        <td>50–200 ms RTT</td>
+                        <td>20–150 ms one-way</td>
+                    </tr>
+                    <tr>
+                        <td>Head-of-line blocking</td>
+                        <td>Yes (TCP)</td>
+                        <td>No (UDP) — old audio packets are dropped, not retransmitted</td>
+                    </tr>
+                    <tr>
+                        <td>Native audio / video</td>
+                        <td>No — you ship raw bytes yourself</td>
+                        <td>Yes — codecs, jitter buffer, echo cancellation built in</td>
+                    </tr>
+                    <tr>
+                        <td>NAT traversal</td>
+                        <td>None needed (server-side)</td>
+                        <td>ICE + STUN + TURN</td>
+                    </tr>
+                    <tr>
+                        <td>Browser API</td>
+                        <td><code>new WebSocket(url)</code></td>
+                        <td><code>RTCPeerConnection</code>, <code>getUserMedia</code></td>
+                    </tr>
+                    <tr>
+                        <td>Server complexity</td>
+                        <td>Low (one TCP port, plain handlers)</td>
+                        <td>High (signalling + SFU + TURN; or use Daily, LiveKit, Twilio)</td>
+                    </tr>
+                    <tr>
+                        <td>Scale model</td>
+                        <td>1 server &rarr; many clients</td>
+                        <td>Peer-mesh, SFU, or MCU</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>3 · When to pick which</h2>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>Pick WebSocket</h3>
+                    <ul>
+                        <li>Chat &amp; notifications</li>
+                        <li>Live dashboards / tickers</li>
+                        <li>Streaming LLM tokens to the browser</li>
+                        <li>Streaming STT transcripts (text)</li>
+                        <li>Collaborative editing (Yjs uses both, but WS is the baseline)</li>
+                    </ul>
+                </div>
+                <div class="mini good">
+                    <h3>Pick WebRTC</h3>
+                    <ul>
+                        <li>Voice / video calls</li>
+                        <li>Live coaching, telemedicine, podcasting</li>
+                        <li>Cloud gaming, remote desktop</li>
+                        <li>P2P file transfer</li>
+                        <li>Voice agents where the audio is bidirectional (OpenAI Realtime, LiveKit Agents, Pipecat)
+                        </li>
+                    </ul>
+                </div>
+                <div class="mini warn">
+                    <h3>Pick both</h3>
+                    <p>Voice agents commonly use WebRTC for audio + WebSocket for control / metadata / partial
+                        transcripts.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Tiny WebSocket example (browser ⇄ FastAPI)</h2>
+            <pre><code># server.py — pip install fastapi uvicorn websockets
+from fastapi import FastAPI, WebSocket
+app = FastAPI()
+
+@app.websocket("/echo")
+async def echo(ws: WebSocket):
+    await ws.accept()
+    while True:
+        msg = await ws.receive_text()
+        await ws.send_text(f"echo: {msg}")
+</code></pre>
+            <pre><code>// client.js
+const ws = new WebSocket("ws://localhost:8000/echo");
+ws.onopen   = () => ws.send("hello");
+ws.onmessage = (e) => console.log(e.data); // "echo: hello"
+</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>5 · Minimal WebRTC sketch (browser side)</h2>
+            <pre><code>// 1. Get the mic
+const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+// 2. Create a peer connection
+const pc = new RTCPeerConnection({
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+});
+stream.getTracks().forEach(t => pc.addTrack(t, stream));
+
+// 3. Exchange SDP offer/answer with the other peer through your signalling server
+const offer = await pc.createOffer();
+await pc.setLocalDescription(offer);
+signaling.send({ type: "offer", sdp: offer.sdp });
+
+signaling.on("answer", async ({ sdp }) => {
+  await pc.setRemoteDescription({ type: "answer", sdp });
+});
+
+// 4. Receive remote audio
+pc.ontrack = (ev) => { audioEl.srcObject = ev.streams[0]; };
+</code></pre>
+            <p class="quiet">In production, use <strong>LiveKit</strong>, <strong>Daily</strong>,
+                <strong>Twilio</strong>,
+                or <strong>OpenAI's Realtime API</strong> to skip the SFU + TURN setup.</p>
+        </section>
+
+        <section class="card">
+            <h2>6 · Latency budget cheat sheet for voice agents</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hop</th>
+                        <th>Budget</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Mic capture &rarr; first STT partial</td>
+                        <td>~150 ms</td>
+                    </tr>
+                    <tr>
+                        <td>STT final &rarr; LLM first token</td>
+                        <td>~250 ms</td>
+                    </tr>
+                    <tr>
+                        <td>LLM token &rarr; TTS first audio chunk</td>
+                        <td>~150 ms</td>
+                    </tr>
+                    <tr>
+                        <td>TTS chunk &rarr; speaker</td>
+                        <td>~50 ms</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total user-perceived</strong></td>
+                        <td><strong>~600 ms</strong> (the "human" threshold)</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>WebRTC's UDP path saves 50–150 ms over WebSocket by avoiding TCP head-of-line blocking. That's often
+                the difference between "feels alive" and "feels like a phone tree."</p>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://datatracker.ietf.org/doc/html/rfc6455" target="_blank"
+                    rel="noopener">RFC 6455 — The WebSocket Protocol</a>
+                <a class="source" href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API" target="_blank"
+                    rel="noopener">MDN — WebSockets API</a>
+                <a class="source" href="https://www.w3.org/TR/webrtc/" target="_blank" rel="noopener">W3C — WebRTC
+                    1.0</a>
+                <a class="source" href="https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API" target="_blank"
+                    rel="noopener">MDN — WebRTC API</a>
+                <a class="source" href="https://webrtc.org/" target="_blank" rel="noopener">webrtc.org</a>
+                <a class="source" href="https://docs.livekit.io/" target="_blank" rel="noopener">LiveKit docs</a>
+                <a class="source" href="https://platform.openai.com/docs/guides/realtime" target="_blank"
+                    rel="noopener">OpenAI — Realtime API</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 07 — Multi-Agent Collaboration</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 07 — Multi-Agent Collaboration</h1>
+  <p>Many specialist agents instead of one generalist. A coordinator decomposes the task and routes work.</p>
+  <p><span class="tag">Mediator</span><span class="tag">Facade</span><span class="tag">Orchestrator-Worker</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Each agent has a narrow role (Researcher, Analyst, Writer, Critic, etc.) with its own tools and prompt. A <strong>coordinator</strong> (or shared message bus) decides who does what and when. The output is more cohesive than one giant prompt because each agent stays in-domain.</p>
+<div class="callout tip"><strong>Mental model:</strong> a newsroom — reporters, fact-checkers, and editors all reporting to a managing editor.</div>
+</section>
+
+<section>
+<h2>Common topologies</h2>
+<div class="mermaid">
+flowchart LR
+  subgraph T1["1 — Hierarchical"]
+    M1[Manager] --> W1[Worker A]
+    M1 --> W2[Worker B]
+  end
+  subgraph T2["2 — Sequential / Pipeline"]
+    A[Agent A] --> B[Agent B] --> C[Agent C]
+  end
+  subgraph T3["3 — Debate / Consensus"]
+    D1[Pro] <--> D2[Con]
+    D1 --> J[Judge]
+    D2 --> J
+  end
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Investment thesis crew</h2>
+<div class="callout scenario">
+A fund's analyst desk launches a "thesis crew" in 2026. The <em>Researcher</em> pulls 10-K filings + news, the <em>Analyst</em> models DCF, the <em>Risk Officer</em> stress-tests, the <em>Writer</em> produces the memo. The Manager agent decomposes the brief, sequences agents, and rejects sub-outputs that don't cite sources.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as PM
+  participant Mgr as Manager
+  participant R as Researcher
+  participant A as Analyst
+  participant Risk as Risk
+  participant W as Writer
+  U->>Mgr: "Thesis on Acme Corp"
+  Mgr->>R: gather facts
+  R-->>Mgr: filings + news
+  Mgr->>A: build DCF
+  A-->>Mgr: model
+  Mgr->>Risk: stress test
+  Risk-->>Mgr: scenarios
+  Mgr->>W: synthesize memo
+  W-->>U: 2-page thesis
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>Multi-agent style</th></tr>
+  <tr><td>CrewAI</td><td>Role-based "Crew" abstraction; tasks have <code>agent</code>, <code>context</code>.</td></tr>
+  <tr><td>AutoGen</td><td>Conversational <code>GroupChat</code> with manager.</td></tr>
+  <tr><td>LangGraph</td><td>Graph of agent nodes + shared state.</td></tr>
+  <tr><td>Google ADK</td><td><code>SequentialAgent</code> / <code>ParallelAgent</code> / sub-agents + A2A.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Mediator</strong></td><td><code>Manager</code> brokers communication so agents don't talk N×N.</td></tr>
+  <tr><td><strong>Facade</strong></td><td>The crew exposes one <code>run(brief)</code> method to callers.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td>Each agent type is interchangeable behind a common interface.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── agents.py     # Researcher, Analyst, Risk, Writer (Strategy)
+├── manager.py    # Manager (Mediator + Facade)
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>When does multi-agent NOT help?</summary><div>If the task is small enough for one prompt, multi-agent adds latency and cost. Use it when sub-tasks need different tools / domain prompts or when parallelism speeds things up.</div></details>
+<details class="qa"><summary>How do you keep agents from looping forever?</summary><div>Hard caps on rounds, a manager that watches for repeated outputs, and a "stop" signal in the shared state.</div></details>
+</section>
+
+</main>
+<footer>Chapter 07 of 21.</footer>
+</body>
+</html>

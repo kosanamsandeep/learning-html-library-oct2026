@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust projects — parallel to Python p1-p10</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../bootcamp/syntax_python_vs_rust.html">Rust syntax</a>
+                <a href="../go_projects/index.html">Go projects</a>
+                <a href="../../07_learning_projects/learning_tracker.html">Python originals</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust</span> · 10 projects parallel to Python p1-p10</p>
+            <h1>Re-build the first 10 learning projects in Rust</h1>
+            <p class="lead">Same projects as the Go track, ported to Rust. The first three feel slow — you'll fight the
+                borrow checker. By project five it'll click. By project ten you'll find Python errors confusing because
+                they don't tell you about <em>ownership</em> failures up front.</p>
+        </section>
+
+        <section class="card">
+            <h2>How each project is structured</h2>
+            <pre><code>p&lt;n&gt;_&lt;name&gt;/
+├── README.html      ← what's different from Python; key Rust idioms shown
+├── Cargo.toml       ← package manifest
+└── src/
+    └── main.rs      ← single-file runnable demo</code></pre>
+            <p>Run any project with: <code>cd rust_projects/p1_student_management; cargo run</code></p>
+        </section>
+
+        <section class="card">
+            <h2>The 10 projects</h2>
+            <a class="project rust" href="p1_student_management/README.html"><strong>P1 · STUDENT
+                    MANAGEMENT</strong>Structs + impl blocks + <code>HashMap</code>. <code>Result&lt;T, E&gt;</code> as
+                the error story.</a>
+            <a class="project rust" href="p2_banking_system/README.html"><strong>P2 · BANKING SYSTEM</strong>Inheritance
+                becomes traits + an enum that owns the variants. Polymorphism with zero runtime cost.</a>
+            <a class="project rust" href="p3_hospital_management/README.html"><strong>P3 · HOSPITAL
+                    MANAGEMENT</strong>Composition with nested structs. <code>Option&lt;T&gt;</code> instead of
+                <code>None</code>.</a>
+            <a class="project rust" href="p4_ecommerce_api/README.html"><strong>P4 · E-COMMERCE API</strong>DTO pattern
+                with <code>serde</code>-style derived structs. Money as <code>i64</code> cents, never floats.</a>
+            <a class="project rust" href="p5_contact_management/README.html"><strong>P5 · CONTACT
+                    MANAGEMENT</strong>Nested structs + <code>Result&lt;(), Vec&lt;String&gt;&gt;</code> validator that
+                collects every error.</a>
+            <a class="project rust" href="p6_inventory_management/README.html"><strong>P6 · INVENTORY
+                    MANAGEMENT</strong>Repository pattern via traits + trait objects
+                (<code>Box&lt;dyn Repository&gt;</code>) for runtime swapping.</a>
+            <a class="project rust" href="p7_healthtrack/README.html"><strong>P7 · HEALTHTRACK</strong>Layered service
+                skeleton — pure stdlib, no web framework. Shows the borrow / ownership shape of a real app.</a>
+            <a class="project rust" href="p8_authentication_platform/README.html"><strong>P8 · AUTHENTICATION
+                    PLATFORM</strong>Pluggable strategies via traits. Two providers, one entry point.</a>
+            <a class="project rust" href="p9_notification_platform/README.html"><strong>P9 · NOTIFICATION
+                    PLATFORM</strong>Trait registry + thread-based fan-out via <code>std::thread</code>. The closest
+                stdlib equivalent of Go's goroutines.</a>
+            <a class="project rust" href="p10_genai_rag_platform/README.html"><strong>P10 · GENAI RAG
+                    PLATFORM</strong>Capstone. Trait-based <code>Embedder</code>, in-memory vector store, parallel
+                ingest with threads + <code>Arc&lt;Mutex&gt;</code>.</a>
+        </section>
+
+        <section class="card">
+            <h2>Common Rust idioms you'll see across all 10</h2>
+            <ul>
+                <li><strong><code>struct</code> + <code>impl</code> blocks</strong> — data and behaviour are separate.
+                </li>
+                <li><strong><code>Result&lt;T, E&gt;</code> + <code>?</code> operator</strong> — errors as values,
+                    propagated explicitly.</li>
+                <li><strong><code>Option&lt;T&gt;</code></strong> — replaces <code>None</code>; <code>match</code>
+                    forces you to handle both arms.</li>
+                <li><strong><code>&amp;</code> and <code>&amp;mut</code> borrows</strong> — pass references instead of
+                    moving values when you don't need ownership.</li>
+                <li><strong><code>#[derive(Debug, Clone)]</code></strong> — auto-derive common trait implementations.
+                </li>
+                <li><strong>No dependencies on first reading.</strong> Every project here uses only the standard library
+                    so you can <code>cargo run</code> offline.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+
+</html>

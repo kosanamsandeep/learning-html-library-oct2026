@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go P2 — Banking System</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Go projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p2_banking_system/README.html">Python p2</a>
+                <a href="../../rust_projects/p2_banking_system/README.html">Rust p2</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go · P2</span></p>
+            <h1>Banking System — inheritance becomes embedding + interfaces</h1>
+            <p class="lead">The Python version uses <code>class SavingsAccount(Account)</code> and overrides
+                <code>deposit</code>. Go has no inheritance, so the same problem becomes two ideas working together: an
+                interface for the shared behaviour, and struct embedding for the shared data.</p>
+        </section>
+
+        <section class="card">
+            <h2>The Go translation</h2>
+            <ol>
+                <li><code>Account</code> is an <strong>interface</strong> — the contract every account type satisfies.
+                </li>
+                <li><code>BaseAccount</code> is a struct with shared fields + a default <code>Deposit</code> and
+                    <code>Balance</code>.</li>
+                <li><code>SavingsAccount</code> <em>embeds</em> <code>BaseAccount</code>
+                    (<code>SavingsAccount struct { BaseAccount }</code>). It gets all fields and methods for free, then
+                    overrides what differs.</li>
+                <li><code>CheckingAccount</code> does the same and adds an overdraft field.</li>
+                <li><code>summarise([]Account{...})</code> walks any mix of account types — that's polymorphism, just
+                    declared explicitly.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>The killer detail</h2>
+            <pre><code>type SavingsAccount struct {
+    BaseAccount             // embedded — its fields/methods are promoted
+}
+
+func (a *SavingsAccount) Deposit(amount int) error {
+    a.balanceCent += amount + amount/20  // 5% bonus
+    return nil
+}</code></pre>
+            <p>Because <code>SavingsAccount</code> defines its own <code>Deposit</code>, that one is used.
+                <code>Balance()</code> is inherited from the embedded <code>BaseAccount</code>. This is composition, not
+                inheritance — but the day-to-day feel is similar.</p>
+        </section>
+
+        <section class="card">
+            <h2>What you gain over Python's class hierarchy</h2>
+            <ul>
+                <li><strong>No deep inheritance trees</strong> — Go's design discourages them by making them awkward.
+                </li>
+                <li><strong>The interface stays small</strong> (4 methods here). Anyone implementing those 4 is an
+                    Account, no registration needed.</li>
+                <li><strong>The compiler enforces the contract.</strong> Forget to implement <code>Withdraw</code> on
+                    <code>CheckingAccount</code> and the build fails.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd go_projects/p2_banking_system
+go run .</code></pre>
+            <p>Files: <a href="main.go">main.go</a> · <a href="go.mod">go.mod</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 04 — Reflection</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 04 — Reflection</h1>
+  <p>Self-critique loop. The agent grades its own output (or another agent does), then revises.</p>
+  <p><span class="tag">Generator-Critic</span><span class="tag">Iterator</span><span class="tag">Self-correction</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Output → Critique → Revise → repeat until quality threshold or max iterations. Two roles emerge: the <strong>Generator</strong> (produces) and the <strong>Critic</strong> (judges). Same LLM with two system prompts works fine for most tasks.</p>
+<div class="callout tip"><strong>Mental model:</strong> a writer with an editor sitting next to them — every draft gets red ink before it ships.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart LR
+  G[Generator] --> O[Draft]
+  O --> C[Critic]
+  C -->|"score &lt; threshold"| G
+  C -->|"score ≥ threshold OR max iter"| F([Final])
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — PR-bot reviewing its own code</h2>
+<div class="callout scenario">
+A 2026 dev workflow: the agent writes a Python function, then a critic role runs <em>"do unit tests pass? are edge cases handled? is complexity acceptable?"</em>. If the score &lt; 8/10, it rewrites. Production teams cap loops at 3 to bound latency &amp; cost.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as Engineer
+  participant G as Generator
+  participant C as Critic
+  U->>G: "Write fn to dedupe by case-insensitive email"
+  G-->>C: draft v1
+  C-->>G: "missing strip()/lower(); score 6"
+  G-->>C: draft v2
+  C-->>G: "edge case for None? score 8"
+  G-->>U: ✓ shipped (after 2 reflections)
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>Reflection support</th></tr>
+  <tr><td>LangGraph</td><td>Cycle in graph: <code>generate → critique → conditional edge back to generate</code>.</td></tr>
+  <tr><td>CrewAI</td><td>Reviewer agent in the same crew with feedback task.</td></tr>
+  <tr><td>AutoGen</td><td>Built-in reflection via two assistants chatting.</td></tr>
+  <tr><td>Reflexion (paper)</td><td>Verbal RL — self-reflection text becomes part of memory.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Iterator</strong></td><td><code>ReflectionLoop</code> yields each iteration's draft + score.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td><code>Critic</code> is pluggable (rule-based / LLM-based).</td></tr>
+  <tr><td><strong>Observer</strong></td><td>Optional listener prints intermediate drafts (telemetry).</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── reflection.py    # ReflectionLoop + Generator + Critic
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>Why does reflection sometimes get worse?</summary><div>Without an objective grading rubric, the critic chases subjective issues and the generator over-edits. Always pin a quantifiable score (rubric, unit tests, factuality check) and a stop condition.</div></details>
+<details class="qa"><summary>How many iterations are reasonable?</summary><div>2-3. Returns diminish quickly; cost scales linearly. Cap iterations and require the score to <em>improve</em> each round, otherwise stop.</div></details>
+</section>
+
+</main>
+<footer>Chapter 04 of 21.</footer>
+</body>
+</html>

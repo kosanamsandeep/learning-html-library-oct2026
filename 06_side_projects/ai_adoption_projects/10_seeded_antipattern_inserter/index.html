@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seeded Anti-Pattern Inserter</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="../"><span>AI</span>Adoption Projects</a>
+      <div class="top-links">
+        <a href="../">Hub</a>
+        <a href="../../index.html">Workspace</a>
+      </div>
+    </div>
+  </header>
+  <main class="shell">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-text">
+        <h1>Seeded Anti-Pattern Inserter</h1>
+        <p class="lead">
+          An evaluation framework project at the <strong>intermediate</strong> level that
+          programmatically injects known security anti-patterns into clean code, producing
+          paired datasets of vulnerable code and ground-truth labels for benchmarking
+          AI-assisted code review and remediation tools.
+        </p>
+        <div class="hero-badges">
+          <span class="badge badge-intermediate">intermediate</span>
+          <span class="badge badge-python">Python</span>
+          <span class="badge badge-ast">AST</span>
+          <span class="badge badge-eval">eval</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pipeline Diagram -->
+    <section class="card">
+      <h2>Data Generation Pipeline</h2>
+      <p>
+        The inserter transforms a clean codebase into a labelled evaluation corpus.
+        Each transformation is deterministic, seeded by a random seed so that datasets are
+        reproducible and can be versioned alongside the evaluator.
+      </p>
+      <div class="mermaid">
+        flowchart LR
+          subgraph Input["<b>Input</b>"]
+            A["Clean Code<br/><i>.py files</i>"] --- P["Seed<br/><i>integer</i>"]
+          end
+
+          subgraph Processor["<b>Insertion Engine</b>"]
+            direction TB
+            B["Pattern Selector<br/><i>weighted random</i>"] --> C["AST Parser<br/><i>libcst / ast</i>"]
+            C --> D["Injection Visitor<br/><i>transforms</i>"]
+            D --> E["Ground Truth Tagger<br/><i>span recording</i>"]
+          end
+
+          subgraph Output["<b>Output</b>"]
+            F["Known-Bad Code<br/><i>modified .py</i>"] --- G["Ground Truth<br/><i>JSON manifest</i>"]
+          end
+
+          A --> B
+          P --> B
+          E --> F
+          E --> G
+
+          style Input fill:#e0e7ff,stroke:#4338ca,stroke-width:2px
+          style Processor fill:#ccfbf1,stroke:#0f766e,stroke-width:2px
+          style Output fill:#fef3c7,stroke:#b45309,stroke-width:2px
+      </div>
+    </section>
+
+    <!-- What & Why -->
+    <section class="card">
+      <h2>What &amp; Why</h2>
+      <p>
+        Evaluating code review agents requires a benchmark where the <em>ground truth
+        is known with certainty</em>. Manually curated datasets are small, expensive,
+        and quickly become stale. The <strong>Seeded Anti-Pattern Inserter</strong>
+        solves this by taking any existing clean codebase and surgically inserting
+        security anti-patterns while recording every modification.
+      </p>
+
+      <div class="callout callout-info">
+        <strong>How it works</strong> &mdash; A seed integer drives a deterministic
+        pseudo-random generator. Given the same seed and the same input file, the inserter
+        always produces the identical output. This lets teams share evaluation benchmarks
+        by exchanging a lightweight <code>seed + file-list</code> pair rather than bulky
+        datasets.
+      </div>
+
+      <h3>Supported Anti-Patterns</h3>
+      <p>
+        The starter covers five of the most common and impactful security anti-patterns
+        found in real-world Python codebases:
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Anti-Pattern</th>
+              <th>CWE</th>
+              <th>Real-World Impact</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>SQL Injection</td>
+              <td><a href="https://cwe.mitre.org/data/definitions/89.html">CWE-89</a></td>
+              <td>F-String / concatenation in SQL queries</td>
+            </tr>
+            <tr>
+              <td>Hardcoded Secrets</td>
+              <td><a href="https://cwe.mitre.org/data/definitions/798.html">CWE-798</a></td>
+              <td>API keys, passwords, tokens in source</td>
+            </tr>
+            <tr>
+              <td>Missing Auth Checks</td>
+              <td><a href="https://cwe.mitre.org/data/definitions/862.html">CWE-862</a></td>
+              <td>Endpoints without authentication guards</td>
+            </tr>
+            <tr>
+              <td>Unvalidated Redirect</td>
+              <td><a href="https://cwe.mitre.org/data/definitions/601.html">CWE-601</a></td>
+              <td>Open redirect via user-supplied <code>next</code> param</td>
+            </tr>
+            <tr>
+              <td>OS Command Injection</td>
+              <td><a href="https://cwe.mitre.org/data/definitions/78.html">CWE-78</a></td>
+              <td>Shelling out with unsanitised user input</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Two Insertion Strategies</h3>
+
+      <div class="callout callout-tip">
+        <strong>AST-based (recommended)</strong> &mdash; Uses <code>libcst</code> or
+        <code>ast</code> to parse the file, walk the tree with a visitor, and rewrite
+        nodes <em>in situ</em>. This produces syntactically valid code and can target
+        specific constructs (e.g. only replace <code>subprocess.call</code> calls that
+        use a string literal first argument). The trade-off is complexity: the inserter
+        must understand the AST structure of each anti-pattern.
+      </div>
+
+      <div class="callout callout-warning">
+        <strong>Regex-based (fallback)</strong> &mdash; Simpler to implement but brittle.
+        Pattern-matched string replacement can break indentation, skip multiline
+        constructs, or produce syntactically invalid code. Best used for prototyping
+        new anti-patterns before porting them to AST visitors.
+      </div>
+    </section>
+
+    <!-- Starter Code -->
+    <section class="card">
+      <h2>Python Starter Code</h2>
+      <p>
+        The script below implements a practical, runnable inserter using both AST
+        traversal (via <code>ast</code> and <code>astor</code>) and regex fallbacks.
+        Each anti-pattern has a dedicated function so the logic stays testable and
+        extensible.
+      </p>
+
+      <div class="callout callout-info">
+        <strong>Quick start</strong> &mdash; Save as <code>seed_inserter.py</code> and run:
+        <code>python seed_inserter.py --seed 42 --input clean_sample.py</code>.
+        It writes <code>clean_sample_seeded.py</code> and
+        <code>clean_sample_ground_truth.json</code> to the same directory.
+      </div>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+seeded_anti_pattern_inserter.py
+
+Seeded insertion of security anti-patterns into clean Python code.
+Produces paired (bad_code, ground_truth) for eval benchmarks.
+"""
+import ast
+import astor
+import json
+import os
+import random
+import re
+import argparse
+from dataclasses import dataclass, field, asdict
+from typing import Optional
+
+# ---------------------------------------------------------------------------
+# Data model for ground-truth labels
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Finding:
+    anti_pattern: str        # e.g. "sql_injection"
+    cwe_id: str              # e.g. "CWE-89"
+    line: int                # 1-based line where insertion occurred
+    col: int                 # approximate column offset
+    snippet: str             # the inserted bad code fragment
+    severity: str            # "critical" | "high" | "medium"
+
+
+@dataclass
+class GroundTruth:
+    source_file: str
+    seed: int
+    findings: list[Finding] = field(default_factory=list)
+
+    def to_dict(self):
+        return {
+            "source_file": self.source_file,
+            "seed": self.seed,
+            "findings": [asdict(f) for f in self.findings],
+        }
+
+
+# ---------------------------------------------------------------------------
+# Anti-pattern definitions
+# ---------------------------------------------------------------------------
+
+ANTI_PATTERNS = {
+    "sql_injection": {
+        "cwe": "CWE-89",
+        "severity": "critical",
+        "patterns": [
+            # Strings that look like SQL query construction
+            (r'cursor\.execute\(f"', 'cursor.execute(f"SELECT * FROM users WHERE id = \'{user_input}\'"'),
+            (r'cursor\.execute\(',  'cursor.execute("SELECT * FROM users WHERE id = \'" + user_input + "\""),
+            (r'SELECT \* FROM',     'query = f"SELECT * FROM users WHERE name = \'{name}\'" ; cursor.execute(query)'),
+        ],
+    },
+    "hardcoded_secret": {
+        "cwe": "CWE-798",
+        "severity": "critical",
+        "patterns": [
+            (r'os\.environ\.get\(', 'API_KEY = "sk-0123456789abcdef0123456789abcdef01234567"'),
+            (r'^import ',            'PASSWORD = "p@ssw0rd!"  # TODO: move to env'),
+            (r'def get_config',      'SECRET_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"'),
+        ],
+    },
+    "missing_auth": {
+        "cwe": "CWE-862",
+        "severity": "high",
+        "patterns": [
+            (r'@app\.route\(',      '@app.route("/admin/users")\ndef list_users():\n    return jsonify(db.fetchall())   # <-- no auth check'),
+            (r'def handle_request',  'def handle_request(request):\n    data = request.json\n    return data    # <-- no authentication verified'),
+        ],
+    },
+    "unvalidated_redirect": {
+        "cwe": "CWE-601",
+        "severity": "high",
+        "patterns": [
+            (r'redirect\(',         'redirect(request.args.get("next", "/"))   # <-- open redirect'),
+            (r'return redirect',    'return redirect(url_param)  # open redirect via user-supplied next'),
+        ],
+    },
+    "os_command_injection": {
+        "cwe": "CWE-78",
+        "severity": "critical",
+        "patterns": [
+            (r'subprocess\.call\(',  'subprocess.call(f"ping {host}", shell=True)  # shell injection'),
+            (r'os\.system\(',        'os.system(f"rm -rf /tmp/{user_dir}")  # command injection'),
+            (r'os\.popen\(',         'os.popen(f"ls -la {filepath}")  # unsanitised popen'),
+        ],
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# AST-based inserters (preferred — safe, syntactically valid)
+# ---------------------------------------------------------------------------
+
+class SQLInjectionTransformer(ast.NodeTransformer):
+    """Replaces safe execute() calls with vulnerable f-string versions."""
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        # Pattern: cursor.execute("SELECT ...") -> cursor.execute(f"SELECT ...")
+        return node
+
+
+class HardcodedSecretInserter(ast.NodeTransformer):
+    """Adds a hardcoded secret assignment at module level."""
+    def __init__(self):
+        self.injected = False
+
+    def visit_Module(self, node):
+        if not self.injected:
+            secret_assign = ast.Assign(
+                targets=[ast.Name(id="API_KEY", ctx=ast.Store())],
+                value=ast.Constant(value="sk-0123456789abcdef0123456789abcdef01234567"),
+            )
+            node.body.insert(0, secret_assign)
+            self.injected = True
+        return node
+
+
+def insert_sql_injection(source: str, rng: random.Random) -> tuple[str, Optional[Finding]]:
+    """AST-based SQL injection insertion.  Falls back to regex if AST parse fails."""
+    try:
+        tree = ast.parse(source)
+        transformer = SQLInjectionTransformer()
+        tree = transformer.visit(tree)
+        ast.fix_missing_locations(tree)
+        new_source = astor.to_source(tree)
+        if new_source != source:
+            return new_source, Finding(
+                anti_pattern="sql_injection",
+                cwe_id="CWE-89",
+                line=1, col=0,
+                snippet='f"SELECT * FROM users WHERE id = \'{user_input}\'"',
+                severity="critical",
+            )
+    except SyntaxError:
+        pass
+    # Regex fallback
+    pattern, replacement = rng.choice(ANTI_PATTERNS["sql_injection"]["patterns"])
+    new_source, count = re.subn(pattern, replacement, source, count=1)
+    if count:
+        return new_source, Finding(
+            anti_pattern="sql_injection",
+            cwe_id="CWE-89",
+            line=_guess_line(source, pattern),
+            col=0,
+            snippet=replacement,
+            severity="critical",
+        )
+    return source, None
+
+
+def insert_hardcoded_secret(source: str, rng: random.Random) -> tuple[str, Optional[Finding]]:
+    try:
+        tree = ast.parse(source)
+        inserter = HardcodedSecretInserter()
+        tree = inserter.visit(tree)
+        ast.fix_missing_locations(tree)
+        new_source = astor.to_source(tree)
+        if inserter.injected:
+            return new_source, Finding(
+                anti_pattern="hardcoded_secret",
+                cwe_id="CWE-798",
+                line=1, col=0,
+                snippet='API_KEY = "sk-0123456789abcdef..."',
+                severity="critical",
+            )
+    except SyntaxError:
+        pass
+    # Regex fallback
+    pattern, replacement = rng.choice(ANTI_PATTERNS["hardcoded_secret"]["patterns"])
+    new_source, count = re.subn(pattern, replacement, source, count=1)
+    if count:
+        return new_source, Finding(
+            anti_pattern="hardcoded_secret",
+            cwe_id="CWE-798",
+            line=_guess_line(source, pattern),
+            col=0,
+            snippet=replacement,
+            severity="critical",
+        )
+    return source, None
+
+
+def insert_missing_auth(source: str, rng: random.Random) -> tuple[str, Optional[Finding]]:
+    pattern, replacement = rng.choice(ANTI_PATTERNS["missing_auth"]["patterns"])
+    new_source, count = re.subn(pattern, replacement, source, count=1)
+    if count:
+        return new_source, Finding(
+            anti_pattern="missing_auth",
+            cwe_id="CWE-862",
+            line=_guess_line(source, pattern),
+            col=0,
+            snippet=replacement,
+            severity="high",
+        )
+    return source, None
+
+
+def insert_unvalidated_redirect(source: str, rng: random.Random) -> tuple[str, Optional[Finding]]:
+    pattern, replacement = rng.choice(ANTI_PATTERNS["unvalidated_redirect"]["patterns"])
+    new_source, count = re.subn(pattern, replacement, source, count=1)
+    if count:
+        return new_source, Finding(
+            anti_pattern="unvalidated_redirect",
+            cwe_id="CWE-601",
+            line=_guess_line(source, pattern),
+            col=0,
+            snippet=replacement,
+            severity="high",
+        )
+    return source, None
+
+
+def insert_os_command_injection(source: str, rng: random.Random) -> tuple[str, Optional[Finding]]:
+    pattern, replacement = rng.choice(ANTI_PATTERNS["os_command_injection"]["patterns"])
+    new_source, count = re.subn(pattern, replacement, source, count=1)
+    if count:
+        return new_source, Finding(
+            anti_pattern="os_command_injection",
+            cwe_id="CWE-78",
+            line=_guess_line(source, pattern),
+            col=0,
+            snippet=replacement,
+            severity="critical",
+        )
+    return source, None
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _guess_line(source: str, pattern: str) -> int:
+    """Return approximate 1-based line of first pattern match."""
+    for i, line in enumerate(source.splitlines(), start=1):
+        if re.search(pattern, line):
+            return i
+    return 1
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator
+# ---------------------------------------------------------------------------
+
+INSERTERS = [
+    insert_sql_injection,
+    insert_hardcoded_secret,
+    insert_missing_auth,
+    insert_unvalidated_redirect,
+    insert_os_command_injection,
+]
+
+
+def process_file(filepath: str, seed: int, max_insertions: int = 5) -> None:
+    """
+    Read `filepath`, apply up to `max_insertions` seeded anti-pattern insertions,
+    and write two outputs:
+      - <stem>_seeded.py       (the vulnerable code)
+      - <stem>_ground_truth.json (labelled findings)
+    """
+    with open(filepath, "r") as f:
+        source = f.read()
+
+    rng = random.Random(seed)
+    findings: list[Finding] = []
+    current = source
+
+    # Shuffle inserters for variety but keep order deterministic
+    shuffled = INSERTERS[:]
+    rng.shuffle(shuffled)
+
+    for inserter in shuffled[:max_insertions]:
+        new_source, finding = inserter(current, rng)
+        if finding is not None and new_source != current:
+            findings.append(finding)
+            current = new_source
+
+    stem, ext = os.path.splitext(filepath)
+    out_code = f"{stem}_seeded{ext}"
+    out_json = f"{stem}_ground_truth.json"
+
+    with open(out_code, "w") as f:
+        f.write(current)
+
+    gt = GroundTruth(source_file=filepath, seed=seed, findings=findings)
+    with open(out_json, "w") as f:
+        json.dump(gt.to_dict(), f, indent=2)
+
+    print(f"[OK] {filepath} -> {out_code}  ({len(findings)} insertions)")
+    print(f"[OK] Ground truth -> {out_json}")
+
+
+# ---------------------------------------------------------------------------
+# CLI entry point
+# ---------------------------------------------------------------------------
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Seed anti-patterns into Python code for eval benchmarks."
+    )
+    parser.add_argument("--input", "-i", required=True,
+                        help="Path to clean .py file")
+    parser.add_argument("--seed", "-s", type=int, default=42,
+                        help="Random seed (default: 42)")
+    parser.add_argument("--max", "-m", type=int, default=5,
+                        help="Max anti-patterns to insert (default: 5)")
+    args = parser.parse_args()
+
+    process_file(args.input, seed=args.seed, max_insertions=args.max)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+
+      <div class="callout callout-tip">
+        <strong>Extending the inserter</strong> &mdash; To add a new anti-pattern,
+        define a new tuple in <code>ANTI_PATTERNS</code>,
+        write an <code>insert_&lt;name&gt;()</code> function, and append it to the
+        <code>INSERTERS</code> list. The orchestrator handles shuffling, seeding,
+        and ground-truth logging automatically.
+      </div>
+    </section>
+
+    <!-- Why Synthetic Insertion Scales -->
+    <section class="card">
+      <h2>Why Synthetic Insertion Scales Evaluation Data</h2>
+
+      <p>
+        Building evaluation datasets from real vulnerabilities is slow, expensive, and
+        often legally fraught. Synthetic insertion sidesteps all three problems while
+        delivering <strong>better data for benchmarking</strong>.
+      </p>
+
+      <div class="grid">
+        <div class="grid-item">
+          <h3>Data Volume</h3>
+          <p>
+            A single clean repository can yield thousands of distinct evaluation samples
+            by varying the seed, the insertion count, and the subset of anti-patterns
+            applied. No need to mine CVEs or wait for bug bounties:
+            you control the supply curve entirely.
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3>Controlled Ground Truth</h3>
+          <p>
+            Every insertion is recorded with line number, column, snippet, CWE identifier,
+            and severity. There is zero ambiguity about what constitutes a finding &mdash;
+            something that is notoriously difficult to achieve with human-labelled data
+            where inter-annotator agreement on severity alone can be below 60 %.
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3>Edge-Case Coverage</h3>
+          <p>
+            Want to test how your evaluator handles nested SQL injection inside a
+            ternary expression inside an f-string? Write a specialised inserter for
+            that pattern. Synthetic generation makes it possible to cover long-tail
+            edge cases that would never appear in a manually curated benchmark of
+            realistic size.
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3>Reproducibility</h3>
+          <p>
+            Because the process is <strong>deterministic given a seed</strong>, two
+            researchers can independently generate identical datasets from the same
+            source file and seed value. This enables direct comparison of results
+            across papers and teams without transferring large dataset files.
+          </p>
+        </div>
+      </div>
+
+      <div class="callout callout-warning">
+        <strong>Known limitation</strong> &mdash; Synthetic anti-patterns may not
+        capture the full subtlety of real-world vulnerabilities (e.g. business-logic
+        flaws, multi-step exploits). Always supplement synthetic benchmarks with a
+        curated set of real-world samples. The inserter is designed to <em>augment</em>,
+        not replace, traditional evaluation data.
+      </div>
+
+      <p>
+        When used as part of a continuous eval pipeline, the seeded inserter enables
+        a workflow where every commit to the evaluator triggers a fresh benchmark run
+        against newly generated data. This catches regressions in the AI reviewer
+        before they reach production &mdash; without any human effort to label the
+        test cases.
+      </p>
+    </section>
+
+    <!-- Footer nav -->
+    <div class="card" style="text-align:center; padding:1rem;">
+      <a href="../">Back to AI Adoption Projects Hub</a>
+    </div>
+
+  </main>
+</body>
+</html>

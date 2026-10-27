@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P3 · Exceptions and edge cases — bank account</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>T</span>Testing Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p2_fixtures_parametrize/README.html">Prev: P2</a>
+                <a href="../p4_mocking_external_apis/README.html">Next: P4</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 3 · Beginner</p>
+            <h1>Exceptions and edge cases — testing what is supposed to break</h1>
+            <p class="lead">Most production bugs do not live in the happy path. They live at the boundaries:
+                zero, one, max, frozen, expired. This project teaches you to test those boundaries
+                deliberately, using a small bank account with overdraft and freeze rules.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Money software cannot have surprises. If a user has $100 and an overdraft of $50, withdrawing $150
+                must succeed and withdrawing $150.01 must fail with a clear error. Withdrawing zero or a negative
+                amount must fail. A frozen account must reject everything. Those rules turn into tests, and the
+                tests are what stop a bad refactor from breaking a real customer.</p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>account.py</code></td>
+                        <td>The <code>BankAccount</code> class and three custom exceptions.</td>
+                    </tr>
+                    <tr>
+                        <td><code>conftest.py</code></td>
+                        <td>Fixture for a standard account with balance 100 and overdraft 50.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_account.py</code></td>
+                        <td>Happy path, edge cases, error paths, and state transitions.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Custom exceptions — why they matter for testing</h2>
+            <p>Three small classes, one base:</p>
+            <pre><code>class BankError(Exception): pass
+class InsufficientFundsError(BankError): pass
+class InvalidAmountError(BankError): pass
+class AccountFrozenError(BankError): pass</code></pre>
+            <p>Custom exceptions let tests assert on the <em>meaning</em> of the failure, not just on a generic
+                <code>ValueError</code>. That is the difference between "something went wrong" and "the user tried
+                to overdraw their account by one cent".
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>The four lenses applied to this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lens</th>
+                        <th>Tests we wrote</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Happy path</td>
+                        <td>Deposit, withdraw, history records.</td>
+                    </tr>
+                    <tr>
+                        <td>Edge cases</td>
+                        <td>Withdraw exact balance, withdraw exactly to overdraft limit, then one cent more.</td>
+                    </tr>
+                    <tr>
+                        <td>Error paths</td>
+                        <td>Negative amounts, zero, beyond overdraft.</td>
+                    </tr>
+                    <tr>
+                        <td>State transitions</td>
+                        <td>Freeze blocks both operations; unfreeze restores them.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Core pattern — asserting on exceptions</h2>
+            <pre><code>def test_overdraft_boundary_one_cent_too_far(account):
+    with pytest.raises(InsufficientFundsError):
+        account.withdraw(150.01)
+
+def test_withdraw_beyond_overdraft_raises(account):
+    with pytest.raises(InsufficientFundsError) as exc_info:
+        account.withdraw(1000)
+    assert "overdraft" in str(exc_info.value).lower()</code></pre>
+            <p>Two levels of strictness:</p>
+            <ul>
+                <li><strong>Just the type</strong> — enough when the type uniquely identifies the failure.</li>
+                <li><strong>Type and message</strong> — when the message carries information users rely on.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Boundary checklist you can reuse</h2>
+            <p>For any numeric input, ask:</p>
+            <ul>
+                <li>What about <strong>zero</strong>?</li>
+                <li>What about <strong>negative</strong>?</li>
+                <li>What about the <strong>exact maximum</strong> allowed?</li>
+                <li>What about <strong>one unit beyond</strong> the maximum?</li>
+                <li>What about a very <strong>large</strong> value?</li>
+            </ul>
+            <p>For any object with state, ask:</p>
+            <ul>
+                <li>What happens in each state (active, frozen, closed)?</li>
+                <li>What happens at the transition itself?</li>
+                <li>Can the transition be reversed?</li>
+            </ul>
+            <div class="callout warn"><strong>Common mistake:</strong> writing only happy-path tests. They pass
+                forever and miss every real bug. Always add at least one edge case and one error case per behavior.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 06_side_projects/testing_projects/p3_exceptions_edge_cases
+pip install -r requirements.txt
+pytest -v</code></pre>
+            <p>To break it on purpose: change <code>self.balance - amount &lt; -self.overdraft_limit</code> to
+                <code>&lt;=</code>. One specific test will fail and tell you exactly what assumption you broke.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>What you should take away from P3</h2>
+            <ul>
+                <li>Custom exceptions make tests precise about the kind of failure.</li>
+                <li>The boundary checklist catches most numeric bugs.</li>
+                <li>State machines deserve tests for each state and each transition.</li>
+                <li><code>pytest.raises</code> can also inspect the exception object.</li>
+            </ul>
+            <div class="callout"><strong>Interview-ready answer:</strong> "I always test the happy path, edge cases
+                at the boundaries, the explicit error path with the right exception type, and the state transitions
+                of any object that has more than one state. <code>pytest.raises</code> is how I assert errors and
+                inspect their messages."</div>
+        </section>
+
+        <section class="card">
+            <h2>Reading order</h2>
+            <ol>
+                <li>Read <code>account.py</code> and notice the exception hierarchy.</li>
+                <li>Read <code>test_account.py</code> grouped by section (happy / edge / error / state).</li>
+                <li>Run <code>pytest -v</code>.</li>
+                <li>Continue to <a href="../p4_mocking_external_apis/README.html">P4 · Mocking external APIs</a>.</li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

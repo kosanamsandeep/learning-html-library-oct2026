@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrewAI 03 · Tools</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="crew">CW</span>CrewAI · 03 Tools</div>
+        <div class="links">
+            <a href="index.html">CrewAI Hub</a>
+            <a href="02_sequential_crew.html">← 02</a>
+            <a href="04_flows_advanced.html">Next: 04 →</a>
+        </div>
+    </div>
+
+    <div class="header crew">
+        <p class="badge">Build 03 · Intermediate</p>
+        <h1>Give agents real abilities</h1>
+        <p class="subtitle">Agents become useful when they can <em>act</em>: search the web with a prebuilt
+            <code>SerperDevTool</code>, or run your own logic via the <code>@tool</code> decorator.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section crew">
+            <h2>What this build does</h2>
+            <p>We attach a web-search tool to a researcher and add a custom tool that the agent can call. Tools
+                are assigned per-agent and the LLM decides when to use them.</p>
+            <div class="pill-row">
+                <span class="level intermediate">Intermediate</span>
+                <span class="tag orange">crewai_tools</span>
+                <span class="tag orange">SerperDevTool</span>
+                <span class="tag orange">@tool</span>
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>Where tools fit</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    A["researcher (Agent)"] -->|tools=[...]| S["SerperDevTool<br/>web search"]
+    A -->|tools=[...]| C["@tool word_count<br/>custom function"]
+    A --> D{"LLM: which tool?"}
+    D --> S
+    D --> C
+    S --> R["results back to agent"]
+    C --> R
+                </pre>
+                <p class="caption">Tools are listed on the agent; the model chooses which to invoke per step.</p>
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>Built-in tools from <code>crewai_tools</code></h2>
+            <pre><code><span class="c-kw">from</span> crewai <span class="c-kw">import</span> Agent, Task, Crew, Process
+<span class="c-kw">from</span> crewai_tools <span class="c-kw">import</span> SerperDevTool, ScrapeWebsiteTool
+
+search = SerperDevTool()          <span class="c-com"># needs SERPER_API_KEY in env</span>
+scrape = ScrapeWebsiteTool()      <span class="c-com"># fetch + read a page</span>
+
+researcher = Agent(
+    role=<span class="c-str">"Web Researcher"</span>,
+    goal=<span class="c-str">"Find up-to-date facts about {topic}"</span>,
+    backstory=<span class="c-str">"You verify claims against live sources."</span>,
+    tools=[search, scrape],       <span class="c-com"># ← abilities attached here</span>
+    llm=<span class="c-str">"gpt-4o"</span>,
+)</code></pre>
+            <div class="callout orange">
+                <code>crewai[tools]</code> ships dozens of ready tools: web search/scrape, file &amp; directory
+                read, code interpreter, RAG over PDFs/CSVs, database queries, and more. Import and drop them
+                into <code>tools=[...]</code>.
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>Custom tools with the <code>@tool</code> decorator</h2>
+            <p>Any Python function becomes a tool. The name and docstring tell the LLM what it does.</p>
+            <pre><code><span class="c-kw">from</span> crewai.tools <span class="c-kw">import</span> tool
+
+<span class="c-cls">@tool</span>(<span class="c-str">"Word Counter"</span>)
+<span class="c-kw">def</span> <span class="c-fn">word_count</span>(text: <span class="c-cls">str</span>) -> <span class="c-cls">int</span>:
+    <span class="c-str">"""Count the number of words in the given text."""</span>
+    <span class="c-kw">return</span> <span class="c-fn">len</span>(text.split())
+
+writer = Agent(
+    role=<span class="c-str">"Editor"</span>,
+    goal=<span class="c-str">"Ensure the article is under 300 words"</span>,
+    backstory=<span class="c-str">"A precise editor who checks length with tools, not guesses."</span>,
+    tools=[word_count],
+    llm=<span class="c-str">"gpt-4o"</span>,
+)</code></pre>
+            <p>For richer tools (validation, typed args) subclass <code>BaseTool</code>:</p>
+            <pre><code><span class="c-kw">from</span> crewai.tools <span class="c-kw">import</span> BaseTool
+<span class="c-kw">from</span> pydantic <span class="c-kw">import</span> BaseModel, Field
+
+<span class="c-kw">class</span> <span class="c-cls">CountInput</span>(BaseModel):
+    text: <span class="c-cls">str</span> = Field(..., description=<span class="c-str">"Text to measure"</span>)
+
+<span class="c-kw">class</span> <span class="c-cls">WordCountTool</span>(BaseTool):
+    name: <span class="c-cls">str</span> = <span class="c-str">"Word Counter"</span>
+    description: <span class="c-cls">str</span> = <span class="c-str">"Count words in text."</span>
+    args_schema: <span class="c-cls">type</span>[BaseModel] = CountInput
+
+    <span class="c-kw">def</span> <span class="c-fn">_run</span>(self, text: <span class="c-cls">str</span>) -> <span class="c-cls">int</span>:
+        <span class="c-kw">return</span> <span class="c-fn">len</span>(text.split())</code></pre>
+        </div>
+
+        <div class="section crew">
+            <h2>Tool assignment: agent vs task</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Attach on…</th>
+                        <th>Effect</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Agent(tools=[...])</code></td>
+                        <td>Agent can use the tool for any of its tasks.</td>
+                    </tr>
+                    <tr>
+                        <td><code>Task(tools=[...])</code></td>
+                        <td>Overrides the agent's tools just for that task.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section crew">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Name and document tools clearly</strong> — the LLM chooses based on the name and
+                    docstring.</li>
+                <li><strong>Prefer built-ins</strong> from <code>crewai_tools</code> before writing your own.</li>
+                <li><strong>Validate &amp; sandbox</strong> anything touching the filesystem, network, or shell.</li>
+                <li><strong>Keep tool results compact</strong> — huge outputs bloat context and cost.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="02_sequential_crew.html"><span class="dir">Previous</span>
+                <div class="ttl">← 02 · Sequential crew</div>
+            </a>
+            <a class="next" href="04_flows_advanced.html"><span class="dir">Next</span>
+                <div class="ttl">04 · Flows &amp; advanced →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>CrewAI Projects · 03 of 04</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

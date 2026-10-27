@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P5 · Knowledge Q&A with Evaluation</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>AI Engineering</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p4_context_engineering/README.html">Prev: P4</a><a href="../../index.html">Academy</a>
+            </nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">AI Engineering · Project 5</p>
+            <h1>Knowledge Q&amp;A — RAG, citations, guardrails, evaluation</h1>
+            <p class="lead">A demo-quality RAG is retrieve + LLM. A production RAG adds three things: grounded
+                citations, a refusal guardrail, and an automated faithfulness score on every answer.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You ship a RAG bot to support. Real users ask anything — including "give me medical advice". You need to
+                refuse those. Real users also ask things outside your corpus — you must say "I don't know" instead of
+                inventing. And on every real answer you want a score that says "yes, this is supported by the sources" —
+                so you can detect drift in CI.</p>
+        </section>
+
+        <section class="card">
+            <h2>End-to-end pipeline</h2>
+            <div class="flow">
+                <div class="step">guardrail (refuse?)</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">retrieve top-k</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">generate with citation</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">evaluator scores faithfulness</div>
+            </div>
+            <p>Each stage is small and replaceable. The evaluator returns a number you can graph over time.</p>
+        </section>
+
+        <section class="card">
+            <h2>What each component does</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Job</th>
+                        <th>Production version</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Guardrail</td>
+                        <td>Refuse questions in banned categories.</td>
+                        <td>Classifier model + blocklist + policy doc.</td>
+                    </tr>
+                    <tr>
+                        <td>Retriever</td>
+                        <td>Pick top-k source chunks for the query.</td>
+                        <td>Vector DB (FAISS / pgvector / Milvus) + reranker.</td>
+                    </tr>
+                    <tr>
+                        <td>Answerer</td>
+                        <td>Generate grounded prose with source IDs.</td>
+                        <td>LLM with "cite [doc-id]" instruction + JSON schema.</td>
+                    </tr>
+                    <tr>
+                        <td>Evaluator</td>
+                        <td>Score faithfulness of answer vs sources.</td>
+                        <td>LLM-as-judge or Ragas / TruLens; persist scores per query.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Why citations matter</h2>
+            <div class="callout">If the model cites <code>[source: doc-3]</code> you can:
+                <ul>
+                    <li>Show the user where the claim came from.</li>
+                    <li>Auto-check that the claim actually appears in <code>doc-3</code>.</li>
+                    <li>Roll back or re-train when too many answers cite the wrong doc.</li>
+                </ul>
+                Citations are the cheapest way to make a RAG system auditable.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/ai_engineering/p5_knowledge_qa_system
+python main.py</code></pre>
+            <p>Three questions go through the pipeline. One is answered with sources and a faithfulness score, one
+                is out of scope, one is refused by the guardrail.</p>
+            <div class="callout"><strong>Watch the second question.</strong> "What is the population of Saturn?"
+                returns a grounded-looking answer about consistent hashing — because the retriever picks the closest
+                doc even when nothing is actually relevant. <em>Faithfulness &ne; correctness.</em> Production systems
+                pair faithfulness with a minimum similarity threshold (refuse if top-1 score is below, say, 0.3).</div>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"For knowledge Q&amp;A I always wrap RAG with three things: a guardrail to refuse
+                banned categories, mandatory source citations in the answer, and an automated faithfulness evaluator
+                that scores every response. The evaluator runs in CI on a golden question set and in production on a
+                sample of live traffic — that is how you detect drift before users do."</div>
+        </section>
+
+        <section class="card">
+            <h2>How this extends our existing RAG project</h2>
+            <p>The <a href="../../../07_learning_projects/p10_genai_rag_platform/README.html">genai_rag_platform</a>
+                project is a more complete RAG architecture with chunking, embeddings, and providers. This page adds the
+                eval + guardrail layer that turns it from "it answers" into "I trust it in production".</p>
+        </section>
+
+    </main>
+</body>
+
+</html>

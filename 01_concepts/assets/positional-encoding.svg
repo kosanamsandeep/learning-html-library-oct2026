@@ -1,0 +1,51 @@
+<svg width="920" height="440" viewBox="0 0 920 440" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="920" height="440" rx="28" fill="#FFFBF5"/>
+  <text x="460" y="54" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#1C1917">Why positional information matters</text>
+
+  <rect x="48" y="94" width="380" height="288" rx="24" fill="#FFFFFF" stroke="#D9CCB8" stroke-width="2"/>
+  <text x="238" y="130" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#115E59">Without position</text>
+
+  <rect x="86" y="160" width="70" height="52" rx="16" fill="#D7F3EF"/>
+  <rect x="174" y="160" width="70" height="52" rx="16" fill="#D7F3EF"/>
+  <rect x="262" y="160" width="70" height="52" rx="16" fill="#D7F3EF"/>
+  <rect x="86" y="236" width="70" height="52" rx="16" fill="#D7F3EF"/>
+  <rect x="174" y="236" width="70" height="52" rx="16" fill="#D7F3EF"/>
+  <rect x="262" y="236" width="70" height="52" rx="16" fill="#D7F3EF"/>
+
+  <text x="121" y="192" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#115E59">dog</text>
+  <text x="209" y="192" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#115E59">bites</text>
+  <text x="297" y="192" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#115E59">man</text>
+
+  <text x="121" y="268" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#115E59">man</text>
+  <text x="209" y="268" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#115E59">bites</text>
+  <text x="297" y="268" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#115E59">dog</text>
+
+  <text x="238" y="330" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#5F564D">Same token set. Different meaning.</text>
+
+  <rect x="492" y="94" width="380" height="288" rx="24" fill="#FFFFFF" stroke="#D9CCB8" stroke-width="2"/>
+  <text x="682" y="130" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#9A3412">With position</text>
+
+  <rect x="530" y="160" width="84" height="52" rx="16" fill="#FFF1E7"/>
+  <rect x="626" y="160" width="84" height="52" rx="16" fill="#FFF1E7"/>
+  <rect x="722" y="160" width="84" height="52" rx="16" fill="#FFF1E7"/>
+
+  <rect x="530" y="236" width="84" height="52" rx="16" fill="#FFF1E7"/>
+  <rect x="626" y="236" width="84" height="52" rx="16" fill="#FFF1E7"/>
+  <rect x="722" y="236" width="84" height="52" rx="16" fill="#FFF1E7"/>
+
+  <text x="572" y="182" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#9A3412">pos 1</text>
+  <text x="572" y="202" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#9A3412">dog</text>
+  <text x="668" y="182" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#9A3412">pos 2</text>
+  <text x="668" y="202" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#9A3412">bites</text>
+  <text x="764" y="182" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#9A3412">pos 3</text>
+  <text x="764" y="202" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#9A3412">man</text>
+
+  <text x="572" y="258" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#9A3412">pos 1</text>
+  <text x="572" y="278" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#9A3412">man</text>
+  <text x="668" y="258" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#9A3412">pos 2</text>
+  <text x="668" y="278" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#9A3412">bites</text>
+  <text x="764" y="258" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#9A3412">pos 3</text>
+  <text x="764" y="278" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#9A3412">dog</text>
+
+  <text x="682" y="330" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#5F564D">Order becomes learnable, so attention can respect syntax and causality.</text>
+</svg>

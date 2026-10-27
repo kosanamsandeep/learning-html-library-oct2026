@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP 05 · Production Agent</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="mcp">MCP</span>MCP · 05 Production</div>
+        <div class="links">
+            <a href="index.html">MCP Hub</a>
+            <a href="04_multi_server_and_remote.html">← 04</a>
+            <a href="../agent_frameworks_comparison/index.html">Compare →</a>
+        </div>
+    </div>
+
+    <div class="header mcp">
+        <p class="badge">Build 05 · Advanced</p>
+        <h1>A production MCP-powered LangGraph agent</h1>
+        <p class="subtitle">Tie it together: a stateful agent with <strong>persistent memory</strong>,
+            <strong>authenticated</strong> remote servers, robust <strong>error handling</strong>,
+            <strong>human approval</strong> for risky tools, and <strong>observability</strong>.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section mcp">
+            <h2>The production architecture</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    U["User"] --> AG["LangGraph StateGraph<br/>+ checkpointer (memory)"]
+    AG --> GATE{"risky tool?"}
+    GATE -->|"yes"| HITL["human approval<br/>(interrupt)"]
+    GATE -->|"no"| EXEC["ToolNode"]
+    HITL -->|approved| EXEC
+    EXEC --> CL["MultiServerMCPClient"]
+    CL -->|auth headers| REMOTE["remote MCP servers"]
+    CL -->|stdio| LOCAL["local MCP servers"]
+    EXEC --> AG
+    AG -.traces.-> OBS["LangSmith / OTEL"]
+                </pre>
+                <p class="caption">Memory persists threads, a gate pauses for approval on dangerous tools, and
+                    every step is traced.</p>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>1 · Stateful agent with persistent memory</h2>
+            <p>Add a checkpointer so the agent remembers across turns and survives restarts. Each conversation
+                is a <code>thread_id</code>.</p>
+            <pre><code><span class="c-kw">from</span> langchain_mcp_adapters.client <span class="c-kw">import</span> MultiServerMCPClient
+<span class="c-kw">from</span> langgraph.prebuilt <span class="c-kw">import</span> create_react_agent
+<span class="c-kw">from</span> langgraph.checkpoint.memory <span class="c-kw">import</span> InMemorySaver
+<span class="c-com"># production: from langgraph.checkpoint.postgres import PostgresSaver</span>
+
+client = MultiServerMCPClient({...})
+tools = <span class="c-kw">await</span> client.get_tools()
+
+agent = create_react_agent(
+    <span class="c-str">"openai:gpt-4o"</span>,
+    tools,
+    checkpointer=InMemorySaver(),          <span class="c-com"># swap for Postgres in prod</span>
+)
+
+config = {<span class="c-str">"configurable"</span>: {<span class="c-str">"thread_id"</span>: <span class="c-str">"user-42"</span>}}
+<span class="c-kw">await</span> agent.ainvoke({<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"Remember my name is Sam."</span>}]}, config)
+<span class="c-kw">await</span> agent.ainvoke({<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"What's my name?"</span>}]}, config)  <span class="c-com"># -> Sam</span></code></pre>
+        </div>
+
+        <div class="section mcp">
+            <h2>2 · Authenticating to remote servers</h2>
+            <p>Hosted MCP servers use bearer tokens or OAuth. Pass headers per server and keep secrets in env
+                vars.</p>
+            <pre><code><span class="c-kw">import</span> os
+
+client = MultiServerMCPClient({
+    <span class="c-str">"github"</span>: {
+        <span class="c-str">"url"</span>: <span class="c-str">"https://api.githubcopilot.com/mcp/"</span>,
+        <span class="c-str">"transport"</span>: <span class="c-str">"streamable_http"</span>,
+        <span class="c-str">"headers"</span>: {<span class="c-str">"Authorization"</span>: <span class="c-str">f"Bearer {os.environ['GITHUB_TOKEN']}"</span>},
+    },
+})</code></pre>
+            <div class="callout sky">
+                <strong>FastMCP servers can require auth too.</strong> FastMCP 2.0 supports bearer-token and
+                OAuth providers on the server side, so the tools <em>you</em> publish can verify callers — not
+                just the ones you consume.
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>3 · Human-in-the-loop for risky tools</h2>
+            <p>Don't let an agent delete files or send money unattended. LangGraph's
+                <code>interrupt</code> pauses the graph so a human can approve.
+            </p>
+            <pre><code><span class="c-kw">from</span> langgraph.types <span class="c-kw">import</span> interrupt, Command
+
+<span class="c-kw">def</span> <span class="c-fn">approval_gate</span>(state):
+    last = state[<span class="c-str">"messages"</span>][-<span class="c-cls">1</span>]
+    <span class="c-kw">for</span> call <span class="c-kw">in</span> getattr(last, <span class="c-str">"tool_calls"</span>, []):
+        <span class="c-kw">if</span> call[<span class="c-str">"name"</span>] <span class="c-kw">in</span> RISKY_TOOLS:        <span class="c-com"># e.g. {"delete_file", "send_email"}</span>
+            decision = interrupt({<span class="c-str">"tool"</span>: call[<span class="c-str">"name"</span>], <span class="c-str">"args"</span>: call[<span class="c-str">"args"</span>]})
+            <span class="c-kw">if</span> decision != <span class="c-str">"approve"</span>:
+                <span class="c-kw">return</span> Command(goto=<span class="c-str">"model"</span>)     <span class="c-com"># reject -> back to the LLM</span>
+    <span class="c-kw">return</span> Command(goto=<span class="c-str">"tools"</span>)              <span class="c-com"># approved -> execute</span></code></pre>
+            <p>Resume after the human responds:</p>
+            <pre><code><span class="c-kw">await</span> agent.ainvoke(Command(resume=<span class="c-str">"approve"</span>), config)</code></pre>
+        </div>
+
+        <div class="section mcp">
+            <h2>4 · Error handling &amp; resilience</h2>
+            <ul>
+                <li><strong>Tool errors don't crash the agent</strong> — <code>ToolNode</code> returns the error
+                    as an observation so the model can retry or apologise. Keep server errors descriptive.</li>
+                <li><strong>Connection failures:</strong> wrap <code>get_tools()</code> in retry/backoff; a
+                    remote server may be cold-starting.</li>
+                <li><strong>Time-box tool calls</strong> so one slow MCP server can't hang the whole turn.</li>
+                <li><strong>Validate inputs inside each tool</strong> — never trust LLM-supplied arguments for
+                    filesystem, shell, or DB access.</li>
+            </ul>
+        </div>
+
+        <div class="section mcp">
+            <h2>5 · Observability</h2>
+            <pre><code><span class="c-com"># Enable LangSmith tracing — see every reasoning step and MCP tool call</span>
+<span class="c-kw">import</span> os
+os.environ[<span class="c-str">"LANGSMITH_TRACING"</span>] = <span class="c-str">"true"</span>
+os.environ[<span class="c-str">"LANGSMITH_API_KEY"</span>] = <span class="c-str">"ls-..."</span>
+<span class="c-com"># Now every agent.ainvoke is captured: prompts, tool inputs/outputs, latency, cost.</span></code></pre>
+            <p>MCP servers can also emit OpenTelemetry; pair both to trace a request from the agent down into
+                the tool implementation.</p>
+        </div>
+
+        <div class="section mcp">
+            <h2>Where to discover &amp; publish servers</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Platform</th>
+                        <th>Use it to…</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>modelcontextprotocol/servers</strong></td>
+                        <td>Grab official reference servers (filesystem, fetch, git, memory).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MCP Registry</strong></td>
+                        <td>Search the official catalog of published servers.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Smithery</strong></td>
+                        <td>Discover &amp; one-click-install community servers.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>FastMCP Cloud / your infra</strong></td>
+                        <td>Deploy and host the servers <em>you</em> build for others to consume.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section mcp">
+            <h2>Production checklist</h2>
+            <ul>
+                <li><strong>Persist state</strong> with a real checkpointer (Postgres), keyed by
+                    <code>thread_id</code>.
+                </li>
+                <li><strong>Authenticate</strong> every remote server; keep tokens in a secret store.</li>
+                <li><strong>Gate risky tools</strong> behind human approval via <code>interrupt</code>.</li>
+                <li><strong>Trace everything</strong> (LangSmith + OTEL) before shipping.</li>
+                <li><strong>Pin server versions</strong> and only connect trusted, scoped servers.</li>
+                <li><strong>Cache <code>get_tools()</code></strong> and reconnect with backoff on failure.</li>
+            </ul>
+        </div>
+
+        <div class="section mcp">
+            <h2>What you can now build</h2>
+            <div class="callout sky">
+                You can <strong>write MCP tools with FastMCP</strong>, <strong>consume them in LangGraph</strong>
+                via <code>langchain-mcp-adapters</code>, expose <strong>resources &amp; prompts</strong>,
+                connect <strong>many local and remote servers</strong>, pull in <strong>public/pre-built
+                    servers</strong> from the registry and Smithery, and harden it all with memory, auth, approvals,
+                and tracing. That's a complete, portable agent tooling stack.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="04_multi_server_and_remote.html"><span class="dir">Previous</span>
+                <div class="ttl">← 04 · Multi-server &amp; remote</div>
+            </a>
+            <a class="next" href="index.html"><span class="dir">Done</span>
+                <div class="ttl">Back to MCP Hub</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>MCP × LangGraph Projects · 05 of 05</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

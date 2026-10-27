@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P8 · True end-to-end with httpx — real server, real socket</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>T</span>Testing Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p7_fastapi_unit_vs_integration/README.html">Prev: P7</a>
+                <a href="../p9_property_based_hypothesis/README.html">Next: P9</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 8 · Advanced</p>
+            <h1>True end-to-end testing — boot a real server, hit it like a user</h1>
+            <p class="lead">P7's <code>TestClient</code> is fast but calls the app in-process. Real users do not. In
+                this project we start uvicorn in a subprocess on a random port and hit it with <code>httpx</code>
+                over a real socket. That is what "end-to-end" actually means.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>A URL shortener has one job: take a long URL, return a short one, and redirect on click. Two services
+                talk: the shortener itself, and the browser that follows the redirect. The only way to verify the
+                <em>entire</em> flow — JSON in, 302 redirect out, real <code>Location</code> header — is to run the
+                server for real and watch what comes back over the wire.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Tiny URL shortener. POST <code>/links</code>, GET <code>/{code}</code> (302 redirect), GET
+                            <code>/stats</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>conftest.py</code></td>
+                        <td>Session fixture starts <code>uvicorn</code> in a subprocess on a free port and waits for it
+                            to be ready.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_e2e.py</code></td>
+                        <td>Tests use real <code>httpx</code> over a real socket.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Integration vs end-to-end — the real difference</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Integration (P7)</th>
+                        <th>End-to-end (P8)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>How the app is called</td>
+                        <td>FastAPI <code>TestClient</code> (in-process ASGI)</td>
+                        <td>uvicorn subprocess + real HTTP socket</td>
+                    </tr>
+                    <tr>
+                        <td>What is covered</td>
+                        <td>App code, dependency wiring, routes</td>
+                        <td>App + uvicorn + the network stack + how the client interprets redirects</td>
+                    </tr>
+                    <tr>
+                        <td>Speed</td>
+                        <td>Tens of milliseconds</td>
+                        <td>A few hundred milliseconds (boot + sockets)</td>
+                    </tr>
+                    <tr>
+                        <td>Failure modes caught</td>
+                        <td>Bugs in routes/dependencies</td>
+                        <td>Bugs in startup, port binding, response headers, content negotiation</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout warn"><strong>Cost vs value:</strong> E2E tests are slower and slightly flakier
+                because they involve sockets. Reserve them for critical user journeys (signup, checkout, login,
+                redirect). Do not E2E every endpoint.</div>
+        </section>
+
+        <section class="card">
+            <h2>Booting the server from inside pytest</h2>
+            <pre><code>@pytest.fixture(scope="session")
+def base_url():
+    port = _free_port()
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "uvicorn", "main:app", "--port", str(port), "--log-level", "warning"],
+        cwd=str(Path(__file__).parent),
+    )
+    url = f"http://127.0.0.1:{port}"
+    try:
+        _wait_until_ready(f"{url}/stats")
+        yield url
+    finally:
+        proc.terminate()
+        proc.wait(timeout=5)</code></pre>
+            <p>Three details matter:</p>
+            <ol>
+                <li><strong>Random free port</strong>. Two test runs on the same machine should not conflict.</li>
+                <li><strong>Wait until ready</strong>. Poll a known endpoint until it answers, so tests do not race
+                    the boot sequence.</li>
+                <li><strong>Always terminate in <code>finally</code></strong>. Otherwise CI accumulates zombie
+                    processes.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>What an E2E test looks like</h2>
+            <pre><code>def test_full_user_journey(client):
+    # 1) User creates a short link
+    code = client.post("/links", json={"url": "https://example.com/article"}).json()["code"]
+
+    # 2) User shares it; somebody opens it
+    follow = client.get(f"/{code}")
+    assert follow.status_code == 302
+    assert follow.headers["location"] == "https://example.com/article"
+
+    # 3) Owner checks stats
+    assert client.get("/stats").json()["total"] == 1</code></pre>
+            <p>This reads like a sentence in plain English: "user creates link, someone follows it, owner sees the
+                stats". That is the right shape for E2E tests — describe a user journey, not implementation steps.</p>
+        </section>
+
+        <section class="card">
+            <h2>Test isolation when there is real shared state</h2>
+            <p>The subprocess keeps its memory between tests. To avoid one test polluting another, the
+                <code>client</code> fixture POSTs to a small <code>/_admin/reset</code> endpoint before each test:
+            </p>
+            <pre><code>@pytest.fixture
+def client(base_url):
+    with httpx.Client(base_url=base_url, follow_redirects=False) as c:
+        c.post("/_admin/reset")
+        yield c</code></pre>
+            <p>In a real product this endpoint would never ship. Two safer alternatives: (a) start a fresh process
+                per test (slow), or (b) wire the app to a database that the fixture truncates between tests.</p>
+        </section>
+
+        <section class="card">
+            <h2>Why <code>httpx</code> instead of <code>requests</code></h2>
+            <ul>
+                <li>Same ergonomics as <code>requests</code>, plus async support.</li>
+                <li>FastAPI's TestClient is built on top of httpx, so you stay in one library.</li>
+                <li><code>follow_redirects=False</code> lets us assert on the actual 302 response — crucial for
+                    redirect-heavy tests.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Picking the right level — a memory aid</h2>
+            <div class="flow">
+                <div class="step">Logic only?</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Unit (P1-P5, P7-service)</div>
+            </div>
+            <div class="flow">
+                <div class="step">Code + 1 real dependency?</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Integration (P6, P7-routes)</div>
+            </div>
+            <div class="flow">
+                <div class="step">Full system from outside?</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">End-to-end (P8)</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 06_side_projects/testing_projects/p8_e2e_with_httpx
+pip install -r requirements.txt
+pytest -v</code></pre>
+            <p>You will see a one-second pause at the start (the server is booting), then the tests run quickly.</p>
+            <div class="callout warn"><strong>Heads-up:</strong> on locked-down corporate machines, you may need to
+                allow Python through the local firewall the first time. The server only binds to <code>127.0.0.1</code>.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>What you should take away from P8</h2>
+            <ul>
+                <li>True E2E means a real process and a real network call.</li>
+                <li>Use a session fixture to boot once and reuse the server.</li>
+                <li>Always wait until the server answers before running tests.</li>
+                <li>Reset state between tests deliberately. Do not rely on order.</li>
+                <li>E2E is expensive — use it for journeys, not for every line of code.</li>
+            </ul>
+            <div class="callout"><strong>Interview-ready answer:</strong> "I treat integration and end-to-end as
+                different layers. Integration uses FastAPI's <code>TestClient</code> in-process for speed. E2E uses
+                a real uvicorn subprocess on a random port and an <code>httpx</code> client, so it covers boot,
+                sockets, and redirect handling. E2E tests are reserved for critical user journeys."</div>
+        </section>
+
+        <section class="card">
+            <h2>Reading order</h2>
+            <ol>
+                <li>Read <code>main.py</code> — about thirty lines.</li>
+                <li>Read <code>conftest.py</code> — focus on the boot, wait, terminate trio.</li>
+                <li>Read <code>test_e2e.py</code> top to bottom, especially <code>test_full_user_journey</code>.</li>
+                <li>Run <code>pytest -v</code>.</li>
+                <li>Continue to <a href="../p9_property_based_hypothesis/README.html">P9 · Property-based testing</a>.
+                </li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

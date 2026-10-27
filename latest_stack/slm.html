@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>02 · Small Language Models (SLM) — Latest Stack</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        pre.mermaid {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>LS</span>Latest Stack</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="multimodal.html">Multimodal</a>
+                <a href="fine-tuning.html">Fine-tuning</a>
+                <a href="performance.html">Performance</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Page 2 of 9</p>
+            <h1>Small Language Models — when small beats big</h1>
+            <p class="lead">An SLM is a language model in the ~0.1B–10B parameter range, trained on
+                curated / synthetic data so it punches above its weight class. The argument for SLMs is simple:
+                <strong>most production tasks don't need GPT-4</strong> — they need a model that's good enough,
+                10–100× cheaper, 5–20× faster, and can run on-device or behind a corporate firewall.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>1 · The current SLM landscape</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Params</th>
+                        <th>License</th>
+                        <th>What it's good at</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Microsoft Phi-3.5-mini</td>
+                        <td>3.8B</td>
+                        <td>MIT</td>
+                        <td>Reasoning, code, instruction following</td>
+                    </tr>
+                    <tr>
+                        <td>Microsoft Phi-4</td>
+                        <td>14B</td>
+                        <td>MIT</td>
+                        <td>Math, STEM reasoning (beats much larger models)</td>
+                    </tr>
+                    <tr>
+                        <td>Google Gemma 2</td>
+                        <td>2B / 9B / 27B</td>
+                        <td>Gemma license</td>
+                        <td>General chat, multilingual</td>
+                    </tr>
+                    <tr>
+                        <td>Meta Llama 3.2</td>
+                        <td>1B / 3B</td>
+                        <td>Llama license</td>
+                        <td>Edge / mobile, instruction following</td>
+                    </tr>
+                    <tr>
+                        <td>Alibaba Qwen 2.5</td>
+                        <td>0.5B – 7B</td>
+                        <td>Apache 2.0 (most)</td>
+                        <td>Multilingual, code, math</td>
+                    </tr>
+                    <tr>
+                        <td>HuggingFace SmolLM2</td>
+                        <td>135M / 360M / 1.7B</td>
+                        <td>Apache 2.0</td>
+                        <td>On-device, browser, edge</td>
+                    </tr>
+                    <tr>
+                        <td>Mistral Ministral</td>
+                        <td>3B / 8B</td>
+                        <td>Research / commercial</td>
+                        <td>European cloud, edge inference</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="quiet">All checkpoints are open-weight and runnable via <code>ollama</code>,
+                <code>llama.cpp</code>, <code>vLLM</code>, or <code>transformers</code>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>2 · SLM vs LLM — the trade-off</h2>
+            <pre class="mermaid">
+flowchart LR
+  subgraph SLM [Small Language Model ~1-10B]
+    s1[Fast: 100-500 tok/s on 1 GPU]
+    s2[Cheap: $0.01 / M tokens self-hosted]
+    s3[On-device / on-prem]
+    s4[Narrow: needs fine-tuning for hard tasks]
+  end
+  subgraph LLM [Large Language Model ~70B-1T+]
+    l1[Slow: 30-80 tok/s]
+    l2[Expensive: $1-15 / M tokens]
+    l3[Cloud-only usually]
+    l4[General: works zero-shot on most things]
+  end
+            </pre>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Dimension</th>
+                        <th>SLM</th>
+                        <th>LLM</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Reasoning depth</td>
+                        <td>OK for scoped tasks</td>
+                        <td>State of the art</td>
+                    </tr>
+                    <tr>
+                        <td>Latency (first token)</td>
+                        <td>50–200 ms</td>
+                        <td>300–1500 ms</td>
+                    </tr>
+                    <tr>
+                        <td>Cost per million tokens</td>
+                        <td>$0.01–$0.20 (self-hosted)</td>
+                        <td>$1–$15 (API)</td>
+                    </tr>
+                    <tr>
+                        <td>Hardware</td>
+                        <td>1 consumer GPU, phone, browser (WebGPU)</td>
+                        <td>Multi-GPU cluster</td>
+                    </tr>
+                    <tr>
+                        <td>Privacy</td>
+                        <td>Runs on-prem / on-device — data never leaves</td>
+                        <td>Usually goes to vendor cloud</td>
+                    </tr>
+                    <tr>
+                        <td>Fine-tuning cost</td>
+                        <td>LoRA on a single 24 GB GPU</td>
+                        <td>Often impractical</td>
+                    </tr>
+                    <tr>
+                        <td>Zero-shot generality</td>
+                        <td>Limited — narrows fast</td>
+                        <td>Strong across many domains</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>3 · Advantages of SLMs</h2>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>Cost</h3>
+                    <p>50–500× cheaper per token at self-hosted volume. Margins move from negative to positive.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Latency</h3>
+                    <p>Sub-200 ms first token on commodity hardware enables voice agents and inline copilots.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Privacy &amp; compliance</h3>
+                    <p>GDPR / HIPAA / SOC 2 easier when the model never touches a third-party endpoint.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Edge deployment</h3>
+                    <p>Runs on phones (Apple Intelligence ships ~3B on-device), browsers (WebGPU), Raspberry Pi.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Customisation</h3>
+                    <p>You can fine-tune a 3B model on a single 24 GB GPU in an afternoon.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Predictability</h3>
+                    <p>Smaller surface area + your own fine-tune = more reproducible behaviour.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Disadvantages of SLMs</h2>
+            <div class="grid">
+                <div class="mini bad">
+                    <h3>Reasoning ceiling</h3>
+                    <p>Multi-step planning, long-context synthesis, and novel-task zero-shot still favour frontier LLMs.
+                    </p>
+                </div>
+                <div class="mini bad">
+                    <h3>World-knowledge breadth</h3>
+                    <p>Less internalised trivia. RAG becomes mandatory for factual coverage.</p>
+                </div>
+                <div class="mini bad">
+                    <h3>Tool-use brittleness</h3>
+                    <p>JSON / function-calling reliability drops below ~3B params unless explicitly fine-tuned.</p>
+                </div>
+                <div class="mini bad">
+                    <h3>Code &amp; math</h3>
+                    <p>Outside Phi-4, most ~3B models trail GPT-4 / Claude meaningfully on hard code tasks.</p>
+                </div>
+                <div class="mini warn">
+                    <h3>You own the ops</h3>
+                    <p>Self-hosting means you also own GPU capacity, scaling, observability, and updates.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>5 · When to pick an SLM</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Pick</th>
+                        <th>Why</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Classification / routing / intent detection</td>
+                        <td>SLM (1–3B fine-tuned)</td>
+                        <td>Task is narrow, latency matters, volume is high.</td>
+                    </tr>
+                    <tr>
+                        <td>Structured extraction (invoices, JSON from docs)</td>
+                        <td>SLM fine-tuned + JSON-mode</td>
+                        <td>Fine-tune to your schema, ship at fraction of the cost.</td>
+                    </tr>
+                    <tr>
+                        <td>On-device assistant (mobile, IoT)</td>
+                        <td>SLM (Llama 3.2-3B, Phi-3.5-mini)</td>
+                        <td>Only option that fits the RAM/power budget.</td>
+                    </tr>
+                    <tr>
+                        <td>Realtime voice bot</td>
+                        <td>SLM 7–9B + streaming</td>
+                        <td>Latency budget per turn is ~600 ms — frontier LLMs blow it.</td>
+                    </tr>
+                    <tr>
+                        <td>Privacy-restricted enterprise</td>
+                        <td>SLM self-hosted</td>
+                        <td>Data must not leave the VPC.</td>
+                    </tr>
+                    <tr>
+                        <td>Frontier reasoning agent</td>
+                        <td>LLM (Claude, GPT-4, Gemini Pro)</td>
+                        <td>Pay the premium — the task needs the depth.</td>
+                    </tr>
+                    <tr>
+                        <td>Long-context (100 K+ tokens)</td>
+                        <td>LLM (Gemini 2.5, Claude)</td>
+                        <td>Most SLMs cap at 8–32 K usable context.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>6 · Hands-on — run an SLM in 5 lines</h2>
+            <h3>Option A · Ollama (fastest path)</h3>
+            <pre><code># 1. install Ollama (https://ollama.com)
+ollama pull phi3.5:3.8b
+ollama run phi3.5:3.8b "Summarise the GDPR in 3 bullets."
+</code></pre>
+            <h3>Option B · Hugging Face transformers</h3>
+            <pre><code># pip install transformers torch accelerate
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+
+name = "microsoft/Phi-3.5-mini-instruct"
+tok = AutoTokenizer.from_pretrained(name)
+mdl = AutoModelForCausalLM.from_pretrained(
+    name, torch_dtype=torch.bfloat16, device_map="auto"
+)
+
+msgs = [{"role": "user", "content": "Classify: 'My fridge is broken.' Categories: BILLING, TECH, SALES."}]
+inputs = tok.apply_chat_template(msgs, return_tensors="pt", add_generation_prompt=True).to(mdl.device)
+out = mdl.generate(inputs, max_new_tokens=20, do_sample=False)
+print(tok.decode(out[0][inputs.shape[1]:], skip_special_tokens=True))
+# -> TECH
+</code></pre>
+            <h3>Option C · vLLM (production)</h3>
+            <pre><code># pip install vllm
+vllm serve microsoft/Phi-3.5-mini-instruct --max-model-len 8192 --port 8000
+# now hit it with the OpenAI Python SDK pointed at http://localhost:8000/v1
+</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>7 · The hybrid pattern most teams settle on</h2>
+            <pre class="mermaid">
+flowchart LR
+  user[User request] --> router{Router<br/>SLM 1B}
+  router -->|simple| slm[SLM 3-8B<br/>fast & cheap]
+  router -->|complex| llm[Frontier LLM<br/>GPT-4 / Claude]
+  slm --> resp[Response]
+  llm --> resp
+            </pre>
+            <p>An SLM does intent classification and routes ~80% of traffic to a fine-tuned SLM, escalating only the
+                hard 20% to a frontier LLM. Total cost drops 5–10× with no quality loss.</p>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://arxiv.org/abs/2404.14219" target="_blank" rel="noopener">Phi-3 Technical
+                    Report</a>
+                <a class="source" href="https://arxiv.org/abs/2412.08905" target="_blank" rel="noopener">Phi-4 Technical
+                    Report</a>
+                <a class="source" href="https://blog.google/technology/developers/google-gemma-2/" target="_blank"
+                    rel="noopener">Google — Gemma 2</a>
+                <a class="source" href="https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/"
+                    target="_blank" rel="noopener">Meta — Llama 3.2 (edge)</a>
+                <a class="source" href="https://qwenlm.github.io/blog/qwen2.5/" target="_blank" rel="noopener">Qwen
+                    2.5</a>
+                <a class="source" href="https://huggingface.co/blog/smollm" target="_blank" rel="noopener">Hugging Face
+                    — SmolLM</a>
+                <a class="source" href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>
+                <a class="source" href="https://docs.vllm.ai/" target="_blank" rel="noopener">vLLM docs</a>
+                <a class="source" href="https://machinelearning.apple.com/research/introducing-apple-foundation-models"
+                    target="_blank" rel="noopener">Apple — On-device foundation models</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boris Cherny on Opus 5 & Claude Code — The Elicitation Era</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38;
+    --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575;
+    --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f;
+    --green:#a3e077; --violet:#c09bfa;
+  }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
+  h1{ font-size:2.6rem; font-weight:800; letter-spacing:-0.03em; line-height:1.12; }
+  h1 em{ color:var(--accent); font-style:normal; }
+  h2{ font-size:1.6rem; font-weight:700; margin:2.5rem 0 1rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; }
+  .lead{ font-size:1.15rem; max-width:64ch; }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  a{ color:var(--accent2); text-decoration:none; } a:hover{ text-decoration:underline; }
+  .hero{ padding:3.5rem 0 2rem; border-bottom:1px solid var(--border); margin-bottom:2.5rem; }
+  .hero .kicker{ color:var(--accent); font-size:0.78rem; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:0.9rem; }
+  .hero .src{ margin-top:1rem; font-size:0.85rem; color:var(--mute); }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  .module{ display:flex; gap:1.2rem; align-items:flex-start; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.6rem; margin:1.1rem 0; transition:border-color .2s, transform .2s; }
+  .module:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  .module .num{ font-family:'JetBrains Mono',monospace; font-size:1.5rem; font-weight:600; color:var(--accent); min-width:2.8rem; text-align:center; padding-top:0.2rem; }
+  .module h3{ margin:0 0 0.4rem; font-size:1.2rem; }
+  .module p{ margin:0 0 0.5rem; font-size:0.95rem; }
+  .module .learn{ font-size:0.8rem; color:var(--mute); }
+  .module a{ color:var(--text); } .module a:hover{ color:var(--accent); text-decoration:none; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; } @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .callout.danger{ border-left-color:var(--rose); background:rgba(242,121,127,0.06); }
+  .footer{ margin-top:4rem; padding-top:2rem; border-top:1px solid var(--border); color:var(--mute); font-size:0.85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">Industry Standards · Boris Cherny · Aug 2026</div>
+    <h1>The <em>Elicitation</em> Era: Opus 5 &amp; the New Claude Code</h1>
+    <p class="lead">Boris Cherny — head of Claude Code at Anthropic — on why frontier models now run for <em>months</em>, why he deletes 80% of system prompts, and why the senior engineer's job is shifting from <em>context engineering</em> to <em>task elicitation</em>.</p>
+    <div class="src">Source: Boris Cherny discussion around the Claude Opus 5 release + Claude Code (verified speaker). Compiled 2026-08-03.</div>
+  </div>
+
+  <div class="callout"><strong>⚡ The one-line thesis:</strong> models have outgrown their harnesses. Your job is no longer to <em>constrain</em> the model with detailed instructions — it's to <em>elicit</em> latent capability by giving it a clear task, guardrails, exit criteria, and a way to verify its own work. Everything below is a concrete practice built on that thesis.</div>
+
+  <h2>The Mental Model</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph LR
+    M["Frontier model (Opus 5)<br/>days-months runtime<br/>injection-resistant"] --> U["Unhobble<br/>delete scaffolding"]
+    U --> A["Ablation mindset<br/>press delete · re-add only on failure"]
+    A --> V["Verification loops<br/>exit criteria + self-check"]
+    V --> W["Dynamic workflows<br/>orchestrate 1000s of agents"]
+    W --> R["Self-maintaining infra<br/>loops (local) · routines (cloud)"]
+    R --> S["Human moat<br/>what should exist · design sense"]
+  </div>
+  </div>
+
+  <h2>Learning Path — 5 Modules</h2>
+
+  <a href="01-press-delete-ablations.html"><div class="module">
+    <div class="num">01</div>
+    <div>
+      <h3>Press Delete: The Ablation Mindset</h3>
+      <p>Cherny deletes 80% of the system prompt with each model generation. System prompts, skills, hooks — ablate them line-by-line. Re-add only when the model stumbles. `claude_code_simple=1` for internal ablations.</p>
+      <div class="learn">Learn: ablation practice · treating the model as a co-worker · every-six-month reset</div>
+    </div>
+  </div></a>
+
+  <a href="02-verification-loops.html"><div class="module">
+    <div class="num">02</div>
+    <div>
+      <h3>Verification Loops &amp; Goal-Oriented Prompting</h3>
+      <p>The single most important thing devs get wrong: not letting the AI verify its own work. Define task, guardrails, exit criteria — not the step-by-step how. Long-running agents drift; give them tangible feedback to self-correct.</p>
+      <div class="learn">Learn: exit criteria · guardrails · self-verification · the "ignorant advantage"</div>
+    </div>
+  </div></a>
+
+  <a href="03-dynamic-workflows.html"><div class="module">
+    <div class="num">03</div>
+    <div>
+      <h3>Dynamic Workflows &amp; Massive Orchestration</h3>
+      <p>Opus 5 can orchestrate thousands–tens of thousands of agents — a 100K-line Zig→Rust rewrite in 11 days. The "agentic algebra": sequence + parallelise + fan-out + verify batches. Test-time compute scales with task stakes.</p>
+      <div class="learn">Learn: agentic algebra · fan-out/verify patterns · test-time compute economics</div>
+    </div>
+  </div></a>
+
+  <a href="04-self-maintaining-infra.html"><div class="module">
+    <div class="num">04</div>
+    <div>
+      <h3>Self-Maintaining Infrastructure</h3>
+      <p>Loops (local) and Routines (cloud) let Claude maintain itself: the "abstraction police" unifying duplicated code, routines deleting dead code, shipping experiments. The engineering drudgery becomes autonomous.</p>
+      <div class="learn">Learn: loop vs routine · abstraction police · autonomous tech-debt cleanup</div>
+    </div>
+  </div></a>
+
+  <a href="05-security-and-human-moat.html"><div class="module">
+    <div class="num">05</div>
+    <div>
+      <h3>Security, Overhang &amp; the Human Moat</h3>
+      <p>Opus 5's three-layer injection defense you can replicate. Product overhang vs underhang — diagnose which you're fighting. And the human moat: architecture &amp; design sense that agents can't automate.</p>
+      <div class="learn">Learn: 3-layer defense · overhang/underhang diagnosis · the non-automatable role</div>
+    </div>
+  </div></a>
+
+  <h2>Quick Reference — The 6 Senior Engineer Shifts</h2>
+  <table style="width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.9rem;">
+    <thead><tr><th style="text-align:left;color:var(--accent2);border-bottom:2px solid var(--border);padding:0.6rem 0.8rem;">Old default</th><th style="text-align:left;color:var(--accent2);border-bottom:2px solid var(--border);padding:0.6rem 0.8rem;">New default</th></tr></thead>
+    <tbody>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">System prompts as permanent code</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Ablate &amp; re-add only on repeated failure</td></tr>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Prescriptive "how" prompting</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Task + guardrails + exit criteria</td></tr>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Context engineering (curate what the model sees)</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Task elicitation (reveal latent ability)</td></tr>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Orchestrate a single agent</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Orchestrate thousands via dynamic workflows</td></tr>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Humans do the drudgery</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Routines maintain the codebase autonomously</td></tr>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Prompt-injection as model problem</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Three-layer defense: alignment + classifier + interpretability</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn"><strong>⚠️ Cost reality check:</strong> Cherny's experiments (two-week continuous agent runs) assume "practically unlimited" token budgets — tens of thousands of dollars in API fees. The <em>practices</em> transfer to any budget; the <em>scale</em> requires real compute spend. Read each module knowing which part applies to your budget.</div>
+
+  <div class="footer">
+    <p>Boris Cherny · Claude Opus 5 · Claude Code — compiled for the AI engineering learning track. 2026-08-03.</p>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#10141c',primaryColor:'#161b26',primaryBorderColor:'#6ee7d8',primaryTextColor:'#e7e9f0',lineColor:'#6ee7d8',secondaryColor:'#0a0c10'}});</script>
+</body>
+</html>

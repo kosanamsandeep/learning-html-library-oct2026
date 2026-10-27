@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Hooks — lifecycle automation for agentic workflows</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="anthropic_building_agents.html">Anthropic</a>
+                <a href="claude_code_in_sdlc/README.html">SDLC sample</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Claude Code · Automation layer</p>
+            <h1>Hooks — lifecycle automation for Claude Code</h1>
+            <p class="lead">Hooks are shell commands that fire at specific points in a Claude Code session — before a
+                file is written, after a command runs, when the session exits. They are the <strong>event system</strong>
+                of an agentic coding workflow: they let you enforce policy, run checks, and plug into your existing
+                toolchain without changing how you work.</p>
+        </section>
+
+        <!-- ── ANALOGY ── -->
+        <section class="card" id="analogy">
+            <h2>If you know git hooks, you already know the pattern</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Git hooks</th>
+                        <th>Claude Code hooks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>pre-commit</code> — run linter before creating a commit</td>
+                        <td><code>beforeWrite</code> — run a schema check before saving a file</td>
+                    </tr>
+                    <tr>
+                        <td><code>post-commit</code> — notify CI after a commit lands</td>
+                        <td><code>afterCommand</code> — log every shell command to an audit trail</td>
+                    </tr>
+                    <tr>
+                        <td><code>pre-push</code> — block push if tests fail</td>
+                        <td><code>beforeToolUse</code> — require approval for sensitive operations</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Just as git hooks let you <strong>automate around</strong> a version-control action, Claude Code hooks
+                let you <strong>automate around</strong> an AI coding action — without modifying the AI's behaviour,
+                only its environment.</p>
+        </section>
+
+        <!-- ── AVAILABLE HOOKS ── -->
+        <section class="card" id="hooks-list">
+            <h2>Every hook, one table</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hook</th>
+                        <th>Fires</th>
+                        <th>Common uses</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>beforeRead</code></td>
+                        <td>Before the Read tool opens a file</td>
+                        <td>Decrypt an encrypted file on read; block reading of sensitive paths</td>
+                    </tr>
+                    <tr>
+                        <td><code>afterRead</code></td>
+                        <td>After the Read tool returns content</td>
+                        <td>Strip secrets from displayed content; log file access</td>
+                    </tr>
+                    <tr>
+                        <td><code>beforeWrite</code></td>
+                        <td>Before the Write tool saves a file</td>
+                        <td>Validate file structure; enforce file-naming conventions</td>
+                    </tr>
+                    <tr>
+                        <td><code>afterWrite</code></td>
+                        <td>After the Write tool saves a file</td>
+                        <td>Run formatter (ruff, prettier); add to git tracking; notify other systems</td>
+                    </tr>
+                    <tr>
+                        <td><code>beforeEdit</code></td>
+                        <td>Before the Edit tool applies a change</td>
+                        <td>Check that the edit doesn't touch a protected region of the file</td>
+                    </tr>
+                    <tr>
+                        <td><code>afterEdit</code></td>
+                        <td>After the Edit tool applies a change</td>
+                        <td>Run linter on the modified file; type-check</td>
+                    </tr>
+                    <tr>
+                        <td><code>beforeCommand</code></td>
+                        <td>Before the Bash tool runs a command</td>
+                        <td>Block dangerous commands; add env vars; add a permission prompt</td>
+                    </tr>
+                    <tr>
+                        <td><code>afterCommand</code></td>
+                        <td>After the Bash tool exits</td>
+                        <td>Parse output for errors; log audit trail; send notifications</td>
+                    </tr>
+                    <tr>
+                        <td><code>preExit</code></td>
+                        <td>When the Claude Code session is about to end</td>
+                        <td>Save conversation summary; push WIP branch; clean up temp files</td>
+                    </tr>
+                    <tr>
+                        <td><code>preToolUse</code> <span class="quiet">(special)</span></td>
+                        <td>Before any tool invocation (advisory permission layer)</td>
+                        <td>Add custom permission prompts for certain tools or arguments</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ── WHY WE NEED THEM ── -->
+        <section class="card" id="why">
+            <h2>Why hooks exist — the four jobs they do</h2>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+                <div style="border:1px solid var(--border); border-radius:8px; padding:1rem;">
+                    <h4 style="margin-top:0;">🔒 1. Safety &amp; guardrails</h4>
+                    <p>The AI doesn't know your organisation's risk policy. Hooks enforce it mechanically — no "please
+                        remember to format" or "don't touch prod."</p>
+                    <p><strong>Example:</strong> <code>beforeCommand</code> blocks <code>kubectl delete</code> and
+                        <code>DROP TABLE</code> unless the user explicitly types a confirmation token.</p>
+                </div>
+                <div style="border:1px solid var(--border); border-radius:8px; padding:1rem;">
+                    <h4 style="margin-top:0;">⚙️ 2. Quality automation</h4>
+                    <p>Instead of reminding the AI to run the linter, make the linter run <em>automatically</em> after
+                        every write — the same way your editor does.</p>
+                    <p><strong>Example:</strong> <code>afterWrite</code> runs <code>ruff format {file}</code> on every
+                        saved Python file.</p>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+                <div style="border:1px solid var(--border); border-radius:8px; padding:1rem;">
+                    <h4 style="margin-top:0;">🧩 3. Toolchain integration</h4>
+                    <p>Hooks are the bridge between the AI session and your existing toolchain — git, CI, monitoring,
+                        ticketing systems.</p>
+                    <p><strong>Example:</strong> <code>preExit</code> runs <code>git add -A && git stash</code> so WIP
+                        changes are never lost when a session ends unexpectedly.</p>
+                </div>
+                <div style="border:1px solid var(--border); border-radius:8px; padding:1rem;">
+                    <h4 style="margin-top:0;">📋 4. Observability &amp; audit</h4>
+                    <p>Every action the AI takes can be logged, analysed, and reviewed — without training the AI to do
+                        its own bookkeeping.</p>
+                    <p><strong>Example:</strong> <code>afterCommand</code> writes every command, its exit code, and a
+                        timestamp to a session audit log.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── WHERE HOOKS LIVE ── -->
+        <section class="card" id="config">
+            <h2>Where hooks are configured</h2>
+            <p>Hooks live in <strong>settings.json</strong> — either user-wide or project-scoped:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Scope</th>
+                        <th>Overrides</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>~/.claude/settings.json</code></td>
+                        <td>Every Claude Code session, every project</td>
+                        <td>Baseline — global hooks (e.g. audit logging)</td>
+                    </tr>
+                    <tr>
+                        <td><code>.claude/settings.local.json</code></td>
+                        <td>This project only, not committed</td>
+                        <td>User-wide hooks <em>and</em> project-wide hooks</td>
+                    </tr>
+                    <tr>
+                        <td><code>.claude/settings.json</code></td>
+                        <td>This project only, committed to repo</td>
+                        <td>Everything below (shared with the team)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <pre><code>// .claude/settings.json  (project-scoped, committed)
+{
+  "hooks": {
+    "afterWrite": "ruff format {file}",
+    "afterCommand": "echo '[{exit_code}] {command}' >> .claude/audit.log",
+    "preExit": "git stash push -m 'claude-wip-$(date +%s)'"
+  }
+}</code></pre>
+        </section>
+
+        <!-- ── DESIGN PRINCIPLES ── -->
+        <section class="card" id="design">
+            <h2>How to design hooks — what the industry is learning</h2>
+
+            <h3>✅ DO</h3>
+            <ul>
+                <li><strong>Keep hooks fast.</strong> A hook that takes &gt;2 seconds breaks flow. If it's slow, make it
+                    async or skip it (e.g. only run the formatter on files &lt;100 lines).</li>
+                <li><strong>Let hooks fail softly.</strong> A failing hook should not block the user's work. Log the
+                    failure and move on — unless it's a safety hook, in which case block hard.</li>
+                <li><strong>Scope hooks to file type.</strong> <code>afterWrite</code> can check the file extension before
+                    running — no point running <code>ruff</code> on a <code>.json</code> file.</li>
+                <li><strong>Test hooks independently.</strong> Run the shell command in your terminal first. A broken hook
+                    silently fails (hooks are fire-and-forget by design).</li>
+                <li><strong>Log everything.</strong> Even if you never read the logs, they're there when you need to
+                    answer "what did Claude do?"</li>
+            </ul>
+
+            <h3>❌ DON'T</h3>
+            <ul>
+                <li><strong>Don't put prompts or decisions in hooks.</strong> Hooks are shell glue, not AI logic. If a
+                    hook needs to "decide" something, it's too complex — move it to a Skill or script.</li>
+                <li><strong>Don't use hooks as a permission bypass.</strong> A hook that auto-approves dangerous commands
+                    defeats the purpose. Use <code>preToolUse</code> for conscious escalation, not silent allowance.</li>
+                <li><strong>Don't chain hooks through each other.</strong> A hook that triggers another tool call that
+                    triggers another hook is a debugging nightmare. Keep the chain flat.</li>
+                <li><strong>Don't hardcode secrets.</strong> A committed settings file with an API token in a hook is a
+                    credential leak waiting to happen. Use env vars or a secrets manager.</li>
+            </ul>
+        </section>
+
+        <!-- ── REAL-WORLD PATTERNS ── -->
+        <section class="card" id="patterns">
+            <h2>Real-world hook configurations</h2>
+
+            <h3>Pattern 1 — minimal Python shop</h3>
+            <pre><code>{
+  "hooks": {
+    "afterWrite": "if [[ '{file}' == *.py ]]; then ruff format '{file}'; fi",
+    "beforeCommand": "if [[ '{command}' == *git\ push* ]]; then echo 'Pushing — sure? (Ctrl-C to cancel)'; fi"
+  }
+}</code></pre>
+
+            <h3>Pattern 2 — audit-heavy compliance environment</h3>
+            <pre><code>{
+  "hooks": {
+    "beforeCommand": ".claude/hooks/check-allowlist.sh '{command}'",
+    "afterCommand": ".claude/hooks/audit-log.sh '{command}' {exit_code}",
+    "afterWrite": ".claude/hooks/validate-ownership.sh '{file}'",
+    "preExit": ".claude/hooks/session-summary.sh"
+  }
+}</code></pre>
+
+            <h3>Pattern 3 — WIP safety net</h3>
+            <pre><code>{
+  "hooks": {
+    "afterWrite":  "git add '{file}'",
+    "preExit":     "git stash push -m 'auto-save-$(date +%s)' 2>/dev/null; echo 'WIP stashed'"
+  }
+}</code></pre>
+
+            <p class="quiet">Put complex hooks in <code>.claude/hooks/</code> as executable scripts — keeps
+                <code>settings.json</code> clean and lets you test them in isolation.</p>
+        </section>
+
+        <!-- ── HOOKS vs SKILLS vs WORKFLOWS ── -->
+        <section class="card" id="comparison">
+            <h2>Hooks vs Skills vs Workflows — when to use what</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Hooks</th>
+                        <th>Skills</th>
+                        <th>Workflows (multi-agent)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Trigger</strong></td>
+                        <td>File/system event (write, command, exit)</td>
+                        <td>User slash command or natural-language request</td>
+                        <td>User ask or scheduled orchestration</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Scope</strong></td>
+                        <td>One shell command, fire-and-forget</td>
+                        <td>Structured prompt with instructions, examples, tools</td>
+                        <td>Multi-agent fan-out with control flow</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Autonomy</strong></td>
+                        <td>None — runs the command, done</td>
+                        <td>Dialog — can converse, use tools, loop</td>
+                        <td>Full — orchestrates sub-agents</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Best for</strong></td>
+                        <td>Linting, formatting, blocking dangerous commands, audit logging</td>
+                        <td>Reusable domain tasks (deploy, review, summarise)</td>
+                        <td>Large-scale investigations, migrations, multi-perspective reviews</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ── SOURCES ── -->
+        <section class="card" id="sources">
+            <h2>Sources</h2>
+            <p class="quiet">Claude Code hooks are documented in the official Claude Code documentation. The patterns
+                above are drawn from the docs and from production usage across teams.</p>
+            <ul>
+                <li><a href="https://docs.anthropic.com/en/docs/claude-code/settings" target="_blank"
+                        rel="noopener">Claude Code — Settings &amp; Configuration (hooks section)</a></li>
+                <li><a href="claude_code_in_sdlc/README.html">Claude Code in your SDLC — sample project (this
+                        folder)</a></li>
+                <li><a href="anthropic_building_agents.html">Anthropic — Building Effective Agents (this folder)</a></li>
+            </ul>
+        </section>
+    </main>
+</body>
+
+</html>

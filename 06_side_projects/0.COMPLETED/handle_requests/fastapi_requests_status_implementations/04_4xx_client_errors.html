@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>04 · 4xx Client Errors in FastAPI</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span class="mark">H</span>Handle Requests</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="03_3xx_redirects.html">← 3xx</a>
+                <a href="05_5xx_server_errors.html">Next: 5xx →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Chapter 04 · <span class="pill amber">4xx</span> Client errors</p>
+            <h1>4xx — "your request is the problem"</h1>
+            <p class="lead">This is where <code>raise HTTPException</code> earns its keep. Each 4xx is a precise
+                message to the caller about <em>what they did wrong</em> — wrong input, no auth, no permission,
+                gone, conflict, too fast.</p>
+        </section>
+
+        <section class="card">
+            <h2>The 4xx you'll raise most</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Meaning</th>
+                        <th>Trigger in your code</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="pill amber">400</span> Bad Request</td>
+                        <td>Malformed / semantically wrong input</td>
+                        <td><code>raise HTTPException(400, ...)</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill amber">401</span> Unauthorized</td>
+                        <td>Not authenticated (who are you?)</td>
+                        <td>+ <code>WWW-Authenticate</code> header</td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill amber">403</span> Forbidden</td>
+                        <td>Authenticated but not allowed</td>
+                        <td><code>raise HTTPException(403, ...)</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill amber">404</span> Not Found</td>
+                        <td>Resource doesn't exist</td>
+                        <td><code>raise HTTPException(404, ...)</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill amber">405</span> Method Not Allowed</td>
+                        <td>Wrong verb for the route</td>
+                        <td>Mostly automatic + <code>Allow</code> header</td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill amber">409</span> Conflict</td>
+                        <td>Clashes with current state (dup, version)</td>
+                        <td><code>raise HTTPException(409, ...)</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill amber">422</span> Unprocessable Entity</td>
+                        <td>Validation failed</td>
+                        <td><strong>Automatic</strong> via Pydantic</td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill amber">429</span> Too Many Requests</td>
+                        <td>Rate limit hit</td>
+                        <td>+ <code>Retry-After</code> header</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>400 / 404 / 409 — the everyday raises</h2>
+            <pre><code>from fastapi import FastAPI, HTTPException, status
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class Item(BaseModel):
+    id: int
+    name: str
+
+DB: dict[int, Item] = {}
+
+@app.post("/items")
+def create(item: Item):
+    if item.name.strip() == "":
+        # 400 — the value passed type validation but is semantically invalid
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "name cannot be blank")
+    if item.id in DB:
+        # 409 — conflicts with existing state
+        raise HTTPException(status.HTTP_409_CONFLICT, "item id already exists")
+    DB[item.id] = item
+    return item
+
+@app.get("/items/{item_id}")
+def read(item_id: int):
+    item = DB.get(item_id)
+    if item is None:
+        # 404 — not there
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "item not found")
+    return item</code></pre>
+            <div class="callout">
+                <strong>400 vs 422:</strong> use 422 (automatic) when the input fails <em>type/schema</em>
+                validation; raise 400 when input is well-formed but breaks a <em>business</em> rule.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>401 Unauthorized — must include WWW-Authenticate</h2>
+            <p>Per spec, a 401 should tell the client <em>how</em> to authenticate via the
+                <code>WWW-Authenticate</code> header. FastAPI lets you pass headers on the exception.
+            </p>
+            <pre><code>from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+
+app = FastAPI()
+oauth2 = OAuth2PasswordBearer(tokenUrl="token")
+
+def current_user(token: str = Depends(oauth2)):
+    user = verify(token)          # returns None if bad/expired
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+@app.get("/me")
+def me(user=Depends(current_user)):
+    return user</code></pre>
+            <div class="callout warn">
+                <strong>401 vs 403:</strong> 401 = "I don't know who you are" (authenticate first). 403 = "I
+                know who you are, and you still can't do this."
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>403 Forbidden — authenticated but not allowed</h2>
+            <pre><code>from fastapi import FastAPI, Depends, HTTPException, status
+
+app = FastAPI()
+
+@app.delete("/admin/items/{item_id}")
+def admin_delete(item_id: int, user=Depends(current_user)):
+    if not user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "admin role required")
+    # ...delete...
+    return {"deleted": item_id}</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>405 Method Not Allowed — mostly free</h2>
+            <p>If a path exists but not for that verb, FastAPI returns 405 automatically with the correct
+                <code>Allow</code> header. You usually don't write code for it — just define the verbs you
+                support.
+            </p>
+            <pre><code>from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/items")     # only GET is defined
+def list_items():
+    return []
+
+# A POST /items now auto-returns:
+#   405 Method Not Allowed
+#   Allow: GET</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>422 Unprocessable Entity — validation, automatic</h2>
+            <p>This is FastAPI's superpower: Pydantic validates the request and returns a detailed 422
+                <em>before your code runs</em>. You can also customize the error shape.
+            </p>
+            <pre><code>from fastapi import FastAPI
+from pydantic import BaseModel, Field
+
+app = FastAPI()
+
+class Signup(BaseModel):
+    username: str = Field(min_length=3, max_length=20)
+    age: int = Field(ge=18)
+
+@app.post("/signup")
+def signup(body: Signup):
+    return {"ok": True}
+
+# POST {"username": "ab", "age": 10}  ->  422 with a precise error list,
+# e.g. "username: string too short", "age: input should be >= 18"</code></pre>
+            <pre><code># Optional: reshape the default 422 body
+from fastapi import Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"error": "validation_failed", "fields": exc.errors()},
+    )</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>429 Too Many Requests — with Retry-After</h2>
+            <p>When a caller exceeds a rate limit, return 429 and tell them when to come back via
+                <code>Retry-After</code> (seconds).
+            </p>
+            <pre><code>from fastapi import FastAPI, Request, HTTPException, status
+import time
+
+app = FastAPI()
+HITS: dict[str, list[float]] = {}
+LIMIT, WINDOW = 5, 60   # 5 requests per 60s
+
+@app.get("/search")
+def search(request: Request):
+    ip = request.client.host
+    now = time.time()
+    hits = [t for t in HITS.get(ip, []) if now - t < WINDOW]
+    if len(hits) >= LIMIT:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="rate limit exceeded",
+            headers={"Retry-After": str(WINDOW)},
+        )
+    hits.append(now)
+    HITS[ip] = hits
+    return {"results": []}</code></pre>
+            <div class="callout good">
+                <strong>In production</strong> use a battle-tested limiter like <code>slowapi</code> backed by
+                Redis so limits hold across multiple workers — the in-memory version above is for learning.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Bonus: one consistent error shape for all 4xx</h2>
+            <p>Override the default <code>HTTPException</code> handler so every error returns the same JSON
+                envelope — easier for clients to parse.</p>
+            <pre><code>from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+@app.exception_handler(HTTPException)
+async def http_exc_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": {"code": exc.status_code, "message": exc.detail}},
+        headers=exc.headers,
+    )</code></pre>
+            <p>👉 Next: <a href="05_5xx_server_errors.html"><strong>05 · 5xx Server errors</strong></a>.</p>
+        </section>
+    </main>
+
+    <footer><a href="index.html">← Back to FastAPI status hub</a></footer>
+</body>
+
+</html>

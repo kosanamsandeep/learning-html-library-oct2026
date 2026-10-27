@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classification Algorithms Explained</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>AI and ML Interview Starter Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="regression.html">Regression</a>
+                <a href="evaluation-metrics.html">Metrics</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What classification is</a>
+            <a href="#logistic">Logistic regression</a>
+            <a href="#decision-tree">Decision trees</a>
+            <a href="#random-forest">Random forest</a>
+            <a href="#svm">Support vector machines</a>
+            <a href="#knn">K-nearest neighbors</a>
+            <a href="#naive-bayes">Naive Bayes</a>
+            <a href="#boosting">Gradient boosting and XGBoost</a>
+            <a href="#choosing">How to choose</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Classical ML</p>
+                    <h1>Classification algorithms explained</h1>
+                    <p>Classification predicts a discrete label: spam or not, disease or healthy, which product
+                        category. Interviews test whether you understand how each algorithm decides, what it assumes,
+                        when it wins, and when it breaks.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core idea</h2>
+                    <p class="formula">Given features X, assign a class label y
+                        Learn a decision boundary that separates classes well</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Binary vs multiclass</h3>
+                        <p>Binary classification has two classes. Multiclass has three or more. Some algorithms handle
+                            both natively; others need wrappers such as one-vs-rest or one-vs-one.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Probability vs hard assignment</h3>
+                        <p>Some classifiers output a probability of belonging to each class (logistic regression, random
+                            forest). Others output a hard assignment directly (basic SVM). Probability outputs are
+                            usually more useful in practice.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="logistic">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 1</p>
+                        <h2>Logistic regression</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How it works</h3>
+                        <p>Despite the name, logistic regression is a classifier. It uses a linear combination of
+                            features passed through a sigmoid function to output a probability between 0 and 1.</p>
+                        <p class="formula">P(y=1|X) = sigmoid(w*X + b) = 1 / (1 + e^(-(w*X + b)))</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Key properties</h3>
+                        <ul class="stack-list">
+                            <li>Simple, fast, interpretable.</li>
+                            <li>Outputs calibrated probabilities.</li>
+                            <li>Works well when the relationship is roughly linear in the log-odds space.</li>
+                            <li>Struggles with complex nonlinear decision boundaries.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="decision-tree">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 2</p>
+                        <h2>Decision trees</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works</h3>
+                        <p>A decision tree splits data recursively on the feature and threshold that best separates
+                            classes. Common splitting criteria are Gini impurity and information gain (entropy).</p>
+                    </div>
+                    <div class="card">
+                        <h3>Key properties</h3>
+                        <ul class="stack-list">
+                            <li>Highly interpretable. You can visualize the full tree.</li>
+                            <li>No feature scaling needed.</li>
+                            <li>Handles nonlinear boundaries naturally.</li>
+                            <li>Prone to overfitting if not pruned or depth-limited.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Splitting criterion</th>
+                                <th>What it measures</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Gini impurity</td>
+                                <td>Probability of misclassifying a randomly chosen element. Lower is purer.</td>
+                            </tr>
+                            <tr>
+                                <td>Information gain (entropy)</td>
+                                <td>Reduction in uncertainty after the split. Higher gain means a more useful split.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="random-forest">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 3</p>
+                        <h2>Random forest</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How it works</h3>
+                        <p>Train many decision trees on random subsets of data and features. Each tree votes, and the
+                            final prediction is the majority class. This is called bagging with random feature subsets.
+                        </p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why it helps</h3>
+                        <ul class="stack-list">
+                            <li>Reduces variance compared to a single tree.</li>
+                            <li>Handles high-dimensional data well.</li>
+                            <li>Robust to overfitting relative to individual trees.</li>
+                            <li>Gives feature importance rankings.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="svm">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 4</p>
+                        <h2>Support vector machines</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works</h3>
+                        <p>SVM finds the hyperplane that maximizes the margin between classes. Points closest to the
+                            boundary are the support vectors. For nonlinear problems, the kernel trick maps data into a
+                            higher-dimensional space.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Key properties</h3>
+                        <ul class="stack-list">
+                            <li>Effective in high-dimensional spaces.</li>
+                            <li>The kernel trick (RBF, polynomial) handles nonlinear boundaries.</li>
+                            <li>Less interpretable than trees or logistic regression.</li>
+                            <li>Does not scale well to very large datasets.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="knn">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 5</p>
+                        <h2>K-nearest neighbors</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How it works</h3>
+                        <p>KNN makes no assumptions about the data distribution. At prediction time, it finds the K
+                            closest training points and assigns the majority class label.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Key properties</h3>
+                        <ul class="stack-list">
+                            <li>Simple and intuitive.</li>
+                            <li>No training phase, all computation at prediction time.</li>
+                            <li>Very sensitive to feature scaling and irrelevant features.</li>
+                            <li>Slow at prediction for large datasets. The curse of dimensionality hurts.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="naive-bayes">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 6</p>
+                        <h2>Naive Bayes</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works</h3>
+                        <p>Applies Bayes' theorem with the naive assumption that all features are conditionally
+                            independent given the class label.</p>
+                        <p class="formula">P(class|features) proportional to P(class) * product of P(feature_i|class)
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>Key properties</h3>
+                        <ul class="stack-list">
+                            <li>Extremely fast and efficient for text classification.</li>
+                            <li>Works surprisingly well even though the independence assumption is rarely true.</li>
+                            <li>Not great for complex feature interactions.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="boosting">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 7</p>
+                        <h2>Gradient boosting and XGBoost</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How it works</h3>
+                        <p>Gradient boosting builds trees sequentially. Each new tree tries to correct the errors of the
+                            previous ensemble. XGBoost, LightGBM, and CatBoost are popular optimized implementations.
+                        </p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why it often wins</h3>
+                        <ul class="stack-list">
+                            <li>Often the best performer on tabular data.</li>
+                            <li>Handles missing values, mixed feature types, and nonlinear relationships.</li>
+                            <li>Feature importance and SHAP values help interpretability.</li>
+                            <li>Requires careful tuning of learning rate, tree depth, and number of rounds.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="flow" style="margin-top: 18px;">
+                    <div class="step">
+                        <h3>1. Start with a weak base prediction</h3>
+                        <p>The ensemble begins with a simple prediction for every row. In classification this often
+                            corresponds to the overall class prior rather than a powerful tree immediately.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Compute what the current model is getting wrong</h3>
+                        <p>The next tree is trained on the residual structure of the ensemble. More formally, boosting
+                            fits the next tree to the negative gradient of the loss function with respect to the current
+                            predictions.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Fit a small corrective tree</h3>
+                        <p>The new tree focuses on cases the current ensemble still handles badly. It learns how to push
+                            predictions in the right direction for those examples.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Add the correction slowly</h3>
+                        <p>The new tree is multiplied by a learning rate before being added to the ensemble. This is why
+                            boosting often works best with many shallow trees and small controlled updates.</p>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>Core boosting update rule</h3>
+                    <pre>Initialize model: F_0(x)
+
+For m = 1 to M:
+  Compute pseudo-residuals:
+    r_im = -[∂L(y_i, F(x_i)) / ∂F(x_i)] evaluated at F = F_(m-1)
+
+  Fit a small tree h_m(x) to residuals r_im
+
+  Update the ensemble:
+    F_m(x) = F_(m-1)(x) + η * h_m(x)
+
+Where:
+  L = loss function
+  η = learning rate
+  h_m = the m-th tree</pre>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>What makes XGBoost different from plain boosting</h3>
+                        <ul class="stack-list">
+                            <li>Uses first-order gradients and second-order derivatives for smarter split scoring.</li>
+                            <li>Adds explicit regularization on tree complexity.</li>
+                            <li>Supports row subsampling and column subsampling.</li>
+                            <li>Handles missing values efficiently.</li>
+                            <li>Is engineered for speed, memory efficiency, and scalable training.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Why the second-order idea matters</h3>
+                        <p>XGBoost uses not only the gradient, which tells the direction of improvement, but also the
+                            Hessian, which gives curvature information. That usually leads to better split choices and a
+                            more stable optimization path than naive residual fitting alone.</p>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>XGBoost objective at a high level</h3>
+                    <pre>Objective = Training Loss + Regularization
+
+Objective = Σ L(y_i, ŷ_i) + Σ Ω(tree_k)
+
+Regularization penalizes:
+  - too many leaves
+  - overly large leaf weights
+  - unnecessarily complex trees
+
+This is a major reason XGBoost generalizes well on tabular data.</pre>
+                </div>
+                <div class="comparison-table" style="margin-top: 18px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Random Forest</th>
+                                <th>XGBoost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Ensemble logic</td>
+                                <td>Bagging: many independent trees vote</td>
+                                <td>Boosting: each tree corrects prior mistakes</td>
+                            </tr>
+                            <tr>
+                                <td>Main effect</td>
+                                <td>Mainly reduces variance</td>
+                                <td>Mainly reduces bias while controlling variance with regularization</td>
+                            </tr>
+                            <tr>
+                                <td>Training style</td>
+                                <td>Parallel-friendly</td>
+                                <td>Sequential because each round depends on the previous ensemble</td>
+                            </tr>
+                            <tr>
+                                <td>Tuning difficulty</td>
+                                <td>Usually easier out of the box</td>
+                                <td>Usually more tuning-sensitive but often stronger on tabular data</td>
+                            </tr>
+                            <tr>
+                                <td>Typical strength</td>
+                                <td>Strong robust baseline</td>
+                                <td>Often top accuracy on structured data</td>
+                            </tr>
+                            <tr>
+                                <td>Common risk</td>
+                                <td>May leave some accuracy on the table</td>
+                                <td>Can overfit if depth, rounds, and learning rate are poorly controlled</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="warning-card">
+                        <h3>When random forest is a better first choice</h3>
+                        <ul class="stack-list">
+                            <li>You need a strong baseline quickly.</li>
+                            <li>You want less tuning pain.</li>
+                            <li>You value robustness and simpler training behavior.</li>
+                            <li>You do not need to squeeze the last few accuracy points.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>When XGBoost is often a better first choice</h3>
+                        <ul class="stack-list">
+                            <li>You are working on structured tabular data.</li>
+                            <li>You care a lot about predictive performance.</li>
+                            <li>You can afford cross-validation and hyperparameter tuning.</li>
+                            <li>You need a model that captures subtle nonlinear feature interactions.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Interview tip:</strong> if someone asks what algorithm you would try first for structured
+                        tabular data, gradient-boosted trees is usually a strong default answer. For unstructured data
+                        like text and images, deep learning methods are usually preferred.</p>
+                </div>
+            </section>
+
+            <section class="section" id="choosing">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Decision guide</p>
+                        <h2>When to use which classifier</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Situation</th>
+                                <th>Good first choice</th>
+                                <th>Why</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Need fast interpretable baseline</td>
+                                <td>Logistic regression</td>
+                                <td>Simple, gives probabilities, easy to explain.</td>
+                            </tr>
+                            <tr>
+                                <td>Tabular data, best accuracy needed</td>
+                                <td>XGBoost or LightGBM</td>
+                                <td>Consistently top performer on structured data.</td>
+                            </tr>
+                            <tr>
+                                <td>Need full interpretability for each decision</td>
+                                <td>Decision tree (shallow)</td>
+                                <td>You can explain every split directly.</td>
+                            </tr>
+                            <tr>
+                                <td>Text classification with limited data</td>
+                                <td>Naive Bayes</td>
+                                <td>Very fast, handles sparse text features naturally.</td>
+                            </tr>
+                            <tr>
+                                <td>Small dataset, complex boundary</td>
+                                <td>SVM with kernel</td>
+                                <td>Works well in high-dimensional, small-sample settings.</td>
+                            </tr>
+                            <tr>
+                                <td>Quick prototype, no training phase</td>
+                                <td>KNN</td>
+                                <td>No training required, simple to implement.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is logistic regression called regression if it does classification?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because internally it regresses the log-odds of the positive class as a linear function
+                                of features. The sigmoid converts the continuous output into a probability, which is
+                                then thresholded for classification.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What is the difference between bagging and boosting?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Bagging trains independent models on random subsets in parallel and averages them to
+                                reduce variance. Boosting trains models sequentially where each new model focuses on
+                                correcting errors from the previous ones, reducing bias.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why does XGBoost often outperform random forest on tabular classification?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because XGBoost builds trees sequentially to correct prior mistakes and optimizes a
+                                regularized objective using gradients and second-order information. Random forest mainly
+                                reduces variance, while XGBoost often pushes accuracy further by reducing bias too.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your dataset has 50 features but only 200 rows. Which classifier would you try first?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Logistic regression with regularization or SVM with a kernel. High-dimensional
+                                small-sample settings need models that handle sparsity and avoid overfitting. I would
+                                also consider feature selection.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You already have a random forest baseline, but the leaderboard still has room to improve.
+                            What would you try next?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>I would try XGBoost or LightGBM next, because boosting often pushes tabular accuracy
+                                beyond bagging-based methods. I would tune learning rate, max depth, subsampling, and
+                                number of boosting rounds using cross-validation.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You need to explain to a business stakeholder why a customer was classified as high churn
+                            risk. Which model gives you the easiest path?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>A shallow decision tree or logistic regression with clear coefficient interpretation. For
+                                more complex models, I would use SHAP or permutation importance to explain individual
+                                predictions.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Classification interviews test algorithm intuition, tradeoffs, and the ability to match the right tool to
+                the business problem.</p>
+            <div class="mini-links">
+                <a href="regression.html">Regression</a>
+                <a href="clustering.html">Clustering</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

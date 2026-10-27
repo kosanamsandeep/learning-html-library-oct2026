@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 21 — Exploration &amp; Discovery</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 21 — Exploration &amp; Discovery</h1>
+  <p>Don't only optimize known goals — sometimes you need to find the unknown unknowns.</p>
+  <p><span class="tag">Strategy</span><span class="tag">Visitor</span><span class="tag">Curiosity</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Most agents <em>exploit</em> — they pick the highest-known-reward action. Exploration introduces calculated randomness so the agent can find new options. Without it, an agent will keep recommending the same restaurant forever.</p>
+<div class="callout tip"><strong>Mental model:</strong> a scout team in a strategy game — sent into fog of war so the rest of the army knows where to go.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart LR
+  S[Seed URLs / topics] --> Crawler
+  Crawler --> Score[Novelty + relevance scorer]
+  Score --> Pick[ε-greedy / UCB pick]
+  Pick -->|"explore"| New[Visit new domain]
+  Pick -->|"exploit"| Known[Visit known-good]
+  New --> Crawler
+  Known --> Crawler
+  Crawler --> KB[(Knowledge graph / store)]
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Drug-discovery research agent</h2>
+<div class="callout scenario">
+A 2026 pharma research agent has a goal "find anti-aging compounds." Pure exploitation reads only papers it already cites. Pure exploration is noise. ε-greedy with novelty bonus reads 80% on-topic + 20% adjacent fields (immunology, autophagy, mitochondrial biology) — exactly where the breakthroughs come from.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant A as Agent
+  participant KB as KB
+  participant W as Web
+  loop each tick
+    A->>A: pick action (ε-greedy)
+    alt explore
+      A->>W: visit unfamiliar domain
+    else exploit
+      A->>W: deepen known cluster
+    end
+    W-->>KB: store findings
+  end
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Approach</th><th>How it expresses exploration</th></tr>
+  <tr><td>Voyager (paper)</td><td>LLM agent in Minecraft with curiosity-driven skill library.</td></tr>
+  <tr><td>OpenAI Deep Research / Gemini Deep Research</td><td>Iterative search-and-summarize with breadth control.</td></tr>
+  <tr><td>OpenInterpreter / SWE-agent</td><td>Free-form code experimentation with eval feedback.</td></tr>
+  <tr><td>Custom</td><td>ε-greedy / UCB / Thompson sampling (this project).</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Strategy</strong></td><td><code>ExplorationPolicy</code> — ε-greedy / UCB interchangeable.</td></tr>
+  <tr><td><strong>Visitor</strong></td><td><code>Crawler</code> visits each candidate, accumulates findings.</td></tr>
+  <tr><td><strong>Repository</strong></td><td><code>KnowledgeStore</code> remembers what was seen.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── explorer.py    # ExplorationPolicy + Crawler + KnowledgeStore
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>Why not always explore?</summary><div>Pure exploration wastes budget on low-value paths. The point is balance: enough exploitation to deliver value now, enough exploration to avoid local minima.</div></details>
+<details class="qa"><summary>Where does novelty come from in an LLM agent?</summary><div>From an embedding distance to past visits, from low coverage of a topic in memory, or from explicit curiosity rewards (e.g., prediction error of a small model).</div></details>
+</section>
+
+</main>
+<footer>Chapter 21 of 21 — and you're done!</footer>
+</body>
+</html>

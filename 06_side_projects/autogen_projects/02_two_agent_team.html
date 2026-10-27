@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGen 02 · Two-Agent Team</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="ag">AG</span>AutoGen · 02 Two-Agent Team</div>
+        <div class="links">
+            <a href="index.html">AutoGen Hub</a>
+            <a href="01_quickstart.html">← 01</a>
+            <a href="03_tools.html">Next: 03 →</a>
+        </div>
+    </div>
+
+    <div class="header ag">
+        <p class="badge">Build 02 · Beginner+</p>
+        <h1>Two agents that collaborate until done</h1>
+        <p class="subtitle">A <strong>writer</strong> drafts, a <strong>critic</strong> reviews, and they loop
+            in a <code>RoundRobinGroupChat</code> until a <strong>termination condition</strong> fires. This is
+            the core AutoGen pattern: agents converse, a rule decides when to stop.</p>
+    </div>
+
+    <div class="container">
+        <div class="section ag">
+            <h2>What this build does</h2>
+            <p>Two agents take turns. The writer produces a draft; the critic gives feedback. The writer
+                revises. When the critic is satisfied it says <code>APPROVE</code>, and a
+                <code>TextMentionTermination</code> ends the conversation.
+            </p>
+            <div class="pill-row">
+                <span class="level beginner">Beginner+</span>
+                <span class="tag teal">RoundRobinGroupChat</span>
+                <span class="tag teal">TextMentionTermination</span>
+                <span class="tag teal">MaxMessageTermination</span>
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>The conversation loop</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+sequenceDiagram
+    participant T as Team (RoundRobin)
+    participant W as writer
+    participant C as critic
+    T->>W: task "Write a tagline"
+    W-->>T: draft v1
+    T->>C: review draft v1
+    C-->>T: "too long, cut it"
+    T->>W: feedback
+    W-->>T: draft v2
+    T->>C: review draft v2
+    C-->>T: "APPROVE"
+    Note over T: TextMentionTermination("APPROVE") -> STOP
+                </pre>
+                <p class="caption">Round-robin = fixed turn order. The termination condition is what prevents
+                    an infinite back-and-forth.</p>
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>The code</h2>
+            <pre><code><span class="c-kw">import</span> asyncio
+<span class="c-kw">from</span> autogen_agentchat.agents <span class="c-kw">import</span> AssistantAgent
+<span class="c-kw">from</span> autogen_agentchat.teams <span class="c-kw">import</span> RoundRobinGroupChat
+<span class="c-kw">from</span> autogen_agentchat.conditions <span class="c-kw">import</span> TextMentionTermination, MaxMessageTermination
+<span class="c-kw">from</span> autogen_agentchat.ui <span class="c-kw">import</span> Console
+<span class="c-kw">from</span> autogen_ext.models.openai <span class="c-kw">import</span> OpenAIChatCompletionClient
+
+<span class="c-kw">async def</span> <span class="c-fn">main</span>():
+    client = OpenAIChatCompletionClient(model=<span class="c-str">"gpt-4o"</span>)
+
+    writer = AssistantAgent(
+        <span class="c-str">"writer"</span>, model_client=client,
+        system_message=<span class="c-str">"You write short marketing taglines. Revise based on feedback."</span>,
+    )
+    critic = AssistantAgent(
+        <span class="c-str">"critic"</span>, model_client=client,
+        system_message=(
+            <span class="c-str">"Critique the tagline in one line. "</span>
+            <span class="c-str">"When it is excellent, reply with the single word APPROVE."</span>
+        ),
+    )
+
+    <span class="c-com"># Stop when the critic says APPROVE, OR after 10 messages (safety net).</span>
+    termination = TextMentionTermination(<span class="c-str">"APPROVE"</span>) | MaxMessageTermination(<span class="c-cls">10</span>)
+
+    team = RoundRobinGroupChat([writer, critic], termination_condition=termination)
+
+    <span class="c-kw">await</span> Console(team.run_stream(task=<span class="c-str">"Tagline for a coffee brand for developers."</span>))
+    <span class="c-kw">await</span> client.close()
+
+asyncio.run(main())</code></pre>
+            <div class="callout teal">
+                <strong>Composable termination:</strong> conditions combine with <code>|</code> (OR) and
+                <code>&amp;</code> (AND). <code>TextMentionTermination("APPROVE") | MaxMessageTermination(10)</code>
+                means "stop on approval, but never run more than 10 messages" — always add a cap.
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>Termination conditions you'll use</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Condition</th>
+                        <th>Stops when…</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>TextMentionTermination("APPROVE")</code></td>
+                        <td>A message contains that text.</td>
+                    </tr>
+                    <tr>
+                        <td><code>MaxMessageTermination(n)</code></td>
+                        <td>n messages have been sent (hard cap).</td>
+                    </tr>
+                    <tr>
+                        <td><code>TokenUsageTermination(n)</code></td>
+                        <td>Token budget is reached (cost control).</td>
+                    </tr>
+                    <tr>
+                        <td><code>HandoffTermination(target)</code></td>
+                        <td>An agent hands off to a target (e.g. a human).</td>
+                    </tr>
+                    <tr>
+                        <td><code>ExternalTermination()</code></td>
+                        <td>You call <code>.set()</code> from outside (UI stop button).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section ag">
+            <h2>RoundRobin vs Selector — who speaks next?</h2>
+            <div class="grid-2">
+                <div class="mini ag">
+                    <h3>RoundRobinGroupChat</h3>
+                    <p>Fixed rotation: writer → critic → writer → … Predictable, great for pipelines and
+                        reviewer loops.</p>
+                </div>
+                <div class="mini ag">
+                    <h3>SelectorGroupChat</h3>
+                    <p>An LLM "manager" picks the best next speaker each turn based on the conversation. Better
+                        for dynamic teams (covered in build 04).</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Always pair a goal condition with a cap.</strong> "APPROVE OR max 10" prevents
+                    runaway loops and runaway bills.</li>
+                <li><strong>Make roles distinct.</strong> If the writer and critic have similar prompts, the
+                    conversation stalls. Sharp, different system messages drive progress.</li>
+                <li><strong>Use one shared model client</strong> across agents to reuse the connection.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="01_quickstart.html"><span class="dir">Previous</span>
+                <div class="ttl">← 01 · Quickstart</div>
+            </a>
+            <a class="next" href="03_tools.html"><span class="dir">Next</span>
+                <div class="ttl">03 · Tools →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>AutoGen Projects · 02 of 04</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

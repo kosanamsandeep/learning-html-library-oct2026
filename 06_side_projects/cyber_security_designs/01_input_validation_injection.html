@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>01 · Input Validation &amp; Injection — Cyber Security Designs</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="sec">🛡</span>Cyber Security Designs</div>
+        <div class="links">
+            <a href="index.html">Hub</a>
+            <a href="02_auth_access_control.html">Auth →</a>
+            <a href="06_ethical_hacker_playbook.html">Hacker Playbook</a>
+        </div>
+    </div>
+
+    <div class="header sec">
+        <p class="badge">01 · Core discipline · Injection &amp; validation</p>
+        <h1>🧪 Never trust input: stopping injection</h1>
+        <p class="subtitle">Injection is consistently in the OWASP Top 10 because it's everywhere: any time
+            untrusted data is mixed into a command, query, or template, an attacker can hijack the meaning.
+            The fix is always the same idea — <strong>separate code from data</strong>.</p>
+    </div>
+
+    <div class="container">
+        <div class="section sec">
+            <h2>The story: why injection happens</h2>
+            <p>Your code builds a string. Part of it is <em>your instruction</em> ("SELECT this user"), part of
+                it is <em>their data</em> (the user's name). If you glue them together with string formatting,
+                the database can't tell where your intent ends and their data begins. A crafted value rewrites
+                your query. That's <strong>injection</strong> — and it applies to SQL, shell commands, NoSQL,
+                LDAP, XML, and even prompt-templates for LLMs.</p>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    U["User input<br/>' OR 1=1 --"] -->|string concat| Q["Query string"]
+    Q --> DB[("Database<br/>executes attacker intent")]
+    U2["User input"] -->|parameter binding| P["Prepared statement"]
+    P --> DB2[("Database<br/>treats input as data only")]
+    classDef bad fill:#470d1c,stroke:#f43f5e,color:#fecdd3
+    classDef good fill:#0c2a22,stroke:#34d399,color:#bbf7d0
+    class U,Q,DB bad
+    class U2,P,DB2 good
+                </pre>
+                <p class="caption">Top path: data becomes code. Bottom path: parameter binding keeps data as
+                    data — the database never parses it as SQL.</p>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>What an attacker tries (conceptually)</h2>
+            <ul>
+                <li><strong>SQL injection:</strong> appends boolean tautologies (<code>OR 1=1</code>), comments
+                    out the rest of your query, or stacks extra statements to read/alter data.</li>
+                <li><strong>Command injection:</strong> slips shell metacharacters (<code>;</code>,
+                    <code>&amp;&amp;</code>, <code>|</code>, backticks) into anything passed to a shell.
+                </li>
+                <li><strong>NoSQL injection:</strong> sends an object where a string is expected
+                    (e.g. <code>{"$ne": null}</code>) to bypass filters.</li>
+                <li><strong>Template / SSTI:</strong> injects template syntax into anything rendered by a
+                    template engine.</li>
+                <li><strong>Mass over-posting:</strong> sends extra fields hoping your model trusts them (covered
+                    in <a href="04_api_hardening_abuse.html">04</a>).</li>
+            </ul>
+            <div class="callout rose">
+                <strong>The tell.</strong> Any place you build a string with <code>f"...{user_input}..."</code>
+                and hand it to an interpreter (DB driver, shell, template, eval) is a potential injection point.
+                Grep your codebase for f-strings near <code>execute</code>, <code>os.system</code>,
+                <code>subprocess</code>, and <code>eval</code>.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>SQL injection — vulnerable vs hardened</h2>
+            <p class="bad-label">❌ Vulnerable — string-built query</p>
+            <pre><code><span class="c-com"># The username comes from the request. f-string mixes data into SQL.</span>
+<span class="c-kw">def</span> <span class="c-fn">get_user</span>(username: <span class="c-cls">str</span>):
+    query = <span class="c-str">f"SELECT * FROM users WHERE name = '{username}'"</span>
+    <span class="c-kw">return</span> db.execute(query)   <span class="c-com"># attacker sends:  ' OR '1'='1</span>
+</code></pre>
+            <p class="good-label">✅ Hardened — parameterised query (binding)</p>
+            <pre><code><span class="c-com"># The ? / :name placeholders keep the value as DATA, never parsed as SQL.</span>
+<span class="c-kw">def</span> <span class="c-fn">get_user</span>(username: <span class="c-cls">str</span>):
+    query = <span class="c-str">"SELECT * FROM users WHERE name = :name"</span>
+    <span class="c-kw">return</span> db.execute(query, {<span class="c-str">"name"</span>: username})
+</code></pre>
+            <p class="good-label">✅ Even better — use an ORM / query builder</p>
+            <pre><code><span class="c-kw">from</span> sqlalchemy <span class="c-kw">import</span> select
+<span class="c-kw">from</span> sqlalchemy.ext.asyncio <span class="c-kw">import</span> AsyncSession
+
+<span class="c-kw">async def</span> <span class="c-fn">get_user</span>(session: AsyncSession, username: <span class="c-cls">str</span>):
+    <span class="c-com"># SQLAlchemy binds parameters for you — no hand-built SQL strings.</span>
+    stmt = select(User).where(User.name == username)
+    result = <span class="c-kw">await</span> session.execute(stmt)
+    <span class="c-kw">return</span> result.scalar_one_or_none()
+</code></pre>
+            <div class="callout sky">
+                <strong>Rule:</strong> the column/table being queried may be code, but a <em>value</em> must
+                always travel as a bound parameter. Never <code>.format()</code> or f-string a value into SQL —
+                not even "trusted" internal ones.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Command injection — avoid the shell</h2>
+            <p class="bad-label">❌ Vulnerable — shell=True with interpolated input</p>
+            <pre><code><span class="c-kw">import</span> os, subprocess
+
+<span class="c-kw">def</span> <span class="c-fn">ping</span>(host: <span class="c-cls">str</span>):
+    os.system(<span class="c-str">f"ping -c 1 {host}"</span>)            <span class="c-com"># host = "8.8.8.8; rm -rf /"</span>
+    subprocess.run(<span class="c-str">f"ping -c 1 {host}"</span>, shell=<span class="c-cls">True</span>)
+</code></pre>
+            <p class="good-label">✅ Hardened — argument list, no shell</p>
+            <pre><code><span class="c-kw">import</span> subprocess, ipaddress
+
+<span class="c-kw">def</span> <span class="c-fn">ping</span>(host: <span class="c-cls">str</span>):
+    <span class="c-com"># 1) Validate to a known-safe shape first.</span>
+    ipaddress.ip_address(host)             <span class="c-com"># raises ValueError if not an IP</span>
+    <span class="c-com"># 2) Pass args as a LIST — the OS does not invoke a shell, so</span>
+    <span class="c-com">#    metacharacters like ; &amp;&amp; | are treated as literal text.</span>
+    subprocess.run([<span class="c-str">"ping"</span>, <span class="c-str">"-c"</span>, <span class="c-str">"1"</span>, host], shell=<span class="c-cls">False</span>, timeout=<span class="c-str">5</span>, check=<span class="c-cls">True</span>)
+</code></pre>
+            <div class="callout rose">
+                <strong>Best of all: don't shell out.</strong> Most "run a command" needs have a pure-Python
+                library equivalent. If you must, use an argument list, <code>shell=False</code>, an absolute
+                binary path, and a <code>timeout</code>.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Validate at the boundary with Pydantic + FastAPI</h2>
+            <p>FastAPI's biggest security win is that <strong>Pydantic validates and coerces every request
+                    body before your code runs</strong>. Lean into it: constrain types, lengths, ranges, and
+                formats so malformed input is rejected with a clean 422 — never reaching your logic.</p>
+            <pre><code><span class="c-kw">from</span> fastapi <span class="c-kw">import</span> FastAPI
+<span class="c-kw">from</span> pydantic <span class="c-kw">import</span> BaseModel, EmailStr, Field, field_validator
+
+app = FastAPI()
+
+<span class="c-kw">class</span> <span class="c-cls">SignupRequest</span>(BaseModel):
+    <span class="c-com"># Tight constraints = smaller attack surface.</span>
+    username: <span class="c-cls">str</span> = Field(min_length=<span class="c-str">3</span>, max_length=<span class="c-str">32</span>, pattern=<span class="c-str">r"^[a-zA-Z0-9_]+$"</span>)
+    email: EmailStr
+    age: <span class="c-cls">int</span> = Field(ge=<span class="c-str">13</span>, le=<span class="c-str">120</span>)
+
+    <span class="c-fn">@field_validator</span>(<span class="c-str">"username"</span>)
+    <span class="c-kw">@classmethod</span>
+    <span class="c-kw">def</span> <span class="c-fn">no_reserved</span>(cls, v: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+        <span class="c-kw">if</span> v.lower() <span class="c-kw">in</span> {<span class="c-str">"admin"</span>, <span class="c-str">"root"</span>, <span class="c-str">"system"</span>}:
+            <span class="c-kw">raise</span> <span class="c-cls">ValueError</span>(<span class="c-str">"reserved username"</span>)
+        <span class="c-kw">return</span> v
+
+<span class="c-fn">@app.post</span>(<span class="c-str">"/signup"</span>)
+<span class="c-kw">async def</span> <span class="c-fn">signup</span>(body: SignupRequest):
+    <span class="c-com"># By here, body is GUARANTEED valid &amp; typed. No defensive re-checks needed.</span>
+    <span class="c-kw">return</span> {<span class="c-str">"ok"</span>: <span class="c-cls">True</span>, <span class="c-str">"user"</span>: body.username}
+</code></pre>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Constraint</th>
+                        <th>Pydantic tool</th>
+                        <th>Stops</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Length bounds</td>
+                        <td><code>Field(min_length, max_length)</code></td>
+                        <td>Oversized payloads, buffer abuse</td>
+                    </tr>
+                    <tr>
+                        <td>Numeric range</td>
+                        <td><code>Field(ge, le, gt, lt)</code></td>
+                        <td>Integer overflow / nonsense values</td>
+                    </tr>
+                    <tr>
+                        <td>Allowed shape</td>
+                        <td><code>pattern=</code> regex / <code>Enum</code></td>
+                        <td>Unexpected characters, injection seeds</td>
+                    </tr>
+                    <tr>
+                        <td>Known formats</td>
+                        <td><code>EmailStr</code>, <code>AnyUrl</code>, <code>UUID</code></td>
+                        <td>Malformed identifiers</td>
+                    </tr>
+                    <tr>
+                        <td>Reject extras</td>
+                        <td><code>model_config = {"extra": "forbid"}</code></td>
+                        <td>Mass-assignment / over-posting</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout amber">
+                <strong>Set <code>extra="forbid"</code> on request models.</strong> By default Pydantic ignores
+                unknown fields; forbidding them turns a silent over-post into a loud 422 — a free defence
+                against mass-assignment.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Output encoding — the other half</h2>
+            <p>Validation stops bad input <em>coming in</em>; <strong>encoding</strong> stops data being
+                misread <em>going out</em>. The same value is dangerous in different contexts:</p>
+            <ul>
+                <li><strong>HTML context</strong> → escape <code>&lt; &gt; &amp; " '</code> (prevents stored
+                    XSS). Templating engines like Jinja2 auto-escape — keep it on.</li>
+                <li><strong>SQL context</strong> → parameter binding (above).</li>
+                <li><strong>Shell context</strong> → argument lists, never string concat.</li>
+                <li><strong>Log context</strong> → strip newlines/control chars so attackers can't forge or
+                    split log lines (log injection).</li>
+            </ul>
+        </div>
+
+        <div class="section sec">
+            <h2>Your injection-defence checklist</h2>
+            <ul class="check">
+                <li>No value is ever f-stringed/`.format()`-ed into SQL, shell, or a template.</li>
+                <li>All DB access uses parameter binding or an ORM.</li>
+                <li><code>subprocess</code> uses argument lists, <code>shell=False</code>, and a timeout.</li>
+                <li>Every request body is a Pydantic model with tight <code>Field</code> constraints.</li>
+                <li>Request models set <code>extra="forbid"</code>.</li>
+                <li>Template auto-escaping is on; no <code>eval</code>/<code>exec</code> on user data.</li>
+                <li>User-controlled values are sanitised before being written to logs.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="index.html"><span class="dir">Back</span>
+                <div class="ttl">Hub</div>
+            </a>
+            <a class="next" href="02_auth_access_control.html"><span class="dir">Next</span>
+                <div class="ttl">02 · AuthN &amp; AuthZ →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Cyber Security Designs · 01 · Input validation &amp; injection</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

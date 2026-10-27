@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilot 03 · Customer Support Copilot</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="cop">CP</span>Copilot · 03 Support</div>
+        <div class="links">
+            <a href="index.html">Copilots Hub</a>
+            <a href="02_code_review_copilot.html">← 02</a>
+            <a href="04_data_analyst_copilot.html">Next: 04 →</a>
+        </div>
+    </div>
+
+    <div class="header cop">
+        <p class="badge">Build 03 · Intermediate · "Tier-1 that never sleeps"</p>
+        <h1>🎧 Customer Support Copilot</h1>
+        <p class="subtitle">A copilot that answers customer questions from your knowledge base, <strong>takes
+                real actions</strong> through tools (check an order, start a refund), and <strong>escalates</strong>
+            to a human when it's unsure or the stakes are high.</p>
+    </div>
+
+    <div class="container">
+        <div class="section cop">
+            <h2>The story — why this copilot exists</h2>
+            <p>Support teams drown in repetitive tickets: "Where's my order?", "How do I reset my password?",
+                "What's your refund policy?". Customers hate waiting; agents burn out on the same questions.</p>
+            <p>This copilot deflects the repetitive 70%, resolves them instantly and correctly (with real data,
+                not guesses), and routes the genuinely hard or sensitive cases to a human with full context —
+                the perfect division of labour.</p>
+            <div class="callout fuchsia">
+                <strong>Inspired by:</strong> <code>chatwoot/chatwoot</code> agent bots and
+                <code>langgenius/dify</code> support assistants — popular open platforms for AI-assisted
+                support.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The decision flow</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    Q["Customer message"] --> AG["Support Copilot (LangGraph agent)"]
+    AG --> C{"What's needed?"}
+    C -->|"general info"| KB["Search KB (RAG)"]
+    C -->|"account action"| T["Call tool:<br/>order_status / start_refund"]
+    KB --> AG
+    T --> RISK{"high-risk or<br/>low confidence?"}
+    RISK -->|no| REPLY["Reply to customer"]
+    RISK -->|yes| ESC["Escalate to human<br/>with summary + context"]
+    ESC --> REPLY
+                </pre>
+                <p class="caption">The copilot picks between knowledge (RAG) and action (tools), and a risk gate
+                    decides when a human must step in.</p>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — tools the copilot can use</h2>
+            <pre><code><span class="c-kw">from</span> langchain_core.tools <span class="c-kw">import</span> tool
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">order_status</span>(order_id: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Look up the shipping status of an order by its ID."""</span>
+    <span class="c-kw">return</span> db.get_order(order_id).status      <span class="c-com"># real system call</span>
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">start_refund</span>(order_id: <span class="c-cls">str</span>, reason: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Begin a refund for an order. Requires human approval before finalising."""</span>
+    <span class="c-kw">return</span> billing.create_refund_request(order_id, reason)
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">search_kb</span>(query: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Search help-centre articles for policies and how-tos."""</span>
+    <span class="c-kw">return</span> retriever.invoke(query)            <span class="c-com"># the RAG store from project 01</span></code></pre>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — agent with an escalation gate</h2>
+            <pre><code><span class="c-kw">from</span> langgraph.prebuilt <span class="c-kw">import</span> create_react_agent
+<span class="c-kw">from</span> langgraph.checkpoint.memory <span class="c-kw">import</span> InMemorySaver
+
+SYSTEM = (
+    <span class="c-str">"You are a support copilot. Use search_kb for policy questions and "</span>
+    <span class="c-str">"tools for account actions. If you are unsure, the request is sensitive "</span>
+    <span class="c-str">"(refunds over $100, account closure, legal), or a tool fails, reply with "</span>
+    <span class="c-str">"'ESCALATE:' followed by a short summary for a human agent."</span>
+)
+
+copilot = create_react_agent(
+    <span class="c-str">"openai:gpt-4o"</span>,
+    tools=[order_status, start_refund, search_kb],
+    prompt=SYSTEM,
+    checkpointer=InMemorySaver(),     <span class="c-com"># remembers the conversation per customer</span>
+)
+
+<span class="c-kw">def</span> <span class="c-fn">handle</span>(msg: <span class="c-cls">str</span>, thread: <span class="c-cls">str</span>):
+    cfg = {<span class="c-str">"configurable"</span>: {<span class="c-str">"thread_id"</span>: thread}}
+    out = copilot.invoke({<span class="c-str">"messages"</span>: [(<span class="c-str">"user"</span>, msg)]}, cfg)
+    reply = out[<span class="c-str">"messages"</span>][-<span class="c-cls">1</span>].content
+    <span class="c-kw">if</span> reply.startswith(<span class="c-str">"ESCALATE:"</span>):
+        ticketing.create(reply, thread)          <span class="c-com"># hand off to a human</span>
+    <span class="c-kw">return</span> reply</code></pre>
+            <div class="callout fuchsia">
+                <strong>Escalation is a first-class outcome.</strong> A great support copilot is measured not
+                only by what it answers, but by how reliably it hands off what it shouldn't — protecting
+                customers and the brand.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>Human-in-the-loop for risky actions</h2>
+            <p>For irreversible actions (refunds, cancellations), pause for approval instead of escalating the
+                whole ticket — using the same <code>interrupt</code> pattern from the MCP/LangGraph projects:</p>
+            <pre><code><span class="c-kw">from</span> langgraph.types <span class="c-kw">import</span> interrupt
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">start_refund</span>(order_id: <span class="c-cls">str</span>, amount: <span class="c-cls">float</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Refund an order; large amounts need an agent's OK."""</span>
+    <span class="c-kw">if</span> amount > <span class="c-cls">100</span>:
+        ok = interrupt({<span class="c-str">"action"</span>: <span class="c-str">"refund"</span>, <span class="c-str">"order"</span>: order_id, <span class="c-str">"amount"</span>: amount})
+        <span class="c-kw">if</span> ok != <span class="c-str">"approve"</span>:
+            <span class="c-kw">return</span> <span class="c-str">"Refund declined by agent."</span>
+    <span class="c-kw">return</span> billing.refund(order_id, amount)</code></pre>
+        </div>
+
+        <div class="section cop">
+            <h2>Advantages this copilot brings</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Advantage</th>
+                        <th>Why it matters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>24/7 instant answers</td>
+                        <td>No queue for common questions; happier customers.</td>
+                    </tr>
+                    <tr>
+                        <td>Acts, not just chats</td>
+                        <td>Resolves "where's my order" with real data via tools.</td>
+                    </tr>
+                    <tr>
+                        <td>Safe escalation</td>
+                        <td>Hard/sensitive cases reach humans with full context.</td>
+                    </tr>
+                    <tr>
+                        <td>Deflection &amp; cost</td>
+                        <td>Frees agents for high-value work; lowers cost per ticket.</td>
+                    </tr>
+                    <tr>
+                        <td>Consistent + on-policy</td>
+                        <td>Answers grounded in the current KB, not folklore.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section cop">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Ground answers in the KB</strong> (RAG) — never let it invent policy.</li>
+                <li><strong>Gate irreversible actions</strong> behind approval or escalation thresholds.</li>
+                <li><strong>Persist conversation state</strong> so context survives across messages.</li>
+                <li><strong>Log every action</strong> for audit, and measure deflection + CSAT to prove value.</li>
+                <li><strong>Give a graceful "talk to a human" exit</strong> at any time.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="02_code_review_copilot.html"><span class="dir">Previous</span>
+                <div class="ttl">← 02 · Code Review</div>
+            </a>
+            <a class="next" href="04_data_analyst_copilot.html"><span class="dir">Next</span>
+                <div class="ttl">04 · Data Analyst Copilot →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Copilots · 03 of 06</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

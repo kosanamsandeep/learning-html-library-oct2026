@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Concept · Chunking strategies for RAG</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <a class="back" href="../index.html">← Portfolio home</a>
+  <h1>Chunking strategies — pros, cons, examples, and why we need overlap</h1>
+</header>
+<main>
+
+<h2>📖 Story mode — Detective Rao and the 500 evidence cards</h2>
+<div class="callout good">
+<b>The scene.</b> Detective Rao gets a <b>10-page witness statement</b>. She can't pin the whole booklet to the evidence board — too big, nobody can scan it.
+So she sits at her desk with scissors and turns it into <b>500 small index cards</b>, drops each card into its own labelled drawer slot, and pins a tiny QR code on each so she can find it later.
+</div>
+
+<p><b>One card = one drawer slot = one vector in the DB.</b> 500 cards → 500 vectors. Never <i>one</i> giant vector for the whole booklet — she'd never find anything.</p>
+
+<p>Now, <i>how</i> she cuts the pages decides how useful those cards are:</p>
+
+<ul>
+<li><b>✂️ Scissors every 100 words (fixed-size):</b> fast, but she sometimes cuts a sentence in half — <i>“…the suspect was last seen near the”</i> | <i>“old church on Tuesday.”</i> Two useless cards.</li>
+<li><b>📏 Cut at paragraph → sentence → word, in that order (recursive):</b> she tries the cleanest cut first; only falls back to messier cuts if a paragraph is too long. Almost always what you want for prose.</li>
+<li><b>🧠 Cut where the topic shifts (semantic):</b> she reads first, cuts where the witness changes subject (“…and that's when he left the building. Earlier that morning…”). Slower, but each card is one pure idea.</li>
+<li><b>🧱 Cut along the document's own seams (structure-aware):</b> for a contract or a PDF with headings/tables, she respects the bold headings and never splits a table row.</li>
+</ul>
+
+<h3>Why she paperclips the last line of card N onto card N+1 — <i>chunk overlap</i></h3>
+<p>Sometimes a clue lives <i>across</i> the cut. Witness says:</p>
+<pre>...he wore a red jacket
+[CUT HERE]
+and carried a knife in his left pocket.</pre>
+<p>Without overlap, card 4 says <i>“…he wore a red jacket”</i> and card 5 says <i>“and carried a knife…”</i> — when Rao searches for <i>“red jacket with a knife”</i>, neither card matches well. With a <b>20-word overlap</b>, the last line of card 4 is <i>also stapled to the top of card 5</i>, so card 5 now reads <i>“…he wore a red jacket and carried a knife in his left pocket.”</i> ✅ Match.</p>
+
+<div class="callout warn">
+<b>One-line recall trick:</b> <i>“500 cards in 500 drawers, paperclipped at the edges.”</i>
+If you can picture the desk, scissors, drawers, and the paperclip — you've got chunking, indexing, and overlap.
+</div>
+
+<div class="mermaid">
+flowchart LR
+    Doc["📄 10-page statement"] --> Cut["✂️ Detective Rao cuts"]
+    Cut --> C1["🗂️ card 1"]
+    Cut --> C2["🗂️ card 2"]
+    Cut --> Cdots["... 500 cards ..."]
+    Cut --> C500["🗂️ card 500"]
+    C1 --> V1["📍 vector 1<br/>drawer slot 1"]
+    C2 --> V2["📍 vector 2<br/>drawer slot 2"]
+    C500 --> V500["📍 vector 500<br/>drawer slot 500"]
+    C1 -. 📎 overlap .-> C2
+    C2 -. 📎 overlap .-> Cdots
+</div>
+
+<h2>Why chunk at all?</h2>
+<p>Embedding models have a max input (~512–8k tokens). Even when they don't, large chunks dilute the semantic
+signal — the embedding for a 5,000-word chapter encodes everything <i>and</i> nothing. We split documents so that
+<b>each vector represents a single coherent idea</b> and the retriever can pick the right one.</p>
+
+<h2>Strategies side by side</h2>
+<table>
+<tr><th>Strategy</th><th>How it splits</th><th>Pros</th><th>Cons</th><th>Best for</th></tr>
+<tr><td><b>Fixed-size</b></td><td>Every N characters or tokens (e.g. 1000 chars)</td><td>Simplest; predictable size; fast</td><td>Cuts mid-sentence; context loss</td><td>Logs, prose where structure is weak</td></tr>
+<tr><td><b>Recursive character</b></td><td>Try paragraph → sentence → word until under size</td><td>Respects natural boundaries; safe default</td><td>Variable chunk sizes</td><td>Default choice for most docs (LangChain <code>RecursiveCharacterTextSplitter</code>)</td></tr>
+<tr><td><b>Sentence-based</b></td><td>NLTK/spaCy sentence segmentation, then pack to size</td><td>Each chunk is grammatical</td><td>Sentence detector errors on lists / code</td><td>Articles, books, support tickets</td></tr>
+<tr><td><b>Semantic / embedding-based</b></td><td>Embed each sentence; split when cosine drops below threshold (topic shift)</td><td>Chunks = topics; great retrieval</td><td>Slow (embed twice); needs tuning</td><td>Long technical docs, transcripts</td></tr>
+<tr><td><b>Document-structure aware</b></td><td>Split on Markdown headings, HTML tags, code AST</td><td>Preserves hierarchy; chunk title = heading</td><td>Only works for structured input</td><td>Wikis, docs sites, source code</td></tr>
+<tr><td><b>Sliding-window / token</b></td><td>Fixed token window with stride</td><td>Stable for transformer limits</td><td>Same downsides as fixed-size</td><td>When token budget is strict</td></tr>
+<tr><td><b>Hierarchical (parent-child)</b></td><td>Index small chunks for search, return their parent chunk for context</td><td>Best of both worlds — precise retrieval, rich context</td><td>2× storage; more code</td><td>Q&amp;A over long docs (LangChain <code>ParentDocumentRetriever</code>)</td></tr>
+<tr><td><b>LLM-assisted "agentic"</b></td><td>Ask an LLM to segment the doc by topic</td><td>Highest quality boundaries</td><td>Slow + costly; non-deterministic</td><td>One-time indexing of critical knowledge bases</td></tr>
+</table>
+
+<h2>Visual: how the strategies see the same document</h2>
+<div class="mermaid">
+flowchart LR
+    Doc[Long document] --> Fix[Fixed-size<br/>3 hard cuts]
+    Doc --> Rec[Recursive char<br/>paragraph cuts]
+    Doc --> Sem[Semantic<br/>cuts on topic shift]
+    Doc --> Str[Structure-aware<br/>cuts on # headings]
+    Doc --> Par[Parent-child<br/>small + parent context]
+</div>
+
+<h2>Code: 5 splitters in 10 lines</h2>
+<pre>from langchain_text_splitters import (
+    CharacterTextSplitter,           # fixed
+    RecursiveCharacterTextSplitter,  # recursive (default!)
+    TokenTextSplitter,               # sliding token
+    MarkdownHeaderTextSplitter,      # structure-aware
+)
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200,
+    separators=["\n\n", "\n", ". ", " ", ""],
+)
+chunks = splitter.split_text(long_text)</pre>
+
+<h2>Why do we need <code>chunk_overlap</code>?</h2>
+<p>Imagine a chunk boundary lands in the middle of an answer:</p>
+<div class="mermaid">
+flowchart LR
+    subgraph "No overlap"
+      A1[...The CEO is]:::cut
+      A2[Sarah Lee. She joined in 2020...]:::cut
+    end
+    subgraph "Overlap=50 tokens"
+      B1[...The CEO is Sarah Lee. She joined...]:::ok
+      B2[...is Sarah Lee. She joined in 2020...]:::ok
+    end
+    classDef cut fill:#fee2e2,stroke:#b91c1c;
+    classDef ok fill:#dcfce7,stroke:#15803d;
+</div>
+
+<table>
+<tr><th>Without overlap</th><th>With overlap (≈10–20% of chunk size)</th></tr>
+<tr><td>"Who is the CEO?" retrieves chunk A1, which doesn't contain the name → wrong answer.</td><td>Both B1 and B2 contain the full fact → either chunk is sufficient → correct answer.</td></tr>
+<tr><td>Bullet lists get cut at item 4 of 8.</td><td>Overlap re-includes the previous items.</td></tr>
+<tr><td>Anaphora ("she", "this") loses its referent.</td><td>The referent appears in both chunks.</td></tr>
+</table>
+
+<h2>Picking parameters — rules of thumb</h2>
+<table>
+<tr><th>Document type</th><th>chunk_size</th><th>chunk_overlap</th><th>Splitter</th></tr>
+<tr><td>FAQ / support articles</td><td>300–500 tokens</td><td>50</td><td>Recursive</td></tr>
+<tr><td>Long PDFs / books</td><td>800–1200 tokens</td><td>150–200</td><td>Recursive or Semantic</td></tr>
+<tr><td>Code</td><td>per function</td><td>0–1 line</td><td>AST-based (e.g. tree-sitter)</td></tr>
+<tr><td>Tables / CSV</td><td>per row group</td><td>0</td><td>Custom (see next page)</td></tr>
+<tr><td>Markdown docs</td><td>by H2/H3</td><td>0</td><td>MarkdownHeaderTextSplitter</td></tr>
+<tr><td>Transcripts / meetings</td><td>~30s of speech</td><td>5s</td><td>Semantic</td></tr>
+</table>
+
+<h2>Evaluation: how do you know your chunking is good?</h2>
+<table>
+<tr><th>Signal</th><th>What it tells you</th></tr>
+<tr><td>Retrieval recall@k (e.g. <a style="color:#fbbf24" href="https://github.com/explodinggradients/ragas">RAGAS</a>)</td><td>Are the gold chunks coming back in the top-k?</td></tr>
+<tr><td>Answer faithfulness</td><td>Does the LLM's answer cite chunks that actually support it?</td></tr>
+<tr><td>Chunk length distribution</td><td>Long tails → you've under-split; flat short → over-split</td></tr>
+<tr><td>"Lost in the middle" tests</td><td>If recall drops for facts near chunk boundaries, increase overlap</td></tr>
+</table>
+
+<div class="callout good">
+<b>Start with:</b> Recursive splitter, 1000 chars, 200 overlap. Measure. Then upgrade to semantic or parent-child only if recall is poor.
+</div>
+
+<h2>Scenario: 10-page document → how many vectors in the DB?</h2>
+<p>This is the #1 confusion people have. Let's walk through it concretely.</p>
+
+<div class="mermaid">
+flowchart LR
+    Doc[Document<br/>10 pages] --> Sp[Splitter<br/>~50 chunks/page]
+    Sp --> C1[chunk 1] --> E1[embed] --> V1[vector 1]
+    Sp --> C2[chunk 2] --> E2[embed] --> V2[vector 2]
+    Sp --> Cn[... chunk 500] --> En[embed] --> Vn[vector 500]
+    V1 --> DB[(Vector DB<br/>500 rows)]
+    V2 --> DB
+    Vn --> DB
+</div>
+
+<table>
+<tr><th>Step</th><th>Count</th><th>Notes</th></tr>
+<tr><td>Pages</td><td>10</td><td>Source document</td></tr>
+<tr><td>Chunks (50 per page)</td><td>500</td><td>Splitter output</td></tr>
+<tr><td>Embedding calls</td><td>500 (or batched, e.g. 5 calls of 100)</td><td>One vector per chunk text</td></tr>
+<tr><td>Vectors stored in DB</td><td><b>500</b> separate rows</td><td>Each chunk = independent vector + metadata</td></tr>
+<tr><td>Metadata per row</td><td>doc_id=docA, page=1..10, chunk_idx=0..499</td><td>So you can filter or reconstruct order</td></tr>
+</table>
+
+<h3>What if you embedded the whole page into ONE vector instead?</h3>
+<table>
+<tr><th>Approach</th><th>Vectors</th><th>Result</th></tr>
+<tr><td>500 chunks → 500 vectors <span class="pill">correct</span></td><td>500</td><td>Each idea is locatable. Question "Who is the CEO?" retrieves the exact 200-token chunk with the name.</td></tr>
+<tr><td>10 pages → 10 vectors (one per page)</td><td>10</td><td>Vector represents "average meaning" of the page → fuzzy; LLM gets the whole page back → expensive &amp; noisy.</td></tr>
+<tr><td>1 doc → 1 vector</td><td>1</td><td>Useless for retrieval — every query returns the same single result.</td></tr>
+</table>
+
+<h3>What a single DB row actually looks like</h3>
+<pre>{
+  "id": "docA::p3::c17",
+  "vector": [0.0123, -0.4421, ..., 0.0918],   // 1536 floats
+  "text":   "...The CEO is Sarah Lee. She joined in 2020...",
+  "metadata": {
+    "doc_id":   "docA",
+    "page":     3,
+    "chunk_idx": 17,
+    "parent_id": "docA::p3",       // optional: link to page-level summary
+    "overlap_with": ["docA::p3::c16", "docA::p3::c18"]
+  }
+}</pre>
+
+<h3>Hierarchical (parent-child) variation</h3>
+<p>If you want both <i>precise retrieval</i> AND <i>broad context</i>, store both small-chunk vectors and parent-chunk vectors:</p>
+<div class="mermaid">
+flowchart LR
+    Page[Page 3<br/>~2500 tokens] --> Sum[Summary chunk<br/>1 vector]
+    Page --> Small[50 small chunks<br/>50 vectors]
+    Sum --> DB[(Vector DB<br/>now 510 rows for 10 pages)]
+    Small --> DB
+    DB --> Q[Query hits small chunk<br/>→ return parent page text to LLM]
+</div>
+<p>So a 10-page doc with parent-child becomes <b>~510 vectors</b> (500 small + 10 page summaries) — still many separate vectors, never one giant one.</p>
+
+<div class="callout good">
+<b>Rule:</b> 1 chunk = 1 vector = 1 row in the DB. Always. The whole point of chunking is to get many small, precise vectors that the retriever can rank individually.
+</div>
+
+</main>
+<footer>concepts · chunking_strategies</footer>
+</body>
+</html>

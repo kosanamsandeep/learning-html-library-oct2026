@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LangGraph Projects — Basic to Advanced</title>
+    <link rel="stylesheet" href="projects.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span>LG</span>LangGraph Projects</div>
+        <div class="links">
+            <a href="../index.html">← Concept Tasks</a>
+            <a href="../../index.html">Side Projects</a>
+            <a href="p1_stateful_chatbot.html">Start P1 →</a>
+        </div>
+    </div>
+
+    <div class="header">
+        <p class="badge">6 hands-on builds · basic → advanced</p>
+        <h1>🧠 Understand LangGraph from the core</h1>
+        <p class="subtitle">Six projects modeled on the best-in-class patterns from the official
+            <code>langchain-ai/langgraph</code> examples. Each one adds one real superpower: state, tools,
+            memory, human control, self-correction, and multi-agent orchestration.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>How to read this series</h2>
+            <p>Every project page follows the same shape so you can move fast: <strong>what it does</strong> →
+                <strong>the graph (Mermaid diagram)</strong> → <strong>annotated code</strong> →
+                <strong>key concepts</strong> → <strong>memory / diagnostics / best practices</strong>. Do them
+                in order — each builds on the last.
+            </p>
+            <div class="callout">
+                <strong>Why LangGraph and not plain chains?</strong> A chain is a straight line that forgets
+                everything between runs. LangGraph models your app as a <em>graph of nodes over shared
+                    state</em>, with persistence, loops, branching, and human checkpoints built in. That is
+                what turns "an LLM call" into "an agent".
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The progression</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    P1["P1 · Stateful<br/>Chatbot"] --> P2["P2 · ReAct<br/>Tool Agent"]
+    P2 --> P3["P3 · Persistence<br/>& Memory"]
+    P3 --> P4["P4 · Human-in-<br/>the-Loop"]
+    P4 --> P5["P5 · Agentic<br/>RAG"]
+    P5 --> P6["P6 · Multi-Agent<br/>Supervisor"]
+    classDef b fill:#064e3b,stroke:#34d399,color:#d1fae5
+    classDef i fill:#1e3a5f,stroke:#60a5fa,color:#dbeafe
+    classDef a fill:#500724,stroke:#f472b6,color:#fbcfe8
+    class P1,P2 b
+    class P3,P4 i
+    class P5,P6 a
+                </pre>
+                <p class="caption">Green = beginner · blue = intermediate · pink = advanced.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Pick a project</h2>
+            <div class="grid">
+                <a class="card" href="p1_stateful_chatbot.html"
+                    style="text-decoration:none;color:inherit;display:block">
+                    <span class="level beginner">Beginner</span>
+                    <h3 style="color:#e0e7ff;margin:.4rem 0">P1 · Stateful Chatbot</h3>
+                    <p style="color:#9ca3af">The smallest real graph: <code>StateGraph</code>,
+                        <code>MessagesState</code>, the <code>add_messages</code> reducer, and
+                        <code>START/END</code>. The "hello world" that already remembers the conversation.
+                    </p>
+                    <div><span class="tag green">StateGraph</span><span class="tag">add_messages</span><span
+                            class="tag">nodes/edges</span></div>
+                </a>
+
+                <a class="card" href="p2_react_tool_agent.html"
+                    style="text-decoration:none;color:inherit;display:block">
+                    <span class="level beginner">Beginner+</span>
+                    <h3 style="color:#e0e7ff;margin:.4rem 0">P2 · ReAct Tool-Calling Agent</h3>
+                    <p style="color:#9ca3af">Give the model hands. <code>bind_tools</code>,
+                        <code>ToolNode</code>, <code>tools_condition</code>, and the reason → act → observe
+                        loop that defines modern agents.
+                    </p>
+                    <div><span class="tag green">bind_tools</span><span class="tag">ToolNode</span><span
+                            class="tag">conditional edges</span></div>
+                </a>
+
+                <a class="card" href="p3_persistence_memory.html"
+                    style="text-decoration:none;color:inherit;display:block">
+                    <span class="level intermediate">Intermediate</span>
+                    <h3 style="color:#e0e7ff;margin:.4rem 0">P3 · Persistence & Memory</h3>
+                    <p style="color:#9ca3af">Checkpointers (<code>MemorySaver</code>,
+                        <code>SqliteSaver</code>), <code>thread_id</code>, short-term vs long-term memory, and
+                        the <code>Store</code> for cross-thread facts — done efficiently.
+                    </p>
+                    <div><span class="tag amber">checkpointer</span><span class="tag">thread_id</span><span
+                            class="tag">Store</span></div>
+                </a>
+
+                <a class="card" href="p4_human_in_the_loop.html"
+                    style="text-decoration:none;color:inherit;display:block">
+                    <span class="level intermediate">Intermediate</span>
+                    <h3 style="color:#e0e7ff;margin:.4rem 0">P4 · Human-in-the-Loop + Diagnostics</h3>
+                    <p style="color:#9ca3af"><code>interrupt()</code>, approval gates,
+                        <code>Command(resume=...)</code>, time-travel with <code>get_state_history</code>, and
+                        wiring LangSmith tracing for real diagnostics.
+                    </p>
+                    <div><span class="tag amber">interrupt</span><span class="tag">time travel</span><span
+                            class="tag">LangSmith</span></div>
+                </a>
+
+                <a class="card" href="p5_agentic_rag.html" style="text-decoration:none;color:inherit;display:block">
+                    <span class="level advanced">Advanced</span>
+                    <h3 style="color:#e0e7ff;margin:.4rem 0">P5 · Agentic / Self-Correcting RAG</h3>
+                    <p style="color:#9ca3af">Retrieve → grade documents → rewrite the question → answer. A
+                        graph that judges its own context and loops until the answer is grounded.</p>
+                    <div><span class="tag pink">RAG</span><span class="tag">grading</span><span
+                            class="tag">self-correction</span></div>
+                </a>
+
+                <a class="card" href="p6_multi_agent_supervisor.html"
+                    style="text-decoration:none;color:inherit;display:block">
+                    <span class="level advanced">Advanced</span>
+                    <h3 style="color:#e0e7ff;margin:.4rem 0">P6 · Multi-Agent Supervisor</h3>
+                    <p style="color:#9ca3af">A supervisor that routes work to specialist agents via
+                        <code>Command</code> handoffs and subgraphs — the orchestration pattern behind real
+                        production systems.
+                    </p>
+                    <div><span class="tag pink">supervisor</span><span class="tag">Command</span><span
+                            class="tag">subgraphs</span></div>
+                </a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What you'll be able to explain afterwards</h2>
+            <div class="grid-2">
+                <div class="mini">
+                    <h3>🔁 The core loop</h3>
+                    <p>How state flows through nodes, how reducers merge updates, and why edges (not call
+                        stacks) control the flow.</p>
+                </div>
+                <div class="mini">
+                    <h3>🧩 Memory done right</h3>
+                    <p>Short-term (thread checkpoints) vs long-term (Store), trimming/summarizing message
+                        history, and why <code>thread_id</code> is the unit of a conversation.</p>
+                </div>
+                <div class="mini">
+                    <h3>🔬 Diagnostics</h3>
+                    <p>Streaming modes, LangSmith traces, time-travel debugging, and durable execution so a
+                        crash resumes instead of restarting.</p>
+                </div>
+                <div class="mini">
+                    <h3>🏛️ Architecture</h3>
+                    <p>When to use a single ReAct agent vs a supervised multi-agent system, and how subgraphs
+                        keep large graphs maintainable.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Reference projects this series is modeled on</h2>
+            <ul>
+                <li><code>langchain-ai/langgraph</code> — official tutorials (chatbot, tool-calling, HITL,
+                    persistence).</li>
+                <li><code>langchain-ai/langgraph</code> examples — <em>Agentic RAG</em> and <em>Self-RAG /
+                        CRAG</em> notebooks.</li>
+                <li><code>langchain-ai/langgraph-supervisor</code> &amp; <code>langgraph-swarm</code> —
+                    multi-agent orchestration patterns.</li>
+                <li><code>langchain-ai/react-agent</code> — the production-shaped ReAct template.</li>
+            </ul>
+            <div class="callout amber">
+                <strong>Note:</strong> the code on these pages targets the modern LangGraph API
+                (<code>langgraph >= 0.2</code>): <code>StateGraph</code>, prebuilt <code>ToolNode</code> /
+                <code>tools_condition</code>, <code>interrupt()</code>, and the <code>Store</code> API.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="../index.html"><span class="dir">Back</span>
+                <div class="ttl">Concept tasks (2–9)</div>
+            </a>
+            <a class="next" href="p1_stateful_chatbot.html"><span class="dir">Start</span>
+                <div class="ttl">P1 · Stateful Chatbot →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>LangGraph Projects · understanding agent architecture from the core</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

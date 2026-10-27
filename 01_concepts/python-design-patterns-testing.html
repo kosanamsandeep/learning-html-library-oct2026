@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Design Patterns, TDD, and BDD</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">PY</span>
+                <span>Python Scalability Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="fastapi-flask.html">FastAPI vs Flask</a>
+                <a href="langserve-frameworks.html">LangServe</a>
+                <a href="python-project-structure.html">Project Structure</a>
+                <a href="python-solid-principles.html">SOLID</a>
+                <a href="#tdd-bdd">TDD vs BDD</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#principles">Core design principles</a>
+            <a href="#patterns">Important Python patterns</a>
+            <a href="#singleton">Singleton in context</a>
+            <a href="#scalability">How these help scalability</a>
+            <a href="#tdd-bdd">TDD vs BDD</a>
+            <a href="#workflow">How the workflows differ</a>
+            <a href="#examples">Simple Python examples</a>
+            <a href="#when-to-use">When to use which</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Python application engineering</p>
+                    <h1>Simple design principles and testing styles that make Python applications easier to scale.</h1>
+                    <p>Scalable Python applications usually do not begin with clever patterns. They begin with simple
+                        structure, clear boundaries, low duplication, and testable code. Patterns help after that, not
+                        before that.</p>
+                    <p>This page covers practical principles such as <strong>KISS</strong> and <strong>DRY</strong>, a
+                        few high-value Python design patterns, and a clear explanation of <strong>Test-Driven
+                            Development</strong> and <strong>Behavior-Driven Development</strong> in plain terms.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>One-line summary</h2>
+                    <ul>
+                        <li><strong>KISS:</strong> choose the simplest design that works</li>
+                        <li><strong>DRY:</strong> avoid repeating knowledge in many places</li>
+                        <li><strong>YAGNI:</strong> do not build features before they are needed</li>
+                        <li><strong>TDD:</strong> write tests first to drive code design</li>
+                        <li><strong>BDD:</strong> describe behavior in business-readable scenarios</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section" id="principles">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Principles first</p>
+                        <h2>Core design principles for scalable Python applications</h2>
+                    </div>
+                </div>
+                <div class="grid three">
+                    <div class="card">
+                        <span class="tag">Simplicity</span>
+                        <h3>KISS: Keep it simple</h3>
+                        <p>Prefer the simplest implementation that solves the current problem clearly. Simple code is
+                            easier to read, debug, test, and change under pressure.</p>
+                    </div>
+                    <div class="card">
+                        <span class="tag">Maintainability</span>
+                        <h3>DRY: Do not repeat yourself</h3>
+                        <p>If the same business rule appears in several places, it will eventually drift. Centralize
+                            repeated knowledge so updates happen once.</p>
+                    </div>
+                    <div class="card">
+                        <span class="tag warm">Focus</span>
+                        <h3>YAGNI: You are not going to need it</h3>
+                        <p>Avoid building speculative abstractions too early. Extra flexibility that nobody uses often
+                            becomes extra complexity that everyone pays for.</p>
+                    </div>
+                </div>
+                <div class="grid three" style="margin-top: 18px;">
+                    <div class="card">
+                        <span class="tag">Boundaries</span>
+                        <h3>Separation of concerns</h3>
+                        <p>Keep API handling, business rules, persistence, and infrastructure concerns in different
+                            layers so each part can change without breaking everything else.</p>
+                    </div>
+                    <div class="card">
+                        <span class="tag">Flexibility</span>
+                        <h3>Composition over inheritance</h3>
+                        <p>Assemble behavior from smaller objects instead of building deep class hierarchies. In Python,
+                            composition is often easier to reason about and easier to test.</p>
+                    </div>
+                    <div class="card">
+                        <span class="tag warm">Coupling</span>
+                        <h3>Depend on interfaces, not details</h3>
+                        <p>Write business logic against stable contracts so you can swap storage, APIs, queues, or LLM
+                            providers without rewriting core logic.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Practical rule:</strong> scalable code usually comes from good boundaries and simple
+                        decisions repeated consistently, not from collecting every textbook pattern.</p>
+                </div>
+            </section>
+
+            <section class="section" id="patterns">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">High-value patterns</p>
+                        <h2>Important patterns worth knowing in Python</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pattern</th>
+                                <th>What it does</th>
+                                <th>Why it matters for scalability</th>
+                                <th>Risk if misused</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Factory</td>
+                                <td>Creates objects behind a simple interface</td>
+                                <td>Keeps construction logic out of business code</td>
+                                <td>Too many factories can hide simple code</td>
+                            </tr>
+                            <tr>
+                                <td>Strategy</td>
+                                <td>Swaps algorithms or behaviors cleanly</td>
+                                <td>Makes rules configurable without giant if-else blocks</td>
+                                <td>Can become over-engineered for only two cases</td>
+                            </tr>
+                            <tr>
+                                <td>Repository</td>
+                                <td>Separates data access from domain logic</td>
+                                <td>Makes it easier to change databases and test logic</td>
+                                <td>Can become a useless wrapper if it adds no value</td>
+                            </tr>
+                            <tr>
+                                <td>Dependency injection</td>
+                                <td>Supplies dependencies from outside the class or function</td>
+                                <td>Reduces coupling and improves testability</td>
+                                <td>Too much indirection can confuse a small codebase</td>
+                            </tr>
+                            <tr>
+                                <td>Adapter</td>
+                                <td>Wraps one interface so another system can use it</td>
+                                <td>Useful when integrating external libraries or services</td>
+                                <td>Can hide bad integration design if overused</td>
+                            </tr>
+                            <tr>
+                                <td>Singleton</td>
+                                <td>Ensures only one shared instance exists</td>
+                                <td>Can centralize one expensive shared resource</td>
+                                <td>Often creates hidden global state and testing pain</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="singleton">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Pattern caution</p>
+                        <h2>Singleton is useful, but it is easy to misuse</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>When Singleton can help</h3>
+                        <ul class="stack-list">
+                            <li>A shared configuration object loaded once at startup.</li>
+                            <li>A process-level cache with careful boundaries.</li>
+                            <li>A resource manager for one expensive local object.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why people avoid it by default</h3>
+                        <ul class="stack-list">
+                            <li>It behaves like global state, which makes tests harder.</li>
+                            <li>It can hide dependencies instead of making them explicit.</li>
+                            <li>It becomes dangerous in concurrent or multi-process systems if assumptions are wrong.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Better default</h2>
+                    <p>In most Python applications, prefer explicit dependency injection over Singleton. Pass the shared
+                        object in clearly rather than letting code reach into hidden global state.</p>
+                </div>
+            </section>
+
+            <section class="section" id="scalability">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Scalability link</p>
+                        <h2>How these principles help applications scale</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>Simple code scales team understanding</h3>
+                        <p>KISS reduces cognitive load. More developers can safely work in the codebase without needing
+                            tribal knowledge.</p>
+                    </div>
+                    <div class="step">
+                        <h3>DRY scales change management</h3>
+                        <p>When one rule changes, you update one place instead of hunting through multiple modules and
+                            hoping nothing was missed.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Layering scales architecture</h3>
+                        <p>Separation of concerns lets you replace frameworks, databases, queues, or cloud providers
+                            with smaller blast radius.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Injection and interfaces scale testing</h3>
+                        <p>When dependencies are explicit, unit tests become faster and cheaper to write because mocks
+                            and fakes can replace real services easily.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="tdd-bdd">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Testing styles</p>
+                        <h2>TDD vs BDD in simple terms</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Test-Driven Development</h3>
+                        <p><strong>TDD</strong> means you write a failing test first, then write the smallest amount of
+                            code to make that test pass, then clean the code up. The tests guide the design.</p>
+                        <p>It is usually developer-focused and works close to the code level: functions, classes,
+                            modules, and APIs.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Behavior-Driven Development</h3>
+                        <p><strong>BDD</strong> means you describe how the system should behave in simple scenarios such
+                            as “Given this user, when they do this action, then this result should happen.”</p>
+                        <p>It is usually behavior-focused and shared between developers, testers, and product or
+                            business stakeholders.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Plain-English difference:</strong> TDD starts from tests that shape code. BDD starts from
+                        behaviors that shape shared understanding.</p>
+                </div>
+            </section>
+
+            <section class="section" id="workflow">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Workflow difference</p>
+                        <h2>How the two approaches actually feel in practice</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>TDD</th>
+                                <th>BDD</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Starting point</td>
+                                <td>A failing test</td>
+                                <td>A behavior scenario</td>
+                            </tr>
+                            <tr>
+                                <td>Main audience</td>
+                                <td>Developers</td>
+                                <td>Developers, testers, product stakeholders</td>
+                            </tr>
+                            <tr>
+                                <td>Language style</td>
+                                <td>Technical assertions</td>
+                                <td>Given-When-Then behavior statements</td>
+                            </tr>
+                            <tr>
+                                <td>Typical scope</td>
+                                <td>Unit or API-level design</td>
+                                <td>User-visible system behavior</td>
+                            </tr>
+                            <tr>
+                                <td>Main benefit</td>
+                                <td>Improves code design and regression safety</td>
+                                <td>Improves shared understanding and acceptance criteria</td>
+                            </tr>
+                            <tr>
+                                <td>Typical Python tools</td>
+                                <td>pytest, unittest</td>
+                                <td>pytest-bdd, behave</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="examples">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Simple examples</p>
+                        <h2>What TDD and BDD look like in Python</h2>
+                    </div>
+                </div>
+                <div class="code-compare">
+                    <div class="code-card">
+                        <h3>TDD example with pytest</h3>
+                        <pre>def test_discount_applies_for_premium_user():
+    assert calculate_discount("premium", 100) == 20
+
+
+def calculate_discount(user_type: str, amount: int) -> int:
+    if user_type == "premium":
+        return 20
+    return 0</pre>
+                        <p>The developer starts with the failing test, then writes just enough code to pass it.</p>
+                    </div>
+                    <div class="code-card">
+                        <h3>BDD scenario with behave or pytest-bdd</h3>
+                        <pre>Feature: Discount rules
+
+  Scenario: Premium users receive a discount
+    Given a premium user
+    When they purchase for 100
+    Then the discount should be 20</pre>
+                        <p>The team starts by describing the expected behavior in shared language, then connects that
+                            scenario to Python step definitions and application code.</p>
+                    </div>
+                </div>
+                <div class="code-compare" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>TDD mental loop</h3>
+                        <pre>1. Write a failing test
+2. Make it pass
+3. Refactor safely
+4. Repeat</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>BDD mental loop</h3>
+                        <pre>1. Write behavior scenarios
+2. Align on expected outcomes
+3. Implement step definitions
+4. Make the scenario pass</pre>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="when-to-use">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Decision guide</p>
+                        <h2>When each idea is most useful</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Use TDD when</h3>
+                        <ul>
+                            <li>You want tighter feedback while designing classes or functions.</li>
+                            <li>You care about regression safety in logic-heavy code.</li>
+                            <li>You want the code structure to emerge from small testable pieces.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Use BDD when</h3>
+                        <ul>
+                            <li>You need shared understanding between engineering and non-engineering roles.</li>
+                            <li>You are defining acceptance criteria for features.</li>
+                            <li>You want to test user-visible behavior instead of only low-level implementation.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="checkpoint" style="margin-top: 18px;">
+                    <h2>Best practical mindset</h2>
+                    <p>Use KISS, DRY, and good boundaries all the time. Use patterns only where they remove pain. Use
+                        TDD to shape reliable code. Use BDD when feature behavior needs shared business-level clarity.
+                    </p>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <a class="card" href="python-project-structure.html">
+                        <span class="tag">Next step</span>
+                        <h3>Python project structure examples</h3>
+                        <p>See a concrete folder layout for routes, services, repositories, tests, features, and step
+                            definitions.</p>
+                    </a>
+                    <a class="card" href="python-solid-principles.html">
+                        <span class="tag warm">Next step</span>
+                        <h3>SOLID principles in Python</h3>
+                        <p>Learn how SRP, OCP, LSP, ISP, and DIP apply in a practical Python codebase.</p>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>This page covers simple Python design principles, high-value patterns for scalable applications, and a
+                plain-language explanation of TDD and BDD.</p>
+            <div class="mini-links">
+                <a href="index.html">Back to home</a>
+                <a href="langserve-frameworks.html">LangServe guide</a>
+                <a href="python-project-structure.html">Project structure</a>
+                <a href="python-solid-principles.html">SOLID in Python</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Loops — recurring tasks & autonomous iteration</title>
+    <link rel="stylesheet" href="_shared.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: { primaryColor: '#ccfbf1', primaryBorderColor: '#0f766e', secondaryColor: '#e0e7ff', tertiaryColor: '#fef3c7', lineColor: '#5b6478', fontFamily: 'system-ui' } })</script>
+    <style>
+        .mermaid-wrap {
+            background: #ffffff;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1.25rem 0;
+            text-align: center;
+            overflow-x: auto;
+            box-shadow: var(--shadow);
+        }
+        .mermaid-wrap .caption {
+            color: var(--muted);
+            font-size: 0.82rem;
+            margin-top: 0.4rem;
+        }
+        .mermaid {
+            margin: 0;
+            text-align: center;
+        }
+        .mermaid svg {
+            max-width: 100%;
+        }
+        .flow {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+            margin: 1rem 0;
+        }
+        .step {
+            flex: 1 1 160px;
+            padding: .85rem;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: var(--accent-soft);
+            color: #134e4a;
+            font-weight: 700;
+            text-align: center;
+        }
+        .arrow {
+            align-self: center;
+            color: var(--muted);
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="claude_code_hooks.html">Hooks</a>
+                <a href="anthropic_building_agents.html">Anthropic</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Claude Code · Automation layer</p>
+            <h1>Loops — recurring tasks &amp; autonomous iteration</h1>
+            <p class="lead">
+                The <code>/loop</code> command lets you run a prompt on a recurring interval — checking deploys,
+                monitoring CI, running periodic evals, or any task that benefits from a "check back later" pattern.
+                Under the hood, it's powered by <strong>ScheduleWakeup</strong> (dynamic pacing) and
+                <strong>CronCreate</strong> (fixed-schedule). This page explains both mechanisms and when to use each.
+            </p>
+        </section>
+
+        <!-- ── ANALOGY ── -->
+        <section class="card" id="analogy">
+            <h2>What is a loop?</h2>
+            <p>
+                A loop tells Claude Code: <em>"run this same prompt again after some time."</em> It's like setting a
+                timer that re-engages the agent with the same context — but each iteration sees new information
+                (a deploy that finished, a CI run that completed, new test results).
+            </p>
+
+            <div class="flow">
+                <div class="step">Start<br><small>prompt + trigger</small></div>
+                <span class="arrow">→</span>
+                <div class="step">Do Work<br><small>run prompt, call tools</small></div>
+                <span class="arrow">→</span>
+                <div class="step">Decide<br><small>done or wait?</small></div>
+                <span class="arrow">→</span>
+                <div class="step">Schedule<br><small>wake me later</small></div>
+                <span class="arrow">→</span>
+                <div class="step">🔥 Repeat<br><small>next iteration</small></div>
+            </div>
+
+            <div class="callout" style="margin-top:1rem;">
+                <strong>Key insight:</strong> A loop is not a while-loop in code. It's a <strong>session-level
+                scheduler</strong>. Claude finishes its work, sets an alarm, and the runtime wakes it up later with
+                the same prompt. Between iterations, the system is idle — no tokens consumed, no API calls made.
+            </div>
+        </section>
+
+        <!-- ── TWO FLAVOURS ── -->
+        <section class="card" id="flavours">
+            <h2>Two loop mechanisms</h2>
+            <p>Claude Code has two distinct scheduling systems, each suited to different patterns:</p>
+
+            <table>
+                <tr>
+                    <th></th>
+                    <th><code>/loop</code> (Dynamic pacing)</th>
+                    <th><code>CronCreate</code> (Fixed schedule)</th>
+                </tr>
+                <tr>
+                    <td><strong>How it's started</strong></td>
+                    <td>User types <code>/loop 5m check the deploy</code></td>
+                    <td>Claude calls <code>CronCreate</code> tool, typically from a Skill</td>
+                </tr>
+                <tr>
+                    <td><strong>Interval</strong></td>
+                    <td>Self-decided per iteration (60s–3600s)</td>
+                    <td>Standard 5-field cron expression</td>
+                </tr>
+                <tr>
+                    <td><strong>Persistence</strong></td>
+                    <td>Session-only (dies when Claude exits)</td>
+                    <td>Can be durable (survives restarts via <code>.claude/scheduled_tasks.json</code>)</td>
+                </tr>
+                <tr>
+                    <td><strong>Best for</strong></td>
+                    <td>Interactive monitoring, ad-hoc polling</td>
+                    <td>Production recurring jobs (daily reports, weekly evals)</td>
+                </tr>
+                <tr>
+                    <td><strong>Prompt source</strong></td>
+                    <td>User's natural-language prompt at /loop time</td>
+                    <td>Full prompt string passed in the tool call</td>
+                </tr>
+            </table>
+
+            <div class="callout" style="margin-top:1rem;">
+                <strong>Note on underlying APIs:</strong> <code>/loop</code> uses <code>ScheduleWakeup</code>
+                internally. CronCreate is a separate tool that persists to disk. Both deliver the prompt back to
+                Claude at the scheduled time, as if the user had typed it.
+            </div>
+        </section>
+
+        <!-- ── DIAGRAM ── -->
+        <section class="card" id="lifecycle">
+            <h2>Loop lifecycle — what happens under the hood</h2>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+sequenceDiagram
+    participant User
+    participant Claude as Claude Code
+    participant Sched as Scheduler (Runtime)
+    participant Disk as .claude/scheduled_tasks.json
+
+    User->>Claude: /loop 5m "check deploy status"
+
+    Note over Claude: First iteration runs immediately
+    Claude->>Claude: Run prompt, call tools, produce output
+
+    alt Done? → Stop loop
+        Claude->>User: Finished, no re-schedule
+    else Not done yet
+        Claude->>Sched: ScheduleWakeup(delay=300s, prompt="check deploy status")
+        Note over Sched: Session-only — no disk write
+        Sched-->>Claude: Wake up after 300s
+        Note over Claude: Second iteration starts
+        Claude->>Claude: Run same prompt again
+
+        opt If durable task
+            Claude->>Sched: CronCreate(cron="0 9 * * 1-5", prompt="...", durable=true)
+            Sched->>Disk: Write to scheduled_tasks.json
+            Note over Disk: Survives restarts
+        end
+    end
+</pre>
+                <div class="caption">Sequence diagram showing /loop (dynamic) vs CronCreate (durable) flows.</div>
+            </div>
+        </section>
+
+        <!-- ── DYNAMIC PACING (ScheduleWakeup) ── -->
+        <section class="card" id="dynamic">
+            <h2>Dynamic pacing — how /loop decides the interval</h2>
+            <p>
+                When you run <code>/loop 5m &lt;prompt&gt;</code>, Claude doesn't just set a 5-minute timer blindly.
+                It considers several factors to pick the <strong>actual</strong> delay:
+            </p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    A["User says<br>/loop 5m"] --> B{"What am I<br>waiting for?"}
+    B --> C["CI pipeline<br>~8 min typical"]
+    B --> D["External API<br>unknown timing"]
+    B --> E["No specific<br>signal"]
+
+    C --> F["Pick 270s<br>(stay in cache)"]
+    D --> G["Pick 180s<br>(poll faster)"]
+    E --> H["Pick 1200s<br>(idle heartbeat)"]
+
+    subgraph cache["⏱️ Cache Window"]
+        I["0s — Cache warm"]
+        J["300s — Cache expires"]
+    end
+
+    F -.-> I
+    G -.-> I
+    H -.-> J
+</pre>
+                <div class="caption">The scheduler picks the delay based on what you're waiting for and the 5-minute prompt cache window.</div>
+            </div>
+
+            <h3>Real-world cadence patterns</h3>
+            <table>
+                <tr><th>Use case</th><th>Chosen delay</th><th>Why</th></tr>
+                <tr>
+                    <td>Polling CI pipeline (~8 min)</td>
+                    <td>~270s</td>
+                    <td>Check twice before CI finishes. Stays inside the 5-min cache window.</td>
+                </tr>
+                <tr>
+                    <td>Watching a deploy</td>
+                    <td>~60–120s</td>
+                    <td>Deploys are fast (1–3 min). Poll aggressively, burn cache.</td>
+                </tr>
+                <tr>
+                    <td>Idle heartbeat (no signal)</td>
+                    <td>~1200–1800s</td>
+                    <td>No point checking sooner. Pay cache miss once, amortize over long wait.</td>
+                </tr>
+                <tr>
+                    <td>External queue processing</td>
+                    <td>~180s</td>
+                    <td>Unknown timing. Poll at a moderate rate.</td>
+                </tr>
+            </table>
+
+            <div class="callout">
+                <strong>Why not 300s exactly?</strong> The prompt cache has a 5-minute TTL. If you wake at exactly
+                300s, you pay the cache miss cost <em>and</em> get no benefit. Better to wake at 270s (still cached)
+                or 1200s+ (amortize the miss over a longer wait).
+            </div>
+        </section>
+
+        <!-- ── DURABLE TASKS (CronCreate) ── -->
+        <section class="card" id="durable">
+            <h2>Durable tasks — CronCreate for production</h2>
+            <p>
+                For tasks that must survive restarts (daily reports, weekly eval runs, hourly monitoring),
+                Claude uses <code>CronCreate</code> which persists to <code>.claude/scheduled_tasks.json</code>.
+            </p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TD
+    A[Claude calls CronCreate] --> B{durable?}
+    B -->|"No (default)"| C["In-memory only<br>Dies on exit"]
+    B -->|"Yes"| D["Write to<br>.claude/scheduled_tasks.json"]
+
+    D --> E["Claude exits"]
+    E --> F["Claude restarts"]
+    F --> G["Read scheduled_tasks.json"]
+    G --> H["Missed tasks?<br>Surface for catch-up"]
+    H --> I["Fire on next cron match"]
+
+    C --> J["Session ends<br>Task lost"]
+</pre>
+                <div class="caption">Durable tasks persist to disk and survive session restarts. Non-durable tasks are lost on exit.</div>
+            </div>
+
+            <h3>When to use durable</h3>
+            <table>
+                <tr><th>Scenario</th><th>Durable?</th><th>Why</th></tr>
+                <tr><td>"Remind me in 5 minutes to check X"</td><td>No</td><td>Session-only — if you exit, the reminder was for now anyway</td></tr>
+                <tr><td>"Every morning at 9am, run the smoke test"</td><td>Yes</td><td>Must survive restarts; Claude might not be running at 9am</td></tr>
+                <tr><td>"Check the deploy every 5 minutes"</td><td>No</td><td>You're actively watching — if you quit, you don't need it</td></tr>
+                <tr><td>"Run weekly eval report on Monday"</td><td>Yes</td><td>Production recurring job. Must fire regardless of session state.</td></tr>
+            </table>
+
+            <div class="callout" style="border-left-color: var(--warn); background: var(--warn-soft);">
+                <strong>7-day expiry:</strong> Recurring durable tasks auto-expire after 7 days. They fire one final
+                time, then are deleted. This prevents orphaned tasks from running forever.
+            </div>
+        </section>
+
+        <!-- ── BUILDING YOUR OWN LOOP ── -->
+        <section class="card" id="build-loop">
+            <h2>Building loop-based Skills</h2>
+            <p>
+                The most powerful use of loops is in <strong>Skills</strong> — reusable slash commands that
+                self-schedule. Here's the pattern:
+            </p>
+
+            <h3>Pattern: babysit-prs</h3>
+            <p>A Skill that checks a PR every 5 minutes until it's merged:</p>
+
+            <pre><code># .claude/skills/babysit-prs/SKILL.md
+---
+name: babysit-prs
+description: Watch a PR until it merges.
+---
+Check the status of open PRs. If any are mergeable, flag them.
+If nothing changed since last check, sleep 5m and re-check.
+If all PRs are merged, report done.</code></pre>
+
+            <p>Then the user runs: <code>/babysit-prs</code></p>
+
+            <p>Claude runs the check. If not done, it calls <code>ScheduleWakeup(300, "babysit-prs")</code> —
+                which re-invokes the skill. The loop continues until all PRs are merged.</p>
+
+            <div class="callout">
+                <strong>Loop-until-dry pattern:</strong> Keep repeating until K consecutive iterations return no new
+                results. This is the standard pattern for open-ended discovery tasks (find bugs, review all files,
+                audit a module).
+            </div>
+        </section>
+
+        <!-- ── PRACTICAL EXAMPLES ── -->
+        <section class="card" id="examples">
+            <h2>Practical loop patterns</h2>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div class="mini">
+                    <h4>🔍 CI Watch</h4>
+                    <p><code>/loop 5m "check if CI passed on branch main"</code></p>
+                    <p>Runs a quick check every 5 minutes. When CI passes, Claude notifies you and the loop stops.</p>
+                </div>
+                <div class="mini">
+                    <h4>📊 Deploy Monitor</h4>
+                    <p><code>/loop 2m "what's the status of the prod deploy?"</code></p>
+                    <p>Poll a deploy pipeline aggressively. Reports when it's complete or failed.</p>
+                </div>
+                <div class="mini">
+                    <h4>🧪 Periodic Eval</h4>
+                    <p><code>/loop 1h "run the eval suite and report regressions"</code></p>
+                    <p>Long-interval loop for ongoing monitoring during a session.</p>
+                </div>
+                <div class="mini">
+                    <h4>🤖 Autonomous Bug Hunt</h4>
+                    <p><code>/loop "find bugs in the codebase, keep going until no new findings"</code></p>
+                    <p>No fixed interval — Claude decides. Runs until K consecutive rounds find nothing new.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── HOOKS vs LOOPS ── -->
+        <section class="card" id="comparison">
+            <h2>Hooks vs Loops — when to use what</h2>
+            <table>
+                <tr>
+                    <th></th>
+                    <th>Hooks</th>
+                    <th>Loops (/loop)</th>
+                </tr>
+                <tr>
+                    <td><strong>Trigger</strong></td>
+                    <td>File event / command event / session exit</td>
+                    <td>Time-based (every N seconds/minutes)</td>
+                </tr>
+                <tr>
+                    <td><strong>Scope</strong></td>
+                    <td>One shell command, fire-and-forget</td>
+                    <td>Full prompt execution with tool access</td>
+                </tr>
+                <tr>
+                    <td><strong>Duration</strong></td>
+                    <td>Milliseconds to seconds</td>
+                    <td>Minutes to hours (across many iterations)</td>
+                </tr>
+                <tr>
+                    <td><strong>State</strong></td>
+                    <td>Stateless — just runs a command</td>
+                    <td>Stateful — each iteration sees previous output</td>
+                </tr>
+                <tr>
+                    <td><strong>Best for</strong></td>
+                    <td>Formatting, linting, blocking dangerous commands, audit logging</td>
+                    <td>Polling external systems, monitoring, recurring investigation</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- ── SOURCES ── -->
+        <section class="card" id="sources">
+            <h2>Sources</h2>
+            <ul>
+                <li><a href="https://docs.anthropic.com/en/docs/claude-code/settings" target="_blank" rel="noopener">Claude Code — Settings &amp; Configuration</a></li>
+                <li><a href="claude_code_hooks.html">Claude Code Hooks — lifecycle automation (this folder)</a></li>
+                <li><a href="anthropic_building_agents.html">Anthropic — Building Effective Agents (this folder)</a></li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>

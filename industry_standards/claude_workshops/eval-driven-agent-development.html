@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W7 · Eval-driven agent development — Claude Workshops</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Workshops hub</a>
+                <a href="../anthropic_building_agents.html">Building Agents</a>
+                <a href="../anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">CWC · Workshop 7</span></p>
+            <h1>Eval-driven agent development: improve a PPTX agent through six measured variants</h1>
+            <p class="lead">A Managed Agent that writes <code>.pptx</code> decks is taken from <em>naive</em> to
+                <em>QA-loop</em> across six versions. Every step is justified by a <strong>two-layer grader</strong>:
+                a deterministic parser reads the underlying pptx XML for structural metrics, and an LLM judge looks
+                at rendered slide images for taste.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>1 · What you build</h2>
+            <ul>
+                <li>Six agent variants under <code>resources/agents/</code>:
+                    <code>00-naive.agent.yaml</code> &rarr; <code>05-qa-loop.agent.yaml</code> (visual, typography,
+                    palette, density, QA-loop).
+                </li>
+                <li>A slide creator: <code>src/create-slides.ts</code>.</li>
+                <li>A renderer: <code>render.ts</code> calls a Docker LibreOffice image (<code>cwc-pptx-render</code>)
+                    that emits JPGs.</li>
+                <li>A grader: <code>parse-pptx.ts</code> for XML structural metrics +
+                    <code>graders.ts</code> for an LLM judge with an explicit rubric.
+                </li>
+                <li>Five tasks in <code>tasks.json</code> — same prompts evaluated against every variant.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>2 · The stack</h2>
+            <div class="flow">
+                <div class="step">tasks.json (5 prompts)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Agent variant</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Create .pptx</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Render to JPG (Docker LibreOffice)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Structural + LLM grader</div>
+            </div>
+            <p>Inner loop commands: <code>npm run create-slides --all</code>, <code>npm run render</code>,
+                <code>npm run eval --baseline</code>, <code>npm run show-baseline</code>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>3 · Levers the workshop teaches</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>Two-layer grader</h3>
+                    <p>Structural XML checks for "did the deck even parse, are there 8 slides, is there a title?" plus
+                        an LLM judge for "is it actually readable?"</p>
+                </div>
+                <div class="mini">
+                    <h3>Rendered images for the judge</h3>
+                    <p>The LLM judge looks at the rendered JPG, not the XML — the way a human would.</p>
+                </div>
+                <div class="mini">
+                    <h3>Variant-per-file</h3>
+                    <p>Each agent version is its own YAML, so diffs are explicit and reviewable in PR.</p>
+                </div>
+                <div class="mini">
+                    <h3>Baseline command</h3>
+                    <p><code>npm run show-baseline</code> renders the comparison so a reviewer sees the regression /
+                        improvement in one screen.</p>
+                </div>
+                <div class="mini">
+                    <h3>QA-loop variant</h3>
+                    <p>The last variant has the agent render its own output, grade it, and iterate before returning —
+                        the same loop you just built, but inside the agent.</p>
+                </div>
+                <div class="mini">
+                    <h3>Dockerised renderer</h3>
+                    <p>LibreOffice in a container so every reviewer gets pixel-identical output.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Use vs don't use — the trade-offs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lever</th>
+                        <th>If you use it</th>
+                        <th>If you skip it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Structural grader (parse-pptx.ts)</td>
+                        <td>Cheap, deterministic, runs on every change. Catches "the agent shipped corrupted XML" in
+                            milliseconds.</td>
+                        <td>The LLM judge has to do everything, and you pay LLM tokens to discover the file is broken.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>LLM judge on rendered images</td>
+                        <td>Captures the things metrics can't — taste, hierarchy, balance. The judge sees the slide the
+                            way a human would.</td>
+                        <td>You optimise the metrics (8 slides, 6 bullets) and ship something technically correct that
+                            no executive will read.</td>
+                    </tr>
+                    <tr>
+                        <td>Variant-per-file</td>
+                        <td>Code review shows exactly what changed between v3 and v4. Rollback is one PR revert.</td>
+                        <td>You mutate one YAML in place, can't tell which knob caused the win, and re-discover the
+                            same fixes a month later.</td>
+                    </tr>
+                    <tr>
+                        <td>Dockerised renderer</td>
+                        <td>The reviewer on macOS sees the same pixels as CI on Linux. The grader is reproducible.</td>
+                        <td>Fonts and kerning differ per machine; the judge's score depends on whose laptop ran the
+                            renderer.</td>
+                    </tr>
+                    <tr>
+                        <td>QA-loop variant (self-grading agent)</td>
+                        <td>The agent catches its own corrupted XML before returning. Tail-latency goes up, but
+                            tail-quality goes way up.</td>
+                        <td>The agent ships its first draft. Every nth deck is broken and the user notices first.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>The lesson:</strong> "eval-driven" means every variant is a hypothesis,
+                every hypothesis is graded, and the grader has both a cheap structural layer and a taste layer. Either
+                layer alone misleads you.</div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Adoption playbook for your repo</h2>
+            <ol>
+                <li>For any generative agent, define the two-layer grader before you ship version 1: structural checks
+                    (does it parse?) and a small LLM-judge rubric (is it any good?).</li>
+                <li>Save each meaningful agent config as its own file (<code>00-naive.yaml</code>,
+                    <code>01-&hellip;.yaml</code>). Treat the prompt as code.
+                </li>
+                <li>Render whatever the agent produces into a stable artifact (JPG, HTML, JSON) and grade the artifact,
+                    not the intermediate.</li>
+                <li>Containerise the renderer so every contributor's runs are comparable.</li>
+                <li>Once the eval is solid, build a self-grading variant: the agent runs its own grader and re-tries
+                    once before returning.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source"
+                    href="https://github.com/anthropics/cwc-workshops/tree/main/eval-driven-agent-development-workshop"
+                    target="_blank" rel="noopener">cwc-workshops/eval-driven-agent-development-workshop</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/overview" target="_blank"
+                    rel="noopener">CMA — Overview</a>
+                <a class="source" href="https://docs.claude.com/en/docs/test-and-evaluate/define-success"
+                    target="_blank" rel="noopener">Claude — Define success criteria</a>
+                <a class="source" href="https://docs.claude.com/en/docs/test-and-evaluate/develop-tests" target="_blank"
+                    rel="noopener">Claude — Develop tests</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

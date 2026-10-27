@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P3 · Presence Service</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>Case Studies</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p2_realtime_leaderboard/README.html">Prev: P2</a><a
+                    href="../p4_saga_orchestrator/README.html">Next: P4</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">Case Studies · Project 3</p>
+            <h1>Presence service — heartbeats with a TTL</h1>
+            <p class="lead">The green dot next to a user is one of the easiest patterns in system design: each client
+                beats every few seconds; the server keeps "last seen" with a TTL.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Your chat app needs to show who is online. A long-lived TCP connection is brittle (mobile networks drop).
+                The simpler design is short-lived: each client sends a tiny heartbeat over HTTP/WebSocket every ~10s.
+                The server keeps the last heartbeat per user. Anyone whose last heartbeat is within 30s is "online". No
+                background offline check needed — TTL eviction is automatic.</p>
+        </section>
+
+        <section class="card">
+            <h2>Why heartbeats beat long connections</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Approach</th>
+                        <th>Pros</th>
+                        <th>Cons</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Long-lived TCP / WS connections</td>
+                        <td>Truly real-time</td>
+                        <td>Hard to scale; mobile networks kill connections silently.</td>
+                    </tr>
+                    <tr>
+                        <td>Periodic heartbeat (this project)</td>
+                        <td>Cheap, stateless, auto-recovers</td>
+                        <td>Up to <em>heartbeat_interval</em> seconds of staleness.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Mental model</h2>
+            <div class="flow">
+                <div class="step">client beats every 10s</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">server sets last_seen=now</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">is_online? = now - last_seen ≤ 30s</div>
+            </div>
+            <p>In Redis this is exactly <code>SET user:42:alive 1 EX 30</code> + <code>EXISTS user:42:alive</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/system_design_case_studies/p3_realtime_presence
+python main.py</code></pre>
+            <p>The simulation runs three users with different heartbeat cadences over 90 fake seconds; you will see bob
+                drop off, carol come online, and alice stay alive.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"I use Redis with a TTL'd key per online user. Each client beats every 10s, server does
+                SET user:&lt;id&gt;:alive EX 30. To list online users I scan or maintain a separate SET that is also
+                TTL-evicted. The design degrades gracefully under partial network failure — there is no long connection
+                to lose."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

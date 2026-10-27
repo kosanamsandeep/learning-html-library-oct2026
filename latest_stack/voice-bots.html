@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>06 · Voice bots — Latest Stack</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        pre.mermaid {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>LS</span>Latest Stack</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="multimodal.html">Multimodal</a>
+                <a href="realtime-comms.html">Realtime</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Page 6 of 9</p>
+            <h1>Voice bots — sub-800 ms architecture</h1>
+            <p class="lead">A voice agent feels human only if the round-trip from "user stops talking" to "user hears
+                the first word of reply" stays under ~800 ms. That budget is allocated across STT, LLM, TTS, and the
+                network — and every component has to <em>stream</em>. This page gives you the architecture, the
+                latency budget, and the production patterns (interruptions, jitter buffers, endpointing).</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · End-to-end architecture (pipelined)</h2>
+            <pre class="mermaid">
+flowchart LR
+  mic[Mic<br/>browser / phone] -->|WebRTC| vad[VAD + Endpointer]
+  vad -->|audio chunks| stt[Streaming STT<br/>Deepgram / Whisper]
+  stt -->|partials| logic{Turn manager}
+  logic -->|stable| llm[Streaming LLM<br/>SLM 7B or GPT-4o-mini]
+  llm -->|tokens| ttssplit[Sentence chunker]
+  ttssplit --> tts[Streaming TTS<br/>ElevenLabs / Cartesia]
+  tts -->|audio frames| jitter[Jitter buffer]
+  jitter -->|WebRTC| spk[Speaker]
+  interrupt[User starts speaking] -.barge-in.-> tts
+  interrupt -.cancel.-> llm
+            </pre>
+        </section>
+
+        <section class="card">
+            <h2>2 · Latency budget (800 ms target)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Budget</th>
+                        <th>How to hit it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Endpoint detection (silence &rarr; "user done")</td>
+                        <td>~200 ms</td>
+                        <td>Tunable VAD (Silero, WebRTC VAD) at 180–250 ms</td>
+                    </tr>
+                    <tr>
+                        <td>STT final transcript after silence</td>
+                        <td>~100 ms</td>
+                        <td>Streaming STT (Deepgram Nova, Whisper streaming)</td>
+                    </tr>
+                    <tr>
+                        <td>LLM first token</td>
+                        <td>~250 ms</td>
+                        <td>SLM 7B on dedicated GPU, or GPT-4o-mini, or Groq</td>
+                    </tr>
+                    <tr>
+                        <td>First TTS audio chunk</td>
+                        <td>~150 ms</td>
+                        <td>Streaming TTS (Cartesia Sonic ~75 ms, ElevenLabs flash)</td>
+                    </tr>
+                    <tr>
+                        <td>Network + jitter buffer</td>
+                        <td>~100 ms</td>
+                        <td>WebRTC over UDP, 60–80 ms jitter buffer</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td><strong>~800 ms</strong></td>
+                        <td>Below this, it feels alive.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout"><strong>The single biggest win:</strong> pipe LLM tokens into TTS
+                <em>sentence-by-sentence</em>. The user hears sentence one while the model is still writing sentence
+                two. Don't wait for the full response.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>3 · The non-obvious problems</h2>
+            <div class="grid">
+                <div class="mini warn">
+                    <h3>Barge-in / interruption</h3>
+                    <p>If the user starts speaking, you must cut off the TTS audio <em>and</em> cancel the LLM
+                        generation within ~100 ms. Most beginner bots talk over the user.</p>
+                </div>
+                <div class="mini warn">
+                    <h3>Endpointing</h3>
+                    <p>Fixed silence thresholds are wrong. Use semantic endpointing (an SLM judges "did the user
+                        finish a thought?") for tricky users.</p>
+                </div>
+                <div class="mini warn">
+                    <h3>False barge-in</h3>
+                    <p>The bot hears its own speaker via the mic. Use AEC (acoustic echo cancellation — built into
+                        WebRTC) and ignore VAD while TTS is playing if AEC is off.</p>
+                </div>
+                <div class="mini warn">
+                    <h3>Filler words</h3>
+                    <p>"Mm-hmm", "let me check" played early masks the LLM latency without lying.</p>
+                </div>
+                <div class="mini warn">
+                    <h3>Function calls mid-utterance</h3>
+                    <p>If the LLM needs to call a tool, you've already burned 300 ms. Speak a filler, then continue.</p>
+                </div>
+                <div class="mini warn">
+                    <h3>Number / unit pronunciation</h3>
+                    <p>"$1,234.56" must be normalised to "twelve hundred thirty-four dollars and fifty-six cents" or
+                        the TTS gets it wrong.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Frameworks that hide most of this</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Framework</th>
+                        <th>What it gives you</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Pipecat</strong> (Daily)</td>
+                        <td>Open-source Python pipeline: VAD &rarr; STT &rarr; LLM &rarr; TTS with barge-in built in.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>LiveKit Agents</strong></td>
+                        <td>Hosted WebRTC + Python/Node agent SDK; ships with VAD, multilingual STT, TTS, telephony.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>OpenAI Realtime API</strong></td>
+                        <td>Single WebSocket, speech-to-speech via GPT-4o; no STT/TTS plumbing.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Vapi / Retell / Bland</strong></td>
+                        <td>Managed voice-agent platforms; ship in a day, less control.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Twilio Voice + ConversationRelay</strong></td>
+                        <td>Telephony front-end + bring-your-own LLM backend.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>5 · Minimal Pipecat-style pipeline (pseudocode)</h2>
+            <pre><code># pip install pipecat-ai
+from pipecat.pipeline.pipeline import Pipeline
+from pipecat.pipeline.runner import PipelineRunner
+from pipecat.pipeline.task import PipelineTask
+from pipecat.services.deepgram import DeepgramSTTService
+from pipecat.services.elevenlabs import ElevenLabsTTSService
+from pipecat.services.openai import OpenAILLMService
+from pipecat.transports.services.daily import DailyTransport, DailyParams
+from pipecat.vad.silero import SileroVADAnalyzer
+
+transport = DailyTransport(
+    room_url, token, "Bot",
+    DailyParams(audio_in_enabled=True, audio_out_enabled=True,
+                vad_analyzer=SileroVADAnalyzer()),
+)
+stt = DeepgramSTTService(api_key=DG_KEY)
+llm = OpenAILLMService(api_key=OAI_KEY, model="gpt-4o-mini")
+tts = ElevenLabsTTSService(api_key=EL_KEY, voice_id="Rachel")
+
+pipeline = Pipeline([
+    transport.input(),
+    stt,
+    llm,                      # streams tokens
+    tts,                      # streams audio chunks back
+    transport.output(),
+])
+
+task = PipelineTask(pipeline)
+PipelineRunner().run(task)
+</code></pre>
+            <p class="quiet">The framework handles barge-in (TTS interruption), sentence chunking, and jitter buffer
+                for you.</p>
+        </section>
+
+        <section class="card">
+            <h2>6 · Telephony note</h2>
+            <p>If the bot needs to answer a real phone number, you pick up either (a) Twilio / Telnyx SIP &rarr;
+                WebSocket bridge into your pipeline, or (b) LiveKit Telephony which wraps SIP for you. The audio
+                will be 8 kHz μ-law — your STT must support narrow-band, and TTS output must be downsampled.</p>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://github.com/pipecat-ai/pipecat" target="_blank"
+                    rel="noopener">pipecat-ai/pipecat</a>
+                <a class="source" href="https://docs.livekit.io/agents/" target="_blank" rel="noopener">LiveKit
+                    Agents</a>
+                <a class="source" href="https://platform.openai.com/docs/guides/realtime" target="_blank"
+                    rel="noopener">OpenAI Realtime API</a>
+                <a class="source" href="https://developers.deepgram.com/docs/voice-agent" target="_blank"
+                    rel="noopener">Deepgram Voice Agent</a>
+                <a class="source" href="https://elevenlabs.io/docs/conversational-ai/overview" target="_blank"
+                    rel="noopener">ElevenLabs Conversational AI</a>
+                <a class="source" href="https://www.twilio.com/docs/voice/twiml/connect/conversationrelay"
+                    target="_blank" rel="noopener">Twilio ConversationRelay</a>
+                <a class="source" href="https://github.com/snakers4/silero-vad" target="_blank" rel="noopener">Silero
+                    VAD</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

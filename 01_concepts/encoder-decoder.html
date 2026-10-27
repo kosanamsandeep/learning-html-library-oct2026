@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encoder Decoder Transformers</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="transformer-basics.html">Basics</a>
+                <a href="encoder-only.html">Encoder to Encoder</a>
+                <a href="gpt-level.html">GPT Level</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#why">Why two stacks</a>
+            <a href="#flow">Flow of information</a>
+            <a href="#cross-attention">Cross-attention</a>
+            <a href="#example">Example</a>
+            <a href="#compare">Compare with GPT</a>
+            <a href="#why-this-way">Why this way</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro">
+                <p class="eyebrow">Step 3</p>
+                <h1>Encoder decoder architecture</h1>
+                <p><strong>Main idea:</strong> the encoder understands the source sequence, and the decoder generates
+                    the target sequence while consulting the encoder output through cross-attention. This is the classic
+                    sequence-to-sequence transformer design used by the original Transformer paper and models such as
+                    T5.</p>
+            </section>
+
+            <section class="section" id="why">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Why keep an encoder?</h3>
+                        <p>Some tasks need a deep understanding of a complete input before generation begins.
+                            Translation is the clearest example: the source sentence should be processed as a whole.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why keep a decoder?</h3>
+                        <p>The output must still be generated one token at a time. The decoder uses causal masking so it
+                            only sees previously generated output tokens.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="flow">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">In and out</p>
+                        <h2>Flow of information</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Source sequence enters encoder</h3>
+                        <p>Example source: "The meeting starts at noon." The encoder turns this into source-side
+                            contextual vectors.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Target prefix enters decoder</h3>
+                        <p>During training, the decoder sees earlier target tokens. During inference, it sees the tokens
+                            it has already generated.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Decoder cross-attends to encoder states</h3>
+                        <p>The decoder asks: which parts of the source are relevant for predicting the next target token
+                            right now?</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Output token is predicted</h3>
+                        <p>The decoder outputs logits for the next token, which is sampled or greedily selected.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="cross-attention">
+                <div class="note">
+                    <h2>Cross-attention is the bridge</h2>
+                    <p>In self-attention, queries, keys, and values all come from the same sequence. In cross-attention,
+                        decoder states provide the queries while encoder states provide the keys and values.</p>
+                    <p class="formula">Q = decoder states, K = encoder states, V = encoder states</p>
+                </div>
+            </section>
+
+            <section class="section" id="example">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Concrete example</p>
+                        <h2>English to French translation</h2>
+                    </div>
+                </div>
+                <div class="example">
+                    <p><strong>Source:</strong> "The red car is fast."</p>
+                    <p>The encoder builds a structured representation of the full English sentence. The decoder begins
+                        with a start token, predicts "La", then "voiture", then "rouge", and so on. At each step,
+                        cross-attention lets the decoder focus on the relevant source words instead of relying only on
+                        its own partial output history.</p>
+                </div>
+            </section>
+
+            <section class="section" id="compare">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Architecture</th>
+                                <th>Best at</th>
+                                <th>Main tradeoff</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Encoder-only</td>
+                                <td>Understanding and representation</td>
+                                <td>Not naturally generative.</td>
+                            </tr>
+                            <tr>
+                                <td>Encoder-decoder</td>
+                                <td>Structured input-to-output generation</td>
+                                <td>More complex and heavier than decoder-only generation.</td>
+                            </tr>
+                            <tr>
+                                <td>Decoder-only GPT</td>
+                                <td>General autoregressive text generation</td>
+                                <td>No dedicated encoder view of the source.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="why-this-way">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Architecture choice</p>
+                        <h2>Why do sequence-to-sequence tasks often need encoder-decoder models?</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Why this design is strong</h3>
+                        <ul class="stack-list">
+                            <li>The encoder can build a global understanding of the source before any target token is
+                                emitted.</li>
+                            <li>The decoder can remain autoregressive while still consulting the full source through
+                                cross-attention.</li>
+                            <li>This cleanly separates source comprehension from target generation.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What alternatives fail at</h3>
+                        <ul class="stack-list">
+                            <li>A plain encoder cannot generate a rich target sequence by itself.</li>
+                            <li>A plain decoder-only model can be prompted with source text, but it has no dedicated
+                                source-side latent representation and can be less structured for formal transduction
+                                tasks.</li>
+                            <li>Older seq2seq RNNs struggle more with long dependencies and parallelization.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What exactly does cross-attention buy you over self-attention alone?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>It lets the decoder query a separately encoded source representation. Self-attention only
+                                mixes information inside one sequence, but cross-attention lets the target-generation
+                                process align itself to relevant source content at each step.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is encoder-decoder still useful when GPT models can also do translation?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because tasks with a well-defined source-to-target mapping often benefit from an explicit
+                                source representation and source-target alignment. GPT can imitate this through
+                                prompting, but encoder-decoder models structure the problem more directly.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You must summarize long legal documents into short plain-language answers. Why might
+                            encoder-decoder be preferable?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>The full document can be encoded as source context, while the decoder generates a concise
+                                answer that repeatedly attends back to the source. This is a better fit than relying
+                                only on a decoder prompt when faithful grounding is critical.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>If translation quality is poor, what component-specific diagnosis would you mention in an
+                            interview?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Check source encoding quality, cross-attention alignment, causal decoding behavior,
+                                tokenization mismatch, and whether the model is losing source coverage. Poor translation
+                                is often not just “bad language modeling”; it can be bad source-to-target alignment.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Next recommended page: positional embeddings.</p>
+            <div class="mini-links">
+                <a href="positional-embeddings.html">Continue</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

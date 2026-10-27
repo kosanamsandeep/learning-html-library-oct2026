@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>06 · Ethical Hacker Playbook — Cyber Security Designs</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="sec">🛡</span>Cyber Security Designs</div>
+        <div class="links">
+            <a href="index.html">Hub</a>
+            <a href="05_dependencies_supply_chain.html">← Supply chain</a>
+            <a href="01_input_validation_injection.html">Restart →</a>
+        </div>
+    </div>
+
+    <div class="header sec">
+        <p class="badge">06 · Offense → Defense · Secure SDLC</p>
+        <h1>🕵️ The ethical hacker's playbook (and how you shut it down)</h1>
+        <p class="subtitle">To defend well, think like the person testing you. An ethical hacker follows a
+            repeatable method — <strong>recon → map → probe → exploit → report</strong>. Knowing each phase
+            tells you exactly where to put your defenses. This page is conceptual and defensive: it's about
+            <strong>hardening systems you own or are authorised to test</strong>.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section sec">
+            <h2>The pentest lifecycle — a defender's map</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    R["1 · Recon<br/>find what exists"] --> M["2 · Map<br/>endpoints, params, auth"]
+    M --> P["3 · Probe<br/>test each control"]
+    P --> E["4 · Exploit<br/>prove impact"]
+    E --> RP["5 · Report<br/>fix &amp; retest"]
+    classDef ph fill:#2e0a12,stroke:#f43f5e,color:#fecdd3
+    class R,M,P,E,RP ph
+                </pre>
+                <p class="caption">Each phase has a matching defense. Raise the cost at every step and most
+                    attackers move on to an easier target.</p>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>What they look for at each phase — and your counter</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>What an ethical hacker looks for</th>
+                        <th>Your defense</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Recon</strong></td>
+                        <td>Exposed <code>/docs</code>, <code>.git</code>, leaked keys in repos, verbose errors,
+                            subdomains, version banners</td>
+                        <td>Lock down docs in prod, scan for secret leaks, strip version banners, generic errors</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Map</strong></td>
+                        <td>All endpoints, params, hidden fields, ID patterns, auth flows</td>
+                        <td>Minimize surface, unguessable IDs, consistent auth on every route</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Probe — input</strong></td>
+                        <td>Injection (SQL/cmd), XSS, unvalidated params, weird types</td>
+                        <td>Parameterized queries, Pydantic validation, output encoding (<a
+                                href="01_input_validation_injection.html">01</a>)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Probe — auth</strong></td>
+                        <td>IDOR/BOLA, weak JWT, missing authz, user enumeration</td>
+                        <td>Per-object ownership checks, pinned JWT algs, generic login errors (<a
+                                href="02_auth_access_control.html">02</a>)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Probe — config</strong></td>
+                        <td>Open CORS, missing headers, weak TLS, default creds</td>
+                        <td>Strict CORS, security headers, TLS 1.2+, no defaults (<a
+                                href="03_secrets_transport_data.html">03</a>)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Probe — abuse</strong></td>
+                        <td>No rate limits, unbounded inputs, mass assignment, SSRF</td>
+                        <td>Rate limit, bound sizes, allow-list URLs (<a href="04_api_hardening_abuse.html">04</a>, <a
+                                href="05_dependencies_supply_chain.html">05</a>)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Exploit</strong></td>
+                        <td>Chain small flaws into data theft / account takeover</td>
+                        <td>Defense in depth — no single failure is catastrophic</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section sec">
+            <h2>The tools defenders should also run</h2>
+            <p>Run the same scanners attackers do — on your own systems, before they do. Find it first, fix it
+                first.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Tool</th>
+                        <th>Use</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>SAST (code)</td>
+                        <td><code>bandit</code>, <code>semgrep</code></td>
+                        <td>Insecure patterns in your source</td>
+                    </tr>
+                    <tr>
+                        <td>SCA (deps)</td>
+                        <td><code>pip-audit</code>, Dependabot</td>
+                        <td>Known CVEs in dependencies</td>
+                    </tr>
+                    <tr>
+                        <td>DAST (running app)</td>
+                        <td>OWASP ZAP</td>
+                        <td>Probe a live test instance for vulns</td>
+                    </tr>
+                    <tr>
+                        <td>Secret scanning</td>
+                        <td><code>gitleaks</code>, <code>trufflehog</code></td>
+                        <td>Leaked keys in repo/history</td>
+                    </tr>
+                    <tr>
+                        <td>Container/image</td>
+                        <td><code>trivy</code>, <code>grype</code></td>
+                        <td>Vulnerable OS/lib layers</td>
+                    </tr>
+                    <tr>
+                        <td>TLS config</td>
+                        <td>testssl.sh, SSL Labs</td>
+                        <td>Weak ciphers/protocols</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout amber">
+                <strong>Authorization first.</strong> Only scan or test systems you own or have explicit,
+                written permission to assess. Use intentionally-vulnerable practice apps (OWASP Juice Shop,
+                DVWA) to learn techniques legally.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Threat modeling — design out the bugs (STRIDE)</h2>
+            <p>The cheapest fix is a design that never has the flaw. Before building a feature, ask the STRIDE
+                questions:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Threat</th>
+                        <th>Question</th>
+                        <th>Control</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>S</strong>poofing</td>
+                        <td>Can someone fake an identity?</td>
+                        <td>Strong AuthN, MFA</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T</strong>ampering</td>
+                        <td>Can data be altered in transit/at rest?</td>
+                        <td>TLS, signing, integrity checks</td>
+                    </tr>
+                    <tr>
+                        <td><strong>R</strong>epudiation</td>
+                        <td>Can they deny an action?</td>
+                        <td>Tamper-evident audit logs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>I</strong>nfo disclosure</td>
+                        <td>Can data leak?</td>
+                        <td>Encryption, authz, least data</td>
+                    </tr>
+                    <tr>
+                        <td><strong>D</strong>enial of service</td>
+                        <td>Can it be exhausted?</td>
+                        <td>Rate limits, quotas, timeouts</td>
+                    </tr>
+                    <tr>
+                        <td><strong>E</strong>levation</td>
+                        <td>Can someone gain more rights?</td>
+                        <td>Least privilege, authz checks</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section sec">
+            <h2>Six strategies to learn &amp; institutionalize</h2>
+            <div class="grid-3">
+                <div class="mini sec">
+                    <h3>① Shift security left</h3>
+                    <p>Add SAST/SCA/secret-scans to CI so issues are caught at PR time, not in prod.</p>
+                </div>
+                <div class="mini sec">
+                    <h3>② Threat model features</h3>
+                    <p>Run a quick STRIDE pass on every new design before you write code.</p>
+                </div>
+                <div class="mini sec">
+                    <h3>③ Secure code review</h3>
+                    <p>Make the checklists from pages 01–05 part of every PR review.</p>
+                </div>
+                <div class="mini sec">
+                    <h3>④ Least privilege by default</h3>
+                    <p>Scope tokens, DB roles, and cloud IAM to the minimum; review regularly.</p>
+                </div>
+                <div class="mini sec">
+                    <h3>⑤ Monitor &amp; respond</h3>
+                    <p>Log security events, alert on anomalies, and rehearse an incident plan.</p>
+                </div>
+                <div class="mini sec">
+                    <h3>⑥ Patch &amp; rotate</h3>
+                    <p>Keep deps current, rotate secrets, and re-test after changes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Secure SDLC — security at every stage</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    D["Design<br/>threat model"] --> C["Code<br/>secure patterns"]
+    C --> B["Build/CI<br/>SAST · SCA · secrets"]
+    B --> T["Test<br/>DAST · pentest"]
+    T --> R["Release<br/>hardened config"]
+    R --> O["Operate<br/>monitor · patch · rotate"]
+    O -.feedback.-> D
+    classDef s fill:#0c2a22,stroke:#34d399,color:#bbf7d0
+    class D,C,B,T,R,O s
+                </pre>
+                <p class="caption">Security isn't a gate at the end — it's a thread through design, code,
+                    build, test, release, and operations.</p>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Master pre-deploy checklist</h2>
+            <ul class="check">
+                <li>All inputs validated (Pydantic); all queries parameterized; no <code>shell=True</code>.</li>
+                <li>Auth on every route; object-level ownership enforced; JWT algs pinned.</li>
+                <li>Secrets out of code; TLS enforced; security headers + strict CORS set.</li>
+                <li>Rate limits, body-size caps, pagination, and timeouts in place.</li>
+                <li>Deps hash-locked &amp; scanned; outbound URLs allow-listed (SSRF-safe).</li>
+                <li>Debug off; generic errors; security events logged &amp; alerted.</li>
+                <li>SAST/SCA/secret-scan green in CI; DAST run against staging.</li>
+                <li>Incident response plan &amp; backups tested; least-privilege IAM reviewed.</li>
+            </ul>
+            <div class="callout rose">
+                <strong>The mindset to carry forward:</strong> you will never make an app "100% secure" — aim
+                to make attacks <em>expensive, noisy, and low-reward</em>. Defense in depth + early detection
+                beats any single perfect control.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="05_dependencies_supply_chain.html"><span class="dir">Back</span>
+                <div class="ttl">05 · Supply chain</div>
+            </a>
+            <a class="next" href="index.html"><span class="dir">Done</span>
+                <div class="ttl">Back to hub →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Cyber Security Designs · 06 · Ethical hacker playbook &amp; secure SDLC</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

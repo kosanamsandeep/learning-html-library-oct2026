@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q, K, V — The Engine of Attention in Transformers</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #232740;
+    --border: #2d3154;
+    --text: #e1e4f0;
+    --text-dim: #8b8fa8;
+    --accent: #6c5ce7;
+    --accent2: #00cec9;
+    --accent3: #fd79a8;
+    --accent4: #fdcb6e;
+    --accent5: #55efc4;
+    --query: #6c5ce7;
+    --key: #00cec9;
+    --value: #fd79a8;
+    --score: #fdcb6e;
+    --attention: #55efc4;
+    --code-bg: #12141d;
+    --grad: linear-gradient(135deg, #6c5ce7, #00cec9);
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ─── Hero ─── */
+  .hero {
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(108,92,231,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(0,206,201,0.06) 0%, transparent 50%);
+    animation: heroGlow 8s ease-in-out infinite alternate;
+  }
+  @keyframes heroGlow {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(-2%, 2%) rotate(3deg); }
+  }
+  .hero-content { position: relative; z-index: 1; max-width: 800px; }
+  .hero h1 {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+  .hero p {
+    font-size: 1.15rem;
+    color: var(--text-dim);
+    max-width: 640px;
+    margin: 0 auto 2rem;
+  }
+  .qkv-badge {
+    display: inline-flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+  .qkv-badge span {
+    padding: 0.5rem 1.5rem;
+    border-radius: 100px;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+  .q-badge { background: rgba(108,92,231,0.2); color: var(--query); border: 1px solid rgba(108,92,231,0.3); }
+  .k-badge { background: rgba(0,206,201,0.2); color: var(--key); border: 1px solid rgba(0,206,201,0.3); }
+  .v-badge { background: rgba(253,121,168,0.2); color: var(--value); border: 1px solid rgba(253,121,168,0.3); }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: bounce 2s infinite;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(8px); }
+  }
+
+  /* ─── Sections ─── */
+  .section {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+  }
+  .section-wide {
+    max-width: 1200px;
+  }
+  .section-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  .section-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+  .section-header .subtitle {
+    color: var(--text-dim);
+    font-size: 1.05rem;
+  }
+
+  /* ─── Cards ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    transition: border-color 0.3s;
+  }
+  .card:hover { border-color: rgba(108,92,231,0.3); }
+  .card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .card p { color: #c8cbe0; margin-bottom: 1rem; }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* ─── Matrix Visualisations ─── */
+  .matrix-view {
+    overflow-x: auto;
+    padding: 1rem 0;
+  }
+  .matrix-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+  }
+  .matrix-row {
+    display: flex;
+    gap: 0.15rem;
+    align-items: center;
+  }
+  .matrix-cell {
+    width: 56px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+  .matrix-cell.dim { background: transparent; color: var(--text-dim); font-size: 0.7rem; width: auto; padding: 0 0.5rem; }
+
+  .cell-q { background: rgba(108,92,231,0.15); color: var(--query); border: 1px solid rgba(108,92,231,0.2); }
+  .cell-k { background: rgba(0,206,201,0.15); color: var(--key); border: 1px solid rgba(0,206,201,0.2); }
+  .cell-v { background: rgba(253,121,168,0.15); color: var(--value); border: 1px solid rgba(253,121,168,0.2); }
+  .cell-x { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid rgba(255,255,255,0.1); }
+  .cell-score { background: rgba(253,203,110,0.12); color: var(--score); border: 1px solid rgba(253,203,110,0.15); }
+  .cell-masked { background: rgba(255,0,0,0.08); color: #ff6b6b; border: 1px solid rgba(255,0,0,0.15); }
+  .cell-attn { background: rgba(85,239,196,0.12); color: var(--attention); border: 1px solid rgba(85,239,196,0.15); }
+  .cell-head { background: rgba(108,92,231,0.12); color: #b8a9ff; border: 1px solid rgba(108,92,231,0.15); }
+
+  .matrix-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  .matrix-shape {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+    margin-top: 0.3rem;
+  }
+
+  .arrow-sym {
+    font-size: 2rem;
+    color: var(--text-dim);
+    margin: 0.5rem 0;
+  }
+
+  /* ─── Step Flow ─── */
+  .step-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin: 2rem 0;
+  }
+  .step-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    position: relative;
+  }
+  .step-block::before {
+    content: attr(data-step);
+    position: absolute;
+    top: -12px;
+    left: 24px;
+    background: var(--accent);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 1rem;
+    border-radius: 100px;
+  }
+  .step-block h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--accent2);
+  }
+
+  .step-block.eq-block {
+    border-left: 3px solid var(--accent);
+  }
+  .step-block h4 .step-emoji {
+    margin-right: 0.5rem;
+  }
+
+  .math-block {
+    background: var(--code-bg);
+    border-radius: 12px;
+    padding: 1.25rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+    color: #c8d6e5;
+    line-height: 1.6;
+  }
+  .math-block .highlight-q { color: var(--query); }
+  .math-block .highlight-k { color: var(--key); }
+  .math-block .highlight-v { color: var(--value); }
+  .math-block .highlight-score { color: var(--score); }
+  .math-block .highlight-attn { color: var(--attention); }
+  .math-block .highlight-head { color: #b8a9ff; }
+  .math-block .op { color: #636e72; }
+  .math-block .dim { color: #636e72; font-size: 0.85rem; }
+
+  /* ─── SVG / Diagram ─── */
+  .diagram-container {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+    overflow-x: auto;
+  }
+  .diagram-container svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* ─── Animated Simulation ─── */
+  .sim-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem 0;
+  }
+  .sim-container h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .sim-canvas-container {
+    position: relative;
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.3);
+  }
+  .sim-canvas-container canvas {
+    display: block;
+    width: 100%;
+  }
+  .sim-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .sim-controls button {
+    padding: 0.6rem 1.8rem;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  .sim-controls button:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .sim-controls button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .sim-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    text-align: center;
+    flex-wrap: wrap;
+  }
+  .sim-stats .stat {
+    min-width: 100px;
+  }
+  .sim-stats .stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+    display: block;
+  }
+
+  /* ─── Legend ─── */
+  .legend {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: rgba(0,0,0,0.15);
+    border-radius: 12px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+  }
+
+  /* ─── Code ─── */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(255,255,255,0.05);
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  /* ─── Token Prediction Table ─── */
+  .pred-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+  }
+  .pred-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: var(--surface2);
+    border-bottom: 2px solid var(--accent);
+    font-weight: 600;
+    color: var(--accent2);
+  }
+  .pred-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .pred-table tr:hover td {
+    background: rgba(108,92,231,0.05);
+  }
+  .pred-table .probability-bar {
+    display: inline-block;
+    height: 8px;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+    background: var(--grad);
+  }
+
+  /* ─── Analogy Cards ─── */
+  .analogy-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+  .analogy-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  .analogy-card .emoji {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .analogy-card h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .analogy-card p {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+  }
+  .analogy-card.q-card { border-top: 3px solid var(--query); }
+  .analogy-card.k-card { border-top: 3px solid var(--key); }
+  .analogy-card.v-card { border-top: 3px solid var(--value); }
+
+  /* ─── Loss Section ─── */
+  .loss-diagram {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    justify-content: center;
+    padding: 2rem 0;
+    flex-wrap: wrap;
+  }
+  .loss-node {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    min-width: 100px;
+    font-size: 0.9rem;
+  }
+  .loss-node .loss-label {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+  }
+  .loss-node .loss-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  .loss-arrow {
+    font-size: 1.5rem;
+    color: var(--text-dim);
+  }
+  .loss-arrow.cycle {
+    color: var(--accent3);
+    animation: pulse-arrow 1.5s infinite;
+  }
+  @keyframes pulse-arrow {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  /* ─── Footer ─── */
+  .footer {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 640px) {
+    .section { padding: 3rem 1rem; }
+    .card { padding: 1.25rem; }
+    .matrix-cell { width: 40px; height: 32px; font-size: 0.65rem; }
+    .math-block { font-size: 0.8rem; padding: 1rem; }
+    .step-block { padding: 1.25rem; }
+    .hero h1 { font-size: 2rem; }
+    .qkv-badge { flex-direction: column; gap: 0.5rem; align-items: center; }
+    .sim-stats { gap: 1rem; }
+    .legend { gap: 0.75rem; }
+    .legend-item { font-size: 0.75rem; }
+  }
+
+  /* ─── Scrollbar ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* ─── Tabs ─── */
+  .tab-bar {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 0.25rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .tab-bar button {
+    padding: 0.5rem 1.25rem;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .tab-bar button.active {
+    background: var(--accent);
+    color: white;
+  }
+  .tab-bar button:hover:not(.active) {
+    color: var(--text);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ─── Insight Boxes ─── */
+  .insight {
+    background: rgba(108,92,231,0.08);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.5rem;
+    border-radius: 0 10px 10px 0;
+    margin: 1rem 0;
+  }
+  .insight strong { color: var(--accent2); }
+  .insight .insight-icon { margin-right: 0.5rem; }
+
+  /* ─── Equation styling in text ─── */
+  .inline-eq {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(255,255,255,0.04);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  /* ─── Fade in animation ─── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- HERO -->
+<!-- ═══════════════════════════════════════════════ -->
+<header class="hero">
+  <div class="hero-content">
+    <h1>Q · K · V</h1>
+    <p>
+      The three fundamental matrices that power every Transformer — from GPT to Claude.
+      How tokens ask, match, and gather context to predict the next word.
+    </p>
+    <div class="qkv-badge">
+      <span class="q-badge">Q — Query</span>
+      <span class="k-badge">K — Key</span>
+      <span class="v-badge">V — Value</span>
+    </div>
+  </div>
+  <div class="scroll-hint">↓ Scroll to explore</div>
+</header>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SECTION 1: THE ANALOGY -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="section fade-in">
+  <div class="section-header">
+    <h2>🧠 The Library Analogy</h2>
+    <p class="subtitle">Why three separate roles? Because searching is different from retrieving.</p>
+  </div>
+
+  <div class="analogy-cards">
+    <div class="analogy-card q-card">
+      <div class="emoji">🔍</div>
+      <h4>Query (Q) —<br><em>Your Search</em></h4>
+      <p>"I'm looking for books about <strong>cat behavior</strong>." That's what each token wants to find in the other tokens.</p>
+    </div>
+    <div class="analogy-card k-card">
+      <div class="emoji">🏷️</div>
+      <h4>Key (K) —<br><em>The Labels</em></h4>
+      <p>Each book has a dust-jacket summary: "This book covers feline psychology." Keys describe what each token <strong>contains</strong>.</p>
+    </div>
+    <div class="analogy-card v-card">
+      <div class="emoji">📖</div>
+      <h4>Value (V) —<br><em>The Content</em></h4>
+      <p>The actual book text (not just the label). Values are the <strong>rich information</strong> each token contributes once matched.</p>
+    </div>
+  </div>
+
+  <div class="insight">
+    <strong>⚡ Why all three?</strong> Separating Keys from Values allows a token to say "I contain information about X" (its Key) while carrying richer, more detailed information in its Value. This is why a model can match on concepts — the Key — and then blend detailed content — the Value — into the context.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SECTION 2: THE FULL FLOW -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="section fade-in">
+  <div class="section-header">
+    <h2>📐 The Full Mathematics</h2>
+    <p class="subtitle">Step-by-step from raw tokens to context-aware representations</p>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch" style="background:var(--query)"></span> Query</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:var(--key)"></span> Key</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:var(--value)"></span> Value</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:var(--score)"></span> Scores</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:var(--attention)"></span> Attention Weights</div>
+  </div>
+
+  <div class="step-flow">
+
+    <!-- Step 0 -->
+    <div class="step-block eq-block" data-step="Step 0">
+      <h4><span class="step-emoji">📄</span> The Input — X</h4>
+      <p>We have 3 tokens: <code>"the"</code>, <code>"cat"</code>, <code>"sat"</code>. Each is an embedding of length 4.</p>
+      <div class="math-block">
+        X  =  [[1.0, 0.0, 2.0, 0.5],   <span class="dim">// "the"</span>
+              [0.5, 1.5, 0.0, 1.0],   <span class="dim">// "cat"</span>
+              [2.0, 0.0, 1.0, 0.0]]   <span class="dim">// "sat"</span>
+        <span class="dim">Shape: (3 × 4)  —  (T × n_embd)</span>
+      </div>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="step-block eq-block" data-step="Step 1">
+      <h4><span class="step-emoji">🔮</span> Project to Q, K, V</h4>
+      <p>Multiply X by three learned weight matrices to <strong>project</strong> from 4-dimensional embeddings into 2-dimensional "head space".</p>
+      <div class="math-block">
+        <span class="highlight-q">Q</span> = X · W<sub>Q</sub>    [3×2]<br>
+        <span class="highlight-k">K</span> = X · W<sub>K</sub>    [3×2]<br>
+        <span class="highlight-v">V</span> = X · W<sub>V</sub>    [3×2]
+      </div>
+      <div class="matrix-view">
+        <div class="matrix-grid">
+
+          <div class="matrix-label"><span style="color:var(--query)">Q Matrix</span></div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-q">0.1</div>
+            <div class="matrix-cell cell-q">0.5</div>
+            <div class="matrix-cell dim">← the</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-q">1.2</div>
+            <div class="matrix-cell cell-q">0.8</div>
+            <div class="matrix-cell dim">← cat</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-q">0.3</div>
+            <div class="matrix-cell cell-q">0.9</div>
+            <div class="matrix-cell dim">← sat</div>
+          </div>
+          <div class="matrix-shape">Shape: (3 × 2)</div>
+
+          <div class="arrow-sym">→</div>
+
+          <div class="matrix-label"><span style="color:var(--key)">K Matrix</span></div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-k">0.2</div>
+            <div class="matrix-cell cell-k">0.1</div>
+            <div class="matrix-cell dim">← the</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-k">1.0</div>
+            <div class="matrix-cell cell-k">0.9</div>
+            <div class="matrix-cell dim">← cat</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-k">0.4</div>
+            <div class="matrix-cell cell-k">0.7</div>
+            <div class="matrix-cell dim">← sat</div>
+          </div>
+          <div class="matrix-shape">Shape: (3 × 2)</div>
+
+          <div class="arrow-sym">→</div>
+
+          <div class="matrix-label"><span style="color:var(--value)">V Matrix</span></div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-v">10</div>
+            <div class="matrix-cell cell-v">20</div>
+            <div class="matrix-cell dim">← the</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-v">30</div>
+            <div class="matrix-cell cell-v">40</div>
+            <div class="matrix-cell dim">← cat</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-v">50</div>
+            <div class="matrix-cell cell-v">60</div>
+            <div class="matrix-cell dim">← sat</div>
+          </div>
+          <div class="matrix-shape">Shape: (3 × 2)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-block eq-block" data-step="Step 2">
+      <h4><span class="step-emoji">🔗</span> Affinity Scores — Q × Kᵀ</h4>
+      <p>Every token's Query dot-product with every token's Key gives a <strong>match score</strong>. "How much should 'cat' pay attention to 'the'?"</p>
+      <div class="math-block">
+        Raw Scores = <span class="highlight-q">Q</span> · <span class="highlight-k">K</span><sup>T</sup>
+          = [[0.07, 0.55, 0.39],
+             [0.32, 1.92, 1.04],
+             [0.15, 1.11, 0.75]]
+
+        <span class="op">÷ &radic;d<sub>k</sub></span>  =  [[0.05, 0.39, 0.28],
+             [0.22, 1.35, 0.73],
+             [0.10, 0.78, 0.53]]
+      </div>
+      <div class="matrix-view">
+        <div class="matrix-grid">
+          <div class="matrix-label"><span style="color:var(--score)">Scaled Scores (3×3)</span></div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-score">0.05</div>
+            <div class="matrix-cell cell-score">0.39</div>
+            <div class="matrix-cell cell-score">0.28</div>
+            <div class="matrix-cell dim">← the's queries vs all keys</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-score">0.22</div>
+            <div class="matrix-cell cell-score">1.35</div>
+            <div class="matrix-cell cell-score">0.73</div>
+            <div class="matrix-cell dim">← cat's queries vs all keys</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-score">0.10</div>
+            <div class="matrix-cell cell-score">0.78</div>
+            <div class="matrix-cell cell-score">0.53</div>
+            <div class="matrix-cell dim">← sat's queries vs all keys</div>
+          </div>
+        </div>
+      </div>
+      <p style="margin-top:1rem;font-size:0.9rem;color:var(--text-dim);">
+        <strong>Notice:</strong> "cat" (row 2) scores <strong>1.35</strong> with itself — the highest in the matrix. It also scores 0.73 with "sat" (nearby, meaningful). This is how the model learns which tokens matter to each other.
+      </p>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-block eq-block" data-step="Step 3">
+      <h4><span class="step-emoji">🚫</span> Causal Masking</h4>
+      <p>In a <strong>decoder-only</strong> model (like GPT), tokens must not look at <em>future</em> tokens. We mask the upper triangle with <code>-∞</code>.</p>
+      <div class="matrix-view">
+        <div class="matrix-grid">
+          <div class="matrix-label"><span style="color:#ff6b6b">After Masking</span></div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-score">0.05</div>
+            <div class="matrix-cell cell-masked">-∞</div>
+            <div class="matrix-cell cell-masked">-∞</div>
+            <div class="matrix-cell dim">← "the" can only see itself</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-score">0.22</div>
+            <div class="matrix-cell cell-score">1.35</div>
+            <div class="matrix-cell cell-masked">-∞</div>
+            <div class="matrix-cell dim">← "cat" sees "the" + itself</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-score">0.10</div>
+            <div class="matrix-cell cell-score">0.78</div>
+            <div class="matrix-cell cell-score">0.53</div>
+            <div class="matrix-cell dim">← "sat" sees all three</div>
+          </div>
+        </div>
+      </div>
+      <div class="insight">
+        <strong>🔑 Why mask?</strong> When predicting "sat" after "the cat", the model must learn from <strong>causal</strong> context — it cannot cheat by peeking at the answer. Masking enforces this at every training step. Without it, the model learns nothing (it just copies the next token).
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step-block eq-block" data-step="Step 4">
+      <h4><span class="step-emoji">📊</span> Softmax — Turn Scores into Percentages</h4>
+      <p>Softmax converts scores into probabilities that sum to 1.0 per row. This is our <strong>attention distribution</strong>.</p>
+      <div class="math-block">
+        <span class="highlight-attn">A</span> = softmax(Masked Scores)
+      </div>
+      <div class="matrix-view">
+        <div class="matrix-grid">
+          <div class="matrix-label"><span style="color:var(--attention)">Attention Weights (3×3)</span></div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-attn">1.00</div>
+            <div class="matrix-cell cell-attn">0.00</div>
+            <div class="matrix-cell cell-attn">0.00</div>
+            <div class="matrix-cell dim">← "the" → 100% to itself</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-attn">0.24</div>
+            <div class="matrix-cell cell-attn">0.76</div>
+            <div class="matrix-cell cell-attn">0.00</div>
+            <div class="matrix-cell dim">← "cat" → 24% to "the", 76% to itself</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell cell-attn">0.18</div>
+            <div class="matrix-cell cell-attn">0.51</div>
+            <div class="matrix-cell cell-attn">0.31</div>
+            <div class="matrix-cell dim">← "sat" → 18% "the", 51% "cat", 31% itself</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step-block eq-block" data-step="Step 5">
+      <h4><span class="step-emoji">🎯</span> Weighted Sum — A × V</h4>
+      <p>Each token's new representation = weighted blend of all Values, weighted by attention scores.</p>
+      <div class="math-block">
+        Head_Out = <span class="highlight-attn">A</span> · <span class="highlight-v">V</span>
+          =  [[10.0, 20.0],    <span class="dim">// "the" → just its own V</span>
+              [25.2, 35.2],    <span class="dim">// "cat" → 24% "the"'s V + 76% its own</span>
+              [32.6, 42.6]]    <span class="dim">// "sat" → 18% "the" + 51% "cat" + 31% itself</span>
+      </div>
+      <p>Notice how "sat" (row 3) now contains <strong>information from "cat" and "the"</strong>. It has gathered context. This is the <strong>attention mechanism</strong> in action.</p>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="step-block eq-block" data-step="Step 6">
+      <h4><span class="step-emoji">🔄</span> Project Back &amp; Repeat</h4>
+      <p>Head_out is (3×2). We concatenate all heads (e.g. 2 heads → 3×4) and project back via W<sub>O</sub> to restore the original embedding size. Then feed into the next layer.</p>
+      <div class="math-block">
+        Layer_Output = Concat(Head₁, Head₂) · W<sub>O</sub>   <span class="dim">// Shape: (3 × 4)</span><br>
+        <span class="dim">Then → Feed-Forward → Next Attention Layer → ...</span>
+      </div>
+      <p>Each layer refines the representation. Early layers capture <strong>syntax</strong> and <strong>proximity</strong>; deeper layers capture <strong>semantics</strong>, <strong>coreference</strong>, and <strong>reasoning</strong>.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SECTION 3: SVG DIAGRAM — Full Architecture -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="section section-wide fade-in">
+  <div class="section-header">
+    <h2>🏗️ The Complete Attention Head</h2>
+    <p class="subtitle">A single attention head in full detail — from input to output</p>
+  </div>
+
+  <div class="diagram-container">
+    <svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;">
+      <defs>
+        <linearGradient id="gQ" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#6c5ce7" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#6c5ce7" stop-opacity="0.25"/>
+        </linearGradient>
+        <linearGradient id="gK" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#00cec9" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#00cec9" stop-opacity="0.25"/>
+        </linearGradient>
+        <linearGradient id="gV" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fd79a8" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#fd79a8" stop-opacity="0.25"/>
+        </linearGradient>
+        <linearGradient id="gScore" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fdcb6e" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#fdcb6e" stop-opacity="0.2"/>
+        </linearGradient>
+        <linearGradient id="gAttn" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#55efc4" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#55efc4" stop-opacity="0.2"/>
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10" fill="none" stroke="#8b8fa8" stroke-width="1.2"/>
+        </marker>
+        <marker id="arrowQ" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10" fill="none" stroke="#6c5ce7" stroke-width="1.5"/>
+        </marker>
+        <marker id="arrowK" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10" fill="none" stroke="#00cec9" stroke-width="1.5"/>
+        </marker>
+        <marker id="arrowV" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10" fill="none" stroke="#fd79a8" stroke-width="1.5"/>
+        </marker>
+      </defs>
+
+      <!-- Background -->
+      <rect x="0" y="0" width="900" height="620" rx="16" fill="#1a1d2e"/>
+
+      <!-- Title -->
+      <text x="450" y="40" text-anchor="middle" fill="#e1e4f0" font-size="16" font-weight="600" font-family="Inter, sans-serif">Single Attention Head — Full Flow</text>
+
+      <!-- === Input X === -->
+      <rect x="50" y="65" width="140" height="110" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1.2"/>
+      <text x="120" y="87" text-anchor="middle" fill="#e1e4f0" font-size="13" font-weight="600" font-family="Inter, sans-serif">Input X</text>
+      <text x="120" y="103" text-anchor="middle" fill="#8b8fa8" font-size="10" font-family="JetBrains Mono, monospace">Shape: (T × n_embd)</text>
+      <!-- Mini matrix -->
+      <text x="80" y="125" fill="#636e72" font-size="9" font-family="JetBrains Mono, monospace">[1.0 0.0 2.0 0.5]</text>
+      <text x="80" y="140" fill="#636e72" font-size="9" font-family="JetBrains Mono, monospace">[0.5 1.5 0.0 1.0]</text>
+      <text x="80" y="155" fill="#636e72" font-size="9" font-family="JetBrains Mono, monospace">[2.0 0.0 1.0 0.0]</text>
+      <text x="174" y="140" fill="#8b8fa8" font-size="8" font-family="Inter, sans-serif">"the"</text>
+      <text x="174" y="155" fill="#8b8fa8" font-size="8" font-family="Inter, sans-serif">"cat"</text>
+      <text x="174" y="170" fill="#8b8fa8" font-size="8" font-family="Inter, sans-serif">"sat"</text>
+
+      <!-- Arrows from X to W matrices -->
+      <line x1="190" y1="90" x2="265" y2="90" stroke="#6c5ce7" stroke-width="1.5" marker-end="url(#arrowQ)" stroke-dasharray="0"/>
+      <line x1="190" y1="120" x2="265" y2="120" stroke="#00cec9" stroke-width="1.5" marker-end="url(#arrowK)"/>
+      <line x1="190" y1="150" x2="265" y2="150" stroke="#fd79a8" stroke-width="1.5" marker-end="url(#arrowV)"/>
+
+      <text x="225" y="78" text-anchor="middle" fill="#8b8fa8" font-size="8" font-family="Inter, sans-serif">· W<sub>Q</sub></text>
+      <text x="225" y="108" text-anchor="middle" fill="#8b8fa8" font-size="8" font-family="Inter, sans-serif">· W<sub>K</sub></text>
+      <text x="225" y="140" text-anchor="middle" fill="#8b8fa8" font-size="8" font-family="Inter, sans-serif">· W<sub>V</sub></text>
+
+      <!-- === Q block === -->
+      <rect x="270" y="55" width="120" height="70" rx="8" fill="url(#gQ)" stroke="#6c5ce7" stroke-width="1.2"/>
+      <text x="330" y="78" text-anchor="middle" fill="#6c5ce7" font-size="15" font-weight="700" font-family="Inter, sans-serif">Q</text>
+      <text x="330" y="94" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="JetBrains Mono, monospace">(T × d<sub>k</sub>)</text>
+      <text x="330" y="110" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="Inter, sans-serif">"What am I looking for?"</text>
+
+      <!-- === K block === -->
+      <rect x="270" y="85" width="120" height="70" rx="8" fill="url(#gK)" stroke="#00cec9" stroke-width="1.2"/>
+      <text x="330" y="108" text-anchor="middle" fill="#00cec9" font-size="15" font-weight="700" font-family="Inter, sans-serif">K</text>
+      <text x="330" y="124" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="JetBrains Mono, monospace">(T × d<sub>k</sub>)</text>
+      <text x="330" y="140" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="Inter, sans-serif">"What do I contain?"</text>
+
+      <!-- === V block === -->
+      <rect x="270" y="115" width="120" height="70" rx="8" fill="url(#gV)" stroke="#fd79a8" stroke-width="1.2"/>
+      <text x="330" y="138" text-anchor="middle" fill="#fd79a8" font-size="15" font-weight="700" font-family="Inter, sans-serif">V</text>
+      <text x="330" y="154" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="JetBrains Mono, monospace">(T × d<sub>k</sub>)</text>
+      <text x="330" y="170" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="Inter, sans-serif">"What information do I give?"</text>
+
+      <!-- === MatMul (QKᵀ) === -->
+      <line x1="390" y1="90" x2="435" y2="90" stroke="#8b8fa8" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <line x1="390" y1="120" x2="435" y2="120" stroke="#8b8fa8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <rect x="440" y="60" width="130" height="90" rx="8" fill="url(#gScore)" stroke="#fdcb6e" stroke-width="1.2"/>
+      <text x="505" y="82" text-anchor="middle" fill="#fdcb6e" font-size="13" font-weight="600" font-family="Inter, sans-serif">Q · K<sup>T</sup></text>
+      <text x="505" y="98" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="JetBrains Mono, monospace">(T × T)</text>
+      <text x="505" y="115" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="Inter, sans-serif">"How much does each</text>
+      <text x="505" y="130" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="Inter, sans-serif">token match others?"</text>
+
+      <!-- Scale (÷√dₖ) -->
+      <line x1="570" y1="105" x2="610" y2="105" stroke="#8b8fa8" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <text x="590" y="95" text-anchor="middle" fill="#636e72" font-size="9" font-family="Inter, sans-serif">÷√d<sub>k</sub></text>
+
+      <!-- === Mask + Softmax === -->
+      <rect x="615" y="60" width="130" height="90" rx="8" fill="url(#gAttn)" stroke="#55efc4" stroke-width="1.2"/>
+      <text x="680" y="82" text-anchor="middle" fill="#55efc4" font-size="13" font-weight="600" font-family="Inter, sans-serif">Mask + Softmax</text>
+      <text x="680" y="98" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="JetBrains Mono, monospace">(T × T)</text>
+      <text x="680" y="115" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="Inter, sans-serif">"Normalize attention</text>
+      <text x="680" y="130" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="Inter, sans-serif">weights → probabilities"</text>
+
+      <!-- === MatMul (A·V) === -->
+      <line x1="745" y1="105" x2="780" y2="105" stroke="#8b8fa8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <rect x="785" y="60" width="100" height="90" rx="8" fill="url(#gV)" stroke="#fd79a8" stroke-width="1.2" stroke-dasharray="0"/>
+      <text x="835" y="82" text-anchor="middle" fill="#e1e4f0" font-size="13" font-weight="600" font-family="Inter, sans-serif">A · V</text>
+      <text x="835" y="98" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="JetBrains Mono, monospace">(T × d<sub>k</sub>)</text>
+      <text x="835" y="115" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="Inter, sans-serif">"Each token now</text>
+      <text x="835" y="130" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="Inter, sans-serif">carries context"</text>
+
+      <!-- === Bottom: V path === -->
+      <path d="M390,150 L440,150 L440,170 L780,170 L780,150" fill="none" stroke="#fd79a8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrowV)"/>
+      <text x="610" y="182" text-anchor="middle" fill="#fd79a8" font-size="9" font-family="Inter, sans-serif">Values flow directly to weighted sum</text>
+
+      <!-- === Residual details === -->
+      <text x="450" y="225" text-anchor="middle" fill="#8b8fa8" font-size="10" font-family="Inter, sans-serif">↑ Single head produces output of size d<sub>k</sub>. Multiple heads run in parallel, then concatenated and projected.</text>
+
+      <!-- === Maths at bottom === -->
+      <rect x="100" y="250" width="700" height="140" rx="10" fill="#12141d" stroke="#2d3154" stroke-width="1"/>
+      <text x="450" y="275" text-anchor="middle" fill="#e1e4f0" font-size="12" font-weight="600" font-family="JetBrains Mono, monospace">Attention(Q, K, V) = softmax( (Q · Kᵀ) / √dₖ ) · V</text>
+      <text x="450" y="300" text-anchor="middle" fill="#8b8fa8" font-size="11" font-family="Inter, sans-serif">With causal masking: upper triangle set to -∞ before softmax</text>
+      <text x="450" y="320" text-anchor="middle" fill="#8b8fa8" font-size="11" font-family="Inter, sans-serif">Multi-Head: Concat(head₁, ..., headₕ) · W<sub>O</sub> &nbsp;→&nbsp; restore original dimension</text>
+      <text x="450" y="345" text-anchor="middle" fill="#636e72" font-size="10" font-family="Inter, sans-serif">Then: LayerNorm → FFN → Residual → Next Layer × N</text>
+
+      <!-- === Bottom annotation === -->
+      <text x="450" y="410" text-anchor="middle" fill="#636e72" font-size="10" font-family="Inter, sans-serif">Each layer: self-attention gather context → feed-forward reason over it → residual preserve the original</text>
+
+      <!-- === Multi-head illustration === -->
+      <line x1="300" y1="440" x2="600" y2="440" stroke="#2d3154" stroke-width="1"/>
+      <text x="450" y="430" text-anchor="middle" fill="#8b8fa8" font-size="10" font-family="Inter, sans-serif">Multi-Head = many parallel attention "perspectives"</text>
+      <text x="450" y="460" text-anchor="middle" fill="#8b8fa8" font-size="10" font-family="Inter, sans-serif">Head₁ might track syntax &nbsp; Head₂ tracks entities &nbsp; Head₃ tracks proximity &nbsp; ...</text>
+      <text x="450" y="480" text-anchor="middle" fill="#636e72" font-size="9" font-family="Inter, sans-serif">Each head has its own Q, K, V projections. Outputs concatenated → W<sub>O</sub> projects back to full space.</text>
+
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SECTION 4: ANIMATED SIMULATION -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="section fade-in">
+  <div class="section-header">
+    <h2>🎬 Live Simulation: Training in Action</h2>
+    <p class="subtitle">Watch Q, K, V projections evolve as loss decreases and predictions improve</p>
+  </div>
+
+  <div class="sim-container">
+    <h3>🔁 Training Step: <span id="sim-step-display">0</span> &nbsp;·&nbsp; <span id="sim-phase-display">Initializing</span></h3>
+
+    <div class="sim-canvas-container">
+      <canvas id="simCanvas" width="700" height="400"></canvas>
+    </div>
+
+    <div class="sim-controls">
+      <button id="simPlayBtn">▶ Play</button>
+      <button id="simResetBtn">⟳ Reset</button>
+      <button id="simStepBtn">⏭ Step</button>
+    </div>
+
+    <div class="sim-stats">
+      <div class="stat">
+        <span class="stat-value" id="lossDisplay">2.3026</span>
+        Loss (cross-entropy)
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="accuracyDisplay">12%</span>
+        Token Accuracy
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="entropyDisplay">2.30</span>
+        Output Entropy
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="topPredDisplay">?</span>
+        Top Prediction
+      </div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <strong>🎯 What you're watching:</strong> The simulation shows token embeddings moving through QKV space. As training progresses, <strong>Q and K vectors align</strong> for tokens that should attend to each other, attention distributions sharpen from uniform → focused, and the model's predictions converge on the correct next token. The loss drops from random (~2.3) toward zero as attention heads learn their roles.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SECTION 5: LOSS / TRAINING CONNECTION -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="section fade-in">
+  <div class="section-header">
+    <h2>📉 How Q, K, V Minimize Loss &amp; Predict the Next Word</h2>
+    <p class="subtitle">The training loop that shapes attention into a useful tool</p>
+  </div>
+
+  <div class="card">
+    <h3>⛓️ The Full Causal Chain</h3>
+    <div style="overflow-x:auto;">
+      <div style="display:flex;align-items:center;gap:0.75rem;padding:1.5rem 0;min-width:700px;justify-content:center;flex-wrap:wrap;">
+        <div class="loss-node">
+          <div class="loss-label">Step 1</div>
+          <div style="font-size:0.9rem;">Token Embed →<br><strong style="color:var(--query)">Q</strong><strong style="color:var(--key)">K</strong><strong style="color:var(--value)">V</strong></div>
+        </div>
+        <div class="loss-arrow">→</div>
+        <div class="loss-node">
+          <div class="loss-label">Step 2</div>
+          <div style="font-size:0.9rem;">Attention →<br><strong>Context Vectors</strong></div>
+        </div>
+        <div class="loss-arrow">→</div>
+        <div class="loss-node">
+          <div class="loss-label">Step 3</div>
+          <div style="font-size:0.9rem;">FFN → Layer Norm<br><strong>Updated States</strong></div>
+        </div>
+        <div class="loss-arrow">→</div>
+        <div class="loss-node">
+          <div class="loss-label">Step 4</div>
+          <div style="font-size:0.9rem;">Unembed →<br><strong>Logits</strong></div>
+        </div>
+        <div class="loss-arrow">→</div>
+        <div class="loss-node">
+          <div class="loss-label">Step 5</div>
+          <div style="font-size:0.9rem;">Softmax →<br><strong style="color:var(--accent2)">Token Probabilities</strong></div>
+        </div>
+        <div class="loss-arrow">→</div>
+        <div class="loss-node">
+          <div class="loss-label">Step 6</div>
+          <div style="font-size:0.9rem;">Cross-Entropy<br><strong style="color:var(--accent3)">Loss</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🎯 The Loss Signal</h3>
+    <p>Loss = how surprised the model was by the actual next token. If the model predicted <code>"the" (70%)</code> and the real token was <code>"cat"</code>, loss is high. Gradients flow <strong>back through the entire chain</strong>, updating every W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> weight.</p>
+
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0;">
+      <div style="flex:1;min-width:200px;background:var(--code-bg);border-radius:10px;padding:1.25rem;">
+        <div style="color:var(--text-dim);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">High Loss (early)</div>
+        <div style="font-size:0.9rem;">
+          "the cat <strong style="color:var(--accent3)">?</strong> " → predicted <code>"the"</code> (not "sat")<br>
+          <span style="color:var(--text-dim)">→ Q didn't align with K properly</span>
+        </div>
+        <div style="margin-top:0.5rem;background:var(--surface);border-radius:6px;padding:0.5rem;font-size:0.8rem;">
+          Gradient: "pay more attention to 'cat' when predicting the verb!"
+        </div>
+      </div>
+      <div style="flex:1;min-width:200px;background:var(--code-bg);border-radius:10px;padding:1.25rem;">
+        <div style="color:var(--text-dim);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Low Loss (trained)</div>
+        <div style="font-size:0.9rem;">
+          "the cat <strong style="color:var(--accent2)">?</strong> " → predicted <code>"sat"</code> ✓<br>
+          <span style="color:var(--text-dim)">→ K of "cat" strongly matches Q of "sat"</span>
+        </div>
+        <div style="margin-top:0.5rem;background:var(--surface);border-radius:6px;padding:0.5rem;font-size:0.8rem;">
+          Attention: "sat" attends 51% to "cat", 18% to "the" — correct context gathered
+        </div>
+      </div>
+    </div>
+
+    <h4 style="margin-top:1.5rem;font-weight:600;">🎯 How Q, K, V Specifically Improve Through Training</h4>
+    <table class="pred-table">
+      <thead>
+        <tr><th>Training Stage</th><th>Q/K Alignment</th><th>Attention Pattern</th><th>Next-Token Prediction</th><th>Loss</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Random init</strong></td>
+          <td style="color:var(--text-dim)">Random — no meaningful alignment</td>
+          <td style="color:var(--text-dim)">Uniform / diffuse (all tokens get similar weight)</td>
+          <td><code>???</code> ≈ random token</td>
+          <td style="color:var(--accent3)">~2.3 (high)</td>
+        </tr>
+        <tr>
+          <td><strong>Early training</strong></td>
+          <td style="color:var(--query)">Rough positional patterns</td>
+          <td style="color:var(--score)">Nearby tokens weighted slightly higher</td>
+          <td style="color:var(--score)">Frequent words guessed (the, a, is)</td>
+          <td style="color:var(--accent3)">~1.5–2.0</td>
+        </tr>
+        <tr>
+          <td><strong>Mid training</strong></td>
+          <td style="color:var(--attention)">Syntactic roles forming</td>
+          <td style="color:var(--attention)">Subject-verb, noun-modifier pairs emerge</td>
+          <td style="color:var(--attention)">Grammatically plausible</td>
+          <td style="color:var(--accent3)">~0.5–1.5</td>
+        </tr>
+        <tr>
+          <td><strong>Fully trained</strong></td>
+          <td style="color:var(--accent2)">Sharp, semantically meaningful alignment</td>
+          <td style="color:var(--accent2)">Sparse, focused attention on relevant tokens</td>
+          <td style="color:var(--accent2)">Correct next token with high confidence</td>
+          <td style="color:var(--accent2)">→ 0.0 (target)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>🔄 Backpropagation Updates Q, K, V Weights</h3>
+    <p>Here's the critical loop that connects loss → attention improvement:</p>
+
+    <div class="loss-diagram">
+      <div class="loss-node">
+        <div class="loss-label">forward</div>
+        <div style="font-size:0.85rem;">X → QKV → Attn → <br><strong style="color:var(--accent2)">Prediction</strong></div>
+      </div>
+      <div class="loss-arrow">→</div>
+      <div class="loss-node" style="border-color:var(--accent3);">
+        <div class="loss-label">Compute</div>
+        <div style="font-size:0.85rem;color:var(--accent3);"><strong>Loss</strong><br>Cross-Entropy</div>
+      </div>
+      <div class="loss-arrow cycle">←</div>
+      <div class="loss-node" style="border-color:var(--accent);">
+        <div class="loss-label">backward</div>
+        <div style="font-size:0.85rem;color:var(--accent);">∇Loss → <strong>Update W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub></strong></div>
+      </div>
+    </div>
+
+    <p>The gradient tells each weight matrix: <em>"Did your projection help the model predict the right next token?"</em></p>
+    <ul style="color:#c8cbe0;padding-left:1.25rem;line-height:2;">
+      <li><strong>W<sub>Q</sub> update:</strong> "Make the 'sat' query look more like the 'cat' key"</li>
+      <li><strong>W<sub>K</sub> update:</strong> "Make the 'cat' key easier to find by relevant queries"</li>
+      <li><strong>W<sub>V</sub> update:</strong> "Carry more useful information about 'cat' into the weighted sum"</li>
+    </ul>
+
+    <div class="insight">
+      <strong>💡 The key insight:</strong> The loss is minimized not by memorizing sequences, but by learning which tokens <em>should</em> attend to which other tokens. QKV is the mechanism that makes this possible — it's a <strong>learnable routing system</strong> where tokens dynamically decide where to look for information.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SECTION 6: WHY QKV WORKS (INTUITION) -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="section fade-in">
+  <div class="section-header">
+    <h2>💡 Why Separate Q, K, V? — The "Dictionary" View</h2>
+    <p class="subtitle">Three roles, one unified purpose: context-aware token representations</p>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <h3 style="color:var(--query)">🔍 Query — The Seeker</h3>
+      <p>Each token asks: <em>"What information do I need right now?"</em></p>
+      <p style="font-size:0.9rem;color:var(--text-dim);">The Query vector is a <strong>question</strong>. At position "sat" (predicting a verb), the query asks: "Which earlier tokens describe the subject doing this action?"</p>
+      <p style="font-size:0.9rem;color:var(--text-dim);">Different attention heads learn different questions: <em>Who does this? What's the object? What's the tense?</em></p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--key)">🏷️ Key — The Label</h3>
+      <p>Each token announces: <em>"Here's what I contain."</em></p>
+      <p style="font-size:0.9rem;color:var(--text-dim);">The Key vector is like a <strong>catalog entry</strong>. "cat" projects a key that says: "I'm a noun, I'm the subject, I have animacy."</p>
+      <p style="font-size:0.9rem;color:var(--text-dim);">Keys allow efficient matching — a query scans all keys to find relevant tokens <strong>before</strong> reading their values.</p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--value)">📦 Value — The Content</h3>
+      <p>Each token provides: <em>"Here's my actual contribution."</em></p>
+      <p style="font-size:0.9rem;color:var(--text-dim);">Once matching is done (via Q·K), the Values are <strong>blended</strong> by attention weights. Value carries the full semantic payload — far richer than the label.</p>
+      <p style="font-size:0.9rem;color:var(--text-dim);">Q and K determine <strong>which</strong> tokens to mix; V determines <strong>what</strong> gets mixed.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🚀 Why This Triplet Design Wins</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:0.9rem;">
+      <div style="background:var(--code-bg);border-radius:10px;padding:1rem;">
+        <strong style="color:var(--accent2)">1. Information bottleneck</strong><br>
+        <span style="color:var(--text-dim);">By projecting from n_embd → d_k (smaller dimension), the model is forced to distill the most important features. This prevents overfitting.</span>
+      </div>
+      <div style="background:var(--code-bg);border-radius:10px;padding:1rem;">
+        <strong style="color:var(--accent2)">2. Content-addressable retrieval</strong><br>
+        <span style="color:var(--text-dim);">Unlike RNNs (position-based memory), attention is <strong>content-based</strong>. A token finds relevant context anywhere, regardless of distance.</span>
+      </div>
+      <div style="background:var(--code-bg);border-radius:10px;padding:1rem;">
+        <strong style="color:var(--accent2)">3. Parallelizable computation</strong><br>
+        <span style="color:var(--text-dim);">Q·Kᵀ is a single matrix multiply — all pairwise comparisons in one shot. RNNs had to process sequentially; attention sees the full sequence at once.</span>
+      </div>
+      <div style="background:var(--code-bg);border-radius:10px;padding:1rem;">
+        <strong style="color:var(--accent2)">4. Multi-perspective attention</strong><br>
+        <span style="color:var(--text-dim);">Multiple heads = multiple QKV subspaces. Each head learns a different "relationship type" (subject-verb, adjective-noun, coreference, etc.).</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SECTION 7: PUTTING IT ALL TOGETHER -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="section fade-in">
+  <div class="section-header">
+    <h2>🧩 Putting It All Together</h2>
+    <p class="subtitle">From sentence to prediction — the full journey</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3>📝 Example: "The cat sat on the mat"</h3>
+    <p style="font-size:0.95rem;line-height:1.8;">
+      <strong>Input tokens:</strong> <code>["the", "cat", "sat", "on", "the", "mat"]</code>
+    </p>
+    <p style="font-size:0.95rem;line-height:1.8;">
+      <strong>At position 2 ("sat"):</strong> The query asks "Who sat?" The key of "cat" matches strongly → "sat" attends 51% to "cat" and 18% to "the". The value of "cat" (its detailed representation) flows into "sat"'s context. Now "sat" "knows" that a cat is the agent.
+    </p>
+    <p style="font-size:0.95rem;line-height:1.8;">
+      <strong>After all layers:</strong> Each token has gathered context from its relevant neighbors. The final layer's hidden states decode into <strong>vocabulary probabilities</strong>. If the next token after "mat" was period <code>"."</code>, the model should assign high probability to <code>"."</code>.
+    </p>
+    <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <span style="background:rgba(108,92,231,0.1);border:1px solid rgba(108,92,231,0.2);border-radius:6px;padding:0.3rem 0.8rem;font-size:0.85rem;color:var(--query);">Q: "What's the subject?"</span>
+      <span style="background:rgba(0,206,201,0.1);border:1px solid rgba(0,206,201,0.2);border-radius:6px;padding:0.3rem 0.8rem;font-size:0.85rem;color:var(--key);">K: "I'm the subject (cat)"</span>
+      <span style="background:rgba(253,121,168,0.1);border:1px solid rgba(253,121,168,0.2);border-radius:6px;padding:0.3rem 0.8rem;font-size:0.85rem;color:var(--value);">V: {animacy: animate, number: singular, ...}</span>
+      <span style="background:rgba(85,239,196,0.1);border:1px solid rgba(85,239,196,0.2);border-radius:6px;padding:0.3rem 0.8rem;font-size:0.85rem;color:var(--attention);">→ "sat" now conditioned on "cat"</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🔮 How Models Actually Predict the Next Token</h3>
+    <ul style="color:#c8cbe0;padding-left:1.25rem;line-height:2.2;font-size:0.95rem;">
+      <li><strong>1. Embed</strong> — Map each token to a high-dimensional vector (e.g., 4096 for GPT-3)</li>
+      <li><strong>2. For each of N layers:</strong></li>
+      <li style="list-style:none;padding-left:1.5rem;">
+        a. <strong>Multi-Head Self-Attention</strong> — Each token computes Q, K, V → gathers context from all previous tokens<br>
+        b. <strong>Feed-Forward Network</strong> — Each token independently reasons over its gathered context<br>
+        c. <strong>Residual + Norm</strong> — Stabilize training and preserve information flow
+      </li>
+      <li><strong>3. Unembed</strong> — Project final hidden state to vocabulary size (e.g., 50,257 tokens)</li>
+      <li><strong>4. Softmax</strong> — Convert logits to probability distribution over vocabulary</li>
+      <li><strong>5. Sample / Argmax</strong> — Pick the most likely next token (or sample for creativity)</li>
+    </ul>
+
+    <div class="insight">
+      <strong>⭐ The critical point:</strong> Every single token's prediction is shaped by QKV attention in every layer. Loss minimization <strong>directly</strong> tunes the W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> matrices so that queries find relevant keys, and the blended values produce the right next-token logits.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SECTION 8: CHEAT SHEET -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="section fade-in">
+  <div class="section-header">
+    <h2>📋 Q, K, V Cheat Sheet</h2>
+    <p class="subtitle">Quick reference for the essential equations and shapes</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;">
+
+    <div class="card" style="padding:1.25rem;">
+      <h4 style="font-size:0.95rem;color:var(--query)">Q = X · W<sub>Q</sub></h4>
+      <p style="font-size:0.85rem;">"What am I looking for?"</p>
+      <p style="font-size:0.8rem;color:var(--text-dim);">Shape: (T × d<sub>k</sub>)</p>
+    </div>
+
+    <div class="card" style="padding:1.25rem;">
+      <h4 style="font-size:0.95rem;color:var(--key)">K = X · W<sub>K</sub></h4>
+      <p style="font-size:0.85rem;">"What do I contain?"</p>
+      <p style="font-size:0.8rem;color:var(--text-dim);">Shape: (T × d<sub>k</sub>)</p>
+    </div>
+
+    <div class="card" style="padding:1.25rem;">
+      <h4 style="font-size:0.95rem;color:var(--value)">V = X · W<sub>V</sub></h4>
+      <p style="font-size:0.85rem;">"What information do I provide?"</p>
+      <p style="font-size:0.8rem;color:var(--text-dim);">Shape: (T × d<sub>k</sub>)</p>
+    </div>
+
+    <div class="card" style="padding:1.25rem;">
+      <h4 style="font-size:0.95rem;color:var(--score)">Scores = Q · Kᵀ / √d<sub>k</sub></h4>
+      <p style="font-size:0.85rem;">Pairwise match: rows = queries, cols = keys</p>
+      <p style="font-size:0.8rem;color:var(--text-dim);">Shape: (T × T)</p>
+    </div>
+
+    <div class="card" style="padding:1.25rem;">
+      <h4 style="font-size:0.95rem;color:var(--attention)">A = Softmax(Mask(Scores))</h4>
+      <p style="font-size:0.85rem;">Normalized attention distribution per token</p>
+      <p style="font-size:0.8rem;color:var(--text-dim);">Rows sum to 1.0</p>
+    </div>
+
+    <div class="card" style="padding:1.25rem;">
+      <h4 style="font-size:0.95rem;color:#b8a9ff">Output = A · V</h4>
+      <p style="font-size:0.85rem;">Context-aware blend of Values weighted by attention</p>
+      <p style="font-size:0.8rem;color:var(--text-dim);">Shape: (T × d<sub>k</sub>)</p>
+    </div>
+
+  </div>
+
+  <div class="card" style="text-align:center;">
+    <p style="font-size:1.1rem;font-family:'JetBrains Mono',monospace;margin-bottom:0.5rem;">
+      <span style="color:var(--attention)">Attention(Q, K, V)</span> = softmax <span style="color:var(--score)">(Q · Kᵀ / √d<sub>k</sub>)</span> · <span style="color:var(--value)">V</span>
+    </p>
+    <p style="color:var(--text-dim);font-size:0.9rem;">
+      Multi-Head: <code style="font-size:0.85rem;">Concat(head₁, …, headₕ) · W<sub>O</sub></code><br>
+      Each head: d<sub>k</sub> = n_embd / h
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ═══════════════════════════════════════════════ -->
+<footer class="footer">
+  <p>Q · K · V — The fundamental mechanism behind every modern generative AI model.</p>
+  <p style="margin-top:0.5rem;font-size:0.8rem;">
+    Built from the Transformer paper: <em>"Attention Is All You Need"</em> (Vaswani et al., 2017) ·
+    Used in GPT, Claude, Llama, Gemini, and every major LLM
+  </p>
+</footer>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SIMULATION SCRIPT -->
+<!-- ═══════════════════════════════════════════════ -->
+<script>
+(function(){
+  const canvas = document.getElementById('simCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = 700, H = 400;
+
+  // State
+  const steps = 120;
+  let currentStep = 0;
+  let isPlaying = false;
+  let animId = null;
+
+  // Token embeddings throughout training (simulated)
+  const tokens = [
+    { label: 'the',  color: '#6c5ce7' },
+    { label: 'cat',  color: '#00cec9' },
+    { label: 'sat',  color: '#fd79a8' },
+  ];
+
+  // We'll animate Q and K positions for each token
+  // Early: random-like; Late: aligned for "cat" ↔ "sat"
+  function getPositions(step) {
+    const progress = Math.min(step / steps, 1);
+    // Easing
+    const p = progress;
+
+    // Q positions (where each token looks)
+    const qPos = [
+      { x: 0.1 + 0.1*p, y: 0.2 - 0.05*p },                         // the Q
+      { x: 0.3 + 0.3*p, y: 0.4 + 0.15*p },                          // cat Q
+      { x: 0.5 + 0.1*p + 0.15*Math.sin(p*Math.PI), y: 0.5 + 0.2*p },// sat Q → moves toward cat K
+    ];
+    // K positions (what each token contains)
+    const kPos = [
+      { x: 0.15 + 0.05*p, y: 0.25 - 0.03*p },
+      { x: 0.45 + 0.1*p, y: 0.35 + 0.2*p },
+      { x: 0.6 - 0.05*p, y: 0.55 + 0.1*p },
+    ];
+
+    return { qPos, kPos };
+  }
+
+  function draw(step) {
+    ctx.clearRect(0, 0, W, H);
+    const p = Math.min(step / steps, 1);
+
+    // ── Background grid ──
+    ctx.strokeStyle = '#232740';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= W; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y <= H; y += 40) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+    // Axis labels
+    ctx.fillStyle = '#636e72';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('Q / K Space (projected to 2D)', 20, 24);
+
+    const { qPos, kPos } = getPositions(step);
+
+    // Scale from [0,1] to canvas (with margins)
+    const margin = 80;
+    const scaleX = W - 2*margin;
+    const scaleY = H - 2*margin - 40;
+    function toCanvas(pos) {
+      return {
+        x: margin + pos.x * scaleX,
+        y: margin + 40 + pos.y * scaleY,
+      };
+    }
+
+    // ── Draw attention arcs ──
+    // Show arcs getting stronger/sharpening as training progresses
+    const attentionPairs = [
+      { from: 2, to: 1, strength: p },         // sat → cat
+      { from: 2, to: 0, strength: p * 0.5 },    // sat → the
+      { from: 1, to: 0, strength: p * 0.3 },    // cat → the
+    ];
+
+    attentionPairs.forEach(pair => {
+      if (pair.strength < 0.02) return;
+      const fromQ = toCanvas(qPos[pair.from]);
+      const toK = toCanvas(kPos[pair.to]);
+
+      // Arc
+      const midX = (fromQ.x + toK.x) / 2;
+      const midY = (fromQ.y + toK.y) / 2 - 30 - (1-p) * 20;
+
+      ctx.beginPath();
+      ctx.moveTo(fromQ.x, fromQ.y);
+      ctx.quadraticCurveTo(midX, midY, toK.x, toK.y);
+      ctx.strokeStyle = `rgba(85, 239, 196, ${pair.strength * 0.5})`;
+      ctx.lineWidth = pair.strength * 3 + 1;
+      ctx.stroke();
+    });
+
+    // ── Draw Q points ──
+    tokens.forEach((tok, i) => {
+      const pos = toCanvas(qPos[i]);
+      const radius = 10 + 4 * p;
+
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, radius, 0, Math.PI*2);
+      ctx.fillStyle = tok.color + '33';
+      ctx.fill();
+      ctx.strokeStyle = tok.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Glow
+      if (p > 0.3) {
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius + 6, 0, Math.PI*2);
+        ctx.fillStyle = tok.color + '11';
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#e1e4f0';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Q:${tok.label}`, pos.x, pos.y + radius + 16);
+    });
+
+    // ── Draw K points ──
+    tokens.forEach((tok, i) => {
+      const pos = toCanvas(kPos[i]);
+      const radius = 10 + 4 * p;
+
+      // Square-ish marker for K
+      ctx.beginPath();
+      ctx.roundRect(pos.x - radius, pos.y - radius, radius*2, radius*2, 3);
+      ctx.fillStyle = tok.color + '22';
+      ctx.fill();
+      ctx.strokeStyle = tok.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#e1e4f0';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`K:${tok.label}`, pos.x, pos.y + radius + 16);
+    });
+
+    // ── Connecting lines from Q to K for matching tokens ──
+    // Show strongest match (sat → cat) growing
+    const satQ = toCanvas(qPos[2]);
+    const catK = toCanvas(kPos[1]);
+    ctx.beginPath();
+    ctx.moveTo(satQ.x, satQ.y);
+    ctx.lineTo(catK.x, catK.y);
+    ctx.strokeStyle = `rgba(253, 203, 110, ${p * 0.3})`;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label the match
+    if (p > 0.1) {
+      const mx = (satQ.x + catK.x) / 2;
+      const my = (satQ.y + catK.y) / 2 - 12;
+      ctx.fillStyle = `rgba(253, 203, 110, ${p})`;
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`score: ${Math.round(p * 1.35 * 100)/100}`, mx, my);
+    }
+
+    // ── Phase label ──
+    const phase = p < 0.2 ? 'Random initialization — no alignment' :
+                  p < 0.5 ? 'Learning syntactic patterns...' :
+                  p < 0.8 ? 'Attention heads specializing...' :
+                            'Fully trained — Q aligns with relevant K';
+    document.getElementById('sim-phase-display').textContent = phase;
+
+    // ── Loss display ──
+    const loss = 2.3026 * (1 - p) + (0.05 * p);
+    const displayLoss = loss.toFixed(4);
+    document.getElementById('lossDisplay').textContent = displayLoss;
+
+    // Accuracy: increases with training
+    const acc = Math.min(12 + p * 88, 99);
+    document.getElementById('accuracyDisplay').textContent = Math.round(acc) + '%';
+
+    // Entropy: decreases as model becomes more confident
+    const entropy = 2.30 * (1 - p) + 0.1 * p;
+    document.getElementById('entropyDisplay').textContent = entropy.toFixed(2);
+
+    // Top prediction
+    const preds = p < 0.25 ? '???' :
+                  p < 0.5 ? 'the' :
+                  p < 0.75 ? 'on' :
+                             'sat ✓';
+    document.getElementById('topPredDisplay').textContent = preds;
+
+    // Step counter
+    document.getElementById('sim-step-display').textContent = step;
+  }
+
+  // roundRect polyfill for older Safari
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      if (r > w/2) r = w/2;
+      if (r > h/2) r = h/2;
+      this.moveTo(x + r, y);
+      this.arcTo(x + w, y, x + w, y + h, r);
+      this.arcTo(x + w, y + h, x, y + h, r);
+      this.arcTo(x, y + h, x, y, r);
+      this.arcTo(x, y, x + w, y, r);
+      return this;
+    };
+  }
+
+  // ── Controls ──
+  const playBtn = document.getElementById('simPlayBtn');
+  const resetBtn = document.getElementById('simResetBtn');
+  const stepBtn = document.getElementById('simStepBtn');
+
+  function doStep() {
+    if (currentStep < steps) {
+      currentStep++;
+      draw(currentStep);
+    } else {
+      stopPlay();
+    }
+  }
+
+  function stopPlay() {
+    isPlaying = false;
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
+    playBtn.textContent = '▶ Play';
+  }
+
+  function startPlay() {
+    if (currentStep >= steps) { currentStep = 0; }
+    isPlaying = true;
+    playBtn.textContent = '⏸ Pause';
+    let lastTime = 0;
+    const interval = 80; // ms per frame
+    function tick(time) {
+      if (!isPlaying) return;
+      if (time - lastTime >= interval) {
+        lastTime = time;
+        doStep();
+      }
+      if (currentStep < steps) {
+        animId = requestAnimationFrame(tick);
+      } else {
+        stopPlay();
+      }
+    }
+    animId = requestAnimationFrame(tick);
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (isPlaying) { stopPlay(); }
+    else { startPlay(); }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    stopPlay();
+    currentStep = 0;
+    draw(0);
+  });
+
+  stepBtn.addEventListener('click', doStep);
+
+  // Draw initial
+  draw(0);
+
+  // Auto-start on scroll into view
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && currentStep === 0 && !isPlaying) {
+        startPlay();
+      }
+    });
+  }, { threshold: 0.3 });
+  observer.observe(canvas.closest('.sim-container'));
+})();
+</script>
+
+</body>
+</html>

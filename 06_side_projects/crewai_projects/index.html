@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrewAI Projects — Basic to Advanced</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="crew">CW</span>CrewAI Projects</div>
+        <div class="links">
+            <a href="../index.html">Side Projects</a>
+            <a href="../agent_frameworks_comparison/index.html">Compare</a>
+            <a href="01_quickstart.html">Start →</a>
+        </div>
+    </div>
+
+    <div class="header crew">
+        <p class="badge">CrewAI · role-based agent crews</p>
+        <h1>🚀 CrewAI — agents as a team of coworkers</h1>
+        <p class="subtitle">CrewAI models AI work like a <strong>company</strong>: each agent has a
+            <strong>role</strong>, <strong>goal</strong>, and <strong>backstory</strong>; they complete
+            <strong>tasks</strong> as a <strong>crew</strong>. Four incremental builds: a single agent, a
+            sequential crew, tools, and Flows with memory.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section crew">
+            <h2>The CrewAI mental model</h2>
+            <p>The vocabulary <em>is</em> the framework. An <strong>Agent</strong> is a worker with a persona.
+                A <strong>Task</strong> is a unit of work with a clear <code>expected_output</code>. A
+                <strong>Crew</strong> assembles agents + tasks and runs them in a <strong>Process</strong>
+                (sequential or hierarchical). It's the fastest way to get a believable multi-agent team
+                running.
+            </p>
+            <div class="callout orange">
+                <strong>Two layers:</strong> <strong>Crews</strong> (autonomous, role-playing teams — this
+                folder's focus) and <strong>Flows</strong> (event-driven, precise orchestration that can wrap
+                crews). Build 04 shows Flows.
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>The progression</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    C1["01 · Single agent<br/>+ task"] --> C2["02 · Sequential<br/>crew"]
+    C2 --> C3["03 · Tools<br/>(search + custom)"]
+    C3 --> C4["04 · Flows +<br/>memory"]
+    classDef b fill:#7c2d12,stroke:#fb923c,color:#fed7aa
+    classDef i fill:#1e3a5f,stroke:#60a5fa,color:#dbeafe
+    classDef a fill:#500724,stroke:#f472b6,color:#fbcfe8
+    class C1,C2 b
+    class C3 i
+    class C4 a
+                </pre>
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>Pick a build</h2>
+            <div class="grid">
+                <a class="fw-card crew" href="01_quickstart.html">
+                    <span class="level beginner">Beginner</span>
+                    <h3>01 · Quickstart — agent + task</h3>
+                    <p style="color:#9ca3af">Define one <code>Agent</code> (role/goal/backstory), one
+                        <code>Task</code>, wrap in a <code>Crew</code>, and <code>kickoff()</code>.
+                    </p>
+                    <div><span class="tag orange">Agent</span><span class="tag orange">Task</span><span
+                            class="tag orange">Crew</span></div>
+                </a>
+                <a class="fw-card crew" href="02_sequential_crew.html">
+                    <span class="level beginner">Beginner+</span>
+                    <h3>02 · Sequential crew</h3>
+                    <p style="color:#9ca3af">A researcher feeds a writer via task <code>context</code>, run as
+                        <code>Process.sequential</code>. Plus hierarchical with a manager.
+                    </p>
+                    <div><span class="tag orange">Process.sequential</span><span class="tag orange">context</span></div>
+                </a>
+                <a class="fw-card crew" href="03_tools.html">
+                    <span class="level intermediate">Intermediate</span>
+                    <h3>03 · Tools</h3>
+                    <p style="color:#9ca3af">Give agents real abilities: <code>SerperDevTool</code> web search
+                        and a custom <code>@tool</code>.</p>
+                    <div><span class="tag orange">crewai_tools</span><span class="tag orange">@tool</span></div>
+                </a>
+                <a class="fw-card crew" href="04_flows_advanced.html">
+                    <span class="level advanced">Advanced</span>
+                    <h3>04 · Flows, memory &amp; planning</h3>
+                    <p style="color:#9ca3af">Event-driven <code>Flow</code> (<code>@start</code>/<code>@listen</code>),
+                        <code>memory=True</code>, <code>planning=True</code>, observability.
+                    </p>
+                    <div><span class="tag orange">Flow</span><span class="tag orange">memory</span><span
+                            class="tag orange">planning</span></div>
+                </a>
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>Install</h2>
+            <pre><code>pip install crewai
+<span class="c-com"># tools package (web search, file/RAG tools, etc.)</span>
+pip install <span class="c-str">'crewai[tools]'</span>
+
+<span class="c-com"># scaffold a full project (recommended for real work)</span>
+crewai create crew my_crew</code></pre>
+            <div class="callout orange">
+                <code>crewai create crew</code> generates a project with <code>agents.yaml</code> and
+                <code>tasks.yaml</code> config files — the recommended structure once you go beyond a script.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="../agent_frameworks_comparison/index.html"><span class="dir">Back</span>
+                <div class="ttl">Framework comparison</div>
+            </a>
+            <a class="next" href="01_quickstart.html"><span class="dir">Start</span>
+                <div class="ttl">01 · Quickstart →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>CrewAI Projects · role-based agent orchestration</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P19 - Data Pipeline ETL Explained Simply</title>
+    <style>
+        :root {
+            --bg: #f1f7ff;
+            --paper: #ffffff;
+            --ink: #1f2937;
+            --muted: #5f6878;
+            --line: #cbdff7;
+            --accent: #2563eb;
+            --soft: #dbeafe;
+            --green-soft: #ecfdf5;
+            --red-soft: #fff1f2;
+            --shadow: 0 18px 40px rgba(31, 41, 55, .08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+            --mono: "Cascadia Mono", "Consolas", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.65;
+            background: linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+        }
+
+        .shell {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 2.5rem 1.4rem;
+        }
+
+        header {
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, .92);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .brand {
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 750;
+        }
+
+        .brand span {
+            display: inline-grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            margin-right: .5rem;
+            border-radius: 6px;
+            color: white;
+            background: var(--accent);
+        }
+
+        .top-links {
+            display: flex;
+            gap: .8rem;
+            flex-wrap: wrap;
+        }
+
+        .top-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .92rem;
+        }
+
+        .hero {
+            padding: 3rem 0 1.5rem;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 860px;
+            margin: .25rem 0 .75rem;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            line-height: 1.08;
+        }
+
+        h2 {
+            margin: 0 0 .8rem;
+            font-size: 1.45rem;
+        }
+
+        h3 {
+            margin: 0 0 .4rem;
+        }
+
+        p {
+            margin: 0 0 .85rem;
+        }
+
+        .lead {
+            max-width: 810px;
+            color: var(--muted);
+            font-size: 1.08rem;
+        }
+
+        .card {
+            margin: 1rem 0;
+            padding: 1.25rem 1.4rem;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .mini {
+            padding: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fffdfb;
+        }
+
+        .good {
+            background: var(--green-soft);
+            border-color: #a7f3d0;
+        }
+
+        .bad {
+            background: var(--red-soft);
+            border-color: #fecdd3;
+        }
+
+        .flow {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+            margin: 1rem 0;
+        }
+
+        .step {
+            flex: 1 1 150px;
+            padding: .9rem;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .arrow {
+            align-self: center;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .callout {
+            padding: 1rem 1.15rem;
+            border-left: 4px solid var(--accent);
+            background: var(--soft);
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: .6rem;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: .75rem;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background: #eff6ff;
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .9em;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            padding: .06rem .35rem;
+            border-radius: 4px;
+        }
+
+        pre {
+            overflow-x: auto;
+            padding: 1rem;
+            color: #e5e7eb;
+            background: #111827;
+            border-radius: 8px;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+            border: 0;
+        }
+
+        ol,
+        ul {
+            padding-left: 1.2rem;
+        }
+
+        .quiet {
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../learning_tracker.html"><span>P19</span>Data Pipeline ETL</a>
+            <nav class="top-links">
+                <a href="../learning_tracker.html">Learning tracker</a>
+                <a href="main.py">main.py</a>
+                <a href="pipeline/engine.py">engine.py</a>
+                <a href="pipeline/builder.py">builder.py</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 19 simplified</p>
+            <h1>A data pipeline means: pass data through small stages, one stage at a time</h1>
+            <p class="lead">This project builds an ETL framework. ETL means extract, transform, load. Raw data enters
+                the pipeline, each stage does one job, and the final stage returns clean, useful output.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You receive messy CSV or JSON data. It has strings where numbers should be, duplicate rows, invalid
+                records, inconsistent casing, and missing computed fields.</p>
+            <div class="grid">
+                <div class="mini bad">
+                    <h3>Without a pipeline</h3>
+                    <p>You write one long script that parses, cleans, validates, enriches, aggregates, logs, retries,
+                        and saves data all in one place.</p>
+                </div>
+                <div class="mini good">
+                    <h3>With a pipeline</h3>
+                    <p>Each step becomes a stage. You can reorder stages, reuse stages, observe stages, retry stages,
+                        and test stages independently.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The mental model</h2>
+            <div class="flow">
+                <div class="step">raw data</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">parse</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">cast types</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">clean + validate</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">derive fields</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">collect or aggregate</div>
+            </div>
+            <div class="callout"><strong>Important:</strong> a pipeline stage should do one thing. Good stage names make
+                your data flow readable.</div>
+        </section>
+
+        <section class="card">
+            <h2>What each file does</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Simple meaning</th>
+                        <th>Focus on</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Runs demos for CSV ETL, MapReduce, observers, retry, and builder DSL.</td>
+                        <td><code>demo_1_basic_csv_pipeline()</code>, <code>demo_5_builder_dsl_complex_pipeline()</code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>pipeline/engine.py</code></td>
+                        <td>The core pipeline engine: stages, results, observers, retries, and execution flow.</td>
+                        <td><code>Stage</code>, <code>Pipeline.run()</code>, <code>_execute_stage()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>pipeline/stages.py</code></td>
+                        <td>Reusable ETL stages like CSV parse, type cast, normalize, validate, deduplicate, collect,
+                            and aggregate.</td>
+                        <td><code>CSVParseStage</code>, <code>ValidateStage</code>, <code>AggregateStage</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>pipeline/builder.py</code></td>
+                        <td>A fluent builder so pipelines read like a small language.</td>
+                        <td><code>PipelineBuilder</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>The builder syntax, simplified</h2>
+            <pre><code>pipeline = (
+    PipelineBuilder("Employee ETL")
+    .from_csv()
+    .cast_types({"salary": int, "age": int})
+    .normalize(["department"])
+    .validate({"salary": lambda s: s > 0})
+    .derive("tax_bracket", lambda r: "high" if r["salary"] > 100000 else "standard")
+    .collect()
+    .build()
+)</code></pre>
+            <p>Read it like English: parse CSV, cast fields, normalize text, validate records, add a computed field,
+                collect the output.</p>
+        </section>
+
+        <section class="card">
+            <h2>How the engine runs a stage</h2>
+            <pre><code>for stage in pipeline.stages:
+    emit("stage_started")
+    result = stage.process(current_data)
+    current_data = result
+    emit("stage_completed")</code></pre>
+            <p>The real project adds useful production behavior around that simple loop: timing, retries, failure
+                results, and observer events.</p>
+        </section>
+
+        <section class="card">
+            <h2>Core ideas in plain English</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Concept</th>
+                        <th>Meaning</th>
+                        <th>Where it appears</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Pipeline Pattern</td>
+                        <td>Output of one stage becomes input to the next stage.</td>
+                        <td><code>Pipeline.run()</code></td>
+                    </tr>
+                    <tr>
+                        <td>Builder Pattern</td>
+                        <td>Create complex pipelines with readable chained methods.</td>
+                        <td><code>PipelineBuilder</code></td>
+                    </tr>
+                    <tr>
+                        <td>Observer Pattern</td>
+                        <td>Logging and metrics get events without changing stage code.</td>
+                        <td><code>LoggingObserver</code>, <code>MetricsObserver</code></td>
+                    </tr>
+                    <tr>
+                        <td>Retry</td>
+                        <td>If a flaky stage fails, try it again before failing the pipeline.</td>
+                        <td><code>StageConfig(retries=3)</code></td>
+                    </tr>
+                    <tr>
+                        <td>MapReduce</td>
+                        <td>Map each item, then reduce many items into one result.</td>
+                        <td><code>MapStage</code>, <code>ReduceStage</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>What each demo teaches</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Demo</th>
+                        <th>What to watch</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>demo_1_basic_csv_pipeline()</code></td>
+                        <td>Raw CSV becomes typed, normalized, validated records with new derived fields.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_2_mapreduce_aggregation()</code></td>
+                        <td>Sales data is grouped by region, then mapped and reduced into totals.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_3_pipeline_with_observers()</code></td>
+                        <td>Observers collect logs and metrics while the pipeline runs.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_4_retry_and_failure_handling()</code></td>
+                        <td>A flaky API stage fails twice and succeeds on retry. A truly broken stage returns a failed
+                            result.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_5_builder_dsl_complex_pipeline()</code></td>
+                        <td>A realistic e-commerce ETL removes duplicates, validates orders, computes totals, and
+                            classifies tiers.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 07_learning_projects/p19_data_pipeline_etl
+python main.py</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Best reading order</h2>
+            <ol>
+                <li>Read this file first.</li>
+                <li>Open <code>pipeline/stages.py</code> and read <code>CSVParseStage</code>,
+                    <code>TypeCastStage</code>, and <code>ValidateStage</code>.</li>
+                <li>Open <code>pipeline/engine.py</code> and read <code>Stage</code>, then <code>Pipeline.run()</code>.
+                </li>
+                <li>Open <code>pipeline/builder.py</code> and read how methods add stages.</li>
+                <li>Run <code>python main.py</code> and follow demo 1 first.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Interview answer in simple words</h2>
+            <p class="quiet">Use this when someone asks, "Why use a pipeline architecture?"</p>
+            <div class="callout">A pipeline architecture breaks data processing into small sequential stages. Each stage
+                has one responsibility, receives input, and returns output for the next stage. This makes ETL code
+                easier to test, reuse, observe, retry, and extend. A builder can make pipeline construction readable,
+                while observers collect logs and metrics without mixing monitoring into business logic.</div>
+        </section>
+    </main>
+</body>
+
+</html>

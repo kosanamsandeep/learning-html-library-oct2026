@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP in Kubernetes — stdio vs SSE/HTTP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { background: '#ffffff', primaryColor: '#3b82f6', primaryTextColor: '#1e293b', secondaryColor: '#f1f5f9', secondaryTextColor: '#334155', tertiaryColor: '#dbeafe', lineColor: '#94a3b8', fontSize: '14px' } })</script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.4rem;
+            background: linear-gradient(135deg, #1e293b, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 2.5rem;
+            font-size: 1.05rem;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            margin-bottom: 1.75rem;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+        .card-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .icon.red { background: #fee2e2; }
+        .icon.green { background: #d1fae5; }
+        .icon.blue { background: #dbeafe; }
+        .icon.purple { background: #ede9fe; }
+        .icon.amber { background: #fef3c7; }
+
+        .tag {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.65rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .tag.red { background: #fee2e2; color: #b91c1c; }
+        .tag.green { background: #d1fae5; color: #047857; }
+        .tag.blue { background: #dbeafe; color: #1d4ed8; }
+
+        .card-body { padding: 1.5rem; }
+        .card-body p { color: #334155; margin-bottom: 0.85rem; }
+        .card-body p:last-child { margin-bottom: 0; }
+        .card-body ul { padding-left: 1.25rem; margin-bottom: 0.85rem; }
+        .card-body li { margin-bottom: 0.4rem; color: #334155; }
+
+        .mermaid-wrap {
+            background: #fafbfc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        .code-block {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.7;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+        }
+        .code-block .comment { color: #94a3b8; }
+        .code-block .key { color: #7dd3fc; }
+        .code-block .string { color: #a5f3fc; }
+        .code-block .kw { color: #c084fc; }
+        .code-block .fn { color: #67e8f9; }
+        .code-block .yaml { color: #fbbf24; }
+
+        .insight-box {
+            border-left: 4px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin: 1rem 0;
+        }
+        .insight-box.warn { background: #fef2f2; border-color: #ef4444; }
+        .insight-box.ok { background: #f0fdf4; border-color: #22c55e; }
+        .insight-box.info { background: #f0f9ff; border-color: #0ea5e9; }
+        .insight-box h4 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+        .insight-box.warn h4 { color: #991b1b; }
+        .insight-box.ok h4 { color: #166534; }
+        .insight-box.info h4 { color: #0369a1; }
+        .insight-box p { font-size: 0.88rem; margin-bottom: 0; color: inherit; }
+
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 0.75rem 0;
+        }
+        .compare-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.25rem;
+            background: #fafbfc;
+        }
+        .compare-card h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .compare-card.std h4 { border-color: #ef4444; }
+        .compare-card.sse h4 { border-color: #22c55e; }
+
+        .compare-card table { width: 100%; font-size: 0.83rem; border-collapse: collapse; }
+        .compare-card td { padding: 0.45rem 0; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+        .compare-card td:first-child { color: #64748b; font-weight: 500; width: 32%; padding-right: 0.5rem; }
+        .compare-card tr:last-child td { border-bottom: none; }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 0.75rem 0;
+        }
+
+        .file-ref {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            background: #f1f5f9;
+            padding: 0.25rem 0.6rem;
+            border-radius: 5px;
+            display: inline-block;
+            color: #475569;
+        }
+
+        .problem-box {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            margin: 0.75rem 0;
+        }
+        .problem-box .num {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ef4444;
+            min-width: 28px;
+        }
+        .problem-box h4 { font-size: 0.9rem; color: #991b1b; margin-bottom: 0.2rem; }
+        .problem-box p { font-size: 0.85rem; margin-bottom: 0; color: #7f1d1d; }
+
+        .hybrid-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-left: 4px solid #22c55e;
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+        }
+        .hybrid-box h4 { color: #166534; margin-bottom: 0.3rem; font-size: 0.9rem; }
+        .hybrid-box p { color: #14532d; font-size: 0.88rem; margin-bottom: 0.5rem; }
+        .hybrid-box p:last-child { margin-bottom: 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>☸️ MCP in Kubernetes</h1>
+<p class="subtitle">Why stdio breaks in K8s and how SSE/HTTP fixes it — with a hybrid dev/prod strategy</p>
+
+<!-- ─── SECTION 1: How stdio works locally ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="icon blue">🖥</span>
+        <h2>How stdio Works (Local Dev)</h2>
+        <span class="tag blue">CURRENT SETUP</span>
+    </div>
+    <div class="card-body">
+        <p>In the demo you just ran, the MCP server runs as a <strong>child subprocess</strong> of the LangGraph agent. They share stdio pipes on the same machine.</p>
+
+        <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TB
+    subgraph Machine["Your Laptop — Single OS Process Tree"]
+        direction TB
+        Client["LangGraph Agent<br/>(main.py)"]
+        Client -->|"subprocess.spawn()"| MCP["MCP Server<br/>(mcp_server.py)"]
+        Client <-->|"stdio pipe (JSON-RPC)"| MCP
+    end
+
+    style Machine fill:#f0f5ff,stroke:#3b82f6,stroke-width:2px
+    style Client fill:#dbeafe,stroke:#2563eb,color:#1e3a5f
+    style MCP fill:#d1fae5,stroke:#059669,color:#064e3b
+</pre>
+        </div>
+
+        <p><strong>Key characteristics:</strong></p>
+        <ul>
+            <li><strong>Parent-child process</strong> — the client literally spawns the server with <code>subprocess.Popen()</code></li>
+            <li><strong>Same machine</strong> — they share memory, filesystem, and process space</li>
+            <li><strong>1:1 relationship</strong> — each client gets its own server instance</li>
+            <li><strong>Zero config networking</strong> — no ports, no URLs, just pipes</li>
+        </ul>
+
+        <div class="insight-box ok">
+            <h4>✅ Great for local dev</h4>
+            <p>Simple, fast, no network setup. This is why the demo uses stdio.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ─── SECTION 2: Why stdio fails in K8s ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="icon red">☠️</span>
+        <h2>Why stdio Breaks in Kubernetes</h2>
+        <span class="tag red">3 PROBLEMS</span>
+    </div>
+    <div class="card-body">
+        <p>Kubernetes doesn't have a "parent process spawns a child process" model. Each container is an isolated unit.</p>
+
+        <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TB
+    subgraph K8s["Kubernetes Cluster"]
+        direction TB
+
+        subgraph Pod1["Pod 1 — LangGraph Agent"]
+            C1["LangGraph Agent<br/>container"]
+        end
+
+        subgraph Pod2["Pod 2 — MCP Server"]
+            S1["MCP Server<br/>container"]
+        end
+
+        subgraph Pod3["Pod 3 — Another Agent"]
+            C2["LangGraph Agent<br/>container"]
+        end
+
+        subgraph Pod4["Pod 4 — Another MCP"]
+            S2["MCP Server<br/>container"]
+        end
+
+        C1 -.-x|"❌ Can't subprocess.spawn()<br/>across containers"| S1
+        C2 -.-x|"❌ Can't subprocess.spawn()<br/>across containers"| S2
+        C1 -.-x|"❌ Also can't share<br/>stdio pipe"| S2
+    end
+
+    style K8s fill:#fef2f2,stroke:#ef4444,stroke-width:2px
+    style Pod1 fill:#fef2f2,stroke:#fca5a5
+    style Pod2 fill:#fef2f2,stroke:#fca5a5
+    style Pod3 fill:#fef2f2,stroke:#fca5a5
+    style Pod4 fill:#fef2f2,stroke:#fca5a5
+</pre>
+        </div>
+
+        <div class="problem-box">
+            <div class="num">①</div>
+            <div>
+                <h4>No cross-container subprocess</h4>
+                <p>Each container is an isolated process. You can't call <code>subprocess.spawn()</code> on a different container — it's a different machine (or at least a different PID namespace).</p>
+            </div>
+        </div>
+
+        <div class="problem-box">
+            <div class="num">②</div>
+            <div>
+                <h4>Single point of failure</h4>
+                <p>The server lives and dies with the client. If the LangGraph pod restarts, its MCP server is gone too. No separation of concerns.</p>
+            </div>
+        </div>
+
+        <div class="problem-box">
+            <div class="num">③</div>
+            <div>
+                <h4>Can't scale independently</h4>
+                <p>Each LangGraph replica spawns its own MCP server — 10 replicas = 10 servers. You can't scale the MCP server up/down based on load, and you can't share it across agents.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── SECTION 3: SSE/HTTP in K8s ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="icon green">✅</span>
+        <h2>The K8s Way: SSE/HTTP Transport</h2>
+        <span class="tag green">PRODUCTION PATTERN</span>
+    </div>
+    <div class="card-body">
+        <p>The MCP server becomes a standalone network service — just like any other microservice.</p>
+
+        <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TB
+    subgraph K8s["Kubernetes Cluster"]
+        direction TB
+
+        subgraph ServiceLayer["Service Discovery"]
+            SVC["Service: mcp-server<br/>port 8000"]
+        end
+
+        subgraph LangGraphDeploy["LangGraph Agent Deployment"]
+            C1["Pod: LangGraph Agent"]
+            C2["Pod: LangGraph Agent"]
+            C3["Pod: LangGraph Agent"]
+        end
+
+        subgraph MCPDeploy["MCP Server Deployment"]
+            M1["Pod: MCP Server<br/>SSE mode"]
+            M2["Pod: MCP Server<br/>SSE mode"]
+            M3["Pod: MCP Server<br/>SSE mode"]
+        end
+
+        C1 & C2 & C3 -->|"HTTP / SSE"| SVC
+        SVC --> M1 & M2 & M3
+
+        style K8s fill:#f0fdf4,stroke:#22c55e,stroke-width:2px
+        style ServiceLayer fill:#d1fae5,stroke:#059669
+        style LangGraphDeploy fill:#dbeafe,stroke:#3b82f6
+        style MCPDeploy fill:#fef3c7,stroke:#d97706
+        style SVC fill:#a7f3d0,stroke:#047857
+</pre>
+        </div>
+
+        <p><strong>How it works:</strong></p>
+        <ul>
+            <li>The MCP server runs as a <strong>K8s Deployment</strong> with SSE transport</li>
+            <li>A <strong>K8s Service</strong> provides stable DNS + load balancing</li>
+            <li>LangGraph agents connect via HTTP instead of spawning a subprocess</li>
+        </ul>
+
+        <p><strong>MCP Server — SSE mode (unchanged logic, different transport):</strong></p>
+        <div class="code-block">
+<span class="comment"># server/mcp_server.py — same tools, different transport</span>
+
+<span class="kw">if</span> __name__ == <span class="string">"__main__"</span>:
+    <span class="comment"># Local dev: python mcp_server.py</span>
+    <span class="comment"># K8s:       python mcp_server.py --transport sse --port 8000</span>
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(<span class="string">"--transport"</span>, choices=[<span class="string">"stdio"</span>, <span class="string">"sse"</span>], default=<span class="string">"stdio"</span>)
+    parser.add_argument(<span class="string">"--port"</span>, type=int, default=<span class="string">8000</span>)
+    args = parser.parse_args()
+
+    app.run(transport=args.transport)  <span class="comment"># ← same app, just flip the flag</span></div>
+
+        <p><strong>MCP Client — connects via SSE instead of stdio:</strong></p>
+        <div class="code-block">
+<span class="comment"># agent/mcp_client.py — SSE version</span>
+
+<span class="kw">from</span> mcp.client.sse <span class="kw">import</span> sse_client
+<span class="kw">from</span> mcp <span class="kw">import</span> ClientSession
+
+
+<span class="kw">class</span> <span class="fn">MCPClientSSE</span>:
+    <span class="kw">def __init__</span>(self, url: str):                          <span class="comment"># ← URL instead of script path</span>
+        self.url = url
+        self.session: ClientSession | None = None
+
+    <span class="kw">async def</span> <span class="fn">__aenter__</span>(self):
+        <span class="comment"># Connect via HTTP/SSE instead of spawning a subprocess</span>
+        self._client = sse_client(self.url)
+        read, write = <span class="kw">await</span> self._client.__aenter__()
+        self.session = <span class="kw">await</span> ClientSession(read, write).__aenter__()
+        <span class="kw">await</span> self.session.initialize()
+        <span class="kw">return</span> self
+
+    <span class="kw">async def</span> <span class="fn">list_tools</span>(self):
+        result = <span class="kw">await</span> self.session.list_tools()
+        <span class="kw">return</span> result.tools
+
+    <span class="kw">async def</span> <span class="fn">call_tool</span>(self, tool_name, args=None):
+        result = <span class="kw">await</span> self.session.call_tool(tool_name, args <span class="kw">or</span> {})
+        <span class="kw">return</span> result.content[0].text
+
+    <span class="kw">async def</span> <span class="fn">__aexit__</span>(self, *args):
+        <span class="kw">await</span> self.session.__aexit__(*args)
+        <span class="kw">await</span> self._client.__aexit__(*args)</div>
+
+        <p><strong>K8s Manifests:</strong></p>
+        <div class="code-block">
+<span class="comment"># mcp-server-deployment.yaml</span>
+<span class="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mcp-server
+  template:
+    metadata:
+      labels:
+        app: mcp-server
+    spec:
+      containers:
+      - name: mcp-server
+        image: my-mcp-server:latest
+        args: ["python", "mcp_server.py", "--transport", "sse", "--port", "8000"]
+        ports:
+        - containerPort: 8000</span></div>
+
+        <div class="code-block">
+<span class="comment"># mcp-server-service.yaml</span>
+<span class="yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-server
+spec:
+  selector:
+    app: mcp-server
+  ports:
+  - port: 8000
+    targetPort: 8000</span></div>
+
+        <p><strong>LangGraph agent connects to the service:</strong></p>
+        <div class="code-block">
+<span class="comment"># main.py — K8s version</span>
+<span class="kw">async def</span> <span class="fn">main</span>():
+    <span class="comment"># Connect via Service DNS instead of spawning subprocess</span>
+    <span class="kw">async with</span> <span class="fn">MCPClientSSE</span>(<span class="string">"http://mcp-server:8000/mcp"</span>) <span class="kw">as</span> mcp:
+        tools = <span class="kw">await</span> mcp.list_tools()
+        graph = <span class="fn">create_review_graph</span>(mcp)
+        result = <span class="kw">await</span> graph.ainvoke({<span class="string">"file_path"</span>: file_path})</div>
+    </div>
+</div>
+
+<!-- ─── SECTION 4: Comparison ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="icon purple">⚖️</span>
+        <h2>stdio vs SSE/HTTP — Side by Side</h2>
+    </div>
+    <div class="card-body">
+        <div class="compare-grid">
+            <div class="compare-card std">
+                <h4>❌ stdio (local)</h4>
+                <table>
+                    <tr><td>Architecture</td><td>Parent spawns child process</td></tr>
+                    <tr><td>Communication</td><td>OS pipe (stdin/stdout)</td></tr>
+                    <tr><td>Client:Server</td><td>1:1 (private)</td></tr>
+                    <tr><td>Scaling</td><td>Can't scale separately</td></tr>
+                    <tr><td>K8s fit</td><td>❌ Can't spawn across pods</td></tr>
+                    <tr><td>Latency</td><td>Near-zero (in-memory pipe)</td></tr>
+                    <tr><td>Server crash</td><td>Client loses its server</td></tr>
+                    <tr><td>Setup</td><td>Zero config</td></tr>
+                </table>
+            </div>
+            <div class="compare-card sse">
+                <h4>✅ SSE/HTTP (K8s)</h4>
+                <table>
+                    <tr><td>Architecture</td><td>Client-server over network</td></tr>
+                    <tr><td>Communication</td><td>HTTP / SSE stream</td></tr>
+                    <tr><td>Client:Server</td><td>N:M (pooled)</td></tr>
+                    <tr><td>Scaling</td><td>Scale server independently</td></tr>
+                    <tr><td>K8s fit</td><td>✅ Natural Service pattern</td></tr>
+                    <tr><td>Latency</td><td>Network round-trip</td></tr>
+                    <tr><td>Server crash</td><td>Client reconnects to another replica</td></tr>
+                    <tr><td>Setup</td><td>Needs URL, port, DNS</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── SECTION 5: Hybrid Dev/Prod ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="icon amber">🔄</span>
+        <h2>The Hybrid Pattern — Best of Both</h2>
+    </div>
+    <div class="card-body">
+        <p>Most teams use <strong>stdio locally</strong> and <strong>SSE/HTTP in K8s</strong>. The MCP server code stays exactly the same — just the transport flag changes.</p>
+
+        <div class="hybrid-box">
+            <h4>🖥️ Local Development</h4>
+            <p><strong>Command:</strong> <code>python main.py</code></p>
+            <p><strong>Transport:</strong> stdio — server spawns as a subprocess, zero config</p>
+        </div>
+
+        <div class="hybrid-box">
+            <h4>☸️ Production (K8s)</h4>
+            <p><strong>Command:</strong> <code>python mcp_server.py --transport sse --port 8000</code></p>
+            <p><strong>Transport:</strong> SSE — server runs as standalone Deployment behind a Service</p>
+        </div>
+
+        <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    subgraph Dev["🖥️ Local Dev"]
+        direction TB
+        D1["LangGraph Agent"] -->|"<b>stdio</b> (subprocess)"| D2["MCP Server"]
+    end
+
+    subgraph Prod["☸️ Kubernetes Production"]
+        direction TB
+        P1["LangGraph Agent Pod"] -->|"<b>SSE/HTTP</b>"| P3["Service: mcp-server"]
+        P3 --> P4["MCP Server Pod"]
+        P3 --> P5["MCP Server Pod"]
+    end
+
+    style Dev fill:#f0f5ff,stroke:#3b82f6,stroke-width:2px
+    style Prod fill:#f0fdf4,stroke:#22c55e,stroke-width:2px
+</pre>
+        </div>
+
+        <p style="text-align:center;font-weight:500;margin-top:0.75rem;color:#475569;">
+            <code>python mcp_server.py</code> ← same code, just <code>--transport</code> changes
+        </p>
+    </div>
+</div>
+
+<!-- ─── SECTION 6: Summary ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="icon blue">💡</span>
+        <h2>Summary — The Rule of Thumb</h2>
+    </div>
+    <div class="card-body">
+        <div class="two-col">
+            <div class="insight-box ok" style="margin:0;">
+                <h4>✅ Use stdio when...</h4>
+                <ul style="margin:0.4rem 0 0;padding-left:1.1rem;">
+                    <li>You're developing locally</li>
+                    <li>Everything runs on one machine</li>
+                    <li>You want zero network config</li>
+                    <li>You're in a CI/CD pipeline (single job)</li>
+                </ul>
+            </div>
+            <div class="insight-box info" style="margin:0;">
+                <h4>✅ Use SSE/HTTP when...</h4>
+                <ul style="margin:0.4rem 0 0;padding-left:1.1rem;">
+                    <li>You're running in Kubernetes</li>
+                    <li>Multiple clients need the same server</li>
+                    <li>You need independent scaling</li>
+                    <li>You want server HA (replicas)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="margin-top:1rem;padding:1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;text-align:center;font-size:0.9rem;color:#475569;">
+            <strong>Bottom line:</strong> Your MCP server doesn't care about the transport. Write it once, run it both ways.
+        </div>
+    </div>
+</div>
+
+</div>
+</body>
+</html>

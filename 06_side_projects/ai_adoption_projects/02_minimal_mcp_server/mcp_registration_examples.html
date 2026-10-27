@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Registration Examples</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #0f172a;
+        }
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 2.5rem;
+            font-size: 1.05rem;
+        }
+        .platform {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .platform-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f1f5f9;
+        }
+        .platform-header h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+        .badge {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.2rem 0.65rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .badge.cli { background: #dbeafe; color: #1d4ed8; }
+        .badge.file { background: #fef3c7; color: #b45309; }
+        .badge.code { background: #d1fae5; color: #047857; }
+        .badge.compare { background: #ede9fe; color: #6d28d9; }
+
+        .platform-body {
+            padding: 1.5rem;
+        }
+        .platform-body p {
+            margin-bottom: 1rem;
+            color: #334155;
+        }
+        .file-path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            background: #f1f5f9;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #475569;
+        }
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.65;
+            padding: 1.25rem 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 0.5rem;
+        }
+        pre .comment { color: #94a3b8; }
+        pre .key { color: #7dd3fc; }
+        pre .string { color: #a5f3fc; }
+        pre .cmd { color: #fbbf24; }
+        pre .kw { color: #c084fc; }
+        pre .fn { color: #67e8f9; }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        .comparison-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .comparison-card h4 {
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #0f172a;
+        }
+        .comparison-card p {
+            font-size: 0.85rem;
+            margin-bottom: 0;
+        }
+        .comparison-card .label {
+            font-size: 0.72rem;
+            color: #64748b;
+            margin-bottom: 0.15rem;
+        }
+
+        .note {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-left: 4px solid #f97316;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-top: 2rem;
+            font-size: 0.92rem;
+            color: #7c2d12;
+        }
+        .note strong { color: #431407; }
+
+        .inline-icon {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            text-align: center;
+            line-height: 24px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .inline-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .inline-icon.green { background: #d1fae5; color: #047857; }
+        .inline-icon.amber { background: #fef3c7; color: #b45309; }
+        .inline-icon.purple { background: #ede9fe; color: #6d28d9; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>🧩 MCP Registration Examples</h1>
+<p class="subtitle">Same MCP server, different platforms — how to register it on each.</p>
+
+<!-- Claude Code -->
+<div class="platform">
+    <div class="platform-header">
+        <span class="inline-icon blue">CL</span>
+        <h2>Claude Code</h2>
+        <span class="badge cli">CLI command</span>
+    </div>
+    <div class="platform-body">
+        <p>Run the <code>claude mcp add</code> command — it writes the config to <code class="file-path">~/.claude.json</code> automatically.</p>
+        <pre><span class="cmd">claude mcp add docs-search</span> -- python /path/to/server.py</pre>
+        <p style="margin-top:0.75rem; font-size:0.88rem; color:#64748b;">Or manually create <code>~/.claude.json</code>:</p>
+        <pre>{
+  <span class="key">"projects"</span>: {
+    <span class="key">"/home/you/your-project"</span>: {
+      <span class="key">"mcpServers"</span>: {
+        <span class="key">"docs-search"</span>: {
+          <span class="key">"type"</span>: <span class="string">"stdio"</span>,
+          <span class="key">"command"</span>: <span class="string">"/path/to/.venv/bin/python"</span>,
+          <span class="key">"args"</span>: [<span class="string">"/path/to/server.py"</span>]
+        }
+      }
+    }
+  }
+}</pre>
+    </div>
+</div>
+
+<!-- Codex CLI -->
+<div class="platform">
+    <div class="platform-header">
+        <span class="inline-icon green">CX</span>
+        <h2>Codex CLI</h2>
+        <span class="badge file">TOML file</span>
+    </div>
+    <div class="platform-body">
+        <p>No CLI command — edit the config file directly.</p>
+        <span class="file-path">~/.codex/config.toml</span>
+        <pre>[<span class="fn">mcp_servers.docs-search</span>]
+<span class="key">transport</span> = <span class="string">"stdio"</span>
+<span class="key">command</span> = <span class="string">"/path/to/.venv/bin/python"</span>
+<span class="key">args</span> = [<span class="string">"/path/to/server.py"</span>]
+<span class="key">tool_timeout_sec</span> = 300
+
+[<span class="fn">mcp_servers.mcp-examples</span>]
+<span class="key">transport</span> = <span class="string">"stdio"</span>
+<span class="key">command</span> = <span class="string">"/path/to/.venv/bin/python"</span>
+<span class="key">args</span> = [<span class="string">"/path/to/examples_server.py"</span>]
+<span class="key">tool_timeout_sec</span> = 300</pre>
+    </div>
+</div>
+
+<!-- Custom Python Client -->
+<div class="platform">
+    <div class="platform-header">
+        <span class="inline-icon amber">Py</span>
+        <h2>Custom Python Client</h2>
+        <span class="badge code">Programmatic</span>
+    </div>
+    <div class="platform-body">
+        <p>No config file at all — you write a Python script that spawns and controls the server directly.</p>
+        <pre><span class="comment"># pip install mcp</span>
+
+<span class="kw">import</span> asyncio
+<span class="kw">from</span> mcp <span class="kw">import</span> ClientSession
+<span class="kw">from</span> mcp.client.stdio <span class="kw">import</span> stdio_client, StdioServerParameters
+
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    <span class="comment"># Point to your MCP server (same command as Claude Code)</span>
+    server_params = StdioServerParameters(
+        command=<span class="string">"/path/to/.venv/bin/python"</span>,
+        args=[<span class="string">"/path/to/server.py"</span>],
+    )
+
+    <span class="comment"># Spawn the server as a subprocess and connect via stdio</span>
+    <span class="kw">async with</span> stdio_client(server_params) <span class="kw">as</span> (read, write):
+        <span class="kw">async with</span> ClientSession(read, write) <span class="kw">as</span> session:
+            <span class="kw">await</span> session.initialize()
+
+            <span class="comment"># Discover tools</span>
+            tools = <span class="kw">await</span> session.list_tools()
+            <span class="kw">for</span> tool <span class="kw">in</span> tools.tools:
+                <span class="fn">print</span>(<span class="string">f"Tool: {tool.name}"</span>)
+
+            <span class="comment"># Call a tool</span>
+            result = <span class="kw">await</span> session.call_tool(
+                <span class="string">"search_docs"</span>,
+                arguments={<span class="string">"query"</span>: <span class="string">"FastAPI CORS"</span>}
+            )
+            <span class="fn">print</span>(result.content)
+
+
+<span class="kw">asyncio.run</span>(<span class="fn">main</span>())</pre>
+    </div>
+</div>
+
+<!-- Quick comparison -->
+<div class="platform">
+    <div class="platform-header">
+        <span class="inline-icon purple">⚡</span>
+        <h2>Quick Comparison</h2>
+        <span class="badge compare">At a glance</span>
+    </div>
+    <div class="platform-body">
+        <div class="comparison-grid">
+            <div class="comparison-card">
+                <h4>Claude Code</h4>
+                <div class="label">Config file</div>
+                <p><code>~/.claude.json</code></p>
+                <div class="label" style="margin-top:0.6rem;">How to add</div>
+                <p><code>claude mcp add &lt;name&gt; -- &lt;cmd&gt;</code></p>
+                <div class="label" style="margin-top:0.6rem;">Format</div>
+                <p>JSON under <code>projects.&lt;path&gt;.mcpServers</code></p>
+            </div>
+            <div class="comparison-card">
+                <h4>Codex CLI</h4>
+                <div class="label">Config file</div>
+                <p><code>~/.codex/config.toml</code></p>
+                <div class="label" style="margin-top:0.6rem;">How to add</div>
+                <p>Edit TOML directly</p>
+                <div class="label" style="margin-top:0.6rem;">Format</div>
+                <p>TOML under <code>[mcp_servers.&lt;name&gt;]</code></p>
+            </div>
+            <div class="comparison-card">
+                <h4>Custom Client</h4>
+                <div class="label">Config file</div>
+                <p>None — it's code</p>
+                <div class="label" style="margin-top:0.6rem;">How to add</div>
+                <p>Write Python with MCP SDK</p>
+                <div class="label" style="margin-top:0.6rem;">Format</div>
+                <p><code>StdioServerParameters()</code></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="note">
+    <strong>💡 Key insight:</strong> The MCP server scripts themselves (your <code>server.py</code>, <code>examples_server.py</code>) are <strong>portable</strong> — they work everywhere. Only the <em>registration method</em> (config file format, CLI command, or code) changes per platform.
+</div>
+
+</div>
+</body>
+</html>

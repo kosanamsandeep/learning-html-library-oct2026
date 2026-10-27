@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP 01 · Your First FastMCP Server</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="mcp">MCP</span>MCP · 01 First Server</div>
+        <div class="links">
+            <a href="index.html">MCP Hub</a>
+            <a href="02_mcp_tools_in_langgraph.html">Next: 02 →</a>
+        </div>
+    </div>
+
+    <div class="header mcp">
+        <p class="badge">Build 01 · Beginner</p>
+        <h1>Your first MCP server with FastMCP</h1>
+        <p class="subtitle">Expose two Python functions as MCP <strong>tools</strong>, run the server over
+            stdio, and inspect it. This server is what every later build connects to.</p>
+    </div>
+
+    <div class="container">
+        <div class="section mcp">
+            <h2>What this build does</h2>
+            <p>FastMCP turns a decorated Python function into an MCP tool — it auto-generates the JSON schema
+                from your type hints and docstring, so an LLM client knows exactly how to call it.</p>
+            <div class="pill-row">
+                <span class="level beginner">Beginner</span>
+                <span class="tag sky">FastMCP</span>
+                <span class="tag sky">@mcp.tool</span>
+                <span class="tag sky">stdio transport</span>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>Anatomy of an MCP server</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    F["Python function<br/>def add(a, b)"] -->|"@mcp.tool"| REG["registered as MCP tool"]
+    REG --> SCHEMA["auto JSON schema<br/>(from type hints + docstring)"]
+    SCHEMA --> SRV["FastMCP server"]
+    SRV -->|"mcp.run() — stdio"| CLIENT["any MCP client<br/>(Inspector, Claude, LangGraph)"]
+                </pre>
+                <p class="caption">Decorate → schema is generated → server runs → any client can discover and
+                    call the tool.</p>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>The code — <code>math_server.py</code></h2>
+            <pre><code><span class="c-kw">from</span> fastmcp <span class="c-kw">import</span> FastMCP
+
+<span class="c-com"># 1) Create the server. The name shows up in clients.</span>
+mcp = FastMCP(<span class="c-str">"Math Server"</span>)
+
+<span class="c-com"># 2) A tool = a decorated function. Type hints + docstring become the schema.</span>
+<span class="c-cls">@mcp.tool</span>
+<span class="c-kw">def</span> <span class="c-fn">add</span>(a: <span class="c-cls">int</span>, b: <span class="c-cls">int</span>) -> <span class="c-cls">int</span>:
+    <span class="c-str">"""Add two integers and return the sum."""</span>
+    <span class="c-kw">return</span> a + b
+
+<span class="c-cls">@mcp.tool</span>
+<span class="c-kw">def</span> <span class="c-fn">multiply</span>(a: <span class="c-cls">int</span>, b: <span class="c-cls">int</span>) -> <span class="c-cls">int</span>:
+    <span class="c-str">"""Multiply two integers and return the product."""</span>
+    <span class="c-kw">return</span> a * b
+
+<span class="c-com"># 3) Run it. Default transport is stdio (great for local dev).</span>
+<span class="c-kw">if</span> __name__ == <span class="c-str">"__main__"</span>:
+    mcp.run()</code></pre>
+            <p>Run it:</p>
+            <pre><code>python math_server.py</code></pre>
+            <div class="callout sky">
+                <strong>The docstring is the contract.</strong> The model only sees the tool's name, type
+                signature, and docstring. Write them as if documenting an API — clear names and a one-line
+                description dramatically improve tool selection.
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>Inspect it before wiring an agent</h2>
+            <p>The <strong>MCP Inspector</strong> is a browser UI to list a server's tools and call them by
+                hand — your first debugging step.</p>
+            <pre><code><span class="c-com"># Launch the Inspector against your server</span>
+npx @modelcontextprotocol/inspector python math_server.py
+
+<span class="c-com"># or with the FastMCP CLI</span>
+fastmcp dev math_server.py</code></pre>
+            <p>You'll see <code>add</code> and <code>multiply</code> with their schemas, and can invoke them
+                with test arguments.</p>
+        </div>
+
+        <div class="section mcp">
+            <h2>Transports — stdio vs HTTP</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Transport</th>
+                        <th>How</th>
+                        <th>Use when</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>stdio</strong></td>
+                        <td><code>mcp.run()</code> (default)</td>
+                        <td>Local: the client launches the server as a subprocess. Simplest.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>streamable-http</strong></td>
+                        <td><code>mcp.run(transport="http", port=8000)</code></td>
+                        <td>Remote/shared: the server runs as a web service. (Build 04.)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section mcp">
+            <h2>Quick test from a Python client</h2>
+            <p>FastMCP also ships a client, so you can call the server programmatically without an LLM:</p>
+            <pre><code><span class="c-kw">import</span> asyncio
+<span class="c-kw">from</span> fastmcp <span class="c-kw">import</span> Client
+
+<span class="c-kw">async def</span> <span class="c-fn">main</span>():
+    <span class="c-kw">async with</span> Client(<span class="c-str">"math_server.py"</span>) <span class="c-kw">as</span> client:
+        tools = <span class="c-kw">await</span> client.list_tools()
+        <span class="c-fn">print</span>([t.name <span class="c-kw">for</span> t <span class="c-kw">in</span> tools])          <span class="c-com"># ['add', 'multiply']</span>
+        result = <span class="c-kw">await</span> client.call_tool(<span class="c-str">"add"</span>, {<span class="c-str">"a"</span>: <span class="c-cls">2</span>, <span class="c-str">"b"</span>: <span class="c-cls">3</span>})
+        <span class="c-fn">print</span>(result.data)                       <span class="c-com"># 5</span>
+
+asyncio.run(main())</code></pre>
+        </div>
+
+        <div class="section mcp">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>One capability per tool.</strong> Small, focused tools are easier for the model to
+                    pick correctly.</li>
+                <li><strong>Always type-hint and docstring.</strong> They <em>are</em> the schema.</li>
+                <li><strong>Return JSON-serialisable values</strong> (numbers, strings, dicts) so any client can
+                    consume them.</li>
+                <li><strong>Start on stdio</strong> for local development; switch to HTTP only when you need a
+                    shared/remote server.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="index.html"><span class="dir">Back</span>
+                <div class="ttl">MCP Hub</div>
+            </a>
+            <a class="next" href="02_mcp_tools_in_langgraph.html"><span class="dir">Next</span>
+                <div class="ttl">02 · MCP tools in LangGraph →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>MCP × LangGraph Projects · 01 of 05</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

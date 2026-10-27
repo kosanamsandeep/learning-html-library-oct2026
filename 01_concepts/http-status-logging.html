@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP Status Codes and Logging Levels</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">HT</span>
+                <span>HTTP and Logging Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="fastapi-flask.html">FastAPI vs Flask</a>
+                <a href="python-dependency-injection.html">Dependency Injection</a>
+                <a href="#status-codes">HTTP status codes</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#status-codes">Why status codes matter</a>
+            <a href="#1xx">1xx informational</a>
+            <a href="#2xx">2xx success</a>
+            <a href="#3xx">3xx redirection</a>
+            <a href="#4xx">4xx client errors</a>
+            <a href="#5xx">5xx server errors</a>
+            <a href="#logging">Logger levels</a>
+            <a href="#mapping">How logs and status codes work together</a>
+            <a href="#examples">Common API examples</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card" id="status-codes">
+                <div>
+                    <p class="eyebrow">API correctness and observability</p>
+                    <h1>HTTP status codes tell clients what happened, and log levels tell engineers how serious it is.
+                    </h1>
+                    <p>Many backend issues become harder than necessary because applications return vague status codes
+                        like 200 for failures or 500 for user mistakes. The same thing happens when everything is
+                        logged at the same level. Good systems communicate clearly to both <strong>machines</strong>
+                        and <strong>humans</strong>.</p>
+                    <p>This page explains the importance of HTTP status codes from <strong>1xx to 5xx</strong>, what
+                        the major logger levels mean, and how to think about them together in Python applications.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Simple split</h2>
+                    <ul>
+                        <li><strong>Status codes:</strong> response meaning for the client</li>
+                        <li><strong>Log levels:</strong> severity and operational signal for engineers</li>
+                        <li><strong>Goal:</strong> make failures understandable, searchable, and actionable</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section" id="1xx">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">1xx</p>
+                        <h2>Informational responses</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What they mean</h3>
+                        <p>These status codes mean the request has been received and the communication is continuing.
+                            They are uncommon in most everyday REST APIs but still part of the protocol family.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Examples</h3>
+                        <p><strong>100 Continue</strong> tells the client it can continue sending the request body.
+                            <strong>101 Switching Protocols</strong> is used when changing protocols, such as HTTP to a
+                            WebSocket upgrade.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="2xx">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">2xx</p>
+                        <h2>Success responses</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Meaning</th>
+                                <th>Typical use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>200 OK</td>
+                                <td>The request succeeded</td>
+                                <td>Normal reads, updates, or calculations</td>
+                            </tr>
+                            <tr>
+                                <td>201 Created</td>
+                                <td>A new resource was created</td>
+                                <td>Create user, order, document, or job</td>
+                            </tr>
+                            <tr>
+                                <td>202 Accepted</td>
+                                <td>The request was accepted but not finished yet</td>
+                                <td>Async jobs, background processing, queued tasks</td>
+                            </tr>
+                            <tr>
+                                <td>204 No Content</td>
+                                <td>The request succeeded and there is nothing to return</td>
+                                <td>Delete operations or updates with no body</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Important habit:</strong> do not always return 200. Use 201 for creation and 202 for
+                        accepted async work when that is what really happened.</p>
+                </div>
+            </section>
+
+            <section class="section" id="3xx">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">3xx</p>
+                        <h2>Redirection responses</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What they mean</h3>
+                        <p>The client needs to take another step, usually by following a different location. These are
+                            less common in JSON APIs than in browser-heavy apps, but they still matter.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Examples</h3>
+                        <p><strong>301 Moved Permanently</strong>, <strong>302 Found</strong>,
+                            <strong>304 Not Modified</strong>, and <strong>307 Temporary Redirect</strong> are common
+                            redirection-related responses.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="4xx">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">4xx</p>
+                        <h2>Client error responses</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Meaning</th>
+                                <th>Typical use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>400 Bad Request</td>
+                                <td>The request is malformed</td>
+                                <td>Invalid JSON, missing required input shape</td>
+                            </tr>
+                            <tr>
+                                <td>401 Unauthorized</td>
+                                <td>Authentication is missing or invalid</td>
+                                <td>No token, expired token, bad credentials</td>
+                            </tr>
+                            <tr>
+                                <td>403 Forbidden</td>
+                                <td>The user is authenticated but not allowed</td>
+                                <td>Permission denied</td>
+                            </tr>
+                            <tr>
+                                <td>404 Not Found</td>
+                                <td>The resource does not exist</td>
+                                <td>User id or document id not found</td>
+                            </tr>
+                            <tr>
+                                <td>409 Conflict</td>
+                                <td>The request conflicts with current state</td>
+                                <td>Duplicate user, version conflict, idempotency clash</td>
+                            </tr>
+                            <tr>
+                                <td>422 Unprocessable Content</td>
+                                <td>The request format is valid but the content fails validation</td>
+                                <td>Field-level validation errors in FastAPI or Pydantic</td>
+                            </tr>
+                            <tr>
+                                <td>429 Too Many Requests</td>
+                                <td>The client is being rate-limited</td>
+                                <td>Quota or abuse protection</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="checkpoint">
+                    <h2>Rule of thumb</h2>
+                    <p>If the client can fix the problem by changing the request, it is usually a 4xx response, not a
+                        5xx response.</p>
+                </div>
+            </section>
+
+            <section class="section" id="5xx">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">5xx</p>
+                        <h2>Server error responses</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Meaning</th>
+                                <th>Typical use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>500 Internal Server Error</td>
+                                <td>Unexpected server-side failure</td>
+                                <td>Unhandled exception, broken internal logic</td>
+                            </tr>
+                            <tr>
+                                <td>502 Bad Gateway</td>
+                                <td>Upstream dependency returned an invalid response</td>
+                                <td>Gateway or proxy to another service failed</td>
+                            </tr>
+                            <tr>
+                                <td>503 Service Unavailable</td>
+                                <td>The service is temporarily unavailable</td>
+                                <td>Maintenance, overload, dependency outage</td>
+                            </tr>
+                            <tr>
+                                <td>504 Gateway Timeout</td>
+                                <td>An upstream service timed out</td>
+                                <td>Reverse proxy or upstream service timeout</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Important habit:</strong> reserve 5xx codes for server-side failures. They should create
+                        clear operational attention because they mean the platform, not the user, is at fault.</p>
+                </div>
+            </section>
+
+            <section class="section" id="logging">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Logger severity</p>
+                        <h2>What the different logging levels mean</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th>Meaning</th>
+                                <th>When to use it</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>DEBUG</td>
+                                <td>Detailed diagnostic information</td>
+                                <td>Variable values, branch choices, request details during development or deep
+                                    troubleshooting</td>
+                            </tr>
+                            <tr>
+                                <td>INFO</td>
+                                <td>Normal important application events</td>
+                                <td>Service started, job completed, user created, scheduled task began</td>
+                            </tr>
+                            <tr>
+                                <td>WARNING</td>
+                                <td>Something unusual happened but the app can continue</td>
+                                <td>Retry triggered, fallback used, slow upstream, deprecated path called</td>
+                            </tr>
+                            <tr>
+                                <td>ERROR</td>
+                                <td>A specific operation failed</td>
+                                <td>Request failed, job failed, DB query failed, external API error</td>
+                            </tr>
+                            <tr>
+                                <td>CRITICAL</td>
+                                <td>Severe failure that may stop the service or make it unsafe</td>
+                                <td>Service cannot start, config missing, corrupted state, fatal dependency outage</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="warning-card">
+                    <h3>About severe</h3>
+                    <p>Some systems or teams say <strong>SEVERE</strong> informally, but in Python’s standard logging
+                        module the common built-in top severity is <strong>CRITICAL</strong>. In everyday explanation,
+                        “severe” usually maps to <strong>ERROR</strong> or <strong>CRITICAL</strong> depending on how
+                        bad the problem is.</p>
+                </div>
+            </section>
+
+            <section class="section" id="mapping">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Working together</p>
+                        <h2>How HTTP status codes and log levels should work together</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Situation</th>
+                                <th>Status code</th>
+                                <th>Log level</th>
+                                <th>Why</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>User sends invalid payload</td>
+                                <td>400 or 422</td>
+                                <td>INFO or WARNING</td>
+                                <td>Client can fix it; this is not usually a server failure</td>
+                            </tr>
+                            <tr>
+                                <td>User is unauthorized</td>
+                                <td>401 or 403</td>
+                                <td>INFO or WARNING</td>
+                                <td>Security-relevant but not necessarily an app failure</td>
+                            </tr>
+                            <tr>
+                                <td>Resource missing</td>
+                                <td>404</td>
+                                <td>INFO</td>
+                                <td>Usually normal behavior, not a platform issue</td>
+                            </tr>
+                            <tr>
+                                <td>Unexpected exception in request path</td>
+                                <td>500</td>
+                                <td>ERROR</td>
+                                <td>The server failed to handle a valid request</td>
+                            </tr>
+                            <tr>
+                                <td>Service cannot boot</td>
+                                <td>503 or no response</td>
+                                <td>CRITICAL</td>
+                                <td>This is a severe platform-level problem</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="examples">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Practical examples</p>
+                        <h2>Common API examples to remember</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Example</span>
+                        <h3>Create user successfully</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Best answer</span>
+                            <p>Return <strong>201 Created</strong>. Log at <strong>INFO</strong> if the creation event
+                                matters operationally.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Example</span>
+                        <h3>Client sends invalid input</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Best answer</span>
+                            <p>Return <strong>400</strong> or <strong>422</strong>. Usually log at <strong>INFO</strong>
+                                or <strong>WARNING</strong>, not <strong>ERROR</strong>.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Example</span>
+                        <h3>Database is down</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Best answer</span>
+                            <p>Return a <strong>5xx</strong> response, often <strong>503</strong> if the outage is
+                                dependency-related. Log at <strong>ERROR</strong> or <strong>CRITICAL</strong>
+                                depending on the blast radius.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Example</span>
+                        <h3>Background job accepted</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Best answer</span>
+                            <p>Return <strong>202 Accepted</strong>. Log initial acceptance at <strong>INFO</strong>
+                                and log failures later at <strong>ERROR</strong> if processing breaks.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>This page explains the importance of HTTP status codes from 1xx to 5xx and how logging levels such as
+                debug, info, warning, error, and critical should be used in Python applications.</p>
+            <div class="mini-links">
+                <a href="index.html">Back to home</a>
+                <a href="python-dependency-injection.html">Dependency injection</a>
+                <a href="python-architecture-comparison.html">Architecture comparison</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

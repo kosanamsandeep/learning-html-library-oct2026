@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>LangGraph 02 · Research Assistant (async FastAPI)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../../assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <a class="back" href="../../index.html">← Portfolio home</a>
+  <h1><span class="pill mid">Intermediate</span> 02 · Research Assistant (LangGraph)</h1>
+  <p>A custom <code>StateGraph</code> with deterministic stages and a search/read loop.</p>
+</header>
+<main>
+
+<h2>📖 Story mode — the research assembly line</h2>
+<div class="callout good">
+<b>The scene.</b> Same journalism job, but instead of one journalist running around, you’ve built a small <b>factory</b> with five workstations on a conveyor belt:
+<b>Planning Desk → Search Bay → Reading Bay → Drafting Bay → Filing Cabinet</b>.
+A <b>shared clipboard</b> (the <code>ResearchState</code>) rides along with the work and every station scribbles on it.
+A <b>routing arm</b> after the Reading Bay decides: <i>“still more sub-topics? → send back to Search Bay. Done? → forward to Drafting.”</i>
+</div>
+
+<h3>What happens when you press “Research”</h3>
+<ol>
+<li><b>You type:</b> <code>POST /research { "topic": "…" }</code>.</li>
+<li><b>Clipboard born:</b> <code>ResearchState = {topic, plan=[], step_idx=0, notes=[], report="", file_path=""}</code>.</li>
+<li><b>Planning Desk (<code>_plan</code>):</b> LLM fills <code>plan</code> with 3–5 sub-topics.</li>
+<li><b>Search Bay (<code>_search</code>):</b> takes <code>plan[step_idx]</code>, queries DuckDuckGo, returns URLs.</li>
+<li><b>Reading Bay (<code>_read</code>):</b> fetches each URL (httpx async), summarises, appends to <code>notes</code> (<i>note: <code>Annotated[list, operator.add]</code> means each return is concatenated, not replaced</i>), increments <code>step_idx</code>.</li>
+<li><b>Routing arm (<code>_route</code>):</b> if <code>step_idx &lt; len(plan)</code> → loop back to Search; else → Drafting.</li>
+<li><b>Drafting Bay (<code>_write</code>):</b> LLM turns <code>notes</code> into the final report.</li>
+<li><b>Filing Cabinet (<code>_save</code>):</b> aiofiles writes <code>report.md</code>, fills <code>file_path</code> → END.</li>
+<li><b>Output:</b> JSON with the report text and the path on disk.</li>
+</ol>
+
+<div class="mermaid">
+flowchart LR
+    Start(["🚪 POST /research"]) --> Plan["📋 _plan"]
+    Plan --> Search["🔍 _search"]
+    Search --> Read["📖 _read"]
+    Read --> Route{"more steps?"}
+    Route -- yes --> Search
+    Route -- no --> Write["✍️ _write"]
+    Write --> Save["💾 _save"]
+    Save --> End(["🏁 END → JSON"])
+</div>
+
+<div class="callout warn">
+<b>One-line recall trick:</b> <i>“Plan, Search, Read, (loop), Write, Save — with one shared clipboard.”</i>
+The ReAct version did the same work via a prompt; LangGraph makes the loop an actual edge in the diagram.
+</div>
+
+<h2>Folder structure</h2>
+<pre>
+02_research_assistant/
+├── agents/
+│   ├── base_agent.py
+│   ├── research_agent.py        # builds the StateGraph
+│   └── skills/
+│       ├── web_skills.py        # async DDG + httpx reader
+│       └── save_skill.py        # aiofiles writer
+├── core/                        # config, logger
+├── data/
+│   ├── prompts/plan.txt
+│   ├── prompts/write.txt
+│   └── reports/                 # auto-created
+├── models/model_client.py
+├── workflows/research_workflow.py
+├── tests/test_agents.py
+├── main.py                      # FastAPI POST /research
+├── requirements.txt
+└── .env.example
+</pre>
+
+<h2>Why a hand-built graph here?</h2>
+<p>For research the workflow shape is <i>known</i> (plan → loop search/read → write → save).
+A graph encodes that shape so the LLM only does what it's good at: planning text and writing prose.</p>
+
+<h2>State schema</h2>
+<table>
+<tr><th>Key</th><th>Type</th><th>Purpose</th></tr>
+<tr><td><code>topic</code></td><td>str</td><td>User's research topic.</td></tr>
+<tr><td><code>plan</code></td><td>list[str]</td><td>3 search queries made by the LLM.</td></tr>
+<tr><td><code>step_idx</code></td><td>int</td><td>Loop counter.</td></tr>
+<tr><td><code>notes</code></td><td>list[str] (additive)</td><td>Accumulated excerpts. Reducer = <code>operator.add</code>.</td></tr>
+<tr><td><code>report</code></td><td>str</td><td>Final markdown.</td></tr>
+<tr><td><code>file_path</code></td><td>str</td><td>Saved report path.</td></tr>
+</table>
+
+<h2>The graph</h2>
+<div class="mermaid">
+flowchart TD
+    Start((start)) --> Plan[plan node<br/>LLM → 3 queries]
+    Plan --> Search[search node<br/>DuckDuckGo async]
+    Search --> Read[read node<br/>httpx + BS4]
+    Read -->|step_idx &lt; 3?| Search
+    Read -->|done| Write[write node<br/>LLM → markdown]
+    Write --> Save[save node<br/>aiofiles]
+    Save --> End((END))
+</div>
+
+<h2>Sequence (one /research call)</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant U as Client
+    participant API as /research
+    participant G as Graph
+    U->>API: {"topic":"RAG 2025"}
+    API->>G: ainvoke initial state
+    G->>G: plan → 3 queries
+    loop 3 times
+        G->>G: search → urls
+        G->>G: read → excerpt
+    end
+    G->>G: write → markdown
+    G->>G: save → file_path
+    G-->>API: state.file_path
+    API-->>U: JSON
+</div>
+
+<h2>Run</h2>
+<pre>cd langgraph_agents/02_research_assistant
+pip install -r requirements.txt
+copy .env.example .env
+python main.py
+# POST http://127.0.0.1:8102/research  body:{"topic":"RAG 2025"}</pre>
+
+<h2>ReAct vs LangGraph for this workflow</h2>
+<table>
+<tr><th>Concern</th><th>ReAct</th><th>LangGraph</th></tr>
+<tr><td>Determinism</td><td>LLM might skip <code>save_report</code></td><td>Save is a node — guaranteed to run.</td></tr>
+<tr><td>Token cost</td><td>Re-sends all observations every step</td><td>Each node sees only the slice it needs.</td></tr>
+<tr><td>Recovery from failure</td><td>Restart whole loop</td><td>Re-run a single node with checkpoint state.</td></tr>
+<tr><td>Adding a critique step</td><td>Add a tool, hope LLM uses it</td><td>Insert a node + edge.</td></tr>
+</table>
+
+<div class="callout good">Use ReAct when tool ordering is unknown; use LangGraph when ordering is mostly known but each step is itself LLM-driven.</div>
+
+</main>
+<footer>langgraph_agents · 02_research_assistant</footer>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W8 · Deal Desk (production-ready agent) — Claude Workshops</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Workshops hub</a>
+                <a href="../anthropic_building_agents.html">Building Agents</a>
+                <a href="../anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">CWC · Workshop 8</span></p>
+            <h1>Deal Desk: a production-ready M&amp;A agent with sub-agents, memory, MCP and Vault</h1>
+            <p class="lead">A Next.js chat front-end over a Claude Managed Agent that researches deals end-to-end. A
+                coordinator delegates to four parallel sub-agents, pulls prior-deal lessons from a memory store,
+                reaches Linear through an MCP server whose credentials live in the Vault, and emits a graded
+                investment thesis. The seven API exercises in <code>app/api/</code> are the production CMA surface
+                you'll re-use everywhere.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · What you build</h2>
+            <ul>
+                <li>A Next.js UI streaming over Server-Sent Events.</li>
+                <li>Seven exercises in <code>app/api/</code> that wire each CMA capability:
+                    <ol>
+                        <li>List sessions (<code>sessions.list</code>)</li>
+                        <li>Create session (<code>sessions.create</code>)</li>
+                        <li>Steer (<code>events.send</code> with <code>user.message</code> +
+                            <code>user.define_outcome</code>)
+                        </li>
+                        <li>Retrieve session</li>
+                        <li>Stream bridge (<code>events.list</code> &rarr; <code>events.stream</code> &rarr; SSE to the
+                            browser)</li>
+                        <li>Confirm gated tool calls (<code>events.send</code> with
+                            <code>user.tool_confirmation</code>)
+                        </li>
+                        <li>Delete session</li>
+                    </ol>
+                </li>
+                <li>A coordinator agent + four sub-agents added via <code>enable-multiagent.sh</code> (v2).</li>
+                <li>An idempotent <code>setup.sh</code> that recreates everything except the coordinator (which holds
+                    the canonical prompt).</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>2 · The stack</h2>
+            <div class="flow">
+                <div class="step">Next.js UI</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">SSE bridge</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">CMA coordinator</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">4 sub-agents (parallel)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Memory store + Linear MCP via Vault</div>
+            </div>
+            <p>This is the full stack from earlier workshops, wired together: agents (W4) &middot; skills (W2) &middot;
+                MCP (W5) &middot; memory + Dreaming (W6) &middot; evals (W7), with a real UI on top.</p>
+        </section>
+
+        <section class="card">
+            <h2>3 · Levers the workshop teaches</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>Coordinator + parallel sub-agents</h3>
+                    <p>One agent decides what to research; four sub-agents do the legwork in parallel and summarise
+                        back. Time-to-thesis drops without growing the coordinator's context.</p>
+                </div>
+                <div class="mini">
+                    <h3><code>define_outcome</code> events</h3>
+                    <p>Beyond just user messages — explicit outcomes the user wants. The agent treats them as a goal
+                        stack, not chat noise.</p>
+                </div>
+                <div class="mini">
+                    <h3>Gated tool confirmation</h3>
+                    <p>Some tools (e.g. "post to Linear") emit a confirmation event the UI must approve via
+                        <code>user.tool_confirmation</code>. Human-in-the-loop without a custom approval system.
+                    </p>
+                </div>
+                <div class="mini">
+                    <h3>Stream bridge (events &rarr; SSE)</h3>
+                    <p>Server-Sent Events keep the UI live. The browser sees reasoning, tool calls, and final answers
+                        as they happen.</p>
+                </div>
+                <div class="mini">
+                    <h3>Vault-held MCP credentials</h3>
+                    <p>Linear's API key never lives in <code>.env</code>. The Vault hands it to the MCP server at run
+                        time.</p>
+                </div>
+                <div class="mini">
+                    <h3>Idempotent setup script</h3>
+                    <p><code>setup.sh</code> can re-run safely. The one thing it <em>won't</em> overwrite is the
+                        coordinator — that's the artifact under version control.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Use vs don't use — the trade-offs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lever</th>
+                        <th>If you use it</th>
+                        <th>If you skip it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Coordinator + sub-agents</td>
+                        <td>Parallelism without context bloat. Each sub-agent has its own scope; the coordinator
+                            synthesises.</td>
+                        <td>You pile every research source into the coordinator's context. Latency triples, the model
+                            loses focus, and the synthesis quality drops.</td>
+                    </tr>
+                    <tr>
+                        <td><code>user.define_outcome</code></td>
+                        <td>The agent has a structured goal, not just a chat. It can re-prioritise mid-session when the
+                            outcome changes.</td>
+                        <td>Goals leak into chat messages; the agent treats them like passing suggestions and misses
+                            the brief.</td>
+                    </tr>
+                    <tr>
+                        <td>Gated tool confirmations</td>
+                        <td>Compliance and audit happen for free. The user explicitly approves every
+                            externally-visible action.</td>
+                        <td>The agent posts to Linear automatically and your legal team has a great morning.</td>
+                    </tr>
+                    <tr>
+                        <td>Stream bridge (SSE)</td>
+                        <td>The UI feels alive; users see reasoning and can interrupt. You can also log every event
+                            server-side.</td>
+                        <td>Long synchronous calls; the UI hangs; you lose the ability to gate tools mid-run.</td>
+                    </tr>
+                    <tr>
+                        <td>Vault for MCP credentials</td>
+                        <td>Rotating Linear's key is a Vault operation. Nothing in the repo ever held the secret.</td>
+                        <td>Secrets sit in <code>.env</code>, get committed once by accident, and your DLP scanner
+                            opens a ticket like the one this learning path was started by.</td>
+                    </tr>
+                    <tr>
+                        <td>Memory store for prior-deal lessons</td>
+                        <td>The agent learns "what we noticed in the last three deals" and applies it to the new one.
+                            Quality compounds.</td>
+                        <td>Each deal starts cold; the same gotchas surprise you every quarter.</td>
+                    </tr>
+                    <tr>
+                        <td>Idempotent <code>setup.sh</code></td>
+                        <td>New teammate clones the repo, runs one script, and is at parity with you.</td>
+                        <td>Onboarding is a 40-minute README walk; everyone's environment drifts.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>The lesson:</strong> production-ready isn't a new stack — it's the
+                W4&ndash;W7 stack hardened with three things: gated tool calls, secrets in Vault, and an idempotent
+                bootstrap.</div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Adoption playbook for your repo</h2>
+            <ol>
+                <li>For your most-important agent, port the seven API endpoints from W8: list / create / steer /
+                    retrieve / stream-bridge / confirm / delete.</li>
+                <li>Add a <code>user.define_outcome</code> step so the user states the goal explicitly. Surface it in
+                    the UI as a goal chip.</li>
+                <li>Mark every externally-visible tool as gated. Wire <code>user.tool_confirmation</code> to a UI
+                    approval flow.</li>
+                <li>Move secrets out of <code>.env</code> and into the Vault. Anything an MCP needs is a Vault read at
+                    run time.</li>
+                <li>Add a memory store for the one piece of state you keep re-learning. Schedule Dreaming weekly.</li>
+                <li>Write <code>setup.sh</code> as idempotent. The day someone new joins, you'll be glad.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source"
+                    href="https://github.com/anthropics/cwc-workshops/tree/main/production-ready-agent-workshop"
+                    target="_blank" rel="noopener">cwc-workshops/production-ready-agent-workshop</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/overview" target="_blank"
+                    rel="noopener">CMA — Overview</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/events" target="_blank"
+                    rel="noopener">CMA — Events (define_outcome, tool_confirmation)</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/mcp" target="_blank"
+                    rel="noopener">CMA — MCP integration</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/memory" target="_blank"
+                    rel="noopener">CMA — Memory stores</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/vault" target="_blank"
+                    rel="noopener">CMA — Vault</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

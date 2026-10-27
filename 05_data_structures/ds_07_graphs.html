@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DS 07 — Graphs</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html"><span class="brand-mark">DS</span><span>DS · 07 Graphs</span></a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="ds_06_heaps.html">← Prev</a>
+                <a href="ds_08_tries.html">Next →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">Nodes and edges — networks, maps, dependencies</p>
+                <h1>Graphs — modeling "things and the connections between them"</h1>
+                <p>A graph is a set of nodes (vertices) connected by edges. Almost any system of relationships
+                    is a graph: social networks, road maps, dependency chains, knowledge graphs, the internet,
+                    state machines.</p>
+            </section>
+
+            <section class="concept">
+                <h2>Vocabulary</h2>
+                <ul>
+                    <li><strong>Directed</strong> — edges have direction (Twitter follow).
+                        <strong>Undirected</strong> — symmetric (Facebook friend).
+                    </li>
+                    <li><strong>Weighted</strong> — edges have a cost (road distance).
+                        <strong>Unweighted</strong> — all edges equal.
+                    </li>
+                    <li><strong>Cyclic</strong> — has loops. <strong>Acyclic</strong> — no loops. A directed
+                        acyclic graph is a <strong>DAG</strong> (think: course prerequisites, build pipelines).</li>
+                    <li><strong>Connected</strong> — every node reachable from every other.
+                        <strong>Disconnected</strong> — multiple components.
+                    </li>
+                </ul>
+            </section>
+
+            <section class="concept">
+                <h2>Representations</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Representation</th>
+                            <th>Space</th>
+                            <th>Edge check</th>
+                            <th>Best for</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Adjacency list</td>
+                            <td>O(V + E)</td>
+                            <td>O(degree)</td>
+                            <td>Sparse graphs (most real ones).</td>
+                        </tr>
+                        <tr>
+                            <td>Adjacency matrix</td>
+                            <td>O(V²)</td>
+                            <td>O(1)</td>
+                            <td>Dense graphs, or when you check edge existence very often.</td>
+                        </tr>
+                        <tr>
+                            <td>Edge list</td>
+                            <td>O(E)</td>
+                            <td>O(E)</td>
+                            <td>Algorithms like Kruskal's MST that process all edges.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <pre><code># adjacency list in Python — the common choice
+graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D'],
+    'C': ['A'],
+    'D': ['B']
+}</code></pre>
+            </section>
+
+            <section class="concept">
+                <h2>BFS — shortest path in unweighted graphs</h2>
+                <pre><code>from collections import deque
+
+def bfs(graph, start):
+    visited = {start}; q = deque([start]); order = []
+    while q:
+        node = q.popleft(); order.append(node)
+        for nei in graph[node]:
+            if nei not in visited:
+                visited.add(nei); q.append(nei)
+    return order</code></pre>
+                <p>BFS visits in layers: distance 1 first, then distance 2, etc. Returns shortest hop-count from
+                    start to any node.</p>
+            </section>
+
+            <section class="concept">
+                <h2>DFS — explore deep before wide</h2>
+                <pre><code># recursive
+def dfs(graph, node, visited):
+    visited.add(node)
+    for nei in graph[node]:
+        if nei not in visited:
+            dfs(graph, nei, visited)
+
+# iterative with explicit stack
+def dfs_iter(graph, start):
+    visited = set(); stk = [start]
+    while stk:
+        node = stk.pop()
+        if node in visited: continue
+        visited.add(node)
+        stk.extend(graph[node])</code></pre>
+                <p>DFS is what you want for: cycle detection, topological sort, connected components,
+                    backtracking, finding any path (not necessarily shortest).</p>
+            </section>
+
+            <section class="concept">
+                <h2>Topological sort — for DAGs</h2>
+                <p>Linear ordering of nodes such that for every edge u → v, u comes before v. Used for: build
+                    systems, course prerequisites, task scheduling.</p>
+                <pre><code>def topo_sort(graph):
+    # Kahn's algorithm: repeatedly pick nodes with in-degree 0
+    in_deg = {u: 0 for u in graph}
+    for u in graph:
+        for v in graph[u]:
+            in_deg[v] = in_deg.get(v, 0) + 1
+    q = deque([u for u, d in in_deg.items() if d == 0])
+    out = []
+    while q:
+        u = q.popleft(); out.append(u)
+        for v in graph[u]:
+            in_deg[v] -= 1
+            if in_deg[v] == 0: q.append(v)
+    return out if len(out) == len(in_deg) else []   # [] → cycle</code></pre>
+            </section>
+
+            <section class="concept">
+                <h2>Shortest path</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Algorithm</th>
+                            <th>Use when</th>
+                            <th>Complexity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>BFS</td>
+                            <td>Unweighted</td>
+                            <td>O(V + E)</td>
+                        </tr>
+                        <tr>
+                            <td>Dijkstra (min-heap)</td>
+                            <td>Weighted, non-negative</td>
+                            <td>O((V + E) log V)</td>
+                        </tr>
+                        <tr>
+                            <td>Bellman-Ford</td>
+                            <td>Weighted, possibly negative</td>
+                            <td>O(V × E)</td>
+                        </tr>
+                        <tr>
+                            <td>Floyd-Warshall</td>
+                            <td>All-pairs shortest path, dense</td>
+                            <td>O(V³)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <pre><code>import heapq
+
+def dijkstra(graph, start):
+    dist = {start: 0}
+    pq = [(0, start)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d &gt; dist[u]: continue
+        for v, w in graph[u]:        # graph[u] = [(neighbor, weight), ...]
+            nd = d + w
+            if nd &lt; dist.get(v, float('inf')):
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist</code></pre>
+            </section>
+
+            <section class="concept">
+                <h2>When to use vs when NOT</h2>
+                <div class="grid-2">
+                    <div class="mini good">
+                        <h4>Use a graph algorithm when</h4>
+                        <ul>
+                            <li>The problem involves relationships, networks, paths, dependencies.</li>
+                            <li>You're asked for "is X reachable from Y", "shortest path", "connected components".</li>
+                            <li>You see <em>"can we visit all X" / "is there a cycle" / "in what order…"</em>.</li>
+                        </ul>
+                    </div>
+                    <div class="mini bad">
+                        <h4>Don't</h4>
+                        <ul>
+                            <li>Reach for graphs when an array + index would do.</li>
+                            <li>Use an adjacency matrix when E ≪ V² — wastes memory.</li>
+                            <li>Use DFS to find shortest path on unweighted graphs (use BFS instead).</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="concept">
+                <h2>Practice problems</h2>
+                <ol>
+                    <li>Number of Islands (Medium) — DFS/BFS on grid.</li>
+                    <li>Clone Graph (Medium).</li>
+                    <li>Course Schedule (Medium) — cycle detection.</li>
+                    <li>Course Schedule II (Medium) — topological sort.</li>
+                    <li>Pacific Atlantic Water Flow (Medium) — multi-source BFS.</li>
+                    <li>Network Delay Time (Medium) — Dijkstra.</li>
+                    <li>Cheapest Flights Within K Stops (Medium) — Bellman-Ford or BFS with state.</li>
+                    <li>Word Ladder (Hard) — BFS.</li>
+                </ol>
+                <p>👉 Next: <a href="ds_08_tries.html"><strong>Tries &amp; Advanced</strong></a>.</p>
+            </section>
+        </div>
+    </main>
+    <footer><a href="index.html">Back to hub</a></footer>
+</body>
+
+</html>

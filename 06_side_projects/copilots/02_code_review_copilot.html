@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilot 02 · Code Review Copilot</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="cop">CP</span>Copilot · 02 Code Review</div>
+        <div class="links">
+            <a href="index.html">Copilots Hub</a>
+            <a href="01_docs_qa_copilot.html">← 01</a>
+            <a href="03_support_copilot.html">Next: 03 →</a>
+        </div>
+    </div>
+
+    <div class="header cop">
+        <p class="badge">Build 02 · Beginner+ · "A tireless senior reviewer"</p>
+        <h1>🔍 Code Review Copilot</h1>
+        <p class="subtitle">A copilot that watches your pull requests, summarises the change, flags likely
+            bugs and risks, and leaves inline suggestions — before a human reviewer even opens the tab.</p>
+    </div>
+
+    <div class="container">
+        <div class="section cop">
+            <h2>The story — why this copilot exists</h2>
+            <p>Code review is essential but slow. PRs wait hours or days for a busy senior. Reviewers burn time
+                on the boring 80% — style, missing tests, obvious null-checks — leaving less energy for the
+                architectural 20% that actually needs a human.</p>
+            <p>A review copilot handles the first pass automatically: it posts a clear summary and concrete
+                suggestions seconds after a PR opens, so humans review faster and focus on what matters.</p>
+            <div class="callout fuchsia">
+                <strong>Inspired by:</strong> <code>qodo-ai/pr-agent</code> (formerly CodiumAI PR-Agent),
+                <code>sweepai/sweep</code>, and CodeRabbit — among the most-starred automated-review tools.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The flow — from "PR opened" to inline comments</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+sequenceDiagram
+    participant GH as GitHub
+    participant A as Review Copilot (Action)
+    participant LLM as LLM
+    GH->>A: webhook "pull_request opened"
+    A->>GH: fetch diff + changed files
+    A->>A: split large diffs into chunks
+    A->>LLM: diff + review rubric
+    LLM-->>A: summary + issues + suggestions (JSON)
+    A->>GH: post PR summary comment
+    A->>GH: post inline suggestions on lines
+    Note over GH: Human reviews faster, focuses on design
+                </pre>
+                <p class="caption">The copilot runs as CI: triggered by the PR event, it reasons over the diff
+                    and writes structured feedback back to GitHub.</p>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — fetch the diff and review it</h2>
+            <pre><code><span class="c-kw">import</span> os, json
+<span class="c-kw">from</span> github <span class="c-kw">import</span> Github
+<span class="c-kw">from</span> openai <span class="c-kw">import</span> OpenAI
+
+gh = Github(os.environ[<span class="c-str">"GITHUB_TOKEN"</span>])
+client = OpenAI()
+
+<span class="c-kw">def</span> <span class="c-fn">review_pr</span>(repo_name: <span class="c-cls">str</span>, pr_number: <span class="c-cls">int</span>):
+    pr = gh.get_repo(repo_name).get_pull(pr_number)
+
+    <span class="c-com"># Collect the patch (diff) for each changed file.</span>
+    diff = <span class="c-str">"\n"</span>.join(
+        <span class="c-str">f"### {f.filename}\n{f.patch}"</span>
+        <span class="c-kw">for</span> f <span class="c-kw">in</span> pr.get_files() <span class="c-kw">if</span> f.patch
+    )
+
+    rubric = (
+        <span class="c-str">"You are a senior code reviewer. Review the diff for: bugs, security "</span>
+        <span class="c-str">"issues, missing tests, and readability. Return JSON with keys "</span>
+        <span class="c-str">"'summary' (str) and 'comments' (list of {file, line, suggestion})."</span>
+    )
+    resp = client.chat.completions.create(
+        model=<span class="c-str">"gpt-4o"</span>,
+        response_format={<span class="c-str">"type"</span>: <span class="c-str">"json_object"</span>},
+        messages=[
+            {<span class="c-str">"role"</span>: <span class="c-str">"system"</span>, <span class="c-str">"content"</span>: rubric},
+            {<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: diff},
+        ],
+    )
+    <span class="c-kw">return</span> json.loads(resp.choices[<span class="c-cls">0</span>].message.content), pr</code></pre>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — post the feedback back</h2>
+            <pre><code><span class="c-kw">def</span> <span class="c-fn">post_review</span>(repo_name: <span class="c-cls">str</span>, pr_number: <span class="c-cls">int</span>):
+    review, pr = review_pr(repo_name, pr_number)
+
+    <span class="c-com"># 1) Overall summary as a normal PR comment.</span>
+    pr.create_issue_comment(<span class="c-str">f"## 🤖 Copilot review\n\n{review['summary']}"</span>)
+
+    <span class="c-com"># 2) Inline suggestions on specific lines.</span>
+    commit = pr.get_commits().reversed[<span class="c-cls">0</span>]
+    <span class="c-kw">for</span> c <span class="c-kw">in</span> review[<span class="c-str">"comments"</span>]:
+        pr.create_review_comment(
+            body=<span class="c-str">f"💡 {c['suggestion']}"</span>,
+            commit=commit, path=c[<span class="c-str">"file"</span>], line=c[<span class="c-str">"line"</span>],
+        )</code></pre>
+            <div class="callout fuchsia">
+                <strong>Structured output is the trick.</strong> Forcing JSON (<code>response_format</code>)
+                lets you map each suggestion onto an exact file + line, turning prose into actionable inline
+                comments.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>Ship it as a GitHub Action</h2>
+            <pre><code><span class="c-com"># .github/workflows/ai-review.yml</span>
+name: AI Review
+on:
+  pull_request:
+    types: [opened, synchronize]
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pygithub openai
+      - run: python review.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}</code></pre>
+            <p>Now every PR gets an automatic first-pass review — zero human effort.</p>
+        </div>
+
+        <div class="section cop">
+            <h2>Advantages this copilot brings</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Advantage</th>
+                        <th>Why it matters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Faster cycle time</td>
+                        <td>Feedback in seconds, not the next business day.</td>
+                    </tr>
+                    <tr>
+                        <td>Consistency</td>
+                        <td>The same rubric is applied to every PR, every time.</td>
+                    </tr>
+                    <tr>
+                        <td>Frees seniors</td>
+                        <td>Humans skip the boring 80% and focus on design.</td>
+                    </tr>
+                    <tr>
+                        <td>Catches the obvious</td>
+                        <td>Null-checks, missing tests, leaked secrets, smells.</td>
+                    </tr>
+                    <tr>
+                        <td>Onboarding aid</td>
+                        <td>Juniors learn from concrete, in-context suggestions.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section cop">
+            <h2>Best practices &amp; guardrails</h2>
+            <ul>
+                <li><strong>Chunk large diffs</strong> and review per-file to stay within context limits.</li>
+                <li><strong>The copilot suggests, humans merge.</strong> Never let it approve or auto-merge —
+                    it's a reviewer, not the gate.</li>
+                <li><strong>Tune the rubric to your standards</strong> (style guide, security policy) for signal
+                    over noise.</li>
+                <li><strong>Skip generated/vendored files</strong> to avoid useless comments and wasted tokens.</li>
+                <li><strong>Never echo secrets</strong> found in diffs into public comments — redact.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="01_docs_qa_copilot.html"><span class="dir">Previous</span>
+                <div class="ttl">← 01 · Docs Q&amp;A</div>
+            </a>
+            <a class="next" href="03_support_copilot.html"><span class="dir">Next</span>
+                <div class="ttl">03 · Support Copilot →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Copilots · 02 of 06</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

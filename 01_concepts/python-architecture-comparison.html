@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monolith vs Modular Monolith vs Microservices for Python AI Apps</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">AR</span>
+                <span>Python Architecture Comparison</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="python-project-structure.html">Project Structure</a>
+                <a href="python-dependency-injection.html">Dependency Injection</a>
+                <a href="#comparison">Comparison</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what-are-they">What the architectures mean</a>
+            <a href="#comparison">Comparison table</a>
+            <a href="#monolith">Monolith</a>
+            <a href="#modular-monolith">Modular monolith</a>
+            <a href="#microservices">Microservices</a>
+            <a href="#ai-apps">What works well for AI apps</a>
+            <a href="#decision-guide">How to choose</a>
+            <a href="#mistakes">Common traps</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card" id="what-are-they">
+                <div>
+                    <p class="eyebrow">Application architecture choices</p>
+                    <h1>Monolith, modular monolith, and microservices solve different scaling problems.</h1>
+                    <p>Teams often jump to microservices too early because they sound more “enterprise.” In practice,
+                        many Python applications, especially AI products, are better served by a monolith or modular
+                        monolith for longer than people expect.</p>
+                    <p>The right choice depends on team size, deployment complexity, organizational boundaries,
+                        reliability needs, and how independently different parts of the system actually change.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Simple summary</h2>
+                    <ul>
+                        <li><strong>Monolith:</strong> one deployable application</li>
+                        <li><strong>Modular monolith:</strong> one deployable app with strong internal boundaries</li>
+                        <li><strong>Microservices:</strong> many deployable services with network boundaries</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section" id="comparison">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Head-to-head</p>
+                        <h2>Architecture comparison</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Architecture</th>
+                                <th>Shape</th>
+                                <th>Main strength</th>
+                                <th>Main weakness</th>
+                                <th>Best fit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Monolith</td>
+                                <td>Single codebase, single deployment</td>
+                                <td>Simple to build, test, deploy, and debug</td>
+                                <td>Can become tangled if boundaries are weak</td>
+                                <td>Small to medium products and early-stage teams</td>
+                            </tr>
+                            <tr>
+                                <td>Modular monolith</td>
+                                <td>Single deployment with clear modules</td>
+                                <td>Good internal boundaries without distributed complexity</td>
+                                <td>Needs discipline to prevent module leakage</td>
+                                <td>Growing teams that want structure before service split</td>
+                            </tr>
+                            <tr>
+                                <td>Microservices</td>
+                                <td>Multiple services with network calls</td>
+                                <td>Independent deployment and scaling of components</td>
+                                <td>Operational complexity rises sharply</td>
+                                <td>Large systems with clear service boundaries and mature teams</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="monolith">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Option 1</p>
+                        <h2>Monolith</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What it is</h3>
+                        <p>A monolith is one deployable application where routes, services, persistence, and domain code
+                            live in the same system and are released together.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why it works well early</h3>
+                        <p>You get faster development, fewer deployment surfaces, easier debugging, and no network
+                            contracts between internal components.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="modular-monolith">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Option 2</p>
+                        <h2>Modular monolith</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What it is</h3>
+                        <p>A modular monolith is still one deployment, but the code is split into strong internal
+                            modules with clear contracts and ownership boundaries.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why it is often the best middle ground</h3>
+                        <p>You keep monolith simplicity while preparing the codebase for future extraction if service
+                            boundaries become truly necessary.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Practical reality:</strong> many teams should aim for a modular monolith before even
+                        considering microservices.</p>
+                </div>
+            </section>
+
+            <section class="section" id="microservices">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Option 3</p>
+                        <h2>Microservices</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What it is</h3>
+                        <p>Microservices split the system into multiple independently deployed services that communicate
+                            over the network, often through HTTP, messaging, or gRPC.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why it is expensive</h3>
+                        <p>You now manage distributed tracing, network failure modes, schema contracts, deployment
+                            coordination, authentication between services, and more infrastructure.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="ai-apps">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">AI application angle</p>
+                        <h2>What usually works best for Python AI applications</h2>
+                    </div>
+                </div>
+                <div class="grid three">
+                    <div class="card">
+                        <h3>LLM product prototype</h3>
+                        <p>Usually start with a monolith or modular monolith. Most early complexity is product and
+                            prompt behavior, not service decomposition.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Growing AI platform</h3>
+                        <p>A modular monolith often works best when you have API routes, retrieval, model orchestration,
+                            user management, and billing in one system but want clean boundaries.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Heavy infrastructure separation</h3>
+                        <p>Microservices make more sense when inference, indexing, billing, auth, and event processing
+                            truly need separate scaling, deployment cadence, or ownership.</p>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Good default</h2>
+                    <p>For most Python AI applications, a modular monolith is the strongest default once the codebase is
+                        beyond toy size but not yet large enough to justify distributed-service overhead.</p>
+                </div>
+            </section>
+
+            <section class="section" id="decision-guide">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Decision guide</p>
+                        <h2>How to choose between them</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>Choose a monolith when</h3>
+                        <p>You are early-stage, the team is small, and the fastest path to shipping matters more than
+                            service independence.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Choose a modular monolith when</h3>
+                        <p>You need better internal boundaries and clearer ownership, but the deployment and operations
+                            model should stay simple.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Choose microservices when</h3>
+                        <p>You already have strong boundaries, separate team ownership, and enough operational maturity
+                            to handle distributed-system costs safely.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="mistakes">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Common traps</p>
+                        <h2>What teams often get wrong</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Premature microservices</h3>
+                        <ul class="stack-list">
+                            <li>Distributed complexity arrives before the team needs it.</li>
+                            <li>Simple code changes now require multiple services and contracts.</li>
+                            <li>Debugging gets slower because failures spread across the network.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Undisciplined monoliths</h3>
+                        <ul class="stack-list">
+                            <li>No internal boundaries or ownership rules.</li>
+                            <li>Everything imports everything else.</li>
+                            <li>The problem is blamed on being a monolith when the real problem is poor structure.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>This page compares monolith, modular monolith, and microservices with a practical focus on Python AI
+                applications and team maturity.</p>
+            <div class="mini-links">
+                <a href="index.html">Back to home</a>
+                <a href="python-project-structure.html">Project structure</a>
+                <a href="python-dependency-injection.html">Dependency injection</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

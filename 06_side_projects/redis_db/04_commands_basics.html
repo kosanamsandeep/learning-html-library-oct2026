@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>04 · Core commands, keys & TTL</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span class="mark">◆</span>Redis Mastery</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="03_data_types.html">← Data types</a>
+                <a href="05_patterns.html">Next: Patterns →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Chapter 04 · Commands</p>
+            <h1>Core commands — keys, expiry & atomic ops</h1>
+            <p class="lead">Now the everyday toolkit: managing keys, expiring data with TTLs, atomic counters,
+                scanning safely, and the few commands you'll type a hundred times a day. Run every example against
+                the dataset from <a href="03_data_types.html">chapter 03</a>.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · Key management</h2>
+            <pre><code><span class="c-kw">EXISTS</span> <span class="c-key">product:1</span>        <span class="c-com"># → 1 if the key exists, else 0</span>
+<span class="c-kw">TYPE</span> <span class="c-key">product:1</span>          <span class="c-com"># → hash (what structure is it?)</span>
+<span class="c-kw">DEL</span> <span class="c-key">product:99</span>         <span class="c-com"># → delete a key</span>
+<span class="c-kw">RENAME</span> <span class="c-key">cart:1</span> <span class="c-key">cart:alice</span> <span class="c-com"># → rename a key</span>
+<span class="c-kw">RANDOMKEY</span>                <span class="c-com"># → a random key name</span>
+<span class="c-kw">DBSIZE</span>                   <span class="c-com"># → number of keys in this DB</span></code></pre>
+        </section>
+
+        <section class="card">
+            <h2>2 · Expiry & TTL — Redis's killer convenience</h2>
+            <p>Any key can be told to self-destruct after a time. This is what makes Redis perfect for caches,
+                sessions, OTPs, and rate-limit windows.</p>
+            <pre><code><span class="c-kw">SET</span> <span class="c-key">session:abc</span> <span class="c-str">"user:42"</span>
+<span class="c-kw">EXPIRE</span> <span class="c-key">session:abc</span> <span class="c-num">3600</span>   <span class="c-com"># expires in 1 hour</span>
+<span class="c-kw">TTL</span> <span class="c-key">session:abc</span>           <span class="c-com"># → seconds left (-1 = no expiry, -2 = gone)</span>
+<span class="c-kw">PERSIST</span> <span class="c-key">session:abc</span>       <span class="c-com"># → remove the expiry, make it permanent</span>
+
+<span class="c-com"># Set value AND expiry in one atomic command</span>
+<span class="c-kw">SET</span> <span class="c-key">otp:42</span> <span class="c-str">"839201"</span> <span class="c-fn">EX</span> <span class="c-num">120</span>   <span class="c-com"># OTP valid 2 minutes</span>
+<span class="c-kw">SET</span> <span class="c-key">lock:job</span> <span class="c-str">"1"</span> <span class="c-fn">NX</span> <span class="c-fn">EX</span> <span class="c-num">30</span>  <span class="c-com"># set only if Not eXists (a lock)</span></code></pre>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Flag on SET</th>
+                        <th>Meaning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>EX n</code> / <code>PX n</code></td>
+                        <td>Expire in n seconds / milliseconds</td>
+                    </tr>
+                    <tr>
+                        <td><code>NX</code></td>
+                        <td>Only set if the key does <em>not</em> exist</td>
+                    </tr>
+                    <tr>
+                        <td><code>XX</code></td>
+                        <td>Only set if the key <em>already</em> exists</td>
+                    </tr>
+                    <tr>
+                        <td><code>KEEPTTL</code></td>
+                        <td>Keep the existing TTL when overwriting</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout key">
+                <strong>One-line lock:</strong> <code>SET lock:job 1 NX EX 30</code> returns <code>OK</code> only
+                to the first caller and auto-releases after 30s. That's a distributed lock primitive in a single
+                command.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>3 · Atomic counters</h2>
+            <pre><code><span class="c-kw">INCR</span> <span class="c-key">page:views</span>        <span class="c-com"># +1, returns new value</span>
+<span class="c-kw">INCRBY</span> <span class="c-key">page:views</span> <span class="c-num">10</span>   <span class="c-com"># +10</span>
+<span class="c-kw">DECR</span> <span class="c-key">product:1:stock</span>  <span class="c-com"># -1</span>
+<span class="c-kw">INCRBYFLOAT</span> <span class="c-key">price</span> <span class="c-num">9.99</span> <span class="c-com"># works with floats too</span></code></pre>
+            <p class="mini good">These are <strong>atomic</strong>: thousands of clients can <code>INCR</code> the
+                same key simultaneously and every increment is counted exactly once. No locks, no lost updates.</p>
+        </section>
+
+        <section class="card">
+            <h2>4 · Finding keys safely: SCAN, not KEYS</h2>
+            <div class="grid-2">
+                <div class="mini bad">
+                    <h3>❌ <code>KEYS pattern</code></h3>
+                    <p class="quiet">Scans the entire keyspace in one blocking sweep. On a big production DB this
+                        can freeze the server. Use it only in dev/CLI on small data.</p>
+                </div>
+                <div class="mini good">
+                    <h3>✅ <code>SCAN cursor</code></h3>
+                    <p class="quiet">Iterates in small batches without blocking. The safe, production-grade way to
+                        walk keys.</p>
+                </div>
+            </div>
+            <pre><code><span class="c-com"># Iterate keys matching a pattern, in batches</span>
+<span class="c-kw">SCAN</span> <span class="c-num">0</span> <span class="c-fn">MATCH</span> <span class="c-str">"product:*"</span> <span class="c-fn">COUNT</span> <span class="c-num">100</span>
+<span class="c-com"># → returns a new cursor + a page of keys; repeat until cursor is 0</span>
+
+<span class="c-com"># Type-specific scans iterate inside one big key</span>
+<span class="c-kw">HSCAN</span> <span class="c-key">user:42</span> <span class="c-num">0</span>      <span class="c-com"># walk hash fields</span>
+<span class="c-kw">SSCAN</span> <span class="c-key">tag:tech</span> <span class="c-num">0</span>     <span class="c-com"># walk set members</span>
+<span class="c-kw">ZSCAN</span> <span class="c-key">bestsellers</span> <span class="c-num">0</span>  <span class="c-com"># walk sorted-set members</span></code></pre>
+        </section>
+
+        <section class="card">
+            <h2>5 · Key-naming conventions (design matters)</h2>
+            <p>Redis has no tables, so your <strong>key names are your schema</strong>. Use a consistent
+                <code>colon:separated</code> convention:
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>Example</th>
+                        <th>Holds</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>type:id</code></td>
+                        <td><code>user:42</code></td>
+                        <td>a user hash</td>
+                    </tr>
+                    <tr>
+                        <td><code>type:id:field</code></td>
+                        <td><code>user:42:cart</code></td>
+                        <td>that user's cart list</td>
+                    </tr>
+                    <tr>
+                        <td><code>scope:metric</code></td>
+                        <td><code>sales:product:1</code></td>
+                        <td>a counter</td>
+                    </tr>
+                    <tr>
+                        <td><code>scope:window</code></td>
+                        <td><code>rate:ip:1.2.3.4:60</code></td>
+                        <td>a rate-limit bucket</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout warn">
+                <strong>Two rules:</strong> (1) make keys predictable so you never need <code>KEYS *</code> to find
+                them; (2) keep them short — every key name lives in RAM too.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>6 · Inspecting & debugging</h2>
+            <pre><code><span class="c-kw">OBJECT ENCODING</span> <span class="c-key">product:1</span>  <span class="c-com"># internal encoding (listpack, hashtable…)</span>
+<span class="c-kw">MEMORY USAGE</span> <span class="c-key">product:1</span>     <span class="c-com"># bytes this key uses</span>
+<span class="c-kw">INFO</span> memory                  <span class="c-com"># server memory overview</span>
+<span class="c-kw">SLOWLOG GET</span> <span class="c-num">10</span>                <span class="c-com"># 10 slowest recent commands</span>
+<span class="c-kw">MONITOR</span>                       <span class="c-com"># live-stream every command (dev only)</span></code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Try it yourself</h2>
+            <details class="quiz">
+                <summary><span class="level easy">easy</span> Store a verification code for user 7 that expires in 5
+                    minutes.</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">SET</span> <span class="c-key">otp:7</span> <span class="c-str">"123456"</span> <span class="c-fn">EX</span> <span class="c-num">300</span></code></pre>
+                </div>
+            </details>
+            <details class="quiz">
+                <summary><span class="level easy">easy</span> Atomically reduce <code>product:1</code> stock by one
+                    when it sells.</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">HINCRBY</span> <span class="c-key">product:1</span> <span class="c-val">stock</span> -<span class="c-num">1</span></code></pre>
+                    Hashes have their own atomic <code>HINCRBY</code> for a single field.
+                </div>
+            </details>
+            <details class="quiz">
+                <summary><span class="level med">medium</span> Grab a non-blocking lock named <code>lock:report</code>
+                    that auto-releases after 10 seconds.</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">SET</span> <span class="c-key">lock:report</span> <span class="c-str">"1"</span> <span class="c-fn">NX</span> <span class="c-fn">EX</span> <span class="c-num">10</span></code></pre>
+                    Returns <code>OK</code> to the first caller only; others get <code>(nil)</code> until it
+                    expires.
+                </div>
+            </details>
+        </section>
+
+        <div class="pager">
+            <a href="03_data_types.html">
+                <div class="dir">← Back</div>
+                <div class="ttl">03 · Data types</div>
+            </a>
+            <a class="next" href="05_patterns.html">
+                <div class="dir">Next →</div>
+                <div class="ttl">05 · Patterns that ship</div>
+            </a>
+        </div>
+    </main>
+
+    <footer><a href="index.html">← Back to Redis hub</a></footer>
+</body>
+
+</html>

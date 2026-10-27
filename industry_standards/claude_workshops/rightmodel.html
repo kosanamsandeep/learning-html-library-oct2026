@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W1 · Picking the right model — Claude Workshops</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Workshops hub</a>
+                <a href="../anthropic_building_agents.html">Building Agents</a>
+                <a href="../anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">CWC · Workshop 1</span></p>
+            <h1>Pick the right model: audit your evals, then sweep model &times; thinking &times; effort</h1>
+            <p class="lead">A two-phase Claude Code workshop. First you fix the eval suite (Claude Code reads a Skill
+                and audits the harness for grader bias, task coverage, and pipeline correctness). Then you sweep across
+                models and reasoning settings and plot pass-rate vs cost vs latency, so the model choice is a
+                <em>finding</em>, not a feeling.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>1 · What you build</h2>
+            <ul>
+                <li>A <code>.claude/skills/eval-audit-and-sweep/</code> Skill with three files: <code>SKILL.md</code>,
+                    <code>audit.md</code>, <code>sweep.md</code>, plus a benchmark-specific <code>tau2-bench.md</code>.
+                </li>
+                <li>A patched <code>llm_agent.py</code> that reads <code>THINKING</code> and <code>EFFORT</code> env
+                    vars and forwards them as Claude's <code>thinking</code> and reasoning <code>effort</code>
+                    parameters.</li>
+                <li>Three plots — <code>sweep_tokens.png</code>, <code>sweep_cost.png</code>,
+                    <code>sweep_latency.png</code> — and a short recommendation paragraph.
+                </li>
+            </ul>
+            <p>The benchmark used in the workshop is a 20-task stratified subset of <strong>τ²-bench airline</strong>.
+                The same Skill works on any pass/fail eval suite.</p>
+        </section>
+
+        <section class="card">
+            <h2>2 · The stack</h2>
+            <div class="flow">
+                <div class="step">Claude Code</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Skill: eval-audit-and-sweep</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Patched agent harness</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Sweep runner</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Plots &amp; recommendation</div>
+            </div>
+            <p>No Managed Agent yet — this workshop teaches the <em>measurement layer</em> that every later workshop
+                relies on. The decision the Skill helps you make is: "for this task, which model + reasoning combo
+                gives me the best pass-rate per dollar at acceptable latency?"</p>
+        </section>
+
+        <section class="card">
+            <h2>3 · Levers the workshop teaches</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>Skill split (audit vs sweep)</h3>
+                    <p>Two separate <code>.md</code> files so Claude Code loads the right one for the phase. Keeps each
+                        context small.</p>
+                </div>
+                <div class="mini">
+                    <h3>Task stratification</h3>
+                    <p>Pick a 20-task subset that covers the harness's failure modes rather than running all 100+
+                        tasks.</p>
+                </div>
+                <div class="mini">
+                    <h3>Grader-bias check</h3>
+                    <p>Audit step asks "is the grader scoring the model's <em>answer</em> or the model's
+                        <em>politeness</em>?"
+                    </p>
+                </div>
+                <div class="mini">
+                    <h3>Model &times; thinking &times; effort grid</h3>
+                    <p>The sweep dimension. Each cell of the grid is one full eval run.</p>
+                </div>
+                <div class="mini">
+                    <h3>Three-axis plot</h3>
+                    <p>Pass-rate on Y, cost or latency on X, model as colour. Forces an honest trade-off conversation.
+                    </p>
+                </div>
+                <div class="mini">
+                    <h3>Environment-variable injection</h3>
+                    <p><code>THINKING</code> and <code>EFFORT</code> env vars patched into the agent so the sweep
+                        runner doesn't fork the codebase.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Use vs don't use — the trade-offs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lever</th>
+                        <th>If you use it</th>
+                        <th>If you skip it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Audit-then-sweep Skill</td>
+                        <td>Claude Code loads ~200 lines of expert checklist on demand; the same Skill is reusable
+                            across every future eval-driven workshop.</td>
+                        <td>You hand-craft prompts each time, the audit drifts, and team members re-discover the same
+                            harness bugs.</td>
+                    </tr>
+                    <tr>
+                        <td>Stratified 20-task subset</td>
+                        <td>One sweep cell completes in minutes, so you can sweep ~10 configurations in a workshop
+                            slot.</td>
+                        <td>Full benchmark runs take hours per cell, you sweep two configs, and the comparison is too
+                            noisy to act on.</td>
+                    </tr>
+                    <tr>
+                        <td>Grader-bias audit</td>
+                        <td>You catch "the LLM judge prefers verbose answers" before it tells you to pick the wrong
+                            model.</td>
+                        <td>You spend dollars sweeping against a grader that ranks the wrong thing — the picked model
+                            looks great in eval and bad in prod.</td>
+                    </tr>
+                    <tr>
+                        <td>Thinking + effort env vars</td>
+                        <td>One harness, many runs. The sweep script just sets <code>THINKING=high EFFORT=medium</code>
+                            and re-invokes.</td>
+                        <td>You copy the agent file per configuration, forget to update one, and the &ldquo;Opus + high
+                            thinking&rdquo; row is silently running Sonnet.</td>
+                    </tr>
+                    <tr>
+                        <td>Three-axis plots (cost &amp; latency)</td>
+                        <td>The team sees a Pareto frontier and picks the knee-of-the-curve model on purpose.</td>
+                        <td>"Best pass-rate" wins the meeting, then the bill arrives and the SLO breaks.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>The lesson:</strong> the workshop&rsquo;s claim is that model picking is a
+                <em>measurement</em>, not a preference — and the cheapest way to make the measurement repeatable is to
+                package it as a Claude Code Skill.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Adoption playbook for your repo</h2>
+            <ol>
+                <li>Create <code>.claude/skills/eval-audit-and-sweep/SKILL.md</code> with a short description of when
+                    Claude Code should load it ("when the user mentions evals, accuracy, pass-rate, or model
+                    selection").</li>
+                <li>Add <code>audit.md</code> — a checklist that covers task coverage, harness correctness, grader
+                    bias, and reproducibility.</li>
+                <li>Add <code>sweep.md</code> — a checklist that defines the sweep dimensions, what gets logged per
+                    cell, and which plots are required.</li>
+                <li>Patch your existing agent so model name, thinking mode, and reasoning effort are read from env
+                    vars.</li>
+                <li>Run the audit once, fix what it finds, then run the sweep once and commit the plots.</li>
+                <li>Re-run the sweep whenever a new model drops — the Skill makes that a one-prompt operation.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://github.com/anthropics/cwc-workshops/tree/main/rightmodel-workshop"
+                    target="_blank" rel="noopener">cwc-workshops/rightmodel-workshop</a>
+                <a class="source" href="https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview"
+                    target="_blank" rel="noopener">Claude Skills — Overview</a>
+                <a class="source" href="https://docs.claude.com/en/docs/build-with-claude/extended-thinking"
+                    target="_blank" rel="noopener">Claude — Extended thinking</a>
+                <a class="source" href="https://github.com/sierra-research/tau2-bench" target="_blank"
+                    rel="noopener">sierra-research/tau2-bench</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go P7 — HealthTrack</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Go projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p7_healthtrack/README.html">Python p7</a>
+                <a href="../../rust_projects/p7_healthtrack/README.html">Rust p7</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go · P7</span></p>
+            <h1>HealthTrack — the classic Go HTTP service shape</h1>
+            <p class="lead">A real (tiny) HTTP service: handler → service → repository → domain. No framework, no
+                external deps — just <code>net/http</code> and <code>encoding/json</code>. This is what 80% of Go
+                services look like in production.</p>
+        </section>
+
+        <section class="card">
+            <h2>The four layers</h2>
+            <div class="flow">
+                <div class="step">handler<br><small>net/http</small></div>
+                <div class="arrow">→</div>
+                <div class="step">service<br><small>business rules</small></div>
+                <div class="arrow">→</div>
+                <div class="step">repo<br><small>storage</small></div>
+                <div class="arrow">→</div>
+                <div class="step">domain<br><small>Record struct</small></div>
+            </div>
+            <p>Each layer only knows the one below. Tests can mock the layer below.</p>
+        </section>
+
+        <section class="card">
+            <h2>What's special vs Python/FastAPI</h2>
+            <ul>
+                <li><strong>Routing is just <code>http.ServeMux</code>.</strong> No decorators, no app object. Add a
+                    path with <code>mux.HandleFunc("/records", api.records)</code>.</li>
+                <li><strong>Method dispatch in the handler.</strong> One handler per resource; switch on
+                    <code>r.Method</code>. Tiny and explicit.</li>
+                <li><strong><code>sync.Mutex</code> in the repo.</strong> Multiple goroutines hit the handler
+                    concurrently — Go expects you to handle that. Python/FastAPI typically gives you one event loop and
+                    async I/O.</li>
+                <li><strong>No global app state.</strong> Build the chain in <code>main</code>, pass dependencies down.
+                    Easy to test.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd go_projects/p7_healthtrack
+go run .
+
+# in another shell
+curl -X POST localhost:8080/records `
+  -H "content-type: application/json" `
+  -d '{"user":"ada","weight_kg":62}'
+
+curl "localhost:8080/records?user=ada"</code></pre>
+            <p>Files: <a href="main.go">main.go</a> · <a href="go.mod">go.mod</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

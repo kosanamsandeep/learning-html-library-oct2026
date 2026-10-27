@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 — Practical Guide: Choosing & Running a Fine-Tune</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #feca57; }
+  h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #ff6b6b; color: #e1e4f0; }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .hl-box { background: rgba(255,107,107,0.08); border-left: 3px solid #ff6b6b; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .hl-yellow { background: rgba(254,202,87,0.08); border-left: 3px solid #feca57; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #ff6b6b; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #feca57; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #ff6b6b; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  ul, ol { color: #c8cbe0; padding-left: 1.25rem; line-height: 2; }
+  .step-guide { counter-reset: step; }
+  .step-guide .guide-item { counter-increment: step; background: #1a1d2e; border: 1px solid #2d3154; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; }
+  .step-guide .guide-item::before { content: "Step " counter(step); display: inline-block; background: #ff6b6b; color: white; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.8rem; border-radius: 100px; margin-bottom: 0.75rem; }
+  .tool-badge { display: inline-block; background: rgba(108,92,231,0.15); color: #6c5ce7; border: 1px solid rgba(108,92,231,0.2); border-radius: 6px; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0.1rem; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="06-prompt-vs-finetune-vs-rag.html">← 06: Decision Guide</a>
+  <a href="08-cheatsheet.html">Next: Cheatsheet →</a>
+</div>
+
+<h1>07 · Practical Guide — Choosing &amp; Running a Fine-Tune</h1>
+<p>From dataset to deployed adapter — the real-world workflow for fine-tuning with LoRA/QLoRA.</p>
+
+<h2>📋 The End-to-End Workflow</h2>
+
+<div class="step-guide">
+
+<div class="guide-item">
+<h3>Define Your Task &amp; Gather Data</h3>
+<p>Fine-tuning starts with data, not with code. Ask:</p>
+<ul>
+  <li><strong>What input → output mapping do I need?</strong> (e.g., "customer query → structured response in JSON")</li>
+  <li><strong>How many examples do I have?</strong> LoRA works well with as few as 100–500 high-quality examples. More is better, but quality beats quantity.</li>
+  <li><strong>What format?</strong> Most fine-tuning uses the <strong>chat template</strong> format: <code>[INST] instruction [/INST] response</code></li>
+</ul>
+
+<div class="hl-yellow">
+  <strong>📌 Data quality rules:</strong> 500 clean, diverse, correctly-formatted examples beat 10,000 noisy ones. Deduplicate, check for contradictions, and ensure your examples represent real use cases — not edge cases you won't encounter.
+</div>
+</div>
+
+<div class="guide-item">
+<h3>Choose Your Model</h3>
+<table>
+  <thead><tr><th>GPU Memory</th><th>Best Model Choice</th><th>Method</th></tr></thead>
+  <tbody>
+    <tr><td>6–8 GB</td><td>Phi-3 (3.8B), Qwen 2.5 (1.5B)</td><td>QLoRA (4-bit)</td></tr>
+    <tr><td>10–12 GB</td><td>Llama-3.2 (3B), Gemma-2 (2B/9B)</td><td>QLoRA (4-bit)</td></tr>
+    <tr><td>16–24 GB</td><td>Llama-3.1 (8B), Mistral (7B)</td><td>QLoRA (4-bit) or LoRA (8-bit)</td></tr>
+    <tr><td>24–48 GB</td><td>Llama-3 (8B/13B), Qwen 2.5 (14B)</td><td>LoRA (FP16)</td></tr>
+    <tr><td>48–80 GB</td><td>Llama-3 (70B), Qwen 2.5 (72B)</td><td>QLoRA (4-bit)</td></tr>
+    <tr><td>80+ GB</td><td>Any model up to full precision</td><td>LoRA or full FT</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="guide-item">
+<h3>Pick Your Tools</h3>
+<table>
+  <thead><tr><th>Tool</th><th>Best For</th><th>Complexity</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tool-badge">🤗 PEFT</span> Hugging Face PEFT</td><td>Programmatic training, custom pipelines</td><td>Medium</td></tr>
+    <tr><td><span class="tool-badge">🦙 Unsloth</span> Unsloth</td><td>Fastest training, lowest memory, 2× speedup</td><td>Low</td></tr>
+    <tr><td><span class="tool-badge">🪓 Axolotl</span> Axolotl</td><td>YAML-config driven, many model architectures</td><td>Low–Medium</td></tr>
+    <tr><td><span class="tool-badge">🧪 Lit-GPT</span> Lightning AI Lit-GPT</td><td>Research, full control over training loop</td><td>High</td></tr>
+    <tr><td><span class="tool-badge">☁️ Modal</span> Modal / RunPod</td><td>Cloud GPU training without local hardware</td><td>Low</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="guide-item">
+<h3>Configure Hyperparameters</h3>
+
+<div class="math-block">
+<span class="dim">// Starting point for Llama-3 8B with LoRA (Hugging Face PEFT)</span>
+lora_r = 8              <span class="dim">// Rank — start here, increase to 16 if underfitting</span>
+lora_alpha = 16         <span class="dim">// Scaling = alpha/r = 2</span>
+lora_dropout = 0.05     <span class="dim">// Helps prevent overfitting with small datasets</span>
+target_modules = ["q_proj", "k_proj", "v_proj", "o_proj"]
+
+<span class="dim">// Training hyperparameters</span>
+learning_rate = 2e-4     <span class="dim">// Higher than full FT (which uses ~1e-5)</span>
+batch_size = 4           <span class="dim">// Per GPU—use gradient accumulation for effective batch</span>
+num_epochs = 3           <span class="dim">// 1–5 depending on dataset size</span>
+optimizer = "adamw_8bit" <span class="dim">// 8-bit Adam saves memory</span>
+warmup_steps = 100</div>
+
+<div class="hl-box">
+  <strong>⚠️ The biggest mistake:</strong> Using a learning rate that's too high (same as pretraining). LoRA can use higher LR than full FT (2e-4 vs 1e-5), but still needs to be tuned. If loss spikes or goes to NaN, reduce LR by 10×.
+</div>
+</div>
+
+<div class="guide-item">
+<h3>Train &amp; Monitor</h3>
+<p>During training, watch these metrics:</p>
+<ul>
+  <li><strong>Training loss</strong> — should decrease smoothly. If it oscillates wildly, LR is too high.</li>
+  <li><strong>Evaluation loss</strong> — should track training loss. If it diverges upward, you're overfitting (increase dropout, reduce epochs, add data).</li>
+  <li><strong>Gradient norms</strong> — should stay reasonable (not spike to &gt;10).</li>
+</ul>
+
+<div class="hl-yellow">
+  <strong>⏱️ Expected time:</strong> A LoRA fine-tune on Llama-3 8B with 1000 examples takes ~15–30 minutes on an RTX 4090 (24 GB) with QLoRA. Full fine-tuning the same model takes hours.
+</div>
+</div>
+
+<div class="guide-item">
+<h3>Evaluate &amp; Iterate</h3>
+<p>Don't just look at loss. Test on real examples:</p>
+<ol>
+  <li><strong>Qualitative:</strong> Generate 20–50 outputs, manually review for quality, format compliance, hallucinations</li>
+  <li><strong>Quantitative:</strong> If you have a labeled test set, compute accuracy / BLEU / ROUGE / F1</li>
+  <li><strong>A/B test:</strong> Compare base model vs fine-tuned on the same prompts, blind</li>
+</ol>
+
+<p><strong>If results aren't good enough:</strong></p>
+<ul>
+  <li>Check data quality first (most common issue)</li>
+  <li>Try higher rank (r=16 or r=32)</li>
+  <li>Train for more epochs (but watch for overfitting)</li>
+  <li>Add more diverse examples to your dataset</li>
+</ul>
+</div>
+
+<div class="guide-item">
+<h3>Export &amp; Serve</h3>
+<div class="math-block">
+<span class="dim">// Option 1: Save adapter only (recommended — keep base model separate)</span>
+model.save_pretrained("my-lora-adapter/")
+tokenizer.save_pretrained("my-lora-adapter/")
+<span class="dim">// Adapter file: ~2–50 MB</span>
+
+<span class="dim">// Option 2: Merge adapter into base weights (for deployment)</span>
+merged_model = model.merge_and_unload()
+merged_model.save_pretrained("my-merged-model/")
+<span class="dim">// Full model: ~4–16 GB (same as base — zero extra inference cost)</span>
+
+<span class="dim">// At inference, load adapter:</span>
+model = PeftModel.from_pretrained(base_model, "my-lora-adapter/")
+</div>
+
+<div class="hl-yellow">
+  <strong>🚀 Swapping adapters:</strong> You can load multiple adapters onto one base model and switch between them at runtime — no model reload needed. This enables serving 100+ fine-tuned variants from one GPU.
+</div>
+</div>
+
+</div>
+
+<h2>🧠 Common Pitfalls &amp; How to Avoid Them</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Pitfall</th><th>Symptom</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr><td>Overfitting</td><td>Low train loss, high eval loss, repetitive outputs</td><td>Increase dropout, reduce epochs, add more data</td></tr>
+    <tr><td>Catastrophic forgetting</td><td>Model loses general knowledge, can't answer basic questions</td><td>Reduce learning rate, use lower LoRA alpha, mix general data with task data</td></tr>
+    <tr><td>Format not followed</td><td>Model outputs free text instead of expected format</td><td>Add more format examples, ensure all training examples follow the format strictly</td></tr>
+    <tr><td>Loss not decreasing</td><td>Flat training loss</td><td>Learning rate too low, data too noisy, rank too low</td></tr>
+    <tr><td>Out of memory</td><td>CUDA OOM during training</td><td>Use QLoRA, reduce batch size, use gradient checkpointing, reduce sequence length</td></tr>
+    <tr><td>Degenerate outputs</td><td>Repeating tokens, gibberish</td><td>Check for data contamination, reduce learning rate, lower alpha/r ratio</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="hl-box">
+  <strong>🎯 Final advice:</strong> Your first fine-tune won't be perfect. Plan for 3–5 iterations. Each iteration: improve data → retrain → evaluate → improve data. The model quality is bounded by your data quality, not the fine-tuning method.
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

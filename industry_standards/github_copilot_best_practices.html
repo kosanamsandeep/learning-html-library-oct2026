@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Copilot — Best Practices</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="anthropic_building_agents.html">Anthropic</a>
+                <a href="openai_agents_sdk.html">OpenAI</a>
+                <a href="multi_scenario_playbook.html">Scenarios</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag gh">GitHub · Copilot</span></p>
+            <h1>GitHub Copilot — pick the right surface, prompt it well, verify the output</h1>
+            <p class="lead">GitHub's official guidance reads like an operator's manual rather than a product pitch. The
+                headline points: know what Copilot is good at, pick the right surface (inline vs Chat vs coding agent),
+                give it precise prompts, and always verify.</p>
+        </section>
+
+        <section class="card">
+            <h2>Where Copilot shines, where it does not</h2>
+            <div class="grid">
+                <div class="mini good"><strong>Strong at</strong> — repetitive code, tests, debugging syntax issues,
+                    regex, comments and explanations of existing code.</div>
+                <div class="mini warn"><strong>Mid</strong> — large refactors, code that depends on undocumented
+                    internal context, anything where the right answer needs domain knowledge it doesn't have.</div>
+                <div class="mini bad"><strong>Weak at</strong> — questions outside coding/tech, replacing your judgement
+                    on architecture or correctness, anything that needs ground truth it can't observe.</div>
+            </div>
+            <div class="callout gh"><strong>Mental model:</strong> Copilot is a fast junior who can type. You are still
+                the engineer.</div>
+        </section>
+
+        <section class="card">
+            <h2>Pick the right surface</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Surface</th>
+                        <th>Use for</th>
+                        <th>Avoid for</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Inline suggestions</strong></td>
+                        <td>Completing snippets, repetitive boilerplate, generating code from a comment, TDD-style
+                            nudges.</td>
+                        <td>Multi-file work, anything that needs a discussion.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Copilot Chat</strong></td>
+                        <td>Q&amp;A about code in natural language, generating larger sections, iterating on a draft,
+                            asking it to review code as a "Senior X developer" persona.</td>
+                        <td>Things you need to ship without reading.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Coding agent</strong> (issues / PRs)</td>
+                        <td>Background tasks scoped by a GitHub issue: generate, run tests, open a PR.</td>
+                        <td>Anything that touches production secrets or external state without review.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Prompt engineering for Copilot Chat</h2>
+            <p>Three rules from the docs:</p>
+            <ol>
+                <li><strong>Break down complex tasks.</strong> "Refactor this 800-line file" is too vague — split it
+                    into "extract the storage layer", "rename functions", "add types".</li>
+                <li><strong>Be specific about your requirements.</strong> Say which framework, which version, which
+                    style. Vague prompts → average answers.</li>
+                <li><strong>Provide examples.</strong> Sample input, sample output, an existing test, a similar function
+                    nearby — these all help Copilot match your codebase.</li>
+            </ol>
+            <p>Then, on top of those, Copilot Chat exposes <em>keywords/skills</em> (like <code>#file</code>,
+                <code>@workspace</code>, <code>/explain</code>) — official guidance is to use them to pin context
+                exactly. Tell Copilot which file, which symbol, which repo to consider.</p>
+        </section>
+
+        <section class="card">
+            <h2>The verification habit</h2>
+            <ol>
+                <li><strong>Understand</strong> the suggestion before you accept. Ask Chat to explain the code if
+                    anything is fuzzy.</li>
+                <li><strong>Read</strong> for security and maintainability, not just whether it runs.</li>
+                <li><strong>Run</strong> linters, type checkers, code scanners, and your tests. Treat them as Copilot's
+                    second pair of eyes.</li>
+                <li><strong>Pick the best</strong> when multiple inline suggestions are offered — cycle through, don't
+                    accept the first.</li>
+            </ol>
+            <div class="callout gh"><strong>Quote:</strong> "Copilot is very powerful, [but] still a tool capable of
+                making mistakes, and you should always validate the code it suggests." That is in the official
+                best-practices page.</div>
+        </section>
+
+        <section class="card">
+            <h2>Steering toward better outputs</h2>
+            <ul>
+                <li><strong>Open relevant files</strong> — Copilot reads your open editors as context.</li>
+                <li><strong>Close irrelevant files</strong> — they pollute context and bias suggestions.</li>
+                <li><strong>Trim chat history</strong> — delete dead-end turns; start fresh when the conversation no
+                    longer applies.</li>
+                <li><strong>Reword the prompt</strong> — when an answer is bad, rephrase or split it. Don't keep
+                    retrying the same wording.</li>
+                <li><strong>Give feedback</strong> — thumbs up/down on responses trains the system over time.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Custom instructions and AGENTS.md</h2>
+            <p>You can pin team-wide context in your repo so Copilot always knows the rules. Two common files:</p>
+            <ul>
+                <li><code>.github/copilot-instructions.md</code> — repo-wide instructions Copilot reads automatically.
+                </li>
+                <li><code>AGENTS.md</code> — a community-converging convention for telling any AI coding agent (Copilot,
+                    Codex, Claude Code) about your repo: structure, build commands, conventions, where tests live.</li>
+            </ul>
+            <p>Both are picked up by Copilot's coding agent and by the chat surface when present.</p>
+        </section>
+
+        <section class="card">
+            <h2>How this maps to our SDLC samples</h2>
+            <ul>
+                <li><a href="claude_code_in_sdlc/README.html">claude_code_in_sdlc</a> — same idea on the Claude side:
+                    <code>CLAUDE.md</code> + a Skill folder.</li>
+                <li><a href="codex_in_sdlc/README.html">codex_in_sdlc</a> — same idea on the OpenAI side:
+                    <code>AGENTS.md</code> + a small Agents-SDK script.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://docs.github.com/en/copilot/get-started/best-practices" target="_blank"
+                    rel="noopener">GitHub Docs — Best practices for using Copilot</a>
+                <a class="source"
+                    href="https://docs.github.com/en/copilot/using-github-copilot/copilot-chat/prompt-engineering-for-copilot-chat"
+                    target="_blank" rel="noopener">Prompt engineering for Copilot Chat</a>
+                <a class="source"
+                    href="https://docs.github.com/en/copilot/customizing-copilot/about-customizing-github-copilot-chat-responses"
+                    target="_blank" rel="noopener">Customising Copilot responses (instructions files)</a>
+                <a class="source" href="https://github.blog/changelog/label/copilot/" target="_blank"
+                    rel="noopener">Copilot changelog</a>
+                <a class="source" href="https://docs.github.com/en/copilot" target="_blank" rel="noopener">Copilot docs
+                    hub</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Project 4: E-Commerce API - DTO Pattern Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1100px;
+            margin: auto;
+            padding: 30px;
+            line-height: 1.7;
+            color: #333;
+            background: #fafafa
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #9b59b6;
+            padding-bottom: 10px
+        }
+
+        h2 {
+            color: #8e44ad;
+            margin-top: 40px
+        }
+
+        h3 {
+            color: #2980b9
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05)
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .concept {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto
+        }
+
+        .mermaid {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left
+        }
+
+        th {
+            background: #8e44ad;
+            color: #fff
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 12px;
+            border-bottom: 2px solid #9b59b6;
+            z-index: 100
+        }
+
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #8e44ad;
+            font-weight: bold
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🛒 Project 4: E-Commerce API</h1>
+    <p><strong>Level:</strong> Intermediate | <strong>Focus:</strong> DTOs (Data Transfer Objects) & Validation</p>
+
+    <nav>
+        <a href="#what">What is a DTO?</a>
+        <a href="#why">Why DTOs?</a>
+        <a href="#flow">Data Flow</a>
+        <a href="#types">Types of DTOs</a>
+        <a href="#folder">Structure</a>
+    </nav>
+
+    <div id="what">
+        <h2>📦 What is a DTO?</h2>
+
+        <div class="concept">
+            <h3>DTO = Courier Box</h3>
+            <p>Imagine you're shipping a product to a customer:</p>
+            <ul>
+                <li><strong>Your warehouse</strong> has FULL details: cost price, supplier info, shelf location</li>
+                <li><strong>The shipping box</strong> (DTO) only shows: product name, price, description</li>
+                <li>The customer doesn't need to know your cost or where you stored it!</li>
+            </ul>
+        </div>
+
+        <div class="highlight">
+            <h3>Key Principle</h3>
+            <p><strong>Domain Model ≠ API Contract</strong></p>
+            <p>Your internal representation should NOT be your external interface. They change for different reasons.
+            </p>
+        </div>
+    </div>
+
+    <div id="why">
+        <h2>🤔 Why Not Just Use the Model Directly?</h2>
+
+        <div class="mermaid">
+            graph LR
+            subgraph "❌ Without DTOs (Dangerous!)"
+            A[Client] -->|sees everything| B[Product Model<br>name, price,<br>cost_price, profit_margin]
+            end
+        </div>
+
+        <div class="mermaid">
+            graph LR
+            subgraph "✅ With DTOs (Safe!)"
+            C[Client] -->|sees only safe fields| D[Product Response DTO<br>name, price, in_stock]
+            D -->|maps from| E[Product Model<br>+ cost_price hidden<br>+ profit_margin hidden]
+            end
+        </div>
+
+        <div class="card">
+            <table>
+                <tr>
+                    <th>Problem</th>
+                    <th>Without DTO</th>
+                    <th>With DTO</th>
+                </tr>
+                <tr>
+                    <td>Security</td>
+                    <td>Internal fields leaked to client</td>
+                    <td>Only safe fields exposed</td>
+                </tr>
+                <tr>
+                    <td>Validation</td>
+                    <td>Invalid data reaches model</td>
+                    <td>Caught at boundary</td>
+                </tr>
+                <tr>
+                    <td>API Stability</td>
+                    <td>Model change = API breaks</td>
+                    <td>Model change = update mapping only</td>
+                </tr>
+                <tr>
+                    <td>Flexibility</td>
+                    <td>One representation for all</td>
+                    <td>Different DTOs for different needs</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="flow">
+        <h2>🔄 The Complete Data Flow</h2>
+
+        <div class="mermaid">
+            sequenceDiagram
+            participant Client
+            participant API as API Layer
+            participant DTO_In as Request DTO
+            participant Service
+            participant Model as Domain Model
+            participant DTO_Out as Response DTO
+
+            Client->>API: POST /products {name, price, ...}
+            API->>DTO_In: Create CreateProductDTO
+            DTO_In->>DTO_In: validate() → check all rules
+
+            alt Validation Fails
+            DTO_In-->>API: Return errors list
+            API-->>Client: 400 Bad Request + errors
+            else Validation Passes
+            API->>Service: create_product(dto)
+            Service->>Model: Create Product (+ internal fields)
+            Note over Model: Has cost_price, profit_margin
+            Service->>DTO_Out: ProductResponseDTO.from_model(product)
+            Note over DTO_Out: Hides cost_price!
+            DTO_Out-->>Service: Safe DTO
+            Service-->>API: Return DTO
+            API-->>Client: 201 Created + safe response
+            end
+        </div>
+
+        <div class="concept">
+            <h3>The Three-Step Pattern</h3>
+            <ol>
+                <li><strong>INPUT DTO</strong>: Validate what comes IN (CreateProductDTO)</li>
+                <li><strong>DOMAIN MODEL</strong>: Process with full internal data (Product)</li>
+                <li><strong>OUTPUT DTO</strong>: Filter what goes OUT (ProductResponseDTO)</li>
+            </ol>
+        </div>
+    </div>
+
+    <div id="types">
+        <h2>📋 Types of DTOs</h2>
+
+        <div class="card">
+            <h3>Request DTOs (Client → Server)</h3>
+            <table>
+                <tr>
+                    <th>DTO</th>
+                    <th>Purpose</th>
+                    <th>Key Feature</th>
+                </tr>
+                <tr>
+                    <td>CreateProductDTO</td>
+                    <td>New product data</td>
+                    <td>All required fields, validation</td>
+                </tr>
+                <tr>
+                    <td>UpdateProductDTO</td>
+                    <td>Partial update</td>
+                    <td>Optional fields (None = skip)</td>
+                </tr>
+                <tr>
+                    <td>CreateOrderDTO</td>
+                    <td>New order data</td>
+                    <td>Nested items validation</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Response DTOs (Server → Client)</h3>
+            <table>
+                <tr>
+                    <th>DTO</th>
+                    <th>Purpose</th>
+                    <th>Key Feature</th>
+                </tr>
+                <tr>
+                    <td>ProductResponseDTO</td>
+                    <td>Single product view</td>
+                    <td>Hides internal fields, adds computed</td>
+                </tr>
+                <tr>
+                    <td>ProductListResponseDTO</td>
+                    <td>Paginated list</td>
+                    <td>Includes total_count, page info</td>
+                </tr>
+                <tr>
+                    <td>OrderResponseDTO</td>
+                    <td>Order confirmation</td>
+                    <td>Computed total, formatted dates</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="folder">
+        <h2>📁 Folder Structure</h2>
+
+        <div class="card" style="font-family:monospace">
+            p4_ecommerce_api/<br>
+            ├── main.py<br>
+            ├── models/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← INTERNAL domain
+            objects<br>
+            │ &nbsp;&nbsp;├── product.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Has cost_price (secret!)<br>
+            │ &nbsp;&nbsp;└── order.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Business logic<br>
+            ├── <strong>dtos/</strong>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 🆕 DATA TRANSFER
+            OBJECTS<br>
+            │ &nbsp;&nbsp;├── product_dto.py &nbsp;← Create/Update/Response DTOs<br>
+            │ &nbsp;&nbsp;└── order_dto.py &nbsp;&nbsp;&nbsp;← Order DTOs<br>
+            └── services/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── product_service.py ← Bridges DTOs ↔ Models
+        </div>
+
+        <div class="highlight">
+            <h3>🆕 New Layer: dtos/</h3>
+            <p>This is the first project with a dedicated DTO layer. It sits BETWEEN the outside world and your domain
+                models, acting as a protective gateway.</p>
+        </div>
+
+        <div class="card" style="background:#eaf2f8">
+            <h3>🎯 Key Takeaways</h3>
+            <ol>
+                <li><strong>DTO = Courier Box</strong> — only what's needed for transport</li>
+                <li><strong>Validate at boundary</strong> — catch bad data before it enters the system</li>
+                <li><strong>Separate input/output DTOs</strong> — they have different requirements</li>
+                <li><strong>from_model()</strong> — factory method centralizes conversion</li>
+                <li><strong>Next:</strong> Project 5 takes schemas to the next level with nesting</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

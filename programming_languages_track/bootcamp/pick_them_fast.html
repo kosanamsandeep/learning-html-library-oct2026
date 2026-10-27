@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootcamp 5 — Pick them fast</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="why_go_rust.html">Why</a>
+                <a href="syntax_python_vs_go.html">Syntax · Go</a>
+                <a href="syntax_python_vs_rust.html">Syntax · Rust</a>
+                <a href="why_they_are_fast.html">Why fast</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Bootcamp · 5 of 5</p>
+            <h1>Pick them fast — install, hello world, build, test in 30 minutes each</h1>
+            <p class="lead">A no-nonsense starter for both languages. Run every command in this page and you'll have a
+                working Go and Rust dev loop on Windows by the end of lunch.</p>
+        </section>
+
+        <section class="card">
+            <h2>Install</h2>
+            <h3>Go (Windows)</h3>
+            <pre><code># Option A: official MSI
+# https://go.dev/dl/   →  download the .msi  →  install
+
+# Option B: winget
+winget install GoLang.Go
+
+# Verify
+go version</code></pre>
+
+            <h3>Rust (Windows)</h3>
+            <pre><code># Use rustup — the official installer
+# https://rustup.rs/   →  run rustup-init.exe
+
+# Or winget
+winget install Rustlang.Rustup
+
+# Verify
+rustc --version
+cargo --version</code></pre>
+            <div class="callout"><strong>VS Code extensions:</strong> install <code>golang.go</code> for Go, and
+                <code>rust-lang.rust-analyzer</code> for Rust. Both give you LSP, formatter, debugger out of the box.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Hello world</h2>
+            <h3>Go</h3>
+            <pre><code>mkdir hello-go
+cd hello-go
+go mod init example.com/hello
+@'
+package main
+import "fmt"
+func main() { fmt.Println("hello, go") }
+'@ | Set-Content main.go
+go run .</code></pre>
+
+            <h3>Rust</h3>
+            <pre><code>cargo new hello-rust
+cd hello-rust
+cargo run
+# Cargo created src/main.rs with println!("Hello, world!");</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>The dev loop</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Go</th>
+                        <th>Rust</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Run during dev</td>
+                        <td><code>go run .</code></td>
+                        <td><code>cargo run</code></td>
+                    </tr>
+                    <tr>
+                        <td>Format</td>
+                        <td><code>gofmt -w .</code> (or auto-saved)</td>
+                        <td><code>cargo fmt</code></td>
+                    </tr>
+                    <tr>
+                        <td>Lint / vet</td>
+                        <td><code>go vet ./...</code></td>
+                        <td><code>cargo clippy</code></td>
+                    </tr>
+                    <tr>
+                        <td>Test</td>
+                        <td><code>go test ./...</code></td>
+                        <td><code>cargo test</code></td>
+                    </tr>
+                    <tr>
+                        <td>Build release</td>
+                        <td><code>go build -o app.exe</code></td>
+                        <td><code>cargo build --release</code></td>
+                    </tr>
+                    <tr>
+                        <td>Add a dependency</td>
+                        <td><code>go get github.com/x/y</code></td>
+                        <td><code>cargo add y</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Tiny test (so the loop feels real)</h2>
+            <h3>Go — <code>main_test.go</code></h3>
+            <pre><code>package main
+
+import "testing"
+
+func add(a, b int) int { return a + b }
+
+func TestAdd(t *testing.T) {
+    if got := add(2, 3); got != 5 {
+        t.Fatalf("got %d, want 5", got)
+    }
+}</code></pre>
+            <p>Run with <code>go test -v</code>.</p>
+
+            <h3>Rust — <code>src/lib.rs</code> (or bottom of <code>main.rs</code>)</h3>
+            <pre><code>pub fn add(a: i64, b: i64) -&gt; i64 { a + b }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn add_works() {
+        assert_eq!(add(2, 3), 5);
+    }
+}</code></pre>
+            <p>Run with <code>cargo test</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>The 30-minute starter day</h2>
+            <ol>
+                <li>Install both toolchains (above). 5 min.</li>
+                <li>Run hello world in each. 5 min.</li>
+                <li>Add a tiny test, watch it pass, change the implementation, watch it fail, fix it. 10 min.</li>
+                <li>Open <a href="../go_projects/p1_student_management/README.html">go_projects/p1</a> and <a
+                        href="../rust_projects/p1_student_management/README.html">rust_projects/p1</a> and read both. 10
+                    min.</li>
+            </ol>
+            <p>By the end you'll have written your first Go and Rust code and seen how the same project translates
+                between three languages.</p>
+        </section>
+
+        <section class="card">
+            <h2>Common gotchas (Windows)</h2>
+            <ul>
+                <li><strong>Go:</strong> if <code>go: command not found</code> in a new PowerShell, restart the terminal
+                    so PATH refreshes.</li>
+                <li><strong>Rust:</strong> the first build downloads the registry index — that's normal, it takes ~1
+                    minute once and then never again.</li>
+                <li><strong>Rust:</strong> if linking fails on Windows, install <em>"Build Tools for Visual Studio"</em>
+                    (C++ workload). <code>rustup</code> usually warns you when this is missing.</li>
+                <li><strong>Editor:</strong> save once before <code>cargo run</code> — <code>rust-analyzer</code> uses
+                    on-disk state.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>What to read next</h2>
+            <ul>
+                <li><a href="../go_projects/index.html">Go projects · index</a> — start with p1 student management.</li>
+                <li><a href="../rust_projects/index.html">Rust projects · index</a> — start with p1 student management.
+                </li>
+                <li><a href="https://go.dev/tour/" target="_blank" rel="noopener">A Tour of Go</a> — interactive, 1-2
+                    hours end-to-end.</li>
+                <li><a href="https://rustlings.cool/" target="_blank" rel="noopener">Rustlings</a> — tiny Rust
+                    exercises, 3-5 hours end-to-end.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harness vs framework vs application</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        :root {
+            --accent: #6d28d9;
+            --accent-soft: #ede9fe;
+        }
+
+        pre.mermaid {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>AH</span>Agent Harness</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="what-is-an-agent-harness.html">Concept</a>
+                <a href="anatomy-of-a-harness.html">Anatomy</a>
+                <a href="harness-vs-framework-vs-app.html">Layers</a>
+                <a href="harness-showdown.html">Showdown</a>
+                <a href="build-your-own-harness.html">Build one</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Agent harness · page 3 of 5</p>
+            <h1>Harness vs framework vs application — where does each layer end?</h1>
+            <p class="lead">Half the confusion around "harness" is that people use it for three different layers of the
+                same stack. This page draws the boundaries: the <strong>model</strong> reasons, the <strong>harness</strong>
+                owns the loop and the tools, the <strong>framework/library</strong> gives you reusable building blocks to
+                assemble your own orchestration, and the <strong>application</strong> is what your user actually touches.
+                Once the layers are clean, "build vs buy" answers itself.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · The stack, drawn</h2>
+            <pre class="mermaid">
+flowchart TB
+  L1[Layer 0 · Model<br/>weights · reasoning · text out]
+  L2[Layer 1 · Harness<br/>owns the loop, tools, context, guardrails<br/>Claude Code · Codex CLI · your SDK agent loop]
+  L3[Layer 2 · Framework / library<br/>building blocks you compose<br/>LangGraph · OpenAI Agents SDK · AutoGen · CrewAI]
+  L4[Layer 3 · Application<br/>your product &amp; your users<br/>support bot · deploy agent · IDE plugin]
+  L5[Outer orchestration<br/>CI / platform drives a coding agent<br/>harness-agent pattern · hooks · policy]
+  L1 --> L2
+  L2 --> L3
+  L3 --> L4
+  L2 -.direct.- L4
+  L5 --> L2
+            </pre>
+            <p>Two facts make the picture confusing: (a) a product like Claude Code spans <em>layers 1</em> (it is a
+                harness) <em>and 3</em> (it is an application you run), and (b) frameworks are often mislabelled
+                "harnesses". Naming aside, what matters is <strong>who owns the loop and the tools</strong> — that owner
+                is the de-facto harness.</p>
+        </section>
+
+        <section class="card">
+            <h2>2 · The ownership test</h2>
+            <p>Ask one question of any tool: <em>"does it own the agentic loop — deciding when to call the model, execute
+                    its tool calls, and feed observations back — or does it just give me pieces to assemble?"</em></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Layer</th>
+                        <th>Owns the loop?</th>
+                        <th>You supply</th>
+                        <th>Archetypes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Harness</strong></td>
+                        <td>Yes — end to end</td>
+                        <td>Goals, policy, config</td>
+                        <td>Claude Code, Codex CLI, Gemini CLI, Cursor, Docker Agent coding harness</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Framework / SDK</strong></td>
+                        <td>No — it's a toolkit <em>you</em> wire into a loop</td>
+                        <td>The loop, state, model wiring</td>
+                        <td>LangGraph, OpenAI Agents SDK, Claude Agent SDK, AutoGen, CrewAI</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Application</strong></td>
+                        <td>Uses one above it</td>
+                        <td>Your domain, UI, users</td>
+                        <td>Support bots, review agents, your in-house tools</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>This is why you'll hear both "LangGraph is my harness" and "I use Claude Code as my harness" — and both
+                speakers are right in their own stack. The first person <em>assembled</em> a loop from framework parts;
+                the second is <em>using</em> a pre-built loop. Same goal, different altitude.</p>
+        </section>
+
+        <section class="card">
+            <h2>3 · Frameworks are the Lego; the harness is the build instructions + motor</h2>
+            <p>A framework gives you primitives — graph nodes, agents, handoffs, guardrails, memory stores — but no one
+                runs a "LangGraph" that does work by itself. Someone has to write the loop, connect a model, expose
+                tools, and decide the stopping rules. When you ship that, <em>you've written a harness</em> (a bespoke
+                one). Conversely a ready-made harness like Claude Code hands you a finished loop with first-class tools
+                and lets you configure, not construct.</p>
+            <div class="grid">
+                <div class="mini good">
+                    <strong>Use a ready-made harness when</strong>
+                    <ul>
+                        <li>The domain matches (code, general agent work)</li>
+                        <li>You want tools, hooks, and memory for free</li>
+                        <li>You'd rather configure policy than write loops</li>
+                    </ul>
+                </div>
+                <div class="mini warn">
+                    <strong>Assemble from a framework when</strong>
+                    <ul>
+                        <li>You need bespoke orchestration/state machines</li>
+                        <li>The loop must live inside your product's codebase</li>
+                        <li>You need fine-grained control over model/tool routing</li>
+                    </ul>
+                </div>
+                <div class="mini bad">
+                    <strong>Write from scratch only when</strong>
+                    <ul>
+                        <li>You're learning (see page 5)</li>
+                        <li>You have unusual constraints (offline, custom protocol)</li>
+                        <li>You accept owning retries, safety, and context forever</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Workflows vs agents — the policy half of the picture</h2>
+            <p>Anthropic's <em>building agents</em> guidance adds the other axis. A <strong>workflow</strong> is
+                predetermined code paths (chaining, routing, orchestrator-workers, evaluator-optimiser) — the <em>shape</em>
+                is fixed. An <strong>agent</strong> lets the model decide its own path, dynamically using tools. The
+                harness is what executes whichever you pick: a workflow is a harness whose loop has been partially
+                hard-coded; a full agent is a harness whose loop is mostly delegated to the model.</p>
+            <div class="callout">
+                <strong>Rule of thumb from Anthropic:</strong> reach for the simplest thing that works. Start with a
+                workflow; only use an autonomous agent where you need flexibility at scale and can afford the
+                verification. A harness makes both cheap to swap — which is the real argument for "buying" one.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>5 · The "harness as orchestrator" pattern</h2>
+            <p>One more zoom level that shows up in production (and in your <a
+                    href="../industry_standards/index.html">industry_standards</a> reading): an <em>outer</em> harness
+                that delegates real work to a coding CLI as a sub-process. A CI system spawns Claude Code with a persona,
+                policy hooks, and a spec file, then inspects the result and either ships it or loops back for a fix. Here
+                the inner agent is a harness <em>and</em> a tool of an outer orchestrator — evidence that "harness" is a
+                relative label: whatever owns the loop at your altitude.</p>
+        </section>
+
+        <section class="card">
+            <h2>6 · Deciding for yourself</h2>
+            <ol>
+                <li><strong>Map the layer you're actually in.</strong> Building a product feature? You're at layer 3 and
+                    will <em>call</em> a harness or SDK, not build one.</li>
+                <li><strong>Prefer the ready-made harness for coding tasks.</strong> You already have one; configuring it
+                    (CLAUDE.md, skills, hooks, permissions) beats re-implementing it.</li>
+                <li><strong>Choose a framework only where your product needs the bespoke loop.</strong> Then you're
+                    writing a small harness — see <a href="build-your-own-harness.html">page 5</a> for the minimal shape.</li>
+                <li><strong>Keep the layers honest.</strong> When someone says "just a wrapper", ask which layer they
+                    mean — usually they've mistaken the harness for the model.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Related pages in your library</h2>
+            <div class="sources">
+                <a class="source" href="../industry_standards/anthropic_building_agents.html">industry_standards · workflows vs agents</a>
+                <a class="source" href="../02_comparisons/agentic_frameworks.html">02_comparisons · agentic frameworks</a>
+                <a class="source" href="../02_comparisons/orchestration_platforms.html">02_comparisons · orchestration platforms</a>
+                <a class="source" href="../industry_standards/autogpt_godmode_comparison.html">industry_standards · AutoGPT vs coding agents</a>
+            </div>
+            <h2>Sources</h2>
+            <div class="sources">
+                <a class="source" href="https://docs.anthropic.com/en/docs/build-with-claude/agentic-sdks" target="_blank" rel="noopener">Anthropic · agentic SDKs</a>
+                <a class="source" href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noopener">Anthropic · building effective agents</a>
+                <a class="source" href="https://docs.docker.com/ai/docker-agent/features/harnesses/" target="_blank" rel="noopener">Docker Agent · coding harnesses</a>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

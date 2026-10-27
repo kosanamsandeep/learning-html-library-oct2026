@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why FastMCP? — What it overcomes &amp; the advantages</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="mcp">MCP</span>Why FastMCP?</div>
+        <div class="links">
+            <a href="../index.html">Side Projects</a>
+            <a href="index.html">MCP Hub</a>
+            <a href="01_first_fastmcp_server.html">First server →</a>
+        </div>
+    </div>
+
+    <div class="header mcp">
+        <p class="badge">Concept · The case for FastMCP</p>
+        <h1>⚡ Why FastMCP?</h1>
+        <p class="subtitle">MCP is the <em>protocol</em>. FastMCP is the <strong>framework</strong> that makes
+            building and consuming MCP painless. This page is the "why": what life looks like <strong>without
+                FastMCP</strong>, what it <strong>overcomes</strong>, and the concrete <strong>advantages</strong>
+            it brings.</p>
+    </div>
+
+    <div class="container">
+        <div class="section mcp">
+            <h2>First, the one-line distinction</h2>
+            <div class="grid-2">
+                <div class="mini mcp">
+                    <h3>MCP (the protocol)</h3>
+                    <p>An open <em>specification</em> — the JSON-RPC messages, the handshake, and the rules for
+                        how a client and server exchange tools, resources, and prompts. A standard, not code.</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>FastMCP (the framework)</h3>
+                    <p>A high-level Python library that <em>implements</em> the protocol for you, so you write a
+                        decorated function and FastMCP handles all the wire-level plumbing.</p>
+                </div>
+            </div>
+            <div class="callout sky">
+                <strong>Analogy:</strong> MCP is <em>HTTP</em>; FastMCP is <em>FastAPI</em>. You <em>could</em>
+                speak HTTP by hand with raw sockets — but nobody wants to. FastMCP is to MCP what FastAPI is to
+                HTTP: the ergonomic layer everyone actually builds on.
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>The problem FastMCP overcomes</h2>
+            <p>The raw MCP protocol is powerful but low-level. To expose a single tool with the bare SDK you
+                must wire up JSON-RPC handlers, declare a <code>list_tools</code> response, hand-write the JSON
+                Schema for every argument, implement a <code>call_tool</code> dispatcher, parse and validate
+                incoming arguments, format the result envelope, and manage the transport lifecycle. That's a lot
+                of boilerplate before your actual logic runs — and every mistake is a protocol bug.</p>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    subgraph Raw["❌ Without FastMCP — you own the plumbing"]
+        R1["define JSON-RPC server"] --> R2["implement list_tools"]
+        R2 --> R3["hand-write JSON Schema<br/>for each arg"]
+        R3 --> R4["implement call_tool<br/>dispatcher"]
+        R4 --> R5["parse + validate args"]
+        R5 --> R6["format result envelope"]
+        R6 --> R7["manage transport"]
+        R7 --> R8["...then your logic"]
+    end
+    subgraph Fast["✅ With FastMCP — you own the logic"]
+        F1["@mcp.tool"] --> F2["def your_function(...)"]
+    end
+                </pre>
+                <p class="caption">FastMCP collapses seven steps of protocol plumbing into one decorator —
+                    everything in the left box is generated for you.</p>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>Same tool, both ways</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3 style="color:#f87171">❌ Conceptually, the low-level way</h3>
+                    <pre><code><span class="c-com"># You must describe the tool by hand...</span>
+TOOLS = [{
+  <span class="c-str">"name"</span>: <span class="c-str">"add"</span>,
+  <span class="c-str">"description"</span>: <span class="c-str">"Add two integers"</span>,
+  <span class="c-str">"inputSchema"</span>: {
+    <span class="c-str">"type"</span>: <span class="c-str">"object"</span>,
+    <span class="c-str">"properties"</span>: {
+      <span class="c-str">"a"</span>: {<span class="c-str">"type"</span>: <span class="c-str">"integer"</span>},
+      <span class="c-str">"b"</span>: {<span class="c-str">"type"</span>: <span class="c-str">"integer"</span>},
+    },
+    <span class="c-str">"required"</span>: [<span class="c-str">"a"</span>, <span class="c-str">"b"</span>],
+  },
+}]
+
+<span class="c-com"># ...then route calls by name and validate yourself.</span>
+<span class="c-kw">async def</span> <span class="c-fn">call_tool</span>(name, args):
+    <span class="c-kw">if</span> name == <span class="c-str">"add"</span>:
+        a = <span class="c-fn">int</span>(args[<span class="c-str">"a"</span>]); b = <span class="c-fn">int</span>(args[<span class="c-str">"b"</span>])
+        <span class="c-kw">return</span> {<span class="c-str">"content"</span>: [{<span class="c-str">"type"</span>: <span class="c-str">"text"</span>,
+                <span class="c-str">"text"</span>: <span class="c-fn">str</span>(a + b)}]}
+    <span class="c-kw">raise</span> ValueError(<span class="c-str">"unknown tool"</span>)</code></pre>
+                </div>
+                <div class="card">
+                    <h3 style="color:#34d399">✅ The FastMCP way</h3>
+                    <pre><code><span class="c-kw">from</span> fastmcp <span class="c-kw">import</span> FastMCP
+
+mcp = FastMCP(<span class="c-str">"Math Server"</span>)
+
+<span class="c-cls">@mcp.tool</span>
+<span class="c-kw">def</span> <span class="c-fn">add</span>(a: <span class="c-cls">int</span>, b: <span class="c-cls">int</span>) -> <span class="c-cls">int</span>:
+    <span class="c-str">"""Add two integers."""</span>
+    <span class="c-kw">return</span> a + b
+
+mcp.run()</code></pre>
+                    <p style="color:#9ca3af;margin-top:.6rem">The schema, validation, routing, result envelope,
+                        and transport are all generated from the type hints and docstring.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>What you'd be "overcoming" by hand</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Concern</th>
+                        <th>Without FastMCP</th>
+                        <th>With FastMCP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Tool schema</td>
+                        <td>Hand-write JSON Schema, keep it in sync with the function</td>
+                        <td>Generated from type hints — always in sync</td>
+                    </tr>
+                    <tr>
+                        <td>Argument validation</td>
+                        <td>Manual parsing &amp; type-checking</td>
+                        <td>Automatic (Pydantic under the hood)</td>
+                    </tr>
+                    <tr>
+                        <td>Request routing</td>
+                        <td>Your own name→function dispatcher</td>
+                        <td>The decorator registers it</td>
+                    </tr>
+                    <tr>
+                        <td>Result formatting</td>
+                        <td>Build the MCP content envelope yourself</td>
+                        <td>Return a plain value; FastMCP wraps it</td>
+                    </tr>
+                    <tr>
+                        <td>Transports</td>
+                        <td>Wire up stdio / HTTP lifecycles</td>
+                        <td><code>mcp.run(transport=...)</code> — one line</td>
+                    </tr>
+                    <tr>
+                        <td>Resources &amp; prompts</td>
+                        <td>More handlers, more schemas</td>
+                        <td><code>@mcp.resource</code>, <code>@mcp.prompt</code></td>
+                    </tr>
+                    <tr>
+                        <td>A client to test with</td>
+                        <td>Build your own</td>
+                        <td><code>fastmcp.Client</code> included</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section mcp">
+            <h2>The advantages FastMCP brings</h2>
+            <div class="grid">
+                <div class="mini mcp">
+                    <h3>🎯 Decorator simplicity</h3>
+                    <p>One <code>@mcp.tool</code> turns any function into a fully-specified MCP tool. You write
+                        logic, not protocol.</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>🛡️ Type-safe by default</h3>
+                    <p>Type hints become the schema <em>and</em> the validation, so bad arguments are rejected
+                        before your code runs.</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>🔌 Both sides included</h3>
+                    <p>Server <em>and</em> a first-class <code>Client</code> — build tools and call them (or
+                        call others) with the same library.</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>🔁 Swappable transports</h3>
+                    <p>stdio for local, streamable-HTTP for remote — switch with a single argument, no rewrite.</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>🧩 Full primitives</h3>
+                    <p>Tools, resources, and prompts all get the same clean decorator treatment.</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>🧪 Easy to test</h3>
+                    <p>Run the server in-memory and call it from the client in a unit test — no subprocess
+                        needed.</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>🔐 Production features</h3>
+                    <p>FastMCP 2.0 adds auth (bearer/OAuth), middleware, server composition, and deployment
+                        helpers.</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>🌐 Ecosystem-ready</h3>
+                    <p>Works with the Inspector, Claude Desktop, and adapters like
+                        <code>langchain-mcp-adapters</code> out of the box.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>"What if I <em>don't</em> use FastMCP?"</h2>
+            <p>You have three realistic paths — FastMCP is the pragmatic middle that most teams pick:</p>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    Q["Need to expose tools to an LLM agent?"] --> A{"Which path?"}
+    A -->|"No standard"| P1["Custom REST/function glue<br/>per agent (M×N integrations)"]
+    A -->|"Raw MCP SDK"| P2["Standard protocol,<br/>but you write the plumbing"]
+    A -->|"FastMCP"| P3["Standard protocol +<br/>decorator ergonomics"]
+    P1 --> C1["❌ Not portable, re-glue for every client"]
+    P2 --> C2["⚠️ Portable, but boilerplate &amp; protocol bugs"]
+    P3 --> C3["✅ Portable AND fast to build"]
+                </pre>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>If you skip FastMCP…</th>
+                        <th>Consequence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>…and write custom glue per agent</td>
+                        <td>You're back to the M×N integration problem MCP set out to kill — no portability.</td>
+                    </tr>
+                    <tr>
+                        <td>…and use the raw MCP SDK</td>
+                        <td>You get portability but own all the boilerplate, schemas, and lifecycle code — slower and
+                            more error-prone.</td>
+                    </tr>
+                    <tr>
+                        <td>…for a tiny throwaway script</td>
+                        <td>Fine — but the moment a second client wants your tool, you'll wish it spoke MCP.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout sky">
+                <strong>The honest take:</strong> you don't <em>need</em> FastMCP to do MCP — but choosing the
+                raw SDK is like writing a web service in raw WSGI instead of FastAPI. Same result, far more work.
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>When FastMCP is the clear win — and when it isn't</h2>
+            <div class="grid-2">
+                <div class="callout green">
+                    <strong>Reach for FastMCP when…</strong>
+                    <ul style="margin-top:.5rem">
+                        <li>You want tools reusable across many agents/clients.</li>
+                        <li>You're exposing more than one or two tools.</li>
+                        <li>You need resources, prompts, auth, or remote access.</li>
+                        <li>You want to consume existing MCP servers too.</li>
+                    </ul>
+                </div>
+                <div class="callout amber">
+                    <strong>You might skip it when…</strong>
+                    <ul style="margin-top:.5rem">
+                        <li>It's a one-off script with a single in-process tool.</li>
+                        <li>You're locked into a non-Python stack with its own MCP lib.</li>
+                        <li>You only ever call one vendor's hosted tools and never publish your own.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>Bottom line</h2>
+            <div class="callout sky">
+                <strong>FastMCP removes the boilerplate between "I have a Python function" and "any AI agent can
+                    use it safely."</strong> It overcomes hand-written schemas, manual validation, request routing,
+                and transport wiring — and brings decorator simplicity, type safety, a built-in client, easy
+                testing, and production features (auth, HTTP, composition). The protocol gives you portability;
+                FastMCP gives you portability <em>without</em> the plumbing.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="index.html"><span class="dir">Back</span>
+                <div class="ttl">MCP Hub</div>
+            </a>
+            <a class="next" href="01_first_fastmcp_server.html"><span class="dir">Next</span>
+                <div class="ttl">01 · Build your first server →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>MCP × LangGraph Projects · Why FastMCP?</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

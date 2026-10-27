@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGen 04 · GroupChat &amp; Advanced Patterns</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="ag">AG</span>AutoGen · 04 Advanced</div>
+        <div class="links">
+            <a href="index.html">AutoGen Hub</a>
+            <a href="03_tools.html">← 03</a>
+            <a href="../agent_frameworks_comparison/index.html">Compare →</a>
+        </div>
+    </div>
+
+    <div class="header ag">
+        <p class="badge">Build 04 · Advanced</p>
+        <h1>Dynamic teams, humans &amp; observability</h1>
+        <p class="subtitle">Everything you need for a real multi-agent system: an LLM that picks the next
+            speaker (<code>SelectorGroupChat</code>), human-in-the-loop, saving/loading team state, and
+            OpenTelemetry tracing.</p>
+    </div>
+
+    <div class="container">
+        <div class="section ag">
+            <h2>What this build covers</h2>
+            <div class="pill-row">
+                <span class="level advanced">Advanced</span>
+                <span class="tag teal">SelectorGroupChat</span>
+                <span class="tag teal">UserProxyAgent</span>
+                <span class="tag teal">save_state / load_state</span>
+                <span class="tag teal">OpenTelemetry</span>
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>SelectorGroupChat — the LLM routes the conversation</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    M{{"Selector (LLM)<br/>reads history, picks next speaker"}}
+    M --> P["planner"]
+    M --> R["researcher"]
+    M --> C["coder"]
+    P --> M
+    R --> M
+    C --> M
+    M -->|termination| END["Done"]
+                </pre>
+                <p class="caption">Unlike round-robin's fixed order, the selector chooses the most relevant
+                    agent each turn — ideal for teams with specialised roles.</p>
+            </div>
+            <pre><code><span class="c-kw">from</span> autogen_agentchat.teams <span class="c-kw">import</span> SelectorGroupChat
+<span class="c-kw">from</span> autogen_agentchat.conditions <span class="c-kw">import</span> TextMentionTermination, MaxMessageTermination
+
+planner    = AssistantAgent(<span class="c-str">"planner"</span>,    model_client=client, system_message=<span class="c-str">"Break the goal into steps."</span>)
+researcher = AssistantAgent(<span class="c-str">"researcher"</span>, model_client=client, tools=[web_search], system_message=<span class="c-str">"Gather facts."</span>)
+coder      = AssistantAgent(<span class="c-str">"coder"</span>,      model_client=client, system_message=<span class="c-str">"Write code. Say TERMINATE when complete."</span>)
+
+team = SelectorGroupChat(
+    [planner, researcher, coder],
+    model_client=client,                       <span class="c-com"># the LLM used to PICK the next speaker</span>
+    termination_condition=TextMentionTermination(<span class="c-str">"TERMINATE"</span>) | MaxMessageTermination(<span class="c-cls">20</span>),
+)
+
+<span class="c-kw">await</span> Console(team.run_stream(task=<span class="c-str">"Research and prototype a URL shortener."</span>))</code></pre>
+        </div>
+
+        <div class="section ag">
+            <h2>Human-in-the-loop with <code>UserProxyAgent</code></h2>
+            <p>Add a real person as an agent. When it's their turn, AutoGen pauses and waits for input —
+                perfect for approvals.</p>
+            <pre><code><span class="c-kw">from</span> autogen_agentchat.agents <span class="c-kw">import</span> UserProxyAgent
+
+human = UserProxyAgent(<span class="c-str">"human"</span>, input_func=<span class="c-kw">input</span>)   <span class="c-com"># prompts at the console</span>
+
+team = RoundRobinGroupChat([assistant, human],
+                           termination_condition=TextMentionTermination(<span class="c-str">"DONE"</span>))
+<span class="c-kw">await</span> Console(team.run_stream(task=<span class="c-str">"Plan a release; ask me to approve each step."</span>))</code></pre>
+            <div class="callout teal">
+                For web apps, pass an async <code>input_func</code> that resolves when your UI submits — and
+                pair it with <code>HandoffTermination</code> so an agent can explicitly hand control to the
+                human.
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>Persisting team state</h2>
+            <p>Save the full conversation/team state to resume later — the basis for durable, long-running
+                sessions.</p>
+            <pre><code><span class="c-com"># Save after a run</span>
+state = <span class="c-kw">await</span> team.save_state()
+json.dump(state, <span class="c-fn">open</span>(<span class="c-str">"team_state.json"</span>, <span class="c-str">"w"</span>))
+
+<span class="c-com"># ...later, rebuild the team and restore</span>
+<span class="c-kw">await</span> team.load_state(json.load(<span class="c-fn">open</span>(<span class="c-str">"team_state.json"</span>)))
+<span class="c-kw">await</span> Console(team.run_stream(task=<span class="c-str">"Continue where we left off."</span>))</code></pre>
+        </div>
+
+        <div class="section ag">
+            <h2>Observability — OpenTelemetry tracing</h2>
+            <p>AutoGen emits OTEL traces, so every agent message, tool call, and model request shows up in
+                Jaeger, Grafana, or any OTLP backend.</p>
+            <pre><code><span class="c-kw">from</span> opentelemetry <span class="c-kw">import</span> trace
+<span class="c-kw">from</span> opentelemetry.sdk.trace <span class="c-kw">import</span> TracerProvider
+<span class="c-kw">from</span> opentelemetry.exporter.otlp.proto.grpc.trace_exporter <span class="c-kw">import</span> OTLPSpanExporter
+<span class="c-kw">from</span> opentelemetry.sdk.trace.export <span class="c-kw">import</span> BatchSpanProcessor
+
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+trace.set_tracer_provider(provider)
+<span class="c-com"># AutoGen runtimes auto-instrument: traces now flow to your collector.</span></code></pre>
+            <div class="callout teal">
+                <strong>AgentOps &amp; AutoGen Studio</strong> are higher-level options: AgentOps gives
+                dashboards/cost tracking with one line; AutoGen Studio is a low-code UI to prototype teams
+                visually.
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>Choosing a team type</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Team</th>
+                        <th>Next speaker chosen by…</th>
+                        <th>Use when</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>RoundRobinGroupChat</code></td>
+                        <td>Fixed rotation</td>
+                        <td>Pipelines, reviewer loops.</td>
+                    </tr>
+                    <tr>
+                        <td><code>SelectorGroupChat</code></td>
+                        <td>An LLM each turn</td>
+                        <td>Dynamic, specialised teams.</td>
+                    </tr>
+                    <tr>
+                        <td><code>Swarm</code></td>
+                        <td>Explicit handoffs</td>
+                        <td>Agents decide who to delegate to.</td>
+                    </tr>
+                    <tr>
+                        <td><code>MagenticOneGroupChat</code></td>
+                        <td>An orchestrator</td>
+                        <td>Complex open-ended web/file tasks.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section ag">
+            <h2>Production checklist</h2>
+            <ul>
+                <li><strong>Always cap with <code>MaxMessageTermination</code></strong> alongside any
+                    text/handoff condition.</li>
+                <li><strong>Trace everything.</strong> Multi-agent bugs are invisible without OTEL or AgentOps.</li>
+                <li><strong>Persist state</strong> for long sessions and crash recovery.</li>
+                <li><strong>Set token budgets</strong> (<code>TokenUsageTermination</code>) to control cost.</li>
+                <li><strong>Isolate code execution</strong> in a container/Docker code executor — never run
+                    LLM-written code on the host.</li>
+            </ul>
+        </div>
+
+        <div class="section ag">
+            <h2>Where AutoGen stands first</h2>
+            <div class="callout teal">
+                AutoGen <strong>stands first for conversational, research-and-prototype multi-agent systems</strong>
+                — its async actor runtime, rich team types, and code-execution agents make exploratory
+                "agents talking to agents" workflows feel natural. For strict, graph-shaped production control
+                flow choose <strong>LangGraph</strong>; for fast role-based crews choose <strong>CrewAI</strong>.
+                See the side-by-side <a href="../agent_frameworks_comparison/index.html">comparison</a>.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="03_tools.html"><span class="dir">Previous</span>
+                <div class="ttl">← 03 · Tools</div>
+            </a>
+            <a class="next" href="../agent_frameworks_comparison/index.html"><span class="dir">Next</span>
+                <div class="ttl">Framework comparison →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>AutoGen Projects · 04 of 04</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

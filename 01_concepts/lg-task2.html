@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Task 2 - Sequential vs Stateful | LangGraph</title>
+</head>
+
+<body>
+<header class="site-header">
+    <div class="shell">
+        <a class="brand" href="index.html">
+            <span class="brand-mark">AI</span>
+            <span>AI Engineer Interview Guide</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </nav>
+    </div>
+</header>
+
+    <main class="cp-container">
+    <div class="cp-hero"><div class="task-num">Task 2</div>
+
+        <h1>Sequential vs Stateful Processing</h1>
+        <div class="subtitle">The fundamental "why" behind LangGraph</div>
+    </div>
+
+    
+        <div class="section">
+            <h2>🧩 What This Task Teaches</h2>
+            <p>This is the <strong>motivation task</strong>. It shows you the exact problem that LangGraph was created
+                to solve:
+                <strong>traditional LangChain chains have no memory between steps</strong>. Each step is independently
+                executed,
+                like separate conversations with an amnesiac.
+            </p>
+
+            <div class="highlight-box">
+                <p><strong>Core Problem:</strong> In a sequential chain, Step 3 cannot remember what happened in Step 1.
+                    In a stateful graph, ALL steps can access and build upon shared information.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>⚔️ The Comparison</h2>
+
+            <h3>Sequential Chain (LangChain Traditional)</h3>
+            <div class="diagram">
+                <div class="flow">
+                    <div class="node">Step 1: Greet Alice</div>
+                    <div class="arrow">→</div>
+                    <div class="node">Step 2: Say Goodbye</div>
+                    <div class="arrow">→</div>
+                    <div class="node">Step 3: Who was it?</div>
+                </div>
+                <div class="label">Each step is INDEPENDENT — Step 3 doesn't know the name was "Alice" ❌</div>
+            </div>
+
+            <h3>Stateful Graph (LangGraph)</h3>
+            <div class="diagram">
+                <div class="flow">
+                    <div class="node">Greet (saves name)</div>
+                    <div class="arrow">→</div>
+                    <div class="node">Farewell (reads name)</div>
+                    <div class="arrow">→</div>
+                    <div class="node">Memory Test (reads name)</div>
+                </div>
+                <div class="label">All nodes share state — every step can access "Alice" ✅</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Side-by-Side Comparison</h2>
+            <table class="comparison-table">
+                <tr>
+                    <th>Feature</th>
+                    <th>Sequential Chain</th>
+                    <th>Stateful Graph</th>
+                </tr>
+                <tr>
+                    <td><strong>Memory Between Steps</strong></td>
+                    <td class="bad">❌ None — each step starts fresh</td>
+                    <td class="good">✅ Full state preserved</td>
+                </tr>
+                <tr>
+                    <td><strong>Data Sharing</strong></td>
+                    <td class="bad">Manual — must pass explicitly</td>
+                    <td class="good">Automatic — shared state object</td>
+                </tr>
+                <tr>
+                    <td><strong>Flow Control</strong></td>
+                    <td class="bad">Linear only (A → B → C)</td>
+                    <td class="good">Any pattern (loops, branches)</td>
+                </tr>
+                <tr>
+                    <td><strong>Error Recovery</strong></td>
+                    <td class="bad">Restart from beginning</td>
+                    <td class="good">Resume from last state</td>
+                </tr>
+                <tr>
+                    <td><strong>Good For</strong></td>
+                    <td>Simple, one-shot tasks</td>
+                    <td>Complex, multi-step workflows</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>💻 How The Code Works</h2>
+
+            <h3>Sequential (No Memory)</h3>
+            <div class="code-block">
+                <span class="comment"># Each chain is independent — like talking to a new person each time</span>
+                <span class="keyword">prompt1</span> = "Say hello to {name}"
+                <span class="keyword">prompt2</span> = "Say goodbye" <span class="comment"># ← Can't access 'name' —
+                    it's gone!</span>
+                <span class="keyword">prompt3</span> = "What was their name?" <span class="comment"># ← Has NO
+                    idea!</span>
+            </div>
+
+            <h3>Stateful Graph (Full Memory)</h3>
+            <div class="code-block">
+                <span class="comment"># State is shared — like passing a notebook between team members</span>
+                <span class="keyword">class</span> <span class="function">ConversationState</span>(TypedDict):
+                name: str <span class="comment"># ← Available to ALL nodes</span>
+                greeting: str
+                farewell: str
+
+                <span class="keyword">def</span> <span class="function">greet_person</span>(state):
+                <span class="comment"># Reads state['name'] → "Alice"</span>
+                <span class="keyword">return</span> {"greeting": f"Hello {state['name']}!"}
+
+                <span class="keyword">def</span> <span class="function">say_farewell</span>(state):
+                <span class="comment"># ALSO reads state['name'] → still "Alice"!</span>
+                <span class="keyword">return</span> {"farewell": f"Bye {state['name']}!"}
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>✅ Advantages of This Task</h2>
+            <ul class="advantage-list">
+                <li><strong>Motivates LangGraph's existence</strong> — you see exactly WHY stateful processing matters
+                </li>
+                <li><strong>Shows the limitation of basic chains</strong> — chains are fast but dumb (no memory)</li>
+                <li><strong>Introduces TypedDict state</strong> — the structured way to define what your graph remembers
+                </li>
+                <li><strong>First StateGraph construction</strong> — add_node, set_entry_point, add_edge, compile</li>
+            </ul>
+        </div>
+
+        <div class="key-insight">
+            <h4>💡 Key Insight</h4>
+            <p>LangGraph's superpower starts here: <strong>shared state</strong>. Every node reads from and writes to
+                the same state object.
+                This is the foundation that makes everything else (routing, loops, tools, memory) possible.</p>
+        </div>
+
+        <div class="section">
+            <h2>🔗 What This Enables Next</h2>
+            <p>Now that you understand state, Task 3 shows how state doesn't just persist — it
+                <strong>accumulates</strong>.
+                Nodes don't just read state; they add to it, building up information over time.</p>
+        </div>
+
+        <div class="cp-nav-footer">
+            <a href="lg-index.html">← Overview</a>
+            <a href="lg-task3.html">Next: Task 3 - StateGraph →</a>
+        </div>
+    </div>
+
+    </main>
+
+<footer class="site-footer">
+    <div class="shell">
+        <p>Part of the AI and ML Interview Starter Guide. Open locally in any browser.</p>
+        <div class="mini-links">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </div>
+    </div>
+</footer>
+</body>
+
+</html>

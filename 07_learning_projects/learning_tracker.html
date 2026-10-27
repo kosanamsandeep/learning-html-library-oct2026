@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning Tracker - OOP to Architect in 21 Projects</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --accent: #e94560;
+            --secondary: #16213e;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--primary);
+            line-height: 1.7;
+        }
+
+        .hero {
+            background: var(--gradient);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 2.5em;
+            margin: 0 0 10px;
+            letter-spacing: -1px;
+        }
+
+        .hero p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 30px;
+        }
+
+        h2 {
+            color: var(--secondary);
+            border-left: 4px solid var(--accent);
+            padding-left: 15px;
+            margin-top: 50px;
+            font-size: 1.6em;
+        }
+
+        h3 {
+            color: var(--accent);
+            margin-top: 30px;
+        }
+
+        .mermaid {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 25px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+            border: 1px solid #eee;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: var(--gradient);
+            color: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .stat-card .label {
+            opacity: 0.85;
+            font-size: 0.9em;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.78em;
+            margin: 3px;
+            font-weight: 500;
+        }
+
+        .tag-beginner {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .tag-intermediate {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .tag-advanced {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .tag-pattern {
+            background: #e8daef;
+            color: #4a148c;
+        }
+
+        .tag-concept {
+            background: #d0e8ff;
+            color: #01579b;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: var(--secondary);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .phase {
+            border-left: 4px solid;
+            padding: 20px 25px;
+            margin: 20px 0;
+            border-radius: 0 12px 12px 0;
+            background: white;
+        }
+
+        .phase-1 {
+            border-color: #4caf50;
+        }
+
+        .phase-2 {
+            border-color: #ff9800;
+        }
+
+        .phase-3 {
+            border-color: #2196f3;
+        }
+
+        .phase-4 {
+            border-color: #9c27b0;
+        }
+
+        .parallel-box {
+            background: #fffde7;
+            border: 1px solid #ffd54f;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 10px 0;
+        }
+
+        .parallel-box strong {
+            color: #f57f17;
+        }
+
+        .differentiator {
+            background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 15px 0;
+            border: 1px solid #c8e6c9;
+        }
+
+        .growth-path {
+            background: linear-gradient(135deg, #e3f2fd, #e8eaf6);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 15px 0;
+            border: 1px solid #bbdefb;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        .highlight {
+            background: #fff9c4;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        code {
+            background: #e8e8e8;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.88em;
+        }
+
+        .quote {
+            font-style: italic;
+            border-left: 3px solid var(--accent);
+            padding: 10px 20px;
+            margin: 20px 0;
+            color: #555;
+            background: #fafafa;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+
+            .two-col,
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="hero">
+        <h1>🏗️ OOP to Software Architect</h1>
+        <p>A 21-project journey from basic classes to production-grade distributed system patterns.
+            Every concept builds on the last. Every pattern has a real-world story.</p>
+    </div>
+
+    <div class="container">
+
+        <!-- Stats -->
+        <div class="card-grid">
+            <div class="stat-card">
+                <div class="number">21</div>
+                <div class="label">Projects Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">50+</div>
+                <div class="label">Design Patterns Mastered</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">4</div>
+                <div class="label">Progression Phases</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">105</div>
+                <div class="label">Working Demos Verified</div>
+            </div>
+        </div>
+
+        <!-- WHY -->
+        <h2>Why This Learning Plan Was Devised</h2>
+        <div class="card">
+            <p>Most developers learn patterns in isolation — reading about "Strategy Pattern" in a textbook without ever
+                connecting it to a production system. This plan was designed with three principles:</p>
+            <ol>
+                <li><strong>Progressive Complexity:</strong> Each project adds exactly ONE new concept layer on top of
+                    what you already know. P1 teaches classes. P6 teaches Repository. P15 teaches Event Sourcing. The
+                    slope is constant.</li>
+                <li><strong>Real Stories, Not Toy Examples:</strong> Every project has a real business domain —
+                    hospitals, banks, e-commerce, insurance, SaaS platforms. You're not learning "abstract pattern X";
+                    you're solving "how Netflix handles 200M users" or "how Stripe processes payments safely".</li>
+                <li><strong>Golden Standard Open-Source Approaches:</strong> Each project is modeled after
+                    industry-standard architectures: Spring Boot (DI, Config), Apache Beam (Pipeline), Consul (Service
+                    Registry), Hystrix (Circuit Breaker), WordPress (Hooks/Plugins), Prefect (ETL), Kubernetes (Health
+                    Probes).</li>
+            </ol>
+            <div class="quote">"You don't rise to the level of your goals. You fall to the level of your systems." —
+                James Clear</div>
+            <p>This IS the system. 21 projects. 50+ patterns. One architecture mindset.</p>
+        </div>
+
+        <!-- PROGRESSION -->
+        <h2>The 4-Phase Learning Progression</h2>
+        <div class="mermaid">
+            graph LR
+            P1["Phase 1<br />OOP Foundation<br />P1-P3"] --> P2["Phase 2<br />Data & Boundaries<br />P4-P7"]
+            P2 --> P3["Phase 3<br />Abstractions & SOLID<br />P8-P10"]
+            P3 --> P4["Phase 4<br />Production Patterns<br />P11-P21"]
+
+            style P1 fill:#4caf50,color:white
+            style P2 fill:#ff9800,color:white
+            style P3 fill:#2196f3,color:white
+            style P4 fill:#9c27b0,color:white
+        </div>
+
+        <div class="phase phase-1">
+            <h3>Phase 1: OOP Foundation (P1–P3)</h3>
+            <p><strong>What you learned:</strong> Classes, Encapsulation, Inheritance, Polymorphism, Composition</p>
+            <p><strong>Why it matters:</strong> These are the atoms of all software. Every pattern in P4-P21 is built
+                from these primitives. If you can't distinguish IS-A from HAS-A, you'll misapply patterns forever.</p>
+            <table>
+                <tr>
+                    <th>Project</th>
+                    <th>Core Concept</th>
+                    <th>Real-World Map</th>
+                </tr>
+                <tr>
+                    <td>P1 - Student Management</td>
+                    <td>Classes, Encapsulation, SRP</td>
+                    <td>Any CRUD system</td>
+                </tr>
+                <tr>
+                    <td>P2 - Banking System</td>
+                    <td>Inheritance, Polymorphism</td>
+                    <td>Payment processors</td>
+                </tr>
+                <tr>
+                    <td>P3 - Hospital Management</td>
+                    <td>Composition, Object Graphs</td>
+                    <td>ERP systems, CRMs</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="phase phase-2">
+            <h3>Phase 2: Data Handling & Boundaries (P4–P7)</h3>
+            <p><strong>What you learned:</strong> DTOs, Schema Validation, Repository Pattern, Layer Integration</p>
+            <p><strong>Why it matters:</strong> Production systems don't expose raw models. Every API has a boundary.
+                Data validation, transformation, and storage abstraction are what separate hobby code from professional
+                code.</p>
+            <table>
+                <tr>
+                    <th>Project</th>
+                    <th>Core Concept</th>
+                    <th>Real-World Map</th>
+                </tr>
+                <tr>
+                    <td>P4 - E-Commerce API</td>
+                    <td>DTOs, Boundary Validation</td>
+                    <td>REST API design</td>
+                </tr>
+                <tr>
+                    <td>P5 - Contact Management</td>
+                    <td>Nested Schemas, Deep Validation</td>
+                    <td>Form validation, GraphQL inputs</td>
+                </tr>
+                <tr>
+                    <td>P6 - Inventory System</td>
+                    <td>Repository Pattern, DI</td>
+                    <td>Django ORM, SQLAlchemy abstraction</td>
+                </tr>
+                <tr>
+                    <td>P7 - HealthTrack</td>
+                    <td>4-Layer Architecture</td>
+                    <td>Enterprise Java, Spring Boot apps</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="phase phase-3">
+            <h3>Phase 3: Abstractions & SOLID (P8–P10)</h3>
+            <p><strong>What you learned:</strong> Interfaces (ABC), Dependency Inversion, Factory, Strategy, Full SOLID
+                integration</p>
+            <p><strong>Why it matters:</strong> This is where you stop writing code that works and start writing code
+                that <em>scales</em>. SOLID principles let teams of 50+ engineers work on the same codebase without
+                stepping on each other.</p>
+            <table>
+                <tr>
+                    <th>Project</th>
+                    <th>Core Concept</th>
+                    <th>Real-World Map</th>
+                </tr>
+                <tr>
+                    <td>P8 - Authentication</td>
+                    <td>Interfaces, DIP, Open/Closed</td>
+                    <td>Auth0, Firebase Auth</td>
+                </tr>
+                <tr>
+                    <td>P9 - Notifications</td>
+                    <td>Factory + Strategy Patterns</td>
+                    <td>Twilio, SendGrid, SNS</td>
+                </tr>
+                <tr>
+                    <td>P10 - GenAI RAG</td>
+                    <td>Capstone: ALL patterns unified</td>
+                    <td>LangChain, LlamaIndex</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="phase phase-4">
+            <h3>Phase 4: Production-Grade Patterns (P11–P21)</h3>
+            <p><strong>What you learned:</strong> Event-driven systems, resilience, state machines, CQRS, plugin
+                architectures, multi-tenancy, ETL, microservice infrastructure</p>
+            <p><strong>Why it matters:</strong> This is what separates a "developer" from a "software architect". These
+                are the patterns that companies like Netflix, Uber, Stripe, and Shopify use to serve billions of
+                requests.</p>
+            <table>
+                <tr>
+                    <th>Project</th>
+                    <th>Core Concept</th>
+                    <th>Real-World Map</th>
+                </tr>
+                <tr>
+                    <td>P11 - Event Queue</td>
+                    <td>Observer, Pub/Sub, Commands</td>
+                    <td>RabbitMQ, Kafka, Celery</td>
+                </tr>
+                <tr>
+                    <td>P12 - API Gateway</td>
+                    <td>Chain of Responsibility, Rate Limiting</td>
+                    <td>Kong, Nginx, AWS API Gateway</td>
+                </tr>
+                <tr>
+                    <td>P13 - Plugin Architecture</td>
+                    <td>Hooks, Topological Sort, IoC</td>
+                    <td>WordPress, VS Code, Webpack</td>
+                </tr>
+                <tr>
+                    <td>P14 - State Machine</td>
+                    <td>FSM, Guards, Transitions</td>
+                    <td>Stripe Payments, AWS Step Functions</td>
+                </tr>
+                <tr>
+                    <td>P15 - CQRS & Event Sourcing</td>
+                    <td>Immutable Events, Projections</td>
+                    <td>Axon Framework, EventStore DB</td>
+                </tr>
+                <tr>
+                    <td>P16 - Circuit Breaker</td>
+                    <td>Resilience, Backoff, Bulkhead</td>
+                    <td>Netflix Hystrix, Polly, Resilience4j</td>
+                </tr>
+                <tr>
+                    <td>P17 - Rule Engine</td>
+                    <td>Specification Pattern, Declarative Rules</td>
+                    <td>Drools, AWS Rules Engine</td>
+                </tr>
+                <tr>
+                    <td>P18 - Multi-Tenant SaaS</td>
+                    <td>Tenant Isolation, Feature Flags</td>
+                    <td>Salesforce, Slack, LaunchDarkly</td>
+                </tr>
+                <tr>
+                    <td>P19 - Data Pipeline</td>
+                    <td>Pipeline/Builder/MapReduce</td>
+                    <td>Apache Beam, dbt, Prefect</td>
+                </tr>
+                <tr>
+                    <td>P20 - Microservice Chassis</td>
+                    <td>Registry, Health, Config, Lifecycle</td>
+                    <td>Spring Boot, Go-Kit, Consul</td>
+                </tr>
+                <tr>
+                    <td>P21 - Distributed Transactions</td>
+                    <td>Saga, Compensating Transaction, Outbox, Idempotency</td>
+                    <td>AWS Step Functions, NServiceBus, Stripe</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- PARALLEL CONCEPTS -->
+        <h2>Parallel Concepts to Remember</h2>
+        <p>Patterns don't exist in isolation. When you learn one, these parallels reinforce understanding:</p>
+
+        <div class="parallel-box">
+            <strong>🔗 Observer ↔ Pub/Sub ↔ Event Sourcing ↔ Hooks</strong><br>
+            P11 (Observer/Pub-Sub) → P13 (Hook System) → P15 (Event Sourcing) → P19 (Pipeline Observers)<br>
+            <em>All are variations of "decouple the thing that happened from the things that react to it."</em>
+        </div>
+
+        <div class="parallel-box">
+            <strong>🔗 Strategy ↔ Factory ↔ Plugin ↔ Provider</strong><br>
+            P8 (Swappable Providers) → P9 (Strategy/Factory) → P13 (Plugins) → P18 (Feature Flag Strategies)<br>
+            <em>All implement "pick the right algorithm at runtime without changing the caller."</em>
+        </div>
+
+        <div class="parallel-box">
+            <strong>🔗 Chain of Responsibility ↔ Pipeline ↔ Middleware ↔ Decorator</strong><br>
+            P12 (Middleware Chain) → P13 (Filter Hooks) → P19 (Pipeline Stages) → P20 (Config Chain)<br>
+            <em>All pass data through a sequence of processors, each unaware of the others.</em>
+        </div>
+
+        <div class="parallel-box">
+            <strong>🔗 State Machine ↔ Circuit Breaker ↔ Lifecycle</strong><br>
+            P14 (Order FSM) → P16 (Circuit Breaker FSM) → P20 (Lifecycle Phases)<br>
+            <em>All model "a thing that can only be in one state at a time, with valid transitions."</em>
+        </div>
+
+        <div class="parallel-box">
+            <strong>🔗 Repository ↔ Tenant Store ↔ Event Store ↔ Config Manager</strong><br>
+            P6 (Repository Pattern) → P15 (EventStore) → P18 (TenantScopedStore) → P20 (ConfigManager)<br>
+            <em>All abstract "where data lives" behind an interface, making storage swappable.</em>
+        </div>
+
+        <div class="parallel-box">
+            <strong>🔗 Composition ↔ Specification ↔ Builder ↔ Fluent API</strong><br>
+            P3 (Object Composition) → P17 (Specification AND/OR/NOT) → P19 (PipelineBuilder) → P12 (Gateway Builder)<br>
+            <em>All compose small pieces into complex structures using a chainable interface.</em>
+        </div>
+
+        <div class="parallel-box">
+            <strong>🔗 DIP ↔ IoC ↔ Dependency Injection ↔ Plugin Loading</strong><br>
+            P6 (Injected Repositories) → P8 (DIP Interfaces) → P13 (Inversion of Control) → P20 (Lifecycle
+            Components)<br>
+            <em>All flip the dependency arrow: "Don't call us, we'll call you."</em>
+        </div>
+
+        <div class="parallel-box">
+            <strong>🔗 Saga: Choreography ↔ Orchestration ↔ Outbox ↔ Idempotency</strong><br>
+            P21 (Choreographed Saga) → P21 (Orchestrated Saga) → P21 (Transactional Outbox) → P21 (Idempotency
+            Keys)<br>
+            <em>All solve "how do many services stay consistent when a crash can happen at any step?"</em>
+        </div>
+
+        <!-- CONCEPT MAP -->
+        <h2>Concept Relationship Map</h2>
+        <div class="mermaid">
+            graph TD
+            OOP[OOP Fundamentals] --> SOLID[SOLID Principles]
+            SOLID --> PATTERNS[Design Patterns]
+            PATTERNS --> ARCH[Architecture Patterns]
+            ARCH --> DIST[Distributed Systems]
+
+            OOP --> |"P1-P3"| ENC[Encapsulation]
+            OOP --> |"P2"| INH[Inheritance]
+            OOP --> |"P3"| COMP[Composition]
+
+            SOLID --> |"P8"| DIP[Dependency Inversion]
+            SOLID --> |"P4,P6"| SRP[Single Responsibility]
+            SOLID --> |"P9"| OCP[Open/Closed]
+
+            PATTERNS --> |"P9"| FACTORY[Factory]
+            PATTERNS --> |"P9,P18"| STRATEGY[Strategy]
+            PATTERNS --> |"P11"| OBSERVER[Observer]
+            PATTERNS --> |"P12"| CHAIN[Chain of Responsibility]
+            PATTERNS --> |"P14"| STATE[State Pattern]
+            PATTERNS --> |"P17"| SPEC[Specification]
+            PATTERNS --> |"P19"| BUILDER[Builder]
+
+            ARCH --> |"P15"| CQRS[CQRS + ES]
+            ARCH --> |"P13"| PLUGIN[Plugin Architecture]
+            ARCH --> |"P7"| LAYERS[Layered Architecture]
+            ARCH --> |"P19"| PIPE[Pipeline Architecture]
+
+            DIST --> |"P16"| RESIL[Resilience]
+            DIST --> |"P20"| CHASSIS[Microservice Chassis]
+            DIST --> |"P21"| SAGA[Saga Transactions]
+            DIST --> |"P18"| MULTI[Multi-Tenancy]
+            DIST --> |"P11"| EVDRV[Event-Driven]
+        </div>
+
+        <!-- DIFFERENTIATOR -->
+        <h2>How This Makes You a Differentiator</h2>
+
+        <div class="differentiator">
+            <h3>🎯 vs. Tutorial Developers</h3>
+            <p>Most developers learn by copying tutorials. They know <em>what</em> code to write but not <em>why</em>.
+                You understand the architectural reasoning — why a Circuit Breaker has 3 states, why Event Sourcing uses
+                immutable logs,
+                why Plugins use topological sort. In interviews, you can explain trade-offs, not just implementations.
+            </p>
+        </div>
+
+        <div class="differentiator">
+            <h3>🎯 vs. Framework-Only Developers</h3>
+            <p>Many engineers know "use Django ORM" or "use FastAPI middleware" without understanding the underlying
+                patterns.
+                You built Repository from scratch (P6), Middleware chains from scratch (P12), and Pipeline DSLs from
+                scratch (P19).
+                When frameworks break or don't fit, you can build custom solutions.</p>
+        </div>
+
+        <div class="differentiator">
+            <h3>🎯 vs. Single-Domain Developers</h3>
+            <p>You've worked across banking (P2, P15), healthcare (P3, P7), e-commerce (P4, P14), insurance (P17),
+                SaaS (P18), and AI/ML (P10). This breadth means you can join ANY team and recognize patterns
+                immediately.</p>
+        </div>
+
+        <div class="differentiator">
+            <h3>🎯 vs. Theory-Only Learners</h3>
+            <p>Every single pattern has a <strong>running demo</strong> — 105 working demos across 21 projects.
+                You didn't just read about CQRS; you built an event store that replays history.
+                You didn't just read about Circuit Breakers; you watched one trip OPEN after 3 failures.</p>
+        </div>
+
+        <!-- GROWTH -->
+        <h2>How This Helps You Grow</h2>
+
+        <div class="growth-path">
+            <h3>📈 Career Progression Unlocked</h3>
+            <div class="two-col">
+                <div>
+                    <strong>Junior → Mid (P1-P7):</strong>
+                    <ul>
+                        <li>Write clean, encapsulated code</li>
+                        <li>Design proper API boundaries</li>
+                        <li>Implement repository pattern</li>
+                        <li>Structure layered applications</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Mid → Senior (P8-P14):</strong>
+                    <ul>
+                        <li>Apply SOLID at scale</li>
+                        <li>Design extensible plugin systems</li>
+                        <li>Model complex workflows</li>
+                        <li>Build event-driven architectures</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="two-col">
+                <div>
+                    <strong>Senior → Staff/Architect (P15-P21):</strong>
+                    <ul>
+                        <li>Design CQRS + Event Sourcing</li>
+                        <li>Implement distributed resilience</li>
+                        <li>Build multi-tenant platforms</li>
+                        <li>Create microservice infrastructure</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Architect Mindset:</strong>
+                    <ul>
+                        <li>See trade-offs, not just solutions</li>
+                        <li>Choose patterns by constraint</li>
+                        <li>Design for team scalability</li>
+                        <li>Think in systems, not files</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="growth-path">
+            <h3>💼 Interview Readiness</h3>
+            <p>After these 21 projects, you can confidently answer:</p>
+            <ul>
+                <li><strong>"Design a rate limiter"</strong> → Token Bucket (P12) with middleware chain</li>
+                <li><strong>"Design a notification system"</strong> → Factory + Strategy + Pub/Sub (P9, P11)</li>
+                <li><strong>"How would you handle partial failures?"</strong> → Circuit Breaker + Retry + Bulkhead (P16)
+                </li>
+                <li><strong>"Design a multi-tenant system"</strong> → Tenant context + isolation + feature flags (P18)
+                </li>
+                <li><strong>"How do you ensure data integrity?"</strong> → Event Sourcing + Immutable logs (P15)</li>
+                <li><strong>"Design a plugin system"</strong> → Hooks + dependency resolution + IoC (P13)</li>
+                <li><strong>"How do you handle config across environments?"</strong> → Hierarchical config chain (P20)
+                </li>
+                <li><strong>"How do you keep multiple services consistent?"</strong> → Saga + compensating actions +
+                    outbox + idempotency (P21)</li>
+            </ul>
+        </div>
+
+        <!-- MASTER PATTERN TABLE -->
+        <h2>Complete Pattern Catalogue</h2>
+        <table>
+            <tr>
+                <th>Pattern</th>
+                <th>Project(s)</th>
+                <th>Category</th>
+                <th>When To Use</th>
+            </tr>
+            <tr>
+                <td>Encapsulation</td>
+                <td>P1</td>
+                <td>OOP</td>
+                <td>Always — hide implementation details</td>
+            </tr>
+            <tr>
+                <td>Inheritance</td>
+                <td>P2</td>
+                <td>OOP</td>
+                <td>IS-A relationships with shared behavior</td>
+            </tr>
+            <tr>
+                <td>Composition</td>
+                <td>P3, P17</td>
+                <td>OOP</td>
+                <td>HAS-A relationships, flexible assembly</td>
+            </tr>
+            <tr>
+                <td>DTO Pattern</td>
+                <td>P4, P5, P7</td>
+                <td>Data</td>
+                <td>API boundaries, security, validation</td>
+            </tr>
+            <tr>
+                <td>Repository</td>
+                <td>P6, P7, P15</td>
+                <td>Data</td>
+                <td>Abstract data access, swap storage</td>
+            </tr>
+            <tr>
+                <td>Dependency Injection</td>
+                <td>P6-P10, P20</td>
+                <td>SOLID</td>
+                <td>Decouple creation from usage</td>
+            </tr>
+            <tr>
+                <td>Factory</td>
+                <td>P9, P10</td>
+                <td>Creational</td>
+                <td>Complex object creation logic</td>
+            </tr>
+            <tr>
+                <td>Strategy</td>
+                <td>P9, P17, P18, P20</td>
+                <td>Behavioral</td>
+                <td>Swap algorithms at runtime</td>
+            </tr>
+            <tr>
+                <td>Observer / Pub-Sub</td>
+                <td>P11, P14, P19</td>
+                <td>Behavioral</td>
+                <td>Decouple event producer from consumers</td>
+            </tr>
+            <tr>
+                <td>Command</td>
+                <td>P11, P15</td>
+                <td>Behavioral</td>
+                <td>Encapsulate action as object</td>
+            </tr>
+            <tr>
+                <td>Chain of Responsibility</td>
+                <td>P12, P17, P20</td>
+                <td>Behavioral</td>
+                <td>Sequential processing with bail-out</td>
+            </tr>
+            <tr>
+                <td>Decorator / Middleware</td>
+                <td>P12, P19</td>
+                <td>Structural</td>
+                <td>Wrap behavior without subclassing</td>
+            </tr>
+            <tr>
+                <td>Proxy</td>
+                <td>P12</td>
+                <td>Structural</td>
+                <td>Control access, add cross-cutting logic</td>
+            </tr>
+            <tr>
+                <td>State Machine</td>
+                <td>P14, P16, P20</td>
+                <td>Behavioral</td>
+                <td>Model lifecycle with valid transitions</td>
+            </tr>
+            <tr>
+                <td>Specification</td>
+                <td>P17</td>
+                <td>Domain</td>
+                <td>Composable business rules</td>
+            </tr>
+            <tr>
+                <td>Builder</td>
+                <td>P14, P19</td>
+                <td>Creational</td>
+                <td>Complex object construction, DSLs</td>
+            </tr>
+            <tr>
+                <td>Pipeline</td>
+                <td>P19</td>
+                <td>Architectural</td>
+                <td>Sequential data transformations</td>
+            </tr>
+            <tr>
+                <td>MapReduce</td>
+                <td>P19</td>
+                <td>Data</td>
+                <td>Parallel aggregation over collections</td>
+            </tr>
+            <tr>
+                <td>Circuit Breaker</td>
+                <td>P16</td>
+                <td>Resilience</td>
+                <td>Prevent cascading failures</td>
+            </tr>
+            <tr>
+                <td>Bulkhead</td>
+                <td>P16</td>
+                <td>Resilience</td>
+                <td>Isolate failure domains</td>
+            </tr>
+            <tr>
+                <td>Retry + Backoff</td>
+                <td>P16, P19</td>
+                <td>Resilience</td>
+                <td>Handle transient failures</td>
+            </tr>
+            <tr>
+                <td>CQRS</td>
+                <td>P15</td>
+                <td>Architectural</td>
+                <td>Separate read/write models at scale</td>
+            </tr>
+            <tr>
+                <td>Event Sourcing</td>
+                <td>P15</td>
+                <td>Architectural</td>
+                <td>Full audit trail, time-travel debugging</td>
+            </tr>
+            <tr>
+                <td>Plugin / Hook System</td>
+                <td>P13</td>
+                <td>Architectural</td>
+                <td>Third-party extensibility</td>
+            </tr>
+            <tr>
+                <td>Multi-Tenancy</td>
+                <td>P18</td>
+                <td>SaaS</td>
+                <td>Serve multiple customers from one codebase</td>
+            </tr>
+            <tr>
+                <td>Feature Flags</td>
+                <td>P18</td>
+                <td>Deployment</td>
+                <td>Gradual rollout, kill switches</td>
+            </tr>
+            <tr>
+                <td>Service Registry</td>
+                <td>P20</td>
+                <td>Distributed</td>
+                <td>Dynamic service discovery</td>
+            </tr>
+            <tr>
+                <td>Health Checks</td>
+                <td>P20</td>
+                <td>Operations</td>
+                <td>Kubernetes liveness/readiness</td>
+            </tr>
+            <tr>
+                <td>Structured Logging</td>
+                <td>P20</td>
+                <td>Operations</td>
+                <td>Searchable, correlated logs</td>
+            </tr>
+            <tr>
+                <td>Saga (Orchestrated)</td>
+                <td>P21</td>
+                <td>Distributed</td>
+                <td>Drive multi-service workflows from one coordinator</td>
+            </tr>
+            <tr>
+                <td>Saga (Choreographed)</td>
+                <td>P21</td>
+                <td>Distributed</td>
+                <td>Let services react to each other's events, no coordinator</td>
+            </tr>
+            <tr>
+                <td>Compensating Transaction</td>
+                <td>P21</td>
+                <td>Distributed</td>
+                <td>Roll back completed steps in reverse order on failure</td>
+            </tr>
+            <tr>
+                <td>Transactional Outbox</td>
+                <td>P21</td>
+                <td>Distributed</td>
+                <td>Commit state + event atomically, publish reliably later</td>
+            </tr>
+            <tr>
+                <td>Idempotency Key</td>
+                <td>P21</td>
+                <td>Distributed</td>
+                <td>Make retried operations apply exactly once</td>
+            </tr>
+        </table>
+
+        <!-- WHAT CHANGED IN YOU -->
+        <h2>Before vs. After This Journey</h2>
+        <div class="two-col">
+            <div class="card">
+                <h3 style="color: #d32f2f;">❌ Before</h3>
+                <ul>
+                    <li>Write code in one big file</li>
+                    <li>Use if/elif chains for logic</li>
+                    <li>Hardcode config values</li>
+                    <li>No error recovery strategy</li>
+                    <li>Tightly coupled components</li>
+                    <li>Test by running manually</li>
+                    <li>"It works on my machine"</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3 style="color: #388e3c;">✅ After</h3>
+                <ul>
+                    <li>Layered architecture with clear boundaries</li>
+                    <li>State machines, rule engines, specifications</li>
+                    <li>Hierarchical config with env overrides</li>
+                    <li>Circuit breakers, retries, bulkheads</li>
+                    <li>DI-wired, interface-driven, pluggable</li>
+                    <li>Observable pipelines with metrics</li>
+                    <li>Health probes, graceful lifecycle, multi-tenant ready</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- FINAL TAKEAWAY -->
+        <h2>The Architect's Mindset</h2>
+        <div class="card" style="background: var(--gradient); color: white;">
+            <p style="font-size: 1.1em;">After 21 projects, you don't just <em>know</em> patterns — you
+                <strong>think</strong> in patterns.</p>
+            <ul>
+                <li>You see a complex workflow → you think <strong>State Machine</strong></li>
+                <li>You see repeated business rules → you think <strong>Specification + Rule Engine</strong></li>
+                <li>You see an unreliable dependency → you think <strong>Circuit Breaker + Retry</strong></li>
+                <li>You see data processing → you think <strong>Pipeline + MapReduce</strong></li>
+                <li>You see extensibility needs → you think <strong>Hooks + Plugins + Strategy</strong></li>
+                <li>You see multi-customer needs → you think <strong>Tenant Context + Feature Flags</strong></li>
+                <li>You see a cross-service workflow → you think <strong>Saga + Compensating Actions + Outbox</strong>
+                </li>
+            </ul>
+            <p style="margin-top: 20px; font-weight: bold; font-size: 1.1em;">That's not just coding. That's
+                architecture. That's your differentiator.</p>
+        </div>
+
+    </div>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

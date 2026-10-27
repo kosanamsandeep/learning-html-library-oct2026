@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anthropic — Tools &amp; Skills</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="anthropic_building_agents.html">Building Agents</a>
+                <a href="openai_agents_sdk.html">OpenAI</a>
+                <a href="github_copilot_best_practices.html">Copilot</a>
+                <a href="multi_scenario_playbook.html">Scenarios</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">Anthropic · Tools &amp; Skills</span></p>
+            <h1>Tools and skills — the agent-computer interface, and how to teach Claude a workflow</h1>
+            <p class="lead">Tools are how an agent acts on the world. Skills are how you teach Claude a repeatable way
+                to do something — packaged as a folder and a Markdown file Claude loads on demand. Both are about the
+                agent-computer interface (ACI): the cleaner the interface, the better the agent behaves.</p>
+        </section>
+
+        <section class="card">
+            <h2>Part 1 — Designing tools (Anthropic's "prompt-engineer your tools")</h2>
+            <p>Anthropic's engineering team explicitly says: while building their SWE-bench agent, they spent
+                <em>more</em> time iterating on tool definitions than on the overall prompt. Tools are not a side
+                concern.
+            </p>
+
+            <h3>Five rules for a good tool</h3>
+            <ol>
+                <li><strong>Pick a format the model has already seen.</strong> Markdown over heavily-escaped JSON.
+                    Whole-file rewrites over diffs when diffs require counting lines.</li>
+                <li><strong>Give the model room to think.</strong> Don't force the answer into a single tightly-typed
+                    field if intermediate reasoning helps.</li>
+                <li><strong>Eliminate formatting overhead.</strong> No mandatory line counts, no escaping nightmares, no
+                    "must end in exactly one newline".</li>
+                <li><strong>Write tool docs like you would for a junior teammate.</strong> Include example calls, edge
+                    cases, input format requirements, and clear boundaries against neighbouring tools.</li>
+                <li><strong>Poka-yoke (mistake-proof) the inputs.</strong> Anthropic's example: tools that take relative
+                    paths broke when the agent <code>cd</code>'d. Switching to absolute paths fixed it. Choose argument
+                    shapes that make the wrong call hard to express.</li>
+            </ol>
+
+            <div class="callout anth"><strong>Test your tools the way you test prompts.</strong> Run many example inputs
+                in the workbench, see where the model misuses the tool, and iterate the description until misuse goes
+                away.</div>
+        </section>
+
+        <section class="card">
+            <h2>Tool docstring template</h2>
+            <pre><code>name: search_orders
+description: |
+  Search the orders database by customer email or order id.
+  USE THIS TOOL when the user asks about a specific order or
+  the order history of a known customer.
+  DO NOT use this tool to look up products — use product_search instead.
+
+parameters:
+  query:
+    type: string
+    description: |
+      Either a customer email (e.g. "ada@example.com")
+      OR an order id starting with "ord_" (e.g. "ord_a1b2c3").
+      Email lookups return up to 50 most recent orders.
+  since:
+    type: string
+    description: ISO date (YYYY-MM-DD); only orders on or after this date.
+    optional: true
+
+example:
+  query: "ord_a1b2c3"
+  -> returns: { id, status, items[], total_cents, placed_at }</code></pre>
+            <p>Notice the description tells the model <em>when to use the tool and when not to</em>, names a sibling
+                tool to redirect to, and gives a concrete example. That is more important than the parameter types.</p>
+        </section>
+
+        <section class="card">
+            <h2>Tool-use evals</h2>
+            <p>Anthropic's ACI advice has a testing consequence: do not evaluate only the final answer. Test whether
+                Claude selected the right tool, formed valid arguments, handled empty results, and stopped before risky
+                actions that need approval.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Check</th>
+                        <th>What it catches</th>
+                        <th>Useful scorer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Tool selection</td>
+                        <td>Using <code>product_search</code> when the user asked about an order.</td>
+                        <td><code>tool_call_match</code>, <code>set_match</code></td>
+                    </tr>
+                    <tr>
+                        <td>Argument shape</td>
+                        <td>Invalid ids, missing dates, malformed JSON, or wrong customer identifiers.</td>
+                        <td><code>json_schema_match</code>, <code>regex_match</code></td>
+                    </tr>
+                    <tr>
+                        <td>Tool order</td>
+                        <td>Writing to a system before reading policy or asking for approval.</td>
+                        <td><code>trajectory_eval</code></td>
+                    </tr>
+                    <tr>
+                        <td>Grounded answer</td>
+                        <td>Confident final text that is not supported by retrieved tool results.</td>
+                        <td><code>contains</code>, <code>llm_judge</code></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>Standard loop:</strong> run examples in the workbench, inspect tool
+                mistakes, improve the description or argument design, then add the failure case to the eval suite so it
+                stays fixed.</div>
+        </section>
+
+        <section class="card">
+            <h2>Part 2 — Skills (the new packaged-workflow format)</h2>
+            <p>A Skill is a folder that bundles instructions, scripts, and reference files Claude can <em>load on
+                    demand</em> when a task matches its description. Skills make capabilities reusable across Claude.ai,
+                Claude Code, and the API.</p>
+
+            <h3>Minimum viable skill</h3>
+            <pre><code>my_skill/
+└── SKILL.md         ← required, with YAML frontmatter</code></pre>
+
+            <pre><code>---
+name: pytest-tdd
+description: |
+  Use this skill when the user asks to add tests, write code TDD-style,
+  or fix a failing pytest run. Provides our team's pytest conventions
+  (AAA, fixtures over setup, no implementation in tests).
+---
+
+# pytest-tdd
+
+When a user asks to add tests:
+1. Look at conftest.py for existing fixtures; reuse before adding new ones.
+2. Use the AAA structure (Arrange / Act / Assert) with one assert per test.
+3. Prefer parametrize over loops.
+4. After writing tests, run `pytest -q` and fix until green.
+
+## Examples
+- "add tests for `services/orders.py`"
+- "TDD a function that validates IBANs"
+
+## Guidelines
+- Never edit production code without first writing a failing test.
+- Use `tmp_path` for any filesystem touchpoint.
+</code></pre>
+
+            <p>Larger skills can also include Python scripts, reference docs, or sample data inside the folder — Claude
+                reads them when the skill is active.</p>
+        </section>
+
+        <section class="card">
+            <h2>How skills are activated</h2>
+            <div class="flow">
+                <div class="step">User asks something</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Claude scans skill <em>descriptions</em></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Loads matching SKILL.md into context</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Follows its instructions for that turn</div>
+            </div>
+            <p>This means the <code>description</code> field is the single most important part of a skill. If it does
+                not clearly say "use this when…" and "don't use this when…", the right skill won't fire.</p>
+        </section>
+
+        <section class="card">
+            <h2>Anti-patterns to avoid</h2>
+            <div class="grid">
+                <div class="mini bad"><strong>Vague skill descriptions</strong> like "helps with code" — Claude has no
+                    signal to pick it.</div>
+                <div class="mini bad"><strong>Mega-tool</strong> with 12 modes selected by an enum. Split into separate,
+                    narrow tools.</div>
+                <div class="mini bad"><strong>Tool docs that read like API references.</strong> Add the <em>when-to-use
+                        / when-not-to</em>, not just the type signature.</div>
+                <div class="mini bad"><strong>Silent failure modes.</strong> When a tool returns nothing useful, return
+                    an explicit hint — "no orders found, try widening the date range" — not an empty list.</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>What lives in this workspace</h2>
+            <ul>
+                <li><a href="claude_code_in_sdlc/README.html">claude_code_in_sdlc</a> — sample Skill folder you can drop
+                    into a real repo.</li>
+                <li><a href="../system_design_academy/ai_engineering/p1_agentic_patterns/README.html">ai_engineering /
+                        P1</a> — toy router + tool selection in pure Python.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source"
+                    href="https://www.anthropic.com/engineering/building-effective-agents#appendix-2-prompt-engineering-your-tools"
+                    target="_blank" rel="noopener">Anthropic — Prompt-engineering your tools (Appendix 2)</a>
+                <a class="source" href="anthropic_building_agents.html">Local note — Agent eval scorers</a>
+                <a class="source" href="https://github.com/anthropics/skills" target="_blank"
+                    rel="noopener">github.com/anthropics/skills</a>
+                <a class="source" href="https://claude.com/blog/skills" target="_blank" rel="noopener">Claude.com —
+                    Skills announcement</a>
+                <a class="source" href="https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview"
+                    target="_blank" rel="noopener">Claude docs — Agent Skills overview</a>
+                <a class="source" href="https://docs.claude.com/en/api/skills-guide" target="_blank"
+                    rel="noopener">Claude API — Skills guide</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

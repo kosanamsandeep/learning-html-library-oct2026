@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrewAI 01 · Quickstart — Agent + Task</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="crew">CW</span>CrewAI · 01 Quickstart</div>
+        <div class="links">
+            <a href="index.html">CrewAI Hub</a>
+            <a href="02_sequential_crew.html">Next: 02 →</a>
+        </div>
+    </div>
+
+    <div class="header crew">
+        <p class="badge">Build 01 · Beginner</p>
+        <h1>Your first crew</h1>
+        <p class="subtitle">One <code>Agent</code>, one <code>Task</code>, one <code>Crew</code>. Learn the
+            three nouns that everything in CrewAI is built from.</p>
+    </div>
+
+    <div class="container">
+        <div class="section crew">
+            <h2>What this build does</h2>
+            <p>We hire a single agent (a senior researcher), give it one task with a clear
+                <code>expected_output</code>, put it in a crew, and call <code>kickoff()</code>.
+            </p>
+            <div class="pill-row">
+                <span class="level beginner">Beginner</span>
+                <span class="tag orange">Agent</span>
+                <span class="tag orange">Task</span>
+                <span class="tag orange">Crew</span>
+                <span class="tag orange">kickoff()</span>
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>The three building blocks</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    A["Agent<br/>role · goal · backstory"] --> T["Task<br/>description · expected_output"]
+    T --> CR["Crew<br/>agents + tasks + process"]
+    CR -->|kickoff| OUT["result"]
+                </pre>
+                <p class="caption">Agent = who. Task = what. Crew = the team that runs it.</p>
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>The code</h2>
+            <pre><code><span class="c-kw">from</span> crewai <span class="c-kw">import</span> Agent, Task, Crew
+
+<span class="c-com"># 1) The Agent — a persona drives better LLM behaviour.</span>
+researcher = Agent(
+    role=<span class="c-str">"Senior AI Researcher"</span>,
+    goal=<span class="c-str">"Find and explain the latest trends in {topic}"</span>,
+    backstory=<span class="c-str">"You are a meticulous analyst who values accuracy over hype."</span>,
+    llm=<span class="c-str">"gpt-4o"</span>,            <span class="c-com"># model string; reads OPENAI_API_KEY from env</span>
+    verbose=<span class="c-kw">True</span>,
+)
+
+<span class="c-com"># 2) The Task — expected_output is what makes results consistent.</span>
+research_task = Task(
+    description=<span class="c-str">"Research the 3 most important developments in {topic} this year."</span>,
+    expected_output=<span class="c-str">"A bullet list of 3 developments, each with a one-line why-it-matters."</span>,
+    agent=researcher,
+)
+
+<span class="c-com"># 3) The Crew — assemble and run.</span>
+crew = Crew(agents=[researcher], tasks=[research_task], verbose=<span class="c-kw">True</span>)
+
+result = crew.kickoff(inputs={<span class="c-str">"topic"</span>: <span class="c-str">"agentic AI frameworks"</span>})
+<span class="c-fn">print</span>(result)</code></pre>
+        </div>
+
+        <div class="section crew">
+            <h2>Why <code>role</code>, <code>goal</code>, <code>backstory</code> matter</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Purpose</th>
+                        <th>Tip</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>role</code></td>
+                        <td>The agent's job title / identity.</td>
+                        <td>Be specific: "Senior Python Reviewer", not "Helper".</td>
+                    </tr>
+                    <tr>
+                        <td><code>goal</code></td>
+                        <td>What success looks like for this agent.</td>
+                        <td>One clear objective; supports <code>{placeholders}</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>backstory</code></td>
+                        <td>Context/personality that shapes tone &amp; rigor.</td>
+                        <td>This is your biggest quality lever — invest here.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout orange">
+                <strong>Inputs are templated.</strong> Any <code>{topic}</code> in a role, goal, or task
+                description is filled from <code>kickoff(inputs={...})</code>, so the same crew is reusable
+                across topics.
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2><code>expected_output</code> is not optional in practice</h2>
+            <p>It's technically required and it's the single biggest driver of consistent results. Vague →
+                rambling answers. Precise → structured, reliable output you can parse downstream.</p>
+        </div>
+
+        <div class="section crew">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Write rich backstories.</strong> CrewAI leans on persona; a good backstory beats
+                    extra prompt engineering.</li>
+                <li><strong>Make <code>expected_output</code> concrete</strong> ("a JSON list of…", "a 200-word
+                    summary…").</li>
+                <li><strong>Keep API keys in env vars</strong> (<code>OPENAI_API_KEY</code>,
+                    <code>SERPER_API_KEY</code>).
+                </li>
+                <li><strong>Start with <code>verbose=True</code></strong> to watch the agent's reasoning while
+                    learning.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="index.html"><span class="dir">Back</span>
+                <div class="ttl">CrewAI Hub</div>
+            </a>
+            <a class="next" href="02_sequential_crew.html"><span class="dir">Next</span>
+                <div class="ttl">02 · Sequential crew →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>CrewAI Projects · 01 of 04</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>5 · Learnings &amp; Self-Assessment · Personify-Service</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <div class="shell">
+        <nav class="nav">
+            <a class="brand" href="index.html">
+                <span class="mark">P</span> Personify-Service · Reading Guide
+            </a>
+            <span class="spacer"></span>
+            <a class="link" href="01_architecture.html">Architecture</a>
+            <a class="link" href="03_design_patterns.html">Patterns</a>
+            <a class="link" href="05_learnings_checklist.html">Self-Check</a>
+            <a class="link" href="06_scenarios.html">Practice</a>
+            <a class="link" href="../index.html">↩ Side Projects</a>
+        </nav>
+
+        <header class="hero">
+            <span class="eyebrow">Chapter 5 · Where Do You Stand?</span>
+            <h1>Learnings &amp; Self-Assessment</h1>
+            <p class="lead">
+                You've seen the architecture, the lifecycle, the patterns, and how to navigate. Now turn it into
+                <strong>your</strong> skill. This chapter lists what to take away, the caveats a senior eye would
+                flag, and a level-by-level self-check so you can honestly answer "where do I stand?".
+            </p>
+        </header>
+
+        <div class="toc">
+            <div class="tt">In this chapter</div>
+            <ol>
+                <li><a href="#takeaways">What you can learn from this code</a></li>
+                <li><a href="#best">Best-practices checklist</a></li>
+                <li><a href="#caveats">Caveats — what's demo, not production</a></li>
+                <li><a href="#levels">Self-assessment: rate your level</a></li>
+                <li><a href="#next">Sharpen it further</a></li>
+            </ol>
+        </div>
+
+        <h2 id="takeaways">1 · What you can learn from this code</h2>
+        <div class="grid grid-2">
+            <div class="card">
+                <h3>Layering with intent</h3>
+                <p>How to split a service into delivery / use-case / domain / infrastructure so each part is
+                    independently understandable and testable.</p>
+            </div>
+            <div class="card">
+                <h3>The dependency rule in practice</h3>
+                <p>Keeping the framework at the edge so the core stays portable — a habit that survives long
+                    after Tornado is forgotten.</p>
+            </div>
+            <div class="card">
+                <h3>Patterns as vocabulary</h3>
+                <p>Repository, UoW, Factory, Adapter, DI — not as academic trivia but as the actual joints of a
+                    working system.</p>
+            </div>
+            <div class="card">
+                <h3>Polyglot persistence</h3>
+                <p>Choosing Postgres for relational users and Mongo for flexible contacts behind one uniform
+                    service interface.</p>
+            </div>
+            <div class="card">
+                <h3>Thin handlers, rich services</h3>
+                <p>Pushing logic out of the transport layer so endpoints stay readable and rules stay testable.</p>
+            </div>
+            <div class="card">
+                <h3>Quality as a gate</h3>
+                <p>Tests (unit/integration/e2e), <code>mypy</code>, <code>ruff</code>, and container parity as
+                    first-class parts of the project, not afterthoughts.</p>
+            </div>
+        </div>
+
+        <h2 id="best">2 · Best-practices checklist</h2>
+        <p>These are the habits worth copying into your own projects. Tick the ones you already understand
+            well enough to explain to someone else.</p>
+        <ul class="check">
+            <li><strong>Single composition root</strong> — wire everything in one place (<code>bootstrap.py</code>),
+                fail fast if infra is unreachable.</li>
+            <li><strong>Dependency injection everywhere</strong> — pass collaborators in; never <code>new</code> them
+                deep inside business code.</li>
+            <li><strong>Repository per store</strong> — a stable CRUD interface that hides the database engine.</li>
+            <li><strong>Unit of Work as a context manager</strong> — make the <code>with</code> block the transaction
+                boundary.</li>
+            <li><strong>Generic base classes</strong> — write CRUD once, reuse per model with <code>TypeVar</code>.</li>
+            <li><strong>Schema validation at the edge</strong> — reject bad input in <code>prepare()</code> before any
+                logic runs.</li>
+            <li><strong>Centralised constants</strong> — no magic strings; one glossary file.</li>
+            <li><strong>Structured logging with request context</strong> — every log line carries the request id.</li>
+            <li><strong>API versioning</strong> — <code>/api/v1</code> so you can evolve without breaking clients.</li>
+            <li><strong>Docs from code</strong> — Swagger generated from handler docstrings stays in sync.</li>
+            <li><strong>Container parity</strong> — same compose stack for dev and prod-like runs.</li>
+            <li><strong>Test pyramid</strong> — unit + integration + e2e, plus type-checking and linting.</li>
+        </ul>
+
+        <h2 id="caveats">3 · Caveats — what's demo, not production</h2>
+        <p>Reading critically is a senior skill. A learning repo makes simplifications you should be able to
+            <em>spot</em>. Here's what a careful reviewer would flag:
+        </p>
+        <div class="callout danger">
+            <div class="ct">Hard-coded secrets</div>
+            <p><code>generator/token.py</code> ships a literal <code>JWT_SECRET = "dummy-secret"</code> and
+                <code>generator/hashing.py</code> uses a fixed salt <code>'dummy'</code> with only
+                <code>100</code> iterations. In production these must come from secrets/config, the salt must be
+                per-user and random, and the iteration count must be far higher (or use a purpose-built password
+                hash like Argon2/bcrypt).
+            </p>
+        </div>
+        <div class="callout warn">
+            <div class="ct">A couple of rough edges</div>
+            <p>Some <code>__enter__</code> log lines mix <code>str.format</code> with positional braces (a
+                cosmetic bug), and a few service methods carry <code>TODO</code>s (e.g. scoping a contact query
+                by user id). None break the teaching value — but noticing them is exactly the muscle you're
+                building.</p>
+        </div>
+        <div class="callout tip">
+            <div class="ct">Why caveats are a feature</div>
+            <p>Being able to say "the architecture is excellent, but the crypto config is demo-grade" is a
+                sign you've moved from <em>following</em> the code to <em>judging</em> it. That's the level this
+                guide is aiming for.</p>
+        </div>
+
+        <h2 id="levels">4 · Self-assessment: rate your level</h2>
+        <p>Read each level honestly. Where do you stop being able to do everything described? That's roughly
+            where you stand today.</p>
+        <div class="levels">
+            <div class="level l1">
+                <span class="badge">Level 1 · Aware</span>
+                <h3>You can name the layers</h3>
+                <p>You can point at <code>interfaces / app / domain / infra</code> and say what each is for, and
+                    you understand "dependencies point inward". You can find where an endpoint lives.</p>
+            </div>
+            <div class="level l2">
+                <span class="badge">Level 2 · Tracer</span>
+                <h3>You can follow a request end-to-end</h3>
+                <p>Given an endpoint, you can trace handler → service → unit of work → repository → adapter → DB
+                    without help, and explain where validation, auth, and the transaction boundary happen.</p>
+            </div>
+            <div class="level l3">
+                <span class="badge">Level 3 · Pattern-fluent</span>
+                <h3>You can name and justify the patterns</h3>
+                <p>You can identify Repository, Unit of Work, Factory, Adapter, DI, Generics, Template Method and
+                    Strategy in the source, and explain <em>why</em> each is used and what it buys.</p>
+            </div>
+            <div class="level l4">
+                <span class="badge">Level 4 · Contributor / Critic</span>
+                <h3>You can extend and critique it</h3>
+                <p>You could add a new entity (model + service + factory) reusing the generic base, write tests
+                    for it, <em>and</em> spot the demo-grade shortcuts (hard-coded secret, weak hashing) that need
+                    fixing for production.</p>
+            </div>
+        </div>
+
+        <div class="callout">
+            <div class="ct acc">Turn the self-check into action</div>
+            <p>If you're at Level 2, do the Level 3 work: open each pattern in <a href="03_design_patterns.html">Chapter
+                    3</a>
+                and re-find it in the source. If you're at Level 3, attempt the Level 4 exercise below.</p>
+        </div>
+
+        <h2 id="next">5 · Sharpen it further</h2>
+        <ol class="steps">
+            <li>
+                <strong>Trace a second feature unaided</strong>
+                <p>Pick <code>DELETE /contact/{id}</code> and map every file it touches — no peeking at Chapter 4.</p>
+            </li>
+            <li>
+                <strong>Add an imaginary entity on paper</strong>
+                <p>Sketch the <code>NoteModel</code> + <code>NoteService</code> + <code>NoteServiceFactory</code>
+                    you'd write, and which generic pieces you'd reuse.</p>
+            </li>
+            <li>
+                <strong>Fix one caveat for real</strong>
+                <p>Move the JWT secret to config and make the password salt per-user. Watch which layers you
+                    have to touch — ideally just <code>infra/generator</code> and config.</p>
+            </li>
+            <li>
+                <strong>Explain it out loud</strong>
+                <p>Teach the architecture to someone (or rubber-duck it). If you can explain the dependency rule
+                    and the UoW in your own words, you're solid.</p>
+            </li>
+        </ol>
+
+        <div class="callout tip">
+            <div class="ct">You've finished the guide</div>
+            <p>You now have the map, the lifecycle, the pattern vocabulary, a reading method, and an honest
+                gauge of your level. That's a genuinely strong understanding of a real DDD service — keep the
+                source open and keep tracing.</p>
+        </div>
+
+        <div class="pager">
+            <a href="04_how_to_read.html">
+                <span class="dir">← Back</span>
+                <span class="ttl">4 · How to Read This Codebase</span>
+            </a>
+            <a class="next" href="06_scenarios.html">
+                <span class="dir">Next →</span>
+                <span class="ttl">Practice Lab · 70 Scenarios</span>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p><strong>Personify-Service · Code Reading Guide</strong> — Chapter 5 of 5 · the finish line.
+                Explanations are based on a cloned snapshot of the repository; always defer to the live source.</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#e0e7ff',
+                primaryTextColor: '#312e81',
+                primaryBorderColor: '#4338ca',
+                lineColor: '#7c83b8',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

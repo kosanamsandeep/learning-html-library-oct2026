@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI — Agents SDK &amp; Function Calling</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="anthropic_building_agents.html">Anthropic</a>
+                <a href="anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+                <a href="github_copilot_best_practices.html">Copilot</a>
+                <a href="multi_scenario_playbook.html">Scenarios</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag oai">OpenAI · Agents SDK</span></p>
+            <h1>OpenAI Agents SDK — small primitives, large reach</h1>
+            <p class="lead">The OpenAI Agents SDK is a production-ready Python package built on three primitives:
+                <strong>Agents</strong>, <strong>Handoffs</strong>, and <strong>Guardrails</strong>. Add
+                <strong>Sessions</strong> for memory and <strong>Tracing</strong> for debugging and you have a full
+                agentic platform without learning a new programming model.</p>
+        </section>
+
+        <section class="card">
+            <h2>The three primitives</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Primitive</th>
+                        <th>What it is</th>
+                        <th>What it replaces</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Agent</td>
+                        <td>An LLM with <em>instructions</em> and <em>tools</em>.</td>
+                        <td>A long system prompt + ad-hoc tool plumbing.</td>
+                    </tr>
+                    <tr>
+                        <td>Handoff (agent-as-tool)</td>
+                        <td>One agent delegating part of the task to another.</td>
+                        <td>A custom orchestrator you would otherwise hand-roll.</td>
+                    </tr>
+                    <tr>
+                        <td>Guardrail</td>
+                        <td>Validation that runs in parallel with the agent and fails fast.</td>
+                        <td>A second LLM call you bolt on later for safety.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>The agent loop the SDK manages for you</h2>
+            <div class="flow">
+                <div class="step">User input</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Runner loop</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Tool / handoff</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Result back to LLM</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Final output / next turn</div>
+            </div>
+            <p>You stop writing the loop. You write the agents, the tools, and the handoff graph; the runner handles
+                tool dispatch, retries, streaming, and tracing.</p>
+        </section>
+
+        <section class="card">
+            <h2>Hello-world (verbatim shape from the docs)</h2>
+            <pre><code>from agents import Agent, Runner
+
+agent = Agent(name="Assistant", instructions="You are a helpful assistant")
+
+result = Runner.run_sync(agent, "Write a haiku about recursion in programming.")
+print(result.final_output)</code></pre>
+            <p>That's the smallest useful program. Add tools, handoffs, and guardrails as your needs grow.</p>
+        </section>
+
+        <section class="card">
+            <h2>Function tools — Python decorator turns code into a tool</h2>
+            <p>The SDK auto-generates the JSON schema from the function signature and validates inputs with Pydantic.
+                You write a normal Python function with type hints and a docstring; the model gets a clean tool to call.
+            </p>
+            <pre><code>from agents import Agent, function_tool
+
+@function_tool
+def search_orders(query: str, since: str | None = None) -> list[dict]:
+    """Search orders by customer email or order id.
+
+    USE THIS TOOL when the user asks about a specific order, or
+    a customer's order history. DO NOT use it for product lookup.
+
+    Args:
+        query: Customer email OR order id starting with "ord_".
+        since: Optional ISO date; only orders on or after this date.
+    """
+    ...
+
+agent = Agent(
+    name="SupportAgent",
+    instructions="Help customers with order status and history.",
+    tools=[search_orders],
+)</code></pre>
+            <p>The docstring is what the model sees as the tool description, so apply Anthropic's "junior-developer
+                docstring" rule here too — when to use, when not to use, and an example.</p>
+        </section>
+
+        <section class="card">
+            <h2>Handoffs — when to delegate vs orchestrate</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>How it looks</th>
+                        <th>Choose when</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Handoff</strong></td>
+                        <td>Agent A passes the conversation to Agent B; B owns the rest of the turn.</td>
+                        <td>Distinct skill domains (refund vs shipping vs technical support). Each agent has its own
+                            narrow prompt.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Manager (agent-as-tool)</strong></td>
+                        <td>A central agent calls specialist agents like tools, then composes the answer.</td>
+                        <td>You want one face to the user and the manager owns the final response.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Guardrails — fail fast, in parallel</h2>
+            <p>Guardrails run alongside the agent. If an input is unsafe (e.g. asks for medical advice in a coding bot)
+                or an output violates schema, the run stops before reaching the user.</p>
+            <div class="callout oai"><strong>Why parallel:</strong> guardrails do not block your fast path. They only
+                intervene when something is wrong.</div>
+        </section>
+
+        <section class="card">
+            <h2>Sessions — memory for the run</h2>
+            <p>Sessions are a persistent layer that carries state across turns. The SDK ships several backends: SQLite
+                (default), SQLAlchemy, Redis, MongoDB, encrypted, and an advanced SQLite session for richer history.</p>
+            <p>This matches the three memory layers we built from scratch in <a
+                    href="../system_design_academy/ai_engineering/p3_ai_agent_memory/README.html">ai_engineering / P3
+                    agent memory</a> — short-term in the buffer, durable facts in the session store, episodic summaries
+                persisted at the end of each run.</p>
+        </section>
+
+        <section class="card">
+            <h2>Sandbox agents — when the agent needs files</h2>
+            <p>If your agent edits real files (a coding agent, a doc generator), use Sandbox agents. The SDK gives each
+                agent an isolated workspace declared by a manifest, with capabilities (filesystem, shell, memory,
+                skills, compaction) you can explicitly grant.</p>
+            <pre><code># conceptual shape — not literal API
+manifest = {
+    "files": ["./src/**", "./tests/**"],
+    "capabilities": ["filesystem", "shell"],
+}
+agent = SandboxAgent(name="Refactorer", instructions="...", manifest=manifest)</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Agents SDK vs the raw Responses API</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Use the Responses API directly when…</th>
+                        <th>Use the Agents SDK when…</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>You want to own the loop, tool dispatch, and state.</td>
+                        <td>You want the runtime to manage turns, tool execution, guardrails, handoffs, sessions.</td>
+                    </tr>
+                    <tr>
+                        <td>The workflow is short-lived and mostly about a single response.</td>
+                        <td>The agent must produce artifacts or operate across multiple coordinated steps.</td>
+                    </tr>
+                    <tr>
+                        <td>You are building a thin proxy or transformation.</td>
+                        <td>You need a real workspace or resumable execution.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Mixed usage is fine — many apps use the SDK for managed flows and call the Responses API directly for
+                low-level paths.</p>
+        </section>
+
+        <section class="card">
+            <h2>Tracing &amp; evaluation</h2>
+            <p>The SDK has built-in tracing that integrates with OpenAI's evaluation, fine-tuning, and distillation
+                tools. Treat traces as your debugger — when an agent goes off the rails, the trace usually shows exactly
+                which tool call surprised it.</p>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://openai.github.io/openai-agents-python/" target="_blank"
+                    rel="noopener">openai-agents-python docs</a>
+                <a class="source" href="https://openai.github.io/openai-agents-python/quickstart/" target="_blank"
+                    rel="noopener">Quickstart</a>
+                <a class="source" href="https://openai.github.io/openai-agents-python/multi_agent/" target="_blank"
+                    rel="noopener">Agent orchestration</a>
+                <a class="source" href="https://openai.github.io/openai-agents-python/sandbox_agents/" target="_blank"
+                    rel="noopener">Sandbox agents</a>
+                <a class="source" href="https://platform.openai.com/docs/guides/function-calling" target="_blank"
+                    rel="noopener">OpenAI function calling guide</a>
+                <a class="source" href="https://github.com/openai/openai-agents-python" target="_blank"
+                    rel="noopener">github.com/openai/openai-agents-python</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

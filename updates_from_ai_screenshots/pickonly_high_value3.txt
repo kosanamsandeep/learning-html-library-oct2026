@@ -1,0 +1,129 @@
+Excellent batch — this one has your highest-value finds yet. Extraction, validation, and verdict below.
+
+## Image 1: "If you are an ML Engineer, go deeper" — infra checklist
+**Text:** gRPC & Protobufs, AsyncIO & Event Loops, Connection Pooling, Kafka & CDC, Backpressure Handling, Redis Pipelining, Vector Indexing (HNSW/IVF in Qdrant), Graph Traversal (Cypher in Memgraph), Semantic Caching, Distributed Locking, Rate Limiting (token buckets for LLMs), Idempotency, Database Sharding, OpenTelemetry. Closing line: "Architecture > Algorithms."
+
+**Validation:** Every item listed is a real, correctly-named technique — no fabricated jargon here. This is a legitimate, well-curated production ML-systems checklist.
+
+**Value: High.** This maps directly onto your AskIt/LangGraph work — you already use Redis, Postgres, Neo4j/APOC. Vector Indexing (HNSW/IVF — you already know this), semantic caching, and rate limiting (token buckets for LLMs) are the most directly actionable items you haven't fully covered yet. Worth treating as a personal checklist against AskIt's architecture.
+
+## Image 2: "Best YouTube Channels to Learn AI in 2026" (@ParamSiddh)
+**Text:** 3Blue1Brown (fundamentals), Andrej Karpathy (deep learning), Yannic Kilcher (research), AssemblyAI, AI Explained (LLMs), StatQuest (ML theory), Two Minute Papers, Matthew Berman (GenAI), Nicholas Renotte (AI agents), Krish Naik (applied ML), Aladdin Persson (PyTorch), Serrano Academy (math for ML), Lex Fridman, DeepLearningAI.
+
+**Validation:** All 14 channels are real and accurately categorized — this is a genuinely solid, non-hype list. 3Blue1Brown, Karpathy, StatQuest, and Two Minute Papers in particular are widely regarded as top-tier by practitioners, not influencer picks.
+
+**Value: High** as a reference list — bookmark it. Karpathy and StatQuest are the two most worth prioritizing given your current gaps (transformer internals, evaluation metrics).
+
+## Images 3–4: "Gemini 3.5 Flash free tier" (@CDGalpha)
+**Text:** Claims Gemini 3.5 Flash and 3.1 Flash-Lite are free-tier, no credit card, 1M token context, 1,500 requests/day, native multimodal, OpenAI-compatible API. Setup: aistudio.google.com → get API key → point any OpenAI-compatible client (Cursor, Cline, Claude Code) at it.
+
+**Validation:** I did not independently verify a "Gemini 3.5" model release in this search round, so treat the specific version number with caution — Google's free-tier AI Studio program (generous free quotas, OpenAI-compatible endpoint) is a real, long-standing pattern, but always verify the current model name/limits directly on aistudio.google.com before relying on it, since these free-tier terms change often and version numbers in screenshotted tweets are a common source of stale/incorrect info.
+
+**Value: Medium — verify then use.** Directly relevant to your DeepSeek/GLM backend experiments via `ANTHROPIC_BASE_URL` swapping — worth adding Gemini as another cheap/free backend to benchmark, but confirm the exact model ID and quota on Google's own page first.
+
+## Image 5: "Graph Databases: The Connective Intelligence Layer for Agentic AI" (infographic)
+**Text:** Taxonomy vs. Ontology comparison; manufacturing use-case example; 5-stage agentic architecture (User/Context → Orchestrator → Knowledge/Data Layer [LLM+VectorDB+GraphDB] → Tools/Systems → Action/Outcome); popular graph DBs (Neo4j, Amazon Neptune, TigerGraph, DoongoDB, JanusGraph); key takeaway: "LLMs generate. Vector DBs find. Graph DBs understand how things are connected."
+
+**Validation:** Conceptually accurate and well-structured — the taxonomy/ontology distinction and the "vector DB for similarity + graph DB for relationships" framing is standard, correct GraphRAG theory, not hype. The listed graph databases are all real products.
+
+**Value: High and directly relevant** — you already use Neo4j+APOC. This is a clean conceptual map for exactly the RAG/knowledge-graph work you've been doing (Neo4j + FAISS + Cohere Rerank stack). Worth keeping as a reference diagram.
+
+## Image 6: "Skills Amazon Looks For" / interview process
+**Text:** DSA, LLD, Problem Solving, Java/C++/Python, OS, Computer Networks, OOP. Interview stages: Online Assessment, Coding Rounds, Leadership Principles Round, Technical Interviews, Hiring Manager Discussion.
+
+**Validation:** Standard, accurate, well-known description of Amazon's actual interview process — nothing fabricated, but also nothing you don't already know from 11 years of experience.
+
+**Value:** Low for you specifically — generic interview-prep content, not AI-engineering-specific. Skip unless you're actively interviewing at Amazon.
+
+## Image 7: "The AI Factory Stack" (Brij Kishore Pandey)
+**Text:** LLM=Machine, RAG=Raw Material Room, Vector DB=Storage Warehouse, AI Agent=Floor Manager, MCP=Power Outlet Standard, Guardrails=Safety System, Evals=Quality Check. "Great AI isn't just a powerful model. It's a well-run factory."
+
+**Validation:** A simple, accurate conceptual analogy — no factual claims to fact-check, just a mnemonic framework. Correctly represents each component's role.
+
+**Value: Medium** — decent onboarding/explainer diagram if you ever need to explain your AskIt stack to non-technical stakeholders (EY onboarding, client demos). Not new information for you, but useful as a communication tool.
+
+## Image 8: Model substitution/cost-arbitrage table
+**Text:** Frontier model → cheaper open alternative with benchmark gap and price ratio: Opus 4.8→Kimi K2.7 (~8% gap, 11x cheaper); GPT-5.5→Qwen 3.7 Max (~18% gap, 7x cheaper); Sonnet 4.7→GLM 5.2 (~3% gap, 5x cheaper); GPT-5.5 mini→MiMo V2.5 (~6% gap, 12x cheaper); GPT-Image-2→Wan 2.5 (~5% gap, 8x cheaper); Sora 2→Kling 3.0 (roughly equal, 6x cheaper).
+
+**Validation:** The models named (Kimi K2.7, Qwen 3.7 Max, GLM 5.2, MiMo V2.5, Wan 2.5, Kling 3.0) are consistent with the real open-model landscape you're already tracking (Kimi K2.7, GLM-5.2, MiniMax, DeepSeek per your own memory). The specific benchmark-gap percentages and price multipliers are unsourced in the screenshot — no link to the actual benchmark methodology — so treat the exact numbers as directional, not precise.
+
+**Value: High as a research starting point, but verify the numbers yourself.** This maps precisely onto your ongoing benchmarking of GLM-5.2, DeepSeek, Kimi K2.7 via custom base URLs — worth re-running your own cost/quality comparison rather than trusting these exact percentages, since you already have the infra to test this directly.
+
+## Image 9: "Loopkit Vault" — Claude Code harness structure
+**Text:** CLAUDE.md=contract, settings.json=permissions, hooks/=reflexes, agents/verifier=shift-notes cop, skills/=33 muscle memories, .mcp.json=tools, MEMORY.md=shift log. File tree: `.claude/` with hooks (pre-tool-use.sh, post-tool-use.sh, stop.sh), agents/verifier.md, skills/ (agent-llm, debug, security, frontend, testing, refactor, docs, data, git-ops), .mcp.json, MEMORY.md, run.sh, install.sh.
+
+**Validation:** Structurally consistent with real Claude Code conventions (CLAUDE.md, settings.json, hooks/, .mcp.json are all genuine, documented Claude Code features you'd recognize from your own work). Can't verify the specific "loopkit" repo's quality/authenticity from a screenshot alone, but the underlying pattern is sound.
+
+**Value: High as a template concept.** Worth adopting the structural pattern (categorized skills/ subdirectories, a dedicated verifier subagent, hooks for pre/post-tool-use) in your own Claude Code setup for AskIt — this is a more organized version of what `/checkup` (from your last batch) helps you build.
+
+## Image 10 & 12: "Inference optimizations for sub-second LLM responses" (two accounts, same content — one is likely a copy)
+**Text:** KV-Caching, Speculative Decoding, FlashAttention, PagedAttention, Batch Inference, Early Exit Decoding, Parallel Decoding, Mixed Precision Inference, Quantized Kernels, Tensor Parallelism, Pipeline Parallelism, Sequence Parallelism, Graph Optimization (ONNX, TensorRT), Dynamic Batching, Memory Offloading, Streaming Generation.
+
+**Validation:** This is a completely accurate, real list of production LLM-serving optimization techniques — every term is correctly named and real (FlashAttention, PagedAttention/vLLM, speculative decoding, tensor/pipeline/sequence parallelism are all legitimate, well-documented techniques from real systems papers). Note: two different accounts (@as... and @asmah2107) posted near-identical content with the same image — likely one copied the other, a common pattern, but the content itself is accurate either way.
+
+**Value: Very high — directly relevant to your infra work.** You're already running local inference (RTX 5060, vLLM-adjacent work per memory of Laguna/DGX benchmarks). PagedAttention (the core of vLLM), speculative decoding, and quantized kernels are the most practically useful for your setup. Worth studying the vLLM paper and FlashAttention paper directly rather than the tweet.
+
+## Image 11: "Find Skills" skill for Claude Code (@Suryanshti777)
+**Text:** Install the "Find Skills" skill, then ask Claude "Got any good skills for [MY GOAL]?" — Claude scans the ecosystem and auto-wires relevant skills. Setup: `npx skills add github.com/vercel-labs/sk...`
+
+**Validation:** Vercel Labs is a real, credible organization (Vercel is a legitimate, well-known company) — this gives more credibility than an anonymous claim. The "Japanese dev quietly found..." framing and "his automated YouTube system is quietly taking off" is unverifiable narrative flourish/engagement-bait styling wrapped around what appears to be a real Vercel Labs tool.
+
+**Value: Medium-high** — worth checking `github.com/vercel-labs/skills` directly (verify the exact repo name since it's cut off) given Vercel's credibility, but ignore the narrative dressing.
+
+## Image 13: RAG agent flow diagram — THINK/KNOW/ANSWER/JUDGE/LEARN
+**Text:** 1. THINK (Supervisor) — understand intent. 2. KNOW (Retriever) — find evidence. 3. ANSWER (LLM) — generate using evidence. 4. JUDGE (Evaluator) — pass/fail, retry or return. 5. LEARN (Learning Engine) — remember what worked.
+
+**Validation:** This is a clean, correct RAG-with-evaluation-loop pattern — matches real practitioner architecture standards (Supervisor + Retriever + Evaluator + Memory).
+
+**Value: Extremely high — this is nearly identical to your own AskIt Quality Intelligence Layer work** (per your history: quality_evaluation_node, retry logic, uncaptured feedback loop). This diagram is essentially validating and cleanly formalizing the exact architecture you're already building. Worth using as a direct reference/checklist against your current AskIt implementation.
+
+## Images 14, 16, 19: codebase-memory-mcp (Charly Wargnier / @DataChaz) — **VERIFIED REAL**
+**Text:** "How do you index the entire Linux kernel (28M lines) for an AI agent in 3 minutes?" Introduces codebase-memory-mcp — swaps file-searching for AST knowledge graphs. Claims: evaluated across 31 real-world repos (arXiv:2603.27277), 99% token reduction for structural queries, 83% answer quality, 2.1x fewer tool calls. Runs 100% locally, single static binary, no Docker/Ollama/API keys, supports 158 languages via tree-sitter, 14 MCP tools.
+
+**Validation: I independently verified this is 100% real.** I searched and confirmed:
+- The arXiv paper (2603.27277) is genuine: "Codebase-Memory: Tree-Sitter-Based Knowledge Graphs for LLM Code Exploration via MCP" by Vogel, Meyer-Eschenbach, Kohler, Grünewald, Balzer, submitted March 28, 2026.
+- The paper's actual abstract confirms: 31 real-world repos, 83% answer quality vs. 92% for file-exploration, at roughly 10x fewer tokens — the tweet's "99% reduction" is a slight overstatement of the paper's own "10x fewer tokens" figure, but the core claims are accurate and sourced.
+- The tool itself is real and documented on multiple independent sites (LobeHub MCP directory, RepoDaily, a GitHub Pages site) with consistent technical details: pure C binary, tree-sitter AST parsing, SQLite graph storage, 11-14 MCP tools, works with Claude Code/Cursor/Aider/Gemini CLI.
+
+**Value: Extremely high, and directly matches something you've already explored.** Your own history shows you looked at "codebase-memory-mcp as RAG for code structure to address context bloat when using Aider with local LLMs" — this is confirmation that the exact tool you were already investigating is real, published, peer-reviewable research, not vaporware. This is the single most concretely actionable, verified item across all three batches of images. Install it and test it against AskIt or another large repo.
+
+## Image 15: "China's bubble-callers say AI rally about to collapse" (Bull Theory)
+**Text:** Claims Wealspring Asset (Yang Dong) and Shanghai Banxia warned of AI bubble collapse, citing Anthropic's revenue growth falling short of expectations; 6 of 11 surveyed Chinese hedge funds have no positive AI stance; some AI-linked stocks could crash 80%. Screenshots a Bloomberg News article.
+
+**Validation:** This reads as a real Bloomberg story being screenshotted and summarized (the visible clip shows actual Bloomberg formatting/byline). I can't independently confirm the exact figures without searching further, but the framing is consistent with real, ongoing market commentary rather than fabricated content — this is a legitimate finance/macro story, not engagement bait, though as with all "bubble" calls, treat predictions as opinion, not fact.
+
+**Value: Low-medium for you specifically** — interesting macro context given you're an active equity investor (per memory, your India Future Portfolio), but this is China-hedge-fund commentary on the US/global AI sector, tangential to your Indian equity thematic focus. Worth a skim, not a study.
+
+## Images 17–18: Kimi K2.7 setup guide (Gemini/Google AI chat screenshot)
+**Text:** Warning to set a spending limit before running Kimi in agentic loops (token costs add up in multi-turn runs) via Kimi Open Platform → Project Settings → Daily Spending Budget. Method 2: use Cline/RooCode/Continue with Kimi's OpenAI-compatible API, base URL `https://moonshot.cn`, model ID `kimi-k2.7-code`.
+
+**Validation:** This appears to be a screenshot of an AI chat assistant (Gemini) answering a user's question, not a social media post — so it's not "content" to fact-check in the usual sense, but genuinely useful config guidance. Moonshot AI (Kimi) is a real, known Chinese AI lab, and OpenAI-compatible API integration via Cline/RooCode is a standard, real pattern (matches your own `ANTHROPIC_BASE_URL` workflow with DeepSeek/GLM).
+
+**Value: High and directly actionable** — this is genuinely useful setup instructions for Kimi K2.7, which you're already benchmarking per your memory (Kimi K2.7 listed among models you're evaluating). Worth trying, but double-check the exact base URL and model ID against Moonshot's own official docs before wiring it into a production AskIt pipeline, since spending-limit safety is explicitly flagged as critical here.
+
+---
+
+## Summary — the standout finds from this batch:
+
+**Do this first (verified, directly matches your active work):**
+1. **codebase-memory-mcp (Images 14/16/19)** — confirmed real, peer-reviewable research, and it's literally the tool you already started investigating for Aider+local-LLM context bloat. Install and test it.
+2. **THINK/KNOW/ANSWER/JUDGE/LEARN diagram (Image 13)** — nearly a direct match to your AskIt Quality Intelligence Layer; use as a design checklist.
+3. **Kimi K2.7 setup + spending-limit guide (Images 17–18)** — directly usable for your ongoing Kimi K2.7 benchmarking.
+
+**High value, worth deeper study:**
+4. Inference optimization list (Images 10/12) — study vLLM (PagedAttention) and FlashAttention papers directly given your local-inference infra work.
+5. Graph Databases infographic (Image 5) — clean reference matching your Neo4j+APOC work.
+6. ML infra checklist (Image 1) — use as a gap-check against AskIt's architecture (semantic caching and token-bucket rate limiting stand out as things to verify you've covered).
+7. Loopkit Vault Claude Code structure (Image 9) — adapt the skills/ + verifier subagent + hooks pattern for your own setup.
+
+**Worth a look, verify specifics before trusting:**
+8. Model cost-arbitrage table (Image 8) — re-benchmark yourself rather than trusting the exact percentages.
+9. Gemini 3.5 Flash free tier (Images 3–4) — confirm current model name/quota on aistudio.google.com directly.
+10. "Find Skills" / Vercel Labs skill (Image 11) — credible source (Vercel), verify exact repo path.
+
+**Low priority / not relevant to you right now:**
+- Amazon interview skills (Image 6) — generic, you're well past this.
+- YouTube channel list (Image 2) — good reference, but nothing you don't likely already know of.
+- China AI bubble news (Image 15) — tangential to your Indian equity focus.
+
+The pattern from your last batch holds here too: content tied to a **named, checkable source or an actual paper/repo** (codebase-memory-mcp's arXiv paper, the inference-optimization list, the graph DB infographic) was accurate and substantive, while looser "quietly found" or unnamed-authority framings (Image 11's "Japanese dev," Image 3's "quietly made free") deserve a quick verification pass before you act on them — which in this batch, thankfully, mostly held up.

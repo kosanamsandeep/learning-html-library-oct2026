@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P17 - Rule Engine Explained Simply</title>
+    <style>
+        :root {
+            --bg: #fff8f1;
+            --paper: #ffffff;
+            --ink: #1f2937;
+            --muted: #5f6878;
+            --line: #ead7c5;
+            --accent: #f97316;
+            --soft: #ffedd5;
+            --blue: #1d4ed8;
+            --blue-soft: #eff6ff;
+            --green-soft: #ecfdf5;
+            --red-soft: #fff1f2;
+            --shadow: 0 18px 40px rgba(31, 41, 55, .08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+            --mono: "Cascadia Mono", "Consolas", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.65;
+            background: linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+        }
+
+        .shell {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 2.5rem 1.4rem;
+        }
+
+        header {
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, .92);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .brand {
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 750;
+        }
+
+        .brand span {
+            display: inline-grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            margin-right: .5rem;
+            border-radius: 6px;
+            color: white;
+            background: var(--accent);
+        }
+
+        .top-links {
+            display: flex;
+            gap: .8rem;
+            flex-wrap: wrap;
+        }
+
+        .top-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .92rem;
+        }
+
+        .hero {
+            padding: 3rem 0 1.5rem;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 860px;
+            margin: .25rem 0 .75rem;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            line-height: 1.08;
+        }
+
+        h2 {
+            margin: 0 0 .8rem;
+            font-size: 1.45rem;
+        }
+
+        h3 {
+            margin: 0 0 .4rem;
+        }
+
+        p {
+            margin: 0 0 .85rem;
+        }
+
+        .lead {
+            max-width: 810px;
+            color: var(--muted);
+            font-size: 1.08rem;
+        }
+
+        .card {
+            margin: 1rem 0;
+            padding: 1.25rem 1.4rem;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .mini {
+            padding: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fffdfb;
+        }
+
+        .good {
+            background: var(--green-soft);
+            border-color: #a7f3d0;
+        }
+
+        .bad {
+            background: var(--red-soft);
+            border-color: #fecdd3;
+        }
+
+        .flow {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+            margin: 1rem 0;
+        }
+
+        .step {
+            flex: 1 1 150px;
+            padding: .9rem;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: var(--blue-soft);
+            color: #1e3a8a;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .arrow {
+            align-self: center;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .callout {
+            padding: 1rem 1.15rem;
+            border-left: 4px solid var(--accent);
+            background: var(--soft);
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: .6rem;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: .75rem;
+            vertical-align: top;
+        }
+
+        th {
+            background: #fff7ed;
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .9em;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            padding: .06rem .35rem;
+            border-radius: 4px;
+        }
+
+        pre {
+            overflow-x: auto;
+            padding: 1rem;
+            color: #e5e7eb;
+            background: #111827;
+            border-radius: 8px;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+            border: 0;
+        }
+
+        ol,
+        ul {
+            padding-left: 1.2rem;
+        }
+
+        .quiet {
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../learning_tracker.html"><span>P17</span>Rule Engine</a>
+            <nav class="top-links">
+                <a href="../learning_tracker.html">Learning tracker</a>
+                <a href="main.py">main.py</a>
+                <a href="engine/rule_engine.py">rule_engine.py</a>
+                <a href="rules/insurance_rules.py">insurance_rules.py</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 17 simplified</p>
+            <h1>A rule engine means: move business if/else logic into small named rules</h1>
+            <p class="lead">This project calculates insurance premiums. The simple idea is: instead of writing one huge
+                function with hundreds of conditions, define many small rules. Each rule says, "when this condition is
+                true, apply this action."</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Insurance pricing has many rules: vehicle type, driver age, accidents, DUI violations, location risk,
+                mileage, loyalty, and discounts.</p>
+            <div class="grid">
+                <div class="mini bad">
+                    <h3>Without a rule engine</h3>
+                    <p>You get a giant premium function full of nested <code>if</code> statements. It becomes hard to
+                        test, hard to explain, and risky to change.</p>
+                </div>
+                <div class="mini good">
+                    <h3>With a rule engine</h3>
+                    <p>Each business rule becomes a small object. You can list rules, test rules, reorder rules, and
+                        explain exactly why a premium changed.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The mental model</h2>
+            <div class="flow">
+                <div class="step">facts: driver data</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">rules: conditions + actions</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">engine checks every rule</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">results: base, multipliers, discounts</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">final premium</div>
+            </div>
+            <div class="callout"><strong>Important:</strong> the rule engine does not know insurance. It only knows how
+                to evaluate rules. Insurance knowledge lives in <code>rules/insurance_rules.py</code>.</div>
+        </section>
+
+        <section class="card">
+            <h2>What each file does</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Simple meaning</th>
+                        <th>Focus on</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Runs demos showing specifications, premium calculation, risk profiles, and dynamic rule
+                            changes.</td>
+                        <td><code>demo_1_specification_pattern()</code>, <code>demo_2_rule_evaluation()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>engine/rule_engine.py</code></td>
+                        <td>Generic rule engine. It can be used for insurance, discounts, fraud, eligibility, or any
+                            rule-based decision.</td>
+                        <td><code>Specification</code>, <code>Rule</code>, <code>RuleEngine.evaluate_all()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>rules/insurance_rules.py</code></td>
+                        <td>Insurance-specific rules: base premiums, surcharges, discounts, and final premium
+                            calculation.</td>
+                        <td><code>create_insurance_engine()</code>, <code>calculate_premium()</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>The core objects</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Object</th>
+                        <th>Meaning</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>facts</code></td>
+                        <td>The input data being evaluated.</td>
+                        <td><code>{"driver_age": 35, "vehicle_category": "sedan"}</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>Specification</code></td>
+                        <td>A condition that returns true or false.</td>
+                        <td><code>LessThan("driver_age", 21)</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>Rule</code></td>
+                        <td>A condition plus an action.</td>
+                        <td>If vehicle is sports, set base premium to 1800.</td>
+                    </tr>
+                    <tr>
+                        <td><code>RuleEngine</code></td>
+                        <td>Runs rules in priority order and collects results.</td>
+                        <td><code>engine.evaluate_all(driver)</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>The rule shape, simplified</h2>
+            <pre><code>Rule(
+    name="young_driver_high_risk",
+    condition=LessThan("driver_age", 21),
+    action=lambda facts, results: results.setdefault("multipliers", []).append(
+        ("Young driver (&lt;21)", 1.6)
+    ),
+    priority=20,
+)</code></pre>
+            <p>Read it like English: <strong>when</strong> driver age is less than 21, <strong>then</strong> add a 1.6x
+                multiplier.</p>
+        </section>
+
+        <section class="card">
+            <h2>How premium calculation works</h2>
+            <ol>
+                <li>Base premium rule fires first, based on <code>vehicle_category</code>.</li>
+                <li>Risk multiplier rules add surcharges for age, accidents, DUI, speeding, and high-risk area.</li>
+                <li>Discount rules add discounts for clean record, loyalty, multiple policies, safe vehicle, or low
+                    mileage.</li>
+                <li><code>calculate_premium()</code> applies multipliers first, then discounts.</li>
+                <li>Discounts are capped at 40%, so the system cannot accidentally give away too much discount.</li>
+            </ol>
+            <pre><code>base premium = 900
+apply multipliers: 900 * 1.3
+apply discounts: premium * (1 - total_discount)
+final premium = rounded result</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>What each demo teaches</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Demo</th>
+                        <th>What to watch</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>demo_1_specification_pattern()</code></td>
+                        <td>Conditions can be composed with AND, OR, and NOT using <code>&amp;</code>, <code>|</code>,
+                            and <code>~</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_2_rule_evaluation()</code></td>
+                        <td>A normal driver profile is evaluated and you can see which rules fired.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_3_risk_profiles()</code></td>
+                        <td>Safe, average, risky, and DUI profiles produce different premiums.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_4_rule_composition()</code></td>
+                        <td>Complex business categories like VIP or high risk can be built from small reusable specs.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_5_rule_introspection()</code></td>
+                        <td>The engine can explain every decision by showing which rules fired and which rules did not.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 07_learning_projects/p17_rule_engine
+python main.py</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Best reading order</h2>
+            <ol>
+                <li>Read this file first.</li>
+                <li>Open <code>rules/insurance_rules.py</code> and read one base premium rule.</li>
+                <li>Open <code>engine/rule_engine.py</code> and read <code>Rule</code>.</li>
+                <li>Read <code>RuleEngine.evaluate_all()</code>. It is the heart of the project.</li>
+                <li>Run <code>python main.py</code> and watch the "Rules fired" output.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Interview answer in simple words</h2>
+            <p class="quiet">Use this when someone asks, "Why use a rule engine?"</p>
+            <div class="callout">A rule engine helps when business decisions have many changing conditions. Instead of
+                hardcoding a large if/else chain, I model each condition as a small rule with a name, priority,
+                condition, and action. The engine evaluates rules against facts and records which rules fired, making
+                the system easier to test, change, and explain.</div>
+        </section>
+    </main>
+</body>
+
+</html>

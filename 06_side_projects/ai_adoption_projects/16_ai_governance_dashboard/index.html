@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Governance Dashboard</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="../"><span>&#8592;</span> Project Hub</a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Project 16 &middot; Cross-Cutting &middot; Advanced</p>
+      <h1>AI Governance Dashboard</h1>
+      <p class="lead">A web dashboard that shows which agents are used by which teams, SBOM compliance per repository, and eval score trends over time. Governance metrics made visible&mdash;so you can measure adoption without micromanaging.</p>
+    </section>
+
+    <section class="card">
+      <h2>System Architecture</h2>
+      <p>The dashboard aggregates data from three independent collectors and presents them in a unified static interface. While the data sources are real systems, this project focuses on the dashboard front-end; data is loaded from static JSON snapshots for demonstration purposes.</p>
+
+      <div class="mermaid">
+<pre class="mermaid">
+---
+config:
+  look: handDrawn
+  theme: neutral
+---
+flowchart TD
+    subgraph Sources["Data Sources"]
+        AgentAPI["Agent Telemetry API<br/>(usage logs per team)"]
+        SBOMAPI["SBOM Registry<br/>(compliance status per repo)"]
+        EvalAPI["Eval Runner DB<br/>(score history per model)"]
+    end
+
+    subgraph Collector["Collection Layer"]
+        AgentCollect["Agent Usage Collector"]
+        SBOMCollect["SBOM Compliance Collector"]
+        EvalCollect["Eval Score Collector"]
+    end
+
+    subgraph Dashboard["Static Dashboard"]
+        AgentPanel["Agent Usage Panel<br/>- per-team breakdown<br/>- active agents<br/>- adoption rate"]
+        SBOMPanel["SBOM Compliance Panel<br/>- repos compliant<br/>- repos failing<br/>- coverage trend"]
+        EvalPanel["Eval Score Panel<br/>- score over time<br/>- per-benchmark view<br/>- regression alerts"]
+    end
+
+    AgentAPI --> AgentCollect
+    SBOMAPI --> SBOMCollect
+    EvalAPI --> EvalCollect
+
+    AgentCollect --> Dashboard
+    SBOMCollect --> Dashboard
+    EvalCollect --> Dashboard
+
+    style Sources fill:#fef3c7,stroke:#b45309,color:#78350f
+    style Collector fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
+    style Dashboard fill:#ccfbf1,stroke:#0f766e,color:#134e4a
+</pre>
+      </div>
+
+      <h3>Data shape for each panel</h3>
+      <table>
+        <tr><th>Panel</th><th>Key metrics</th><th>Update cadence</th></tr>
+        <tr><td>Agent Usage</td><td>Active agents by team, adoption rate (teams using AI-assisted dev), top 5 agents by call volume</td><td>Daily snapshot</td></tr>
+        <tr><td>SBOM Compliance</td><td>% of repos with up-to-date SBOM, repos with vulnerable deps, SBOM generation age</td><td>Per-PR / daily</td></tr>
+        <tr><td>Eval Scores</td><td>Score per benchmark over last N runs, regression flagging, comparison to baseline</td><td>Per-eval-run</td></tr>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Static Dashboard Mockup</h2>
+      <p>Below is a self-contained HTML mockup of the three-panel governance dashboard. In production, this would be backed by live APIs; here it renders from embedded JSON fixtures to demonstrate the layout and metric design.</p>
+
+      <div class="callout">
+        <strong>Live preview:</strong> The dashboard below is rendered entirely in static HTML and CSS using embedded data. It shows how governance metrics can be consumed at a glance without complex backend infrastructure.
+      </div>
+
+      <!-- Embedded static dashboard mockup -->
+      <div style="border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:1rem 0;">
+        <!-- Panel tabs -->
+        <div style="display:flex; background:#f1f5f9; border-bottom:1px solid var(--line);">
+          <div style="padding:0.6rem 1.2rem; background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:0.85rem; border-bottom:2px solid var(--accent);">Agent Usage</div>
+          <div style="padding:0.6rem 1.2rem; font-size:0.85rem; color:var(--muted);">SBOM Compliance</div>
+          <div style="padding:0.6rem 1.2rem; font-size:0.85rem; color:var(--muted);">Eval Scores</div>
+        </div>
+
+        <!-- Panel content -->
+        <div style="padding:1.2rem; background:white;">
+          <!-- Agent Usage Panel -->
+          <div>
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+              <div style="flex:1; min-width:180px;">
+                <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted);">Active Agents (this week)</div>
+                <div style="font-size:2rem; font-weight:800; color:var(--accent);">47</div>
+                <div style="font-size:0.82rem; color:var(--green);">+12% vs last week</div>
+              </div>
+              <div style="flex:1; min-width:180px;">
+                <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted);">Adoption Rate</div>
+                <div style="font-size:2rem; font-weight:800; color:var(--accent);">68%</div>
+                <div style="font-size:0.82rem; color:var(--green);">18 of 26 teams</div>
+              </div>
+              <div style="flex:1; min-width:180px;">
+                <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted);">Total Calls (7d)</div>
+                <div style="font-size:2rem; font-weight:800; color:var(--accent);">142K</div>
+                <div style="font-size:0.82rem; color:var(--green);">est. $2,840</div>
+              </div>
+            </div>
+
+            <table style="margin-top:1rem; font-size:0.85rem;">
+              <tr><th>Team</th><th>Active agents</th><th>Calls / week</th><th>Top agent</th><th>Status</th></tr>
+              <tr><td>Platform</td><td>8</td><td>38K</td><td>Code Reviewer v2</td><td><span class="tag">adopted</span></td></tr>
+              <tr><td>Data</td><td>6</td><td>29K</td><td>SQL Generator</td><td><span class="tag">adopted</span></td></tr>
+              <tr><td>Frontend</td><td>5</td><td>22K</td><td>Component Builder</td><td><span class="tag">adopted</span></td></tr>
+              <tr><td>Security</td><td>3</td><td>9K</td><td>Threat Model Scanner</td><td><span class="tag">adopted</span></td></tr>
+              <tr><td>Mobile</td><td>2</td><td>4K</td><td>API Client Gen</td><td><span style="display:inline-block;padding:0.15rem 0.55rem;border-radius:999px;background:#fef3c7;color:#b45309;font-size:0.72rem;font-weight:800;">piloting</span></td></tr>
+              <tr><td>QA</td><td>1</td><td>1.2K</td><td>Test Writer</td><td><span style="display:inline-block;padding:0.15rem 0.55rem;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:0.72rem;font-weight:800;">exploring</span></td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>What Metrics Matter for AI Governance</h2>
+      <p>Effective governance walks a tightrope: you need enough visibility to detect problems, but not so much overhead that teams circumvent the system. These are the metrics that matter most:</p>
+
+      <div class="grid">
+        <div class="grid-item">
+          <strong>Adoption breadth</strong>
+          <p style="font-size:0.85rem;margin-top:0.5rem;">What fraction of teams use AI-assisted tools at least once a week? Track aggregate trends, not per-developer stats. If adoption plateaus below 50%, investigate barriers (access, training, trust) rather than mandating usage.</p>
+        </div>
+        <div class="grid-item">
+          <strong>SBOM freshness</strong>
+          <p style="font-size:0.85rem;margin-top:0.5rem;">What percentage of repos have an SBOM generated within the last 7 days? A declining SBOM freshness rate reveals teams sidestepping the supply chain pipeline. Surface this as a trend line, not a pass/fail gate.</p>
+        </div>
+        <div class="grid-item">
+          <strong>Eval score drift</strong>
+          <p style="font-size:0.85rem;margin-top:0.5rem;">Are model eval scores stable, improving, or regressing? A single point drop is noise; three consecutive drops trigger an investigation. Flag regressions automatically without requiring manual review of every run.</p>
+        </div>
+        <div class="grid-item">
+          <strong>Cost per team</strong>
+          <p style="font-size:0.85rem;margin-top:0.5rem;">Agent API costs broken down by team. High cost without high adoption suggests inefficient usage patterns. Low cost with high adoption is the sweet spot. Share this data openly to encourage cost-conscious usage.</p>
+        </div>
+      </div>
+
+      <h3>Measuring Adoption Without Micromanaging</h3>
+      <p>The single most important governance principle: <strong>measure outcomes, not activity</strong>. A dashboard that shows "team X made 50K agent calls this week" invites gaming. A dashboard that shows "team X resolved 30% more PRs with the same headcount after adopting the code review assistant" builds trust.</p>
+      <p>Best practices for non-intrusive governance:</p>
+      <ul>
+        <li><strong>Aggregate by default, drill-down on demand.</strong> Show team-level aggregates first; individual usage is available via opt-in telemetry.</li>
+        <li><strong>Trend lines over targets.</strong> Prefer month-over-month trends over hard targets. Trends reveal improvement; targets encourage metric-fixing.</li>
+        <li><strong>Make data self-service.</strong> The dashboard should answer "how are we doing?" without requiring a data analyst. Each panel should be self-explanatory.</li>
+        <li><strong>Separate insights from evaluation.</strong> The dashboard is for insight. Performance reviews should not use dashboard data punitively, or the data will become unreliable.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Starter Code &mdash; Static Dashboard Data Fixtures</h2>
+      <pre><code>// agent_usage.json — snapshot of agent telemetry
+{
+  "snapshot_date": "2025-07-14",
+  "total_active_agents": 47,
+  "total_teams": 26,
+  "adopted_teams": 18,
+  "weekly_calls": 142000,
+  "estimated_cost_usd": 2840,
+  "teams": [
+    {
+      "name": "Platform",
+      "active_agents": 8,
+      "weekly_calls": 38000,
+      "top_agent": "Code Reviewer v2",
+      "status": "adopted"
+    },
+    {
+      "name": "Data",
+      "active_agents": 6,
+      "weekly_calls": 29000,
+      "top_agent": "SQL Generator",
+      "status": "adopted"
+    },
+    {
+      "name": "Mobile",
+      "active_agents": 2,
+      "weekly_calls": 4000,
+      "top_agent": "API Client Gen",
+      "status": "piloting"
+    }
+  ]
+}
+
+// sbom_compliance.json — SBOM status per repo
+{
+  "snapshot_date": "2025-07-14",
+  "total_repos": 42,
+  "compliant_repos": 34,
+  "failing_repos": 6,
+  "untracked_repos": 2,
+  "repos": [
+    {
+      "name": "api-gateway",
+      "sbom_version": "cyclonedx-1.5",
+      "last_generated": "2025-07-13",
+      "age_hours": 18,
+      "vulnerabilities": 0,
+      "status": "compliant"
+    },
+    {
+      "name": "legacy-auth",
+      "sbom_version": "cyclonedx-1.4",
+      "last_generated": "2025-06-28",
+      "age_hours": 384,
+      "vulnerabilities": 3,
+      "status": "failing"
+    }
+  ]
+}
+
+// eval_scores.json — score history per benchmark
+{
+  "snapshot_date": "2025-07-14",
+  "benchmarks": [
+    {
+      "name": "SWE-bench-lite",
+      "runs": [
+        {"date": "2025-06-01", "score": 42.3},
+        {"date": "2025-06-08", "score": 44.1},
+        {"date": "2025-06-15", "score": 41.8},
+        {"date": "2025-06-22", "score": 45.6},
+        {"date": "2025-06-29", "score": 47.2},
+        {"date": "2025-07-06", "score": 46.5},
+        {"date": "2025-07-13", "score": 48.0}
+      ],
+      "trend": "+5.7 pts (4 weeks)",
+      "regression_alert": false
+    },
+    {
+      "name": "Custom Anti-Pattern Eval",
+      "runs": [
+        {"date": "2025-06-01", "score": 72.0},
+        {"date": "2025-06-08", "score": 74.5},
+        {"date": "2025-06-15", "score": 71.2},
+        {"date": "2025-06-22", "score": 73.8},
+        {"date": "2025-06-29", "score": 76.1},
+        {"date": "2025-07-06", "score": 75.0},
+        {"date": "2025-07-13", "score": 77.3}
+      ],
+      "trend": "+5.3 pts (4 weeks)",
+      "regression_alert": false
+    }
+  ]
+}
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Extending to a Live Dashboard</h2>
+      <p>To turn this static mockup into a live governance tool, you need three additions:</p>
+
+      <table>
+        <tr><th>Component</th><th>What it does</th><th>Technology options</th></tr>
+        <tr><td>Data collector service</td><td>Polls APIs on a schedule, transforms data into the fixture schema, writes to storage</td><td>Python cron job, GitHub Actions scheduled workflow, serverless function</td></tr>
+        <tr><td>Storage layer</td><td>Holds snapshot history so the dashboard can show trend lines, not just point-in-time data</td><td>SQLite (single team), PostgreSQL (multi-team), or S3 + Athena</td></tr>
+        <tr><td>API gateway</td><td>Serves the latest snapshots to the dashboard frontend</td><td>FastAPI + uvicorn, Next.js API routes, or simply serve JSON from S3</td></tr>
+        <tr><td>Alerting</td><td>Fires notifications when metrics cross thresholds (e.g. SBOM compliance drops below 80%)</td><td>Slack webhook, PagerDuty, or email via SendGrid</td></tr>
+      </table>
+
+      <div class="callout">
+        <strong>Final thought:</strong> A governance dashboard is only as good as the trust it builds. If the data is stale, incomplete, or used punitively, teams will find ways to evade it. Invest in data quality and a culture of transparency first; the dashboard UI is the easy part.
+      </div>
+    </section>
+  </main>
+</body>
+</html>

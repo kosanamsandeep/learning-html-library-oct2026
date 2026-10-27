@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why JavaScript, TypeScript &amp; React?</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>JS</span>Web Track</a>
+            <nav class="top-links">
+                <a href="index.html">Web Hub</a>
+                <a href="why_javascript.html">Why JS</a>
+                <a href="python_vs_javascript.html">Python vs JS</a>
+                <a href="javascript_vs_typescript.html">JS vs TS</a>
+                <a href="the_dom_explained.html">The DOM</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Web Track · 01 of 04</p>
+            <h1>Why would an AI engineer learn JavaScript?</h1>
+            <p class="lead">Because the model is only half the product. The moment someone needs to <em>use</em> your
+                model — a chat box, a dashboard, an internal tool, a demo that gets you funding — that lives in a
+                browser. And the browser speaks exactly one language natively: JavaScript.</p>
+        </section>
+
+        <section class="card">
+            <h2>The honest pitch</h2>
+            <p>You do not need to become a frontend specialist. You need enough JavaScript / TypeScript / React to:</p>
+            <ul>
+                <li>Ship a working UI on top of your model instead of handing people a <code>curl</code> command.</li>
+                <li>Read and tweak the frontend your teammates wrote, without being blocked.</li>
+                <li>Build convincing demos fast — the thing that actually moves careers and projects.</li>
+                <li>Understand the full request path: browser to API to model and back.</li>
+            </ul>
+            <div class="callout js">
+                <strong>Reframe:</strong> Python got your model working. JavaScript gets your model <em>used</em>.
+                Senior engineers are valued for owning the whole path, not one layer.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Where each piece runs</h2>
+            <p>This is the single most useful diagram to internalise. "JavaScript" is not one place — it runs in two
+                very different homes.</p>
+            <div class="diagram">
+                <pre class="mermaid">
+flowchart TB
+    subgraph Browser["Browser (the user's machine)"]
+        JS1["JavaScript engine"] --> DOM["DOM: the live page"]
+        React["React"] --> JS1
+    end
+    subgraph Server["Server (your machine / cloud)"]
+        Node["Node.js runtime"] --> API["Your API"]
+        Py["Python + your model"] --> API
+    end
+    DOM -->|"HTTP request"| API
+    API -->|"JSON response"| DOM
+    style JS1 fill:#fef9c3,stroke:#a16207,color:#0f172a
+    style React fill:#cff4fc,stroke:#0b7285,color:#0f172a
+    style DOM fill:#fef9c3,stroke:#a16207,color:#0f172a
+    style Node fill:#e2e8f0,stroke:#1e293b,color:#0f172a
+    style Py fill:#dbeafe,stroke:#3776ab,color:#0f172a
+    style API fill:#e2e8f0,stroke:#1e293b,color:#0f172a
+                </pre>
+            </div>
+            <p class="cap">Same language (JavaScript) in the browser and on the server. Your Python model sits behind
+                the
+                API — JavaScript is what calls it and shows the result.</p>
+        </section>
+
+        <section class="card">
+            <h2>JavaScript vs TypeScript vs React — who does what</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Layer</th>
+                        <th>Job</th>
+                        <th>Learn it because</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="tag js">JavaScript</span></td>
+                        <td>The actual language. Logic, data, talking to the page and to APIs.</td>
+                        <td>Nothing else works without it. It is the foundation.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tag ts">TypeScript</span></td>
+                        <td>Adds a type checker on top of JavaScript. Catches bugs before you run.</td>
+                        <td>Every serious codebase uses it. It feels like Python type hints — but enforced.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tag react">React</span></td>
+                        <td>A library to build the UI as reusable components that update when data changes.</td>
+                        <td>It is the industry default for building real app interfaces.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout ts">
+                <strong>Order matters:</strong> Learn JavaScript first. Add TypeScript once the language is comfortable
+                — it is the same language with a safety net. React comes last because it assumes you know both.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>When to use what — a decision guide</h2>
+            <div class="diagram">
+                <pre class="mermaid">
+flowchart TD
+    Q1{"Runs in a browser<br/>and shows a UI?"}
+    Q1 -->|No, it's ML / data / a script| Python["Use Python"]
+    Q1 -->|Yes| Q2{"More than a<br/>throwaway snippet?"}
+    Q2 -->|No, tiny demo| JS["Plain JavaScript is fine"]
+    Q2 -->|Yes, a real app| TS["Use TypeScript"]
+    TS --> Q3{"Interactive UI with<br/>lots of state?"}
+    Q3 -->|Yes| React["Add React"]
+    Q3 -->|No, mostly content| Plain["TypeScript + minimal JS"]
+    style Python fill:#dbeafe,stroke:#3776ab,color:#0f172a
+    style JS fill:#fef9c3,stroke:#a16207,color:#0f172a
+    style TS fill:#dbeafe,stroke:#3178c6,color:#0f172a
+    style React fill:#cff4fc,stroke:#0b7285,color:#0f172a
+    style Plain fill:#e2e8f0,stroke:#1e293b,color:#0f172a
+                </pre>
+            </div>
+            <p class="cap">Rule of thumb: Python for the brain (models, data, servers), TypeScript + React for the face
+                (what the user touches).</p>
+        </section>
+
+        <section class="card">
+            <h2>What stays the same coming from Python</h2>
+            <div class="two-col">
+                <div class="col py">
+                    <h4>You already know</h4>
+                    <ul>
+                        <li>Variables, functions, loops, conditionals</li>
+                        <li>Lists / arrays and dicts / objects</li>
+                        <li>Classes and methods</li>
+                        <li>Async / await</li>
+                        <li>Importing modules</li>
+                        <li>JSON everywhere</li>
+                    </ul>
+                </div>
+                <div class="col js">
+                    <h4>What is genuinely new</h4>
+                    <ul>
+                        <li>The DOM — editing a live page</li>
+                        <li>Events — reacting to clicks, typing</li>
+                        <li>The browser runtime and its quirks</li>
+                        <li><code>{ }</code> blocks and semicolons instead of indentation</li>
+                        <li>The npm ecosystem and build tools</li>
+                        <li>React's component + state model</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="callout react">
+                <strong>Bottom line:</strong> Roughly 80% carries over. This track focuses your energy on the 20% that
+                is actually new — so a bootcamp becomes practice, not first contact.
+            </div>
+        </section>
+
+        <section class="card">
+            <p class="quiet">Next up:
+                <a href="python_vs_javascript.html">Python vs JavaScript, side by side &rarr;</a>
+            </p>
+        </section>
+    </main>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#fef9c3',
+                primaryTextColor: '#0f172a',
+                primaryBorderColor: '#a16207',
+                lineColor: '#7c83b8',
+                fontFamily: 'Segoe UI, system-ui, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

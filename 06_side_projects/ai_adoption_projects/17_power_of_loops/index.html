@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Power of Loops — Recurring Tasks & Autonomous Iteration</title>
+  <link rel="stylesheet" href="../projects.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { primaryColor: '#4f46e5', secondaryColor: '#e0e7ff', tertiaryColor: '#f9fafb', mainBkg: '#eef2ff', nodeBorder: '#4f46e5', clusterBkg: '#f8fafc', clusterBorder: '#cbd5e1', lineColor: '#6366f1', textColor: '#1e293b' } });
+  </script>
+  <style>
+    .pattern-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+    .pattern-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .pattern-card h3 { margin-top: 0; color: var(--primary); }
+    .diagram-wrap { background: #fff; border-radius: 8px; padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+    pre.code-block { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
+    pre.code-block .kw { color: #c084fc; }
+    pre.code-block .str { color: #86efac; }
+    pre.code-block .cm { color: #94a3b8; font-style: italic; }
+    pre.code-block .fn { color: #60a5fa; }
+    pre.code-block .num { color: #fbbf24; }
+    .file-path { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.85rem; color: var(--muted); background: var(--surface); padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid var(--border); }
+    .feature-list { padding-left: 1.25rem; }
+    .feature-list li { margin-bottom: 0.4rem; }
+    .badge { display: inline-block; background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .badge.green { background: #059669; }
+    .badge.amber { background: #d97706; }
+    .badge.blue { background: #3b82f6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav><a href="../">Hub</a></nav>
+    <header>
+      <h1>Power of Loops</h1>
+      <p class="subtitle">Recurring Tasks &amp; Autonomous Iteration with Claude Code</p>
+    </header>
+
+    <!-- ===== Section 1 ===== -->
+    <section>
+      <h2>What is a Loop?</h2>
+      <p>
+        The <code>/loop</code> command tells Claude Code to run a prompt or slash command on a recurring interval.
+        Each iteration is a fresh turn — Claude sees new context (file changes, command output, time passing)
+        and decides what to do next. Combined with <strong>ScheduleWakeup</strong> (background polling between sessions)
+        and <strong>CronCreate</strong> (durable scheduling), loops form the backbone of autonomous agent workflows.
+      </p>
+
+      <div class="diagram-wrap">
+        <pre class="mermaid">
+flowchart TD
+    Start([Start]) --> Invoke["/loop &lt;interval&gt; &lt;prompt&gt;"]
+    Invoke --> Execute[Claude executes prompt<br/>with current context]
+    Execute --> Check{Continue?}
+    Check -->|Yes| Wait[Wait for interval]
+    Wait --> Execute
+    Check -->|No / Esc| Done([Loop exits])
+
+    subgraph Schedule["Scheduling (background)"]
+        Wake[ScheduleWakeup] --> Cron[CronCreate]
+        Cron --> Trigger[Wake on schedule]
+        Trigger --> Execute
+    end
+
+    Execute -.->|Optional<br/>external API| Poll[Poll CI / Deploy / APIs]
+    Poll -.-> Execute
+        </pre>
+      </div>
+
+      <h3>Key components</h3>
+      <ul class="feature-list">
+        <li><strong><code>/loop &lt;interval&gt; &lt;command&gt;</code></strong> — Run a slash command or prompt every <code>interval</code> (e.g. <code>10m</code>, <code>1h</code>).</li>
+        <li><strong>ScheduleWakeup</strong> — A hook that wakes Claude at a future time to re-run a loop. Lives inside the session.</li>
+        <li><strong>CronCreate</strong> — Creates a durable cron schedule that survives session restarts. Used for production-grade recurring tasks.</li>
+        <li><strong>Manual break</strong> — Press <kbd>Esc</kbd> or the prompt asks to stop; the loop exits cleanly.</li>
+      </ul>
+    </section>
+
+    <!-- ===== Section 2 ===== -->
+    <section>
+      <h2>Three Loop Patterns</h2>
+
+      <div class="pattern-grid">
+
+        <div class="pattern-card">
+          <h3><span class="badge blue">A</span> Fixed-Interval Polling</h3>
+          <p><code class="file-path">/loop 5m "check deploy status"</code></p>
+          <p>Poll an external system at a regular, predictable cadence. Best when you know the typical response time and want consistent monitoring.</p>
+          <div class="diagram-wrap">
+            <pre class="mermaid">
+flowchart LR
+    subgraph Claude["Claude Code"]
+        L["/loop 5m"]
+        P["Check deploy status"]
+    end
+    subgraph External["External System"]
+        CI[CI Pipeline]
+        DEPLOY[Deployment]
+        LOGS[Logs / Metrics]
+    end
+    L -->|every 5 min| P
+    P -->|poll| CI
+    P -->|poll| DEPLOY
+    P -->|poll| LOGS
+    CI -->|status| P
+    DEPLOY -->|status| P
+    P -->|report| L
+            </pre>
+          </div>
+        </div>
+
+        <div class="pattern-card">
+          <h3><span class="badge amber">B</span> Dynamic Pacing</h3>
+          <p><em>Claude decides the interval</em> based on context — CI pipeline stage, cache freshness, backoff on errors.</p>
+          <p>Use when the optimal wait time varies. Claude inspects the current state and picks the next check-in delay.</p>
+          <div class="diagram-wrap">
+            <pre class="mermaid">
+flowchart TD
+    Start([Start]) --> Run[Run check]
+    Run --> Analyze{Analyze state}
+    Analyze -->|"Building (early)"| Fast["Wait 2m"]
+    Analyze -->|"Testing (mid)"| Mid["Wait 5m"]
+    Analyze -->|"Deploying (late)"| Slow["Wait 10m"]
+    Analyze -->|"Failed / Blocked"| Alert[Alert &amp; exit]
+    Fast --> Run
+    Mid --> Run
+    Slow --> Run
+            </pre>
+          </div>
+          <p style="margin-top:0.5rem;font-size:0.9rem;color:var(--muted);">
+            Example: "wait 2m while building, 5m while testing, 10m during deploy canary"
+          </p>
+        </div>
+
+        <div class="pattern-card">
+          <h3><span class="badge green">C</span> Loop-Until-Dry</h3>
+          <p>Keep iterating until <em>K</em> consecutive rounds return nothing new. Great for bug hunting, security audits, or code review sweeps.</p>
+          <div class="diagram-wrap">
+            <pre class="mermaid">
+flowchart TD
+    Start([Start]) --> Hunt[Analyze code / logs]
+    Hunt --> Found{Found issues?}
+    Found -->|Yes| Fix[Fix / report]
+    Fix --> Hunt
+    Found -->|No| Inc[Dry counter += 1]
+    Inc --> Dry{Dry &ge; K?}
+    Dry -->|No| Hunt
+    Dry -->|Yes| Done([Done — K dry rounds])
+            </pre>
+          </div>
+          <p style="margin-top:0.5rem;font-size:0.9rem;color:var(--muted);">
+            <code>/loop 1m "find remaining bugs — stop after 3 empty rounds"</code>
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== Section 3 ===== -->
+    <section>
+      <h2>Practical Examples</h2>
+      <p>Three runnable Python scripts that simulate the loop patterns in action.</p>
+
+      <h3>01 — CI Poller <span class="file-path">examples/01_poll_ci.py</span></h3>
+      <p>Simulates polling a CI pipeline as it transitions through states. Use the <code>--loop</code> flag to auto-recheck.</p>
+      <pre class="code-block"><span class="cm"># Example usage</span>
+python examples/01_poll_ci.py --loop --interval 2</pre>
+
+      <h3>02 — Deploy Watcher <span class="file-path">examples/02_deploy_monitor.py</span></h3>
+      <p>Simulates watching a multi-stage deployment (build → push → canary → production) with possible failures and rollbacks.</p>
+      <pre class="code-block"><span class="cm"># Example usage</span>
+python examples/02_deploy_monitor.py --watch --interval 3</pre>
+
+      <h3>03 — Bug Hunter <span class="file-path">examples/03_loop_until_dry.py</span></h3>
+      <p>Simulates the loop-until-dry pattern: diminishing returns bug finding that stops after N consecutive empty rounds.</p>
+      <pre class="code-block"><span class="cm"># Example usage</span>
+python examples/03_loop_until_dry.py --dry-threshold 3 --total-bugs 15</pre>
+    </section>
+
+    <!-- ===== Section 4 ===== -->
+    <section>
+      <h2>Build Your Own Loop Skill</h2>
+      <p>
+        Wrap a recurring loop into a reusable slash command by creating a <strong>Skill</strong>.
+        A skill lets you invoke your loop with <code>/my-poller</code> instead of typing the full prompt each time.
+        Below is a working skill template — see <span class="file-path">skill_template/SKILL.md</span> for the full file.
+      </p>
+
+      <pre class="code-block"><span class="cm"># File: skill_template/SKILL.md</span>
+<span class="cm"># Deploy Watcher Skill</span>
+<span class="cm"># Place in .claude/skills/ or project skills directory</span>
+
+<span class="kw">name</span>: deploy-watcher
+<span class="kw">description</span>: <span class="str">|</span>
+<span class="str">  Watch a deployment progress through build → push → canary → production.</span>
+<span class="str">  Reports each stage and exits on success, failure, or rollback.</span>
+
+<span class="kw">trigger</span>:
+  <span class="kw">type</span>: <span class="str">slash_command</span>
+  <span class="kw">command</span>: <span class="str">deploy-watch</span>
+
+<span class="kw">action</span>: <span class="str">|</span>
+<span class="str">  Check the deployment status by running:</span>
+<span class="str">  python examples/02_deploy_monitor.py --watch --interval 3</span>
+<span class="str">  Report the current stage and any failures.</span>
+<span class="str">  Loop every 10 seconds until the deploy completes or fails.</span>
+
+<span class="kw">loop</span>:
+  <span class="kw">default_interval</span>: <span class="str">10s</span>
+  <span class="kw">stop_conditions</span>:
+    <span class="kw">-</span> <span class="str">Deploy status is "success" or "failed"</span>
+    <span class="kw">-</span> <span class="str">Rollback detected</span>
+</pre>
+
+      <h3>How to install a loop skill</h3>
+      <ol class="feature-list">
+        <li>Create a <code>.claude/skills/</code> directory in your project root.</li>
+        <li>Add the <code>SKILL.md</code> file (like the template above).</li>
+        <li>Run <code>/deploy-watch</code> in Claude Code — it will loop automatically.</li>
+        <li>Customize the <code>default_interval</code> and <code>stop_conditions</code> to match your workflow.</li>
+      </ol>
+      <p>For more on skills, see the <a href="https://docs.anthropic.com/en/docs/claude-code/skills" target="_blank" rel="noopener">Claude Code Skills documentation</a>.</p>
+    </section>
+
+    <!-- ===== Section 5 ===== -->
+    <section>
+      <h2>Loop Decision Tree</h2>
+      <p>Should you use <code>/loop</code> for your task? Follow the tree:</p>
+
+      <div class="diagram-wrap">
+        <pre class="mermaid">
+flowchart TD
+    Q1{"Does the task<br/>need to repeat?"}
+    Q1 -->|No| DONE["Just run once 🎯"]
+    Q1 -->|Yes| Q2{"Do you need to keep<br/>the context between runs?"}
+
+    Q2 -->|No| CRON["CronCreate / ScheduleWakeup<br/>⏰ Durable scheduling"]
+    Q2 -->|Yes| Q3{"Do you know the<br/>exact interval?"}
+
+    Q3 -->|Yes| FIXED["/loop &lt;fixed interval&gt;<br/>📐 Pattern A"]
+    Q3 -->|No| Q4{"Does the work have<br/>diminishing returns?"}
+
+    Q4 -->|Yes| DRY["/loop + dry-rounds check<br/>🪣 Pattern C — Loop-until-dry"]
+    Q4 -->|No| DYNAMIC["/loop + Claude decides interval<br/>⚡ Pattern B — Dynamic pacing"]
+
+    style DONE fill:#fbbf24,stroke:#d97706,color:#1e293b
+    style FIXED fill:#3b82f6,stroke:#2563eb,color:#fff
+    style DYNAMIC fill:#d97706,stroke:#b45309,color:#fff
+    style DRY fill:#059669,stroke:#047857,color:#fff
+    style CRON fill:#8b5cf6,stroke:#7c3aed,color:#fff
+        </pre>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;margin-top:1rem;">
+        <thead>
+          <tr style="background:var(--primary);color:#fff;">
+            <th style="padding:0.5rem 1rem;text-align:left;border-radius:6px 0 0 0;">Pattern</th>
+            <th style="padding:0.5rem 1rem;text-align:left;">When to use</th>
+            <th style="padding:0.5rem 1rem;text-align:left;border-radius:0 6px 0 0;">Example</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:0.5rem 1rem;"><strong>One-shot</strong></td>
+            <td style="padding:0.5rem 1rem;">Task completes in a single turn</td>
+            <td style="padding:0.5rem 1rem;"><code>Fix this bug</code></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:0.5rem 1rem;"><strong>Fixed loop</strong></td>
+            <td style="padding:0.5rem 1rem;">Poll at a regular, predictable cadence</td>
+            <td style="padding:0.5rem 1rem;"><code>/loop 5m "check CI"</code></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:0.5rem 1rem;"><strong>Dynamic loop</strong></td>
+            <td style="padding:0.5rem 1rem;">Variable wait times based on state</td>
+            <td style="padding:0.5rem 1rem;"><code>/loop 2-10m "monitor deploy"</code></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:0.5rem 1rem;"><strong>Loop-until-dry</strong></td>
+            <td style="padding:0.5rem 1rem;">Exhaust a search space incrementally</td>
+            <td style="padding:0.5rem 1rem;"><code>/loop 1m — stop after 3 dry rounds</code></td>
+          </tr>
+          <tr>
+            <td style="padding:0.5rem 1rem;"><strong>Cron / ScheduleWakeup</strong></td>
+            <td style="padding:0.5rem 1rem;">Durable, cross-session recurring tasks</td>
+            <td style="padding:0.5rem 1rem;"><code>CronCreate "0 9 * * 1" weekly report</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      <hr />
+      <p><a href="../">Back to Hub</a> &middot; Built for Claude Code Loop Patterns</p>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 15 — Inter-Agent Communication (A2A)</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 15 — Inter-Agent Communication (A2A)</h1>
+  <p>Open standard so agents from different vendors / frameworks can collaborate.</p>
+  <p><span class="tag">Mediator</span><span class="tag">Pub-Sub</span><span class="tag">Open standard</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Where MCP is LLM ↔ tool, A2A is agent ↔ agent. Each agent advertises an <em>Agent Card</em> (skills, endpoints, auth). Tasks are exchanged via JSON-RPC over HTTP/SSE; messages, parts (text/file/structured), and artifacts give a uniform vocabulary.</p>
+<div class="callout tip"><strong>Mental model:</strong> SMTP for agents — different mail servers but the same envelope.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart LR
+  A[(Agent A — LangGraph)] -->|"A2A: send task"| Bus((A2A bus))
+  Bus -->|"task"| B[(Agent B — CrewAI)]
+  B -->|"artifact"| Bus
+  Bus -->|"result"| A
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Cross-vendor procurement</h2>
+<div class="callout scenario">
+A 2026 enterprise has a <em>Procurement</em> agent (Google ADK), a <em>Finance</em> agent (LangGraph), and a <em>Vendor</em> agent (CrewAI). The Procurement agent posts an A2A task "negotiate 200 laptops"; Finance approves the budget; Vendor closes the deal — across three frameworks, no glue code.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant P as Procurement (ADK)
+  participant F as Finance (LangGraph)
+  participant V as Vendor (CrewAI)
+  P->>F: task: approve budget ₹1.6Cr
+  F-->>P: artifact: approved
+  P->>V: task: negotiate 200 laptops
+  V-->>P: artifact: PO #5521
+  P->>F: task: schedule payment
+  F-->>P: artifact: payment scheduled
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>A2A support (2026)</th></tr>
+  <tr><td>Google ADK</td><td>Native A2A server + client.</td></tr>
+  <tr><td>LangChain / LangGraph</td><td>A2A adapter.</td></tr>
+  <tr><td>CrewAI</td><td>A2A integration.</td></tr>
+  <tr><td>Microsoft (Azure AI Foundry, Copilot Studio)</td><td>A2A adoption announced.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Mediator</strong></td><td>The bus brokers task exchanges.</td></tr>
+  <tr><td><strong>Publisher-Subscriber</strong></td><td>Agents subscribe to topics / capabilities.</td></tr>
+  <tr><td><strong>Adapter</strong></td><td>Each framework adapts its native messages to A2A shape.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── bus.py        # AgentBus + Task/Artifact (Mediator + Pub-Sub)
+├── agents.py     # 3 mock agents — Procurement, Finance, Vendor
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>Why A2A vs just HTTP?</summary><div>A2A standardizes the <em>semantics</em>: agent cards, task lifecycle, parts/artifacts, auth, streaming updates. Plain HTTP gives you transport but no shared vocabulary.</div></details>
+<details class="qa"><summary>Security in A2A?</summary><div>OAuth / API keys per agent card; signed tokens for tasks; allow-list of skills; redact PII before broadcasting.</div></details>
+</section>
+
+</main>
+<footer>Chapter 15 of 21.</footer>
+</body>
+</html>

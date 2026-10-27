@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust P10 — GenAI RAG Platform</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Rust projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p10_genai_rag_platform/README.html">Python p10</a>
+                <a href="../../go_projects/p10_genai_rag_platform/README.html">Go p10</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust · P10 · Capstone</span></p>
+            <h1>RAG end-to-end — the shape Rust crates use in production</h1>
+            <p class="lead">All ten projects' patterns wired into a tiny RAG pipeline. The Embedder is a trait; the
+                store is <code>Arc&lt;Mutex&lt;VectorStore&gt;&gt;</code>; ingest runs across N worker threads each
+                pulling from a shared work queue. This is the exact shape <code>tokenizers</code>, <code>candle</code>,
+                and the major Rust vector DBs use — just larger.</p>
+        </section>
+
+        <section class="card">
+            <h2>The pipeline</h2>
+            <div class="flow">
+                <div class="step">documents</div>
+                <div class="arrow">→</div>
+                <div class="step">chunker</div>
+                <div class="arrow">→</div>
+                <div class="step">Embedder<br><small>trait</small></div>
+                <div class="arrow">→</div>
+                <div class="step">VectorStore<br><small>Arc&lt;Mutex&gt;</small></div>
+                <div class="arrow">→</div>
+                <div class="step">cosine search</div>
+                <div class="arrow">→</div>
+                <div class="step">generate</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The Rust-specific bits worth lingering on</h2>
+            <ol>
+                <li><strong>Trait object across threads.</strong> <code>Arc&lt;dyn Embedder&gt;</code> requires
+                    <code>Embedder: Send + Sync</code>. The compiler refuses to give you a thread-shared embedder that
+                    isn't thread-safe.</li>
+                <li><strong>Shared work queue.</strong> A single <code>Arc&lt;Mutex&lt;Vec&lt;Chunk&gt;&gt;&gt;</code>
+                    from which every worker <code>pop()</code>s. Simple, predictable, no lost work.</li>
+                <li><strong>Cosine ranking is monomorphised.</strong> <code>cosine(a: &amp;[f64], b: &amp;[f64])</code>
+                    compiles to a tight loop with no virtual dispatch — exactly what makes Rust the right home for
+                    vector math.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>How a real Rust RAG service would extend this</h2>
+            <ul>
+                <li>Replace <code>HashEmbedder</code> with the <code>candle-transformers</code> crate, or call OpenAI
+                    via <code>reqwest</code>.</li>
+                <li>Replace the in-memory store with an HNSW index (e.g. <code>hnsw_rs</code>) for sub-ms search over
+                    millions of vectors.</li>
+                <li>Wrap the whole thing in <code>axum</code>; expose <code>POST /ingest</code> +
+                    <code>POST /query</code>.</li>
+                <li>Switch <code>std::thread</code> to <code>tokio::spawn</code> for cheap async I/O when calling out to
+                    remote embedders.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>What you've practiced across all 10 Rust projects</h2>
+            <ul>
+                <li>Structs + impl blocks (P1).</li>
+                <li>Traits + trait objects + monomorphised generics (P2, P6, P8, P10).</li>
+                <li>Composition + <code>get_mut</code> walks (P3).</li>
+                <li>DTO mapping (P4).</li>
+                <li>Enums + exhaustive matching (P2, P5).</li>
+                <li>Multi-error validation (P5).</li>
+                <li><code>Arc</code>, <code>Mutex</code>, <code>thread::spawn</code> (P7, P9, P10).</li>
+                <li>Ownership through every line of every example.</li>
+            </ul>
+            <div class="callout rust"><strong>Where to go next:</strong> pick one of these projects and add
+                <code>serde</code>, <code>tokio</code>, or <code>axum</code>. Each addition is a single dependency in
+                <code>Cargo.toml</code> away.</div>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd rust_projects/p10_genai_rag_platform
+cargo run</code></pre>
+            <p>Files: <a href="src/main.rs">src/main.rs</a> · <a href="Cargo.toml">Cargo.toml</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

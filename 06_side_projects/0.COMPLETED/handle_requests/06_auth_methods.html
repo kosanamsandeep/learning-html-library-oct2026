@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>06 · Auth — cookies, JWT, Basic, OAuth, client certs</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span class="mark">H</span>Handle Requests</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="05_request_essentials.html">← Prev</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Chapter 06 · Security</p>
+            <h1>Authentication — what each method means for a developer</h1>
+            <p class="lead">Every auth scheme answers <em>two</em> questions: "<strong>how does the client prove
+                    identity?</strong>" and "<strong>where does the secret live?</strong>". Pick the wrong
+                answer and you'll either be hacked or lock your users out.</p>
+            <div class="toc">
+                <a href="#big">Big picture</a>
+                <a href="#cookies">Cookies (session)</a>
+                <a href="#authheader">Authorization header</a>
+                <a href="#jwt">JWT</a>
+                <a href="#basic">Basic</a>
+                <a href="#oauth">OAuth 2.0</a>
+                <a href="#mtls">Client certs (mTLS)</a>
+                <a href="#why">Why OAuth wins</a>
+            </div>
+        </section>
+
+        <section class="card" id="big">
+            <h2>The cheat sheet</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Where the secret lives</th>
+                        <th>Sent how</th>
+                        <th>Stateless?</th>
+                        <th>Best for</th>
+                        <th>Big risk</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Basic</strong></td>
+                        <td>Username + password, every call</td>
+                        <td><code>Authorization: Basic base64(u:p)</code></td>
+                        <td>Yes</td>
+                        <td>Internal tools, quick scripts</td>
+                        <td>Password on the wire (always over HTTPS!)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cookies (session)</strong></td>
+                        <td>Random session ID; data on the server</td>
+                        <td><code>Cookie: sid=abc123</code> (auto by browser)</td>
+                        <td>No (server keeps state)</td>
+                        <td>Server-rendered web apps, login forms</td>
+                        <td>CSRF, session hijacking</td>
+                    </tr>
+                    <tr>
+                        <td><strong>JWT</strong> (bearer)</td>
+                        <td>Signed token; data inside the token</td>
+                        <td><code>Authorization: Bearer eyJ...</code></td>
+                        <td>Yes</td>
+                        <td>APIs, microservices, SPAs</td>
+                        <td>Token theft = full access until expiry; hard to revoke</td>
+                    </tr>
+                    <tr>
+                        <td><strong>OAuth 2.0</strong></td>
+                        <td>Token issued by an authorization server</td>
+                        <td><code>Authorization: Bearer ...</code> (usually a JWT)</td>
+                        <td>Yes</td>
+                        <td>Third-party access, "Sign in with Google"</td>
+                        <td>Complex; misconfigured scopes / redirect URIs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Client certificate (mTLS)</strong></td>
+                        <td>Private key on the client device</td>
+                        <td>TLS handshake (no header)</td>
+                        <td>Yes</td>
+                        <td>Service-to-service, IoT, zero-trust</td>
+                        <td>Cert distribution + rotation operationally heavy</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card" id="cookies">
+            <h2>🍪 Cookies (session login)</h2>
+            <p>The browser logs in once; the server creates a session row and gives the browser a small string
+                in a <code>Set-Cookie</code> header. The browser sends that string back on every subsequent
+                request to the same domain — <em>automatically</em>.</p>
+
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+sequenceDiagram
+    participant B as Browser
+    participant S as Server
+    B->>S: POST /login (email + password)
+    S->>S: Validate, create session row (sid=abc123)
+    S-->>B: 200 OK<br/>Set-Cookie: sid=abc123; HttpOnly; Secure; SameSite=Lax
+    Note over B: Cookie stored
+    B->>S: GET /dashboard<br/>Cookie: sid=abc123
+    S->>S: Look up session abc123 -> user 42
+    S-->>B: 200 OK (HTML for user 42)
+                </pre>
+            </div>
+
+            <h3>What a developer must set</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cookie flag</th>
+                        <th>Why</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>HttpOnly</code></td>
+                        <td>JS can't read it → defeats XSS-stealing.</td>
+                    </tr>
+                    <tr>
+                        <td><code>Secure</code></td>
+                        <td>Only sent over HTTPS → no leaks on Wi-Fi.</td>
+                    </tr>
+                    <tr>
+                        <td><code>SameSite=Lax</code> or <code>Strict</code></td>
+                        <td>Browser won't attach it to cross-site POSTs → defeats CSRF.</td>
+                    </tr>
+                    <tr>
+                        <td><code>Max-Age</code> / <code>Expires</code></td>
+                        <td>Bounded lifetime.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout">
+                <strong>Security stance:</strong> session cookies are server-controlled — invalidate one row and
+                that user is logged out everywhere. <em>Easiest to revoke</em> of all the methods.
+            </div>
+        </section>
+
+        <section class="card" id="authheader">
+            <h2>🪪 Authorization header (the "show me your badge" pattern)</h2>
+            <p>An HTTP header named <code>Authorization</code> carries the credential. The first word is the
+                <strong>scheme</strong>:
+            </p>
+            <pre><code>Authorization: Basic ZGVtbzpwYXNz       # Basic auth
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...   # JWT or OAuth token
+Authorization: Digest ...                # rare
+Authorization: AWS4-HMAC-SHA256 ...      # AWS request signing</code></pre>
+            <p>Unlike cookies, the header is <em>not</em> attached automatically. The client decides to send
+                it. That's why APIs prefer it: explicit, scriptable, immune to CSRF (browser won't auto-attach
+                it on a cross-site request).</p>
+        </section>
+
+        <section class="card" id="jwt">
+            <h2>🎟️ JWT — the self-contained token</h2>
+            <p>A JWT is three base64 chunks separated by dots:</p>
+            <pre><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9    .   eyJzdWIiOiI0MiIsImV4cCI6MTcwMH0   .   3xS9...sig
+   ^^^ header (algo, type)                    ^^^ payload (claims)              ^^^ signature</code></pre>
+            <p>The server signs the payload with a secret. When you send the token back, the server
+                <strong>verifies the signature</strong> — no database lookup needed. That's why JWT is called
+                <em>stateless</em>.
+            </p>
+
+            <div class="grid-2">
+                <div class="mini good">
+                    <h3>Strengths</h3>
+                    <ul>
+                        <li>No session table → easy to scale horizontally.</li>
+                        <li>Contains claims (user id, roles, expiry) — services downstream can trust them
+                            without a callback.</li>
+                        <li>Works across domains and mobile apps.</li>
+                    </ul>
+                </div>
+                <div class="mini bad">
+                    <h3>Weak spots a dev must guard</h3>
+                    <ul>
+                        <li><strong>Theft = total compromise</strong> until the token expires. Keep lifetime
+                            short (5–15 min) and refresh.</li>
+                        <li>Storing in <code>localStorage</code> exposes it to XSS. Prefer
+                            <code>HttpOnly</code> cookies for browser apps.
+                        </li>
+                        <li>Revocation is hard — you must maintain a blacklist or accept short windows.</li>
+                        <li>Never use the <code>none</code> algorithm; always verify signatures.</li>
+                        <li>Don't put secrets in the payload — it's base64, not encrypted.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="callout warn">
+                <strong>The pattern that actually works:</strong> short-lived <strong>access JWT</strong> (15
+                min) + long-lived <strong>refresh token</strong> stored server-side. You get statelessness for
+                most calls and revocability when it matters.
+            </div>
+        </section>
+
+        <section class="card" id="basic">
+            <h2>🔓 Basic auth</h2>
+            <pre><code>Authorization: Basic base64("alice:hunter2")
+# == Authorization: Basic YWxpY2U6aHVudGVyMg==</code></pre>
+            <ul>
+                <li>Trivial to use; supported everywhere.</li>
+                <li>The password is sent <em>on every request</em>. If TLS breaks, the password leaks.</li>
+                <li>No expiry, no scopes, no revocation short of changing the password.</li>
+                <li>No SSO — every service needs its own copy of the password.</li>
+            </ul>
+            <p>Useful for: internal scripts, prototype admin panels, mTLS-protected internal endpoints. <em>Not
+                    for public APIs.</em></p>
+        </section>
+
+        <section class="card" id="oauth">
+            <h2>🛂 OAuth 2.0 — delegated authorization</h2>
+            <p>OAuth answers a different question. Basic/JWT/Cookies say "<em>is this the user?</em>". OAuth
+                says "<em>has this user authorized this third-party app to act on their behalf, and to what
+                    extent?</em>".</p>
+
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant App as Your app
+    participant AS as Auth server (e.g. Google)
+    participant API as Resource API
+
+    U->>App: Click "Sign in with Google"
+    App->>AS: Redirect — client_id, scope=email, state
+    AS->>U: Show consent screen
+    U->>AS: Approve
+    AS->>App: Redirect back with one-time CODE
+    App->>AS: POST /token (code + client_secret)
+    AS-->>App: access_token + refresh_token
+    App->>API: GET /me<br/>Authorization: Bearer access_token
+    API-->>App: User data
+                </pre>
+                <p class="caption">The <strong>Authorization Code + PKCE</strong> flow — the modern default for
+                    web and mobile apps.</p>
+            </div>
+
+            <h3>Key concepts a developer must internalize</h3>
+            <table>
+                <tbody>
+                    <tr>
+                        <td><strong>Client ID / Secret</strong></td>
+                        <td>Identifies your app to the auth server.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Scope</strong></td>
+                        <td>What you're asking permission for (<code>read:email</code>, <code>write:repo</code>).
+                            Smallest possible.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>State</strong></td>
+                        <td>Random value you echo back — defeats CSRF on the redirect.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PKCE</strong></td>
+                        <td>Extra random verifier — protects mobile/SPA where there's no secure secret.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Access token</strong></td>
+                        <td>Short-lived, sent on each API call. Often a JWT.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Refresh token</strong></td>
+                        <td>Long-lived, used to get new access tokens; stored carefully.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card" id="mtls">
+            <h2>🔐 Client certificates (mTLS)</h2>
+            <p>"Mutual TLS" — both sides present X.509 certificates during the TLS handshake. There's no
+                <code>Authorization</code> header at all; the network connection itself proves identity.
+            </p>
+            <ul>
+                <li><strong>Strength:</strong> phishing-proof. The private key never leaves the machine.</li>
+                <li><strong>Use cases:</strong> service-to-service inside zero-trust networks, banks, payment
+                    rails, IoT fleets.</li>
+                <li><strong>Pain:</strong> issuing, distributing, rotating, and revoking certificates is
+                    operational work — usually done with an internal CA or service mesh (Istio, Linkerd).</li>
+            </ul>
+            <pre><code># requests with a client cert
+requests.get(
+    "https://payments.internal/charge",
+    cert=("client.crt", "client.key"),
+    verify="ca-bundle.pem",
+)</code></pre>
+        </section>
+
+        <section class="card" id="why">
+            <h2>Why people prefer OAuth over JWT or Basic</h2>
+            <p>It's a common confusion: "JWT vs OAuth" is not apples-to-apples. <strong>OAuth is a protocol;
+                    JWT is a token format.</strong> Most modern OAuth servers issue JWTs. The real comparison is:
+            </p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Concern</th>
+                        <th>Basic</th>
+                        <th>Raw JWT (you mint it)</th>
+                        <th>OAuth 2.0 (issued by an AS)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Who holds the password</td>
+                        <td>Every app</td>
+                        <td>Your app does</td>
+                        <td>Only the auth server</td>
+                    </tr>
+                    <tr>
+                        <td>Third-party access ("sign in with X")</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td>✅ first-class</td>
+                    </tr>
+                    <tr>
+                        <td>Scoped permissions</td>
+                        <td>❌</td>
+                        <td>Possible, manual</td>
+                        <td>✅ built-in</td>
+                    </tr>
+                    <tr>
+                        <td>Short-lived access + refresh tokens</td>
+                        <td>❌</td>
+                        <td>You build it</td>
+                        <td>✅ standardized</td>
+                    </tr>
+                    <tr>
+                        <td>Centralized revocation / audit</td>
+                        <td>❌</td>
+                        <td>Hard</td>
+                        <td>✅ at the AS</td>
+                    </tr>
+                    <tr>
+                        <td>Single sign-on across many apps</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                    </tr>
+                    <tr>
+                        <td>Battle-tested flows (PKCE, device, client_credentials)</td>
+                        <td>—</td>
+                        <td>You invent</td>
+                        <td>✅ off-the-shelf</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout good">
+                <strong>The short answer:</strong> OAuth is preferred because it solves the <em>operational</em>
+                problems (key custody, scopes, revocation, SSO, third-party delegation) that Basic and raw JWT
+                leave to each developer to reinvent. Inside one trusted boundary, plain JWT is fine. Across
+                trust boundaries or with users, OAuth.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Security responsibilities, summarized</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>You're using…</th>
+                        <th>What you must own as a developer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Cookies</td>
+                        <td>Set <code>HttpOnly</code>, <code>Secure</code>, <code>SameSite</code>. CSRF tokens
+                            for state-changing forms. Rotate session ID after login.</td>
+                    </tr>
+                    <tr>
+                        <td>Basic</td>
+                        <td>TLS-only. Don't log the header. Rotate creds. Use only for internal tools.</td>
+                    </tr>
+                    <tr>
+                        <td>JWT</td>
+                        <td>Short expiry. Validate <code>alg</code>, <code>iss</code>, <code>aud</code>,
+                            <code>exp</code>. Keep secrets out of the payload. Have a refresh + revocation
+                            story.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>OAuth</td>
+                        <td>Use Authorization Code + PKCE. Verify <code>state</code>. Smallest scope. Never
+                            expose client_secret in a browser/mobile build.</td>
+                    </tr>
+                    <tr>
+                        <td>mTLS</td>
+                        <td>Automate cert issuance + rotation. Pin a CA. Plan for revocation (CRL/OCSP) and key
+                            loss.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Final mental model</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    Q[Choosing auth] --> A{Public API or partner integration?}
+    A -- yes --> O[OAuth 2.0]
+    A -- no  --> B{Browser web app with login?}
+    B -- yes --> S[Session cookies +<br/>HttpOnly+Secure+SameSite]
+    B -- no  --> C{Service-to-service inside your VPC?}
+    C -- yes --> M[mTLS or signed JWT with short TTL]
+    C -- no  --> D{Quick internal script?}
+    D -- yes --> X[Basic over TLS<br/>or API key in Authorization header]
+                </pre>
+            </div>
+            <p>That's it. Pick one per surface, lock down the flags above, and you're ahead of 90% of
+                production systems.</p>
+        </section>
+    </main>
+
+    <footer><a href="index.html">← Back to hub</a></footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true, theme: 'base',
+            themeVariables: { primaryColor: '#dbeafe', primaryTextColor: '#1f2937', primaryBorderColor: '#1d4ed8', lineColor: '#475569', fontFamily: 'Segoe UI, Aptos, system-ui, sans-serif' }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Benchmark Mapping Tool</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="../"><span>&#8592;</span> Project Hub</a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Project 14 &middot; Eval Framework &middot; Intermediate</p>
+      <h1>Benchmark Mapping Tool</h1>
+      <p class="lead">For every bug in SWE-bench (or any public benchmark), tag it with language, category, difficulty, and context length required. Then overlay your own organisation's bug distribution to see where the benchmark covers your needs&mdash;and where it doesn't.</p>
+    </section>
+
+    <section class="card">
+      <h2>The Gap Analysis Problem</h2>
+      <p>Engineering teams frequently adopt public benchmarks (SWE-bench, HumanEval, MBPP, etc.) to evaluate code-generation models. The implicit assumption: <em>if a model scores well on the benchmark, it will perform well on our codebase.</em> This is frequently false.</p>
+
+      <div class="mermaid">
+<pre class="mermaid">
+---
+config:
+  look: handDrawn
+  theme: neutral
+---
+venn
+  A["SWE-bench Bugs"]
+  B["Org Bugs Overlap"]
+  C["Your Org's Bugs"]
+
+  A: "3,000+ real GitHub issues"
+  A: "Languages: Python, Java, JS, TS"
+  A: "Mostly framework / library bugs"
+  C: "Your private backlog"
+  C: "Languages: Python, Go, Rust"
+  C: "Mostly infra / data pipeline bugs"
+  B: "Region where bench covers your needs"
+  B: "Use public eval as-is"
+  B: "Outside this: build custom eval"
+</pre>
+      </div>
+
+      <p>The Venn diagram above illustrates the core insight: only the overlap region is served well by a public benchmark. Everything outside it requires a custom evaluation framework. The mapping tool quantifies this overlap.</p>
+
+      <h3>Dimensions to tag</h3>
+      <table>
+        <tr><th>Dimension</th><th>Description</th><th>Example values</th></tr>
+        <tr><td>Language</td><td>Primary programming language of the bug</td><td>Python, Java, Go, Rust, TypeScript</td></tr>
+        <tr><td>Category</td><td>Type of bug or fix</td><td>Logic error, edge case, API misuse, race condition, vulnerability, performance</td></tr>
+        <tr><td>Difficulty</td><td>Estimated complexity of the fix</td><td>Easy (1 file), Medium (2-4 files), Hard (5+ files, multi-module)</td></tr>
+        <tr><td>Context length</td><td>Lines of surrounding code needed to understand the bug</td><td>Short (&lt;50), Medium (50-200), Long (200+)</td></tr>
+        <tr><td>Domain</td><td>Problem domain</td><td>Web framework, CLI tool, data processing, networking, security</td></tr>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Using the Analysis to Justify a Custom Eval Framework</h2>
+      <p>A mapping tool doesn't just produce pretty charts&mdash;it gives you data to make strategic decisions about your eval investment.</p>
+
+      <h3>Scenario A: High overlap (&gt;60%)</h3>
+      <p>Your org's bug profile closely matches the benchmark. You can use the public benchmark as your primary eval, supplemented by a small set of org-specific tests. <em>Investment: low.</em></p>
+
+      <h3>Scenario B: Moderate overlap (30-60%)</h3>
+      <p>The benchmark covers some of your needs but misses significant portions. Use the mapping to identify which dimensions are uncovered and build targeted custom evals for those. <em>Investment: medium.</em></p>
+
+      <h3>Scenario C: Low overlap (&lt;30%)</h3>
+      <p>Your stack differs fundamentally from the benchmark (e.g. proprietary language, embedded systems, domain-specific bugs). A public benchmark may mislead your eval strategy. Build a custom eval framework from scratch. <em>Investment: high, but necessary.</em></p>
+
+      <div class="callout">
+        <strong>Pro tip:</strong> Run the mapping quarterly. As your codebase evolves and new benchmarks emerge, the overlap region shifts. An annual check can save you from silently training against a stale benchmark.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Starter Code &mdash; Downloading and Analysing SWE-bench Metadata</h2>
+      <pre><code>import json
+import csv
+from collections import Counter, defaultdict
+from typing import Optional
+
+# ----- Step 1: Fetch SWE-bench metadata -----
+# SWE-bench publishes metadata as a JSON array of instances.
+# Each instance describes a GitHub PR with a bug fix.
+
+SWE_BENCH_URL = (
+    "https://raw.githubusercontent.com/princeton-nlp/SWE-bench/"
+    "main/swebench/harness/metadata/swe-bench.json"
+)
+
+
+def fetch_swebench_metadata(url: str = SWE_BENCH_URL) -> list[dict]:
+    """Download and parse SWE-bench instance metadata."""
+    import urllib.request
+
+    with urllib.request.urlopen(url) as f:
+        data = json.loads(f.read().decode("utf-8"))
+    return data
+
+
+# ----- Step 2: Classify each instance -----
+
+def classify_instance(instance: dict) -> dict:
+    """
+    Extract or deduce dimensions from a SWE-bench entry.
+
+    Each entry looks roughly like:
+    {
+      "instance_id": "django__django-12345",
+      "repo": "django/django",
+      "base_commit": "...",
+      "hints_text": "...",
+      "problem_statement": "...",
+      "patch": "..."
+    }
+    """
+    repo: str = instance.get("repo", "")
+    instance_id: str = instance.get("instance_id", "")
+    problem: str = instance.get("problem_statement", "")
+    patch: str = instance.get("patch", "")
+    hints: Optional[str] = instance.get("hints_text")
+
+    # Simple language inference from repo name
+    lang_map = {
+        "django": "Python",
+        "sympy": "Python",
+        "astropy": "Python",
+        "flask": "Python",
+        "pylint": "Python",
+        "matplotlib": "Python",
+        "requests": "Python",
+        "scikit-learn": "Python",
+    }
+    language = "Python"  # SWE-bench is Python-dominated
+
+    # Category heuristic based on problem text
+    category = "logic error"
+    if "crash" in problem.lower() or "exception" in problem.lower():
+        category = "error handling"
+    elif "secur" in problem.lower() or "injection" in problem.lower():
+        category = "security"
+    elif "performance" in problem.lower() or "slow" in problem.lower():
+        category = "performance"
+    elif "race" in problem.lower() or "deadlock" in problem.lower():
+        category = "concurrency"
+
+    # Rough context length (lines changed)
+    changed_lines = len(patch.splitlines()) if patch else 0
+    if changed_lines < 20:
+        difficulty = "Easy"
+    elif changed_lines < 80:
+        difficulty = "Medium"
+    else:
+        difficulty = "Hard"
+
+    return {
+        "instance_id": instance_id,
+        "repo": repo,
+        "language": language,
+        "category": category,
+        "difficulty": difficulty,
+        "context_lines": changed_lines,
+        "has_hints": hints is not None,
+    }
+
+
+# ----- Step 3: Generate tag distribution -----
+
+def build_tag_report(instances: list[dict]) -> dict:
+    """Aggregate tag distributions across dimensions."""
+    classified = [classify_instance(i) for i in instances]
+
+    report = {
+        "total": len(classified),
+        "by_language": Counter(),
+        "by_category": Counter(),
+        "by_difficulty": Counter(),
+        "languages_detail": defaultdict(lambda: Counter()),
+    }
+
+    for c in classified:
+        report["by_language"][c["language"]] += 1
+        report["by_category"][c["category"]] += 1
+        report["by_difficulty"][c["difficulty"]] += 1
+        report["languages_detail"][c["language"]][c["category"]] += 1
+
+    return report
+
+
+# ----- Step 4: Compare with your org's bugs -----
+# (Assume org_bugs.csv has same schema)
+
+def load_org_bugs(path: str = "org_bugs.csv") -> list[dict]:
+    """Load your organisation's tagged bug dataset."""
+    bugs = []
+    with open(path, newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            bugs.append(row)
+    return bugs
+
+
+def compute_overlap(
+    bench_tagged: list[dict],
+    org_tagged: list[dict],
+) -> dict:
+    """
+    Returns per-dimension overlap stats.
+    Overlap = proportion of org bugs that share
+    at least one tag with a benchmark bug.
+    """
+    bench_sets = {
+        dim: set(b[dim] for b in bench_tagged)
+        for dim in ["language", "category", "difficulty"]
+    }
+    org_sets = {
+        dim: set(b[dim] for b in org_tagged)
+        for dim in ["language", "category", "difficulty"]
+    }
+
+    overlap = {}
+    for dim in bench_sets:
+        intersection = bench_sets[dim] & org_sets[dim]
+        overlap[dim] = {
+            "bench_unique": len(bench_sets[dim] - org_sets[dim]),
+            "org_unique": len(org_sets[dim] - bench_sets[dim]),
+            "shared": len(intersection),
+            "shared_values": sorted(intersection),
+        }
+    return overlap
+
+
+# ----- Step 5: Visualise (with matplotlib) -----
+
+def plot_distributions(report: dict, org_report: dict):
+    """Side-by-side bar charts of benchmark vs org distributions."""
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
+    for i, dim in enumerate(["language", "category", "difficulty"]):
+        bench_counts = report[f"by_{dim}"]
+        org_counts = org_report.get(f"by_{dim}", {})
+
+        labels = sorted(set(list(bench_counts.keys()) + list(org_counts.keys())))
+        bench_vals = [bench_counts.get(l, 0) for l in labels]
+        org_vals = [org_counts.get(l, 0) for l in labels]
+
+        x = range(len(labels))
+        axes[i].bar([v - 0.2 for v in x], bench_vals, width=0.4, label="Benchmark")
+        axes[i].bar([v + 0.2 for v in x], org_vals, width=0.4, label="Org")
+        axes[i].set_title(dim)
+        axes[i].set_xticks(list(x))
+        axes[i].set_xticklabels(labels, rotation=45)
+        axes[i].legend()
+
+    plt.tight_layout()
+    plt.savefig("benchmark_mapping.png", dpi=150)
+    print("Saved benchmark_mapping.png")
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Extending the Tool</h2>
+      <ul>
+        <li><strong>Multiple benchmarks:</strong> Add SWE-bench-lite, HumanEval, MBPP, and BigCodeBench. Compare overlap across all of them to pick the best-fit public eval.</li>
+        <li><strong>Tag confidence:</strong> Instead of hard classification, use an LLM to read the problem statement and assign tags with confidence scores.</li>
+        <li><strong>Trend over time:</strong> Track your organisation's bug distribution quarterly. If you're shifting toward a new language or domain, the overlap with existing benchmarks changes.</li>
+        <li><strong>Custom eval ROI calculator:</strong> Estimate the cost of building custom evals for the "org only" region versus the cost of false positives from an ill-fitting benchmark.</li>
+      </ul>
+
+      <div class="callout">
+        <strong>Bottom line:</strong> A benchmark mapping tool turns the question "Is our model good?" into the more actionable "Good at what, compared to our actual bug profile?" It's the first step toward a custom eval framework that measures what actually matters to your team.
+      </div>
+    </section>
+  </main>
+</body>
+</html>

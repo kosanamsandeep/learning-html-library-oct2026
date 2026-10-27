@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 10 — Model Context Protocol (MCP)</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 10 — Model Context Protocol (MCP)</h1>
+  <p>Open standard. One protocol so any LLM can plug into any tool / data / prompt server.</p>
+  <p><span class="tag">Adapter</span><span class="tag">Proxy</span><span class="tag">Open standard</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Before MCP every team wrote bespoke connectors per LLM × per tool. MCP defines a JSON-RPC protocol with three primitives an MCP server can expose:</p>
+<ul>
+  <li><strong>Resources</strong> — read-only data (files, DB rows, API payloads).</li>
+  <li><strong>Tools</strong> — actions the LLM can invoke (function calling).</li>
+  <li><strong>Prompts</strong> — reusable prompt templates the host can offer to the user.</li>
+</ul>
+<div class="callout tip"><strong>Mental model:</strong> USB-C for LLMs. Same plug; many devices.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart LR
+  H[LLM Host App] <-->|"MCP JSON-RPC"| C[MCP Client]
+  C <--> S1[(MCP Server: GitHub)]
+  C <--> S2[(MCP Server: Postgres)]
+  C <--> S3[(MCP Server: Filesystem)]
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Cursor / Claude Desktop with MCP</h2>
+<div class="callout scenario">
+By mid-2026, Anthropic, OpenAI, Microsoft, and Google all support MCP. A developer's IDE has 6 MCP servers running: Postgres, GitHub, Linear, Sentry, AWS, internal-knowledge-base. The LLM can list tickets, query prod logs, and open a PR — all over the same protocol. No custom plug-ins per LLM vendor.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant Dev as Dev
+  participant IDE as IDE Host
+  participant C as MCP Client
+  participant GH as GitHub MCP Server
+  Dev->>IDE: "Open PR for fix #142"
+  IDE->>C: list_tools()
+  C->>GH: tools/list
+  GH-->>C: [create_pr, list_issues, ...]
+  IDE->>C: call create_pr(branch, title, body)
+  C->>GH: tools/call
+  GH-->>C: {url: ...}
+  IDE-->>Dev: PR #842 created
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Where MCP shows up</th><th>Notes</th></tr>
+  <tr><td>Claude Desktop / Claude Code</td><td>Native MCP client.</td></tr>
+  <tr><td>Cursor / VS Code (GitHub Copilot agent mode)</td><td>MCP server installation built in.</td></tr>
+  <tr><td>Google ADK</td><td>First-party MCP support.</td></tr>
+  <tr><td>OpenAI Agents SDK</td><td>MCP supported.</td></tr>
+  <tr><td>LangChain / LlamaIndex</td><td>MCP adapters.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Adapter</strong></td><td>Server adapts an internal API into MCP shape.</td></tr>
+  <tr><td><strong>Proxy</strong></td><td>Client proxies tool calls to remote servers.</td></tr>
+  <tr><td><strong>Registry</strong></td><td>Client maintains a list of connected servers.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── server.py     # mock MCP server (GitHub-style)
+├── client.py     # mock MCP client (registry + dispatch)
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>MCP vs A2A?</summary><div>MCP = LLM ↔ tools/data. A2A = agent ↔ agent. Complementary: an A2A agent can itself expose tools via MCP.</div></details>
+<details class="qa"><summary>What does MCP solve that OpenAPI doesn't?</summary><div>MCP is LLM-native: it bundles tool descriptions, resource discovery, and prompt templates in a model-friendly schema, with capability negotiation and session lifecycle.</div></details>
+</section>
+
+</main>
+<footer>Chapter 10 of 21.</footer>
+</body>
+</html>

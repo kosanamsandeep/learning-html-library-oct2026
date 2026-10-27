@@ -1,0 +1,2172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Designing Data-Intensive Applications — Interactive Study Companion</title>
+<meta name="description" content="A navigable, searchable study companion for Designing Data-Intensive Applications by Martin Kleppmann — every chapter explained, with key concepts, glossaries, trade-offs, and diagrams." />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --surface-2: #f1f5f9;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --text: #0f172a;
+    --muted: #55657a;
+    --accent: #2563eb;
+    --accent-strong: #1d4ed8;
+    --accent-soft: #eff6ff;
+    --green: #059669;
+    --green-soft: #ecfdf5;
+    --violet: #7c3aed;
+    --violet-soft: #f5f3ff;
+    --amber: #b45309;
+    --amber-soft: #fffbeb;
+    --rose: #e11d48;
+    --rose-soft: #fff1f2;
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #aab7c8;
+    --sidebar-active: #ffffff;
+    --sidebar-active-bg: rgba(255,255,255,.08);
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+    --sidebar-w: 300px;
+    --radius: 10px;
+    --shadow-sm: 0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.08);
+    --shadow-md: 0 4px 12px rgba(15,23,42,.10);
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 72px;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.65;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ---------- Reading progress bar ---------- */
+  #progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), #7c3aed);
+    z-index: 2000;
+  }
+
+  /* ---------- Skip link ---------- */
+  .skip-link {
+    position: absolute; left: -9999px; top: 0;
+    background: var(--accent); color: #fff;
+    padding: 8px 16px; border-radius: 0 0 8px 0;
+    z-index: 3000;
+  }
+  .skip-link:focus { left: 0; }
+
+  /* ---------- Sidebar ---------- */
+  #sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 20px 0 40px;
+    display: flex;
+    flex-direction: column;
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+  }
+
+  .brand {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid #1e293b;
+  }
+  .brand .badge {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #7dd3fc;
+    background: rgba(56,189,248,.12);
+    border: 1px solid rgba(56,189,248,.25);
+    padding: 3px 8px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .brand h1 {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.3;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: -.01em;
+  }
+  .brand p {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  #search-wrap { padding: 14px 20px; }
+  #search {
+    width: 100%;
+    padding: 9px 12px 9px 34px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="%2394a3b8" stroke-width="2"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5 L13 13"/></svg>') no-repeat 12px center;
+    color: #e2e8f0;
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+    outline: none;
+  }
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: #64748b; }
+  #search-count {
+    display: none;
+    font-size: 11.5px;
+    color: #64748b;
+    padding: 6px 2px 0;
+  }
+
+  nav { flex: 1; padding: 0 8px; }
+  nav details { border-radius: 8px; margin-bottom: 2px; }
+  nav details[open] { background: rgba(255,255,255,.03); }
+  nav summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    user-select: none;
+  }
+  nav summary::-webkit-details-marker { display: none; }
+  nav summary .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  nav summary::after {
+    content: '';
+    margin-left: auto;
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #64748b;
+    transition: transform .18s;
+  }
+  nav details[open] summary::after { transform: rotate(180deg); }
+
+  nav ul { list-style: none; margin: 0; padding: 0 0 8px; }
+  nav li a {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 7px 12px 7px 28px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: 13.5px;
+    border-left: 2px solid transparent;
+    border-radius: 0 6px 6px 0;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  nav li a .num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #64748b;
+    flex: none;
+  }
+  nav li a:hover { color: #e2e8f0; background: rgba(255,255,255,.04); }
+  nav li a.active {
+    color: var(--sidebar-active);
+    background: var(--sidebar-active-bg);
+    border-left-color: var(--accent);
+  }
+
+  .sidebar-foot {
+    padding: 14px 20px 0;
+    border-top: 1px solid #1e293b;
+    font-size: 11.5px;
+    color: #64748b;
+    line-height: 1.6;
+  }
+  .sidebar-foot a { color: #93c5fd; text-decoration: none; }
+
+  /* ---------- Main layout ---------- */
+  main {
+    margin-left: var(--sidebar-w);
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 40px 80px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding: 64px 40px 56px;
+    background:
+      radial-gradient(1200px 400px at 80% -10%, rgba(37,99,235,.10), transparent 60%),
+      radial-gradient(900px 380px at 10% -20%, rgba(124,58,237,.10), transparent 55%),
+      var(--surface);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .hero .container { padding-bottom: 0; }
+  .hero .kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+    border: 1px solid #dbeafe;
+    padding: 5px 12px;
+    border-radius: 999px;
+  }
+  .hero h2 {
+    margin: 18px 0 10px;
+    font-size: clamp(28px, 4.5vw, 44px);
+    line-height: 1.12;
+    letter-spacing: -.025em;
+    font-weight: 800;
+  }
+  .hero .sub {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0 0 6px;
+  }
+  .hero .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin-top: 16px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .hero .meta b { color: var(--text); font-weight: 600; }
+  .hero .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .hero .badges span {
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ---------- Typography ---------- */
+  h2, h3, h4 { line-height: 1.25; letter-spacing: -.015em; }
+  h2.part-title {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 8px;
+  }
+  h2.part-title .pnum { font-family: var(--font-mono); font-size: 15px; margin-right: 10px; opacity: .7; }
+  h3 { font-size: 20px; font-weight: 700; margin: 40px 0 12px; scroll-margin-top: 84px; }
+  h3 .hash { color: var(--border-strong); font-weight: 600; }
+  h4 { font-size: 16.5px; font-weight: 700; margin: 24px 0 8px; }
+  p { margin: 0 0 14px; }
+  strong { font-weight: 650; }
+  a { color: var(--accent-strong); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, kbd {
+    font-family: var(--font-mono);
+    font-size: .88em;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    color: #0f172a;
+  }
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    line-height: 1.6;
+    margin: 0 0 16px;
+  }
+  pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+  pre .cmt { color: #7dd3fc; }
+  ul, ol { padding-left: 22px; margin: 0 0 16px; }
+  li { margin-bottom: 6px; }
+
+  /* ---------- Part banners ---------- */
+  .part {
+    border-radius: 14px;
+    padding: 26px 30px;
+    margin: 8px 0 10px;
+    border: 1px solid;
+    position: relative;
+  }
+  .part h2 { margin-top: 0; }
+  .part p { margin-bottom: 0; font-size: 15px; opacity: .9; }
+  .part.p1 { background: var(--accent-soft); border-color: #bfdbfe; color: #1e3a8a; }
+  .part.p2 { background: var(--green-soft); border-color: #a7f3d0; color: #064e3b; }
+  .part.p3 { background: var(--violet-soft); border-color: #ddd6fe; color: #4c1d95; }
+  .part .chip {
+    position: absolute;
+    top: -11px; left: 24px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 999px;
+    color: #fff;
+  }
+  .part.p1 .chip { background: var(--accent); }
+  .part.p2 .chip { background: var(--green); }
+  .part.p3 .chip { background: var(--violet); }
+
+  /* ---------- Chapter cards ---------- */
+  .chapter {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    padding: 34px 36px 40px;
+    margin: 26px 0;
+    scroll-margin-top: 72px;
+  }
+  .chapter-head { margin-bottom: 20px; }
+  .chapter-head .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .tag.p1 { color: #1d4ed8; background: var(--accent-soft); border: 1px solid #bfdbfe; }
+  .tag.p2 { color: #047857; background: var(--green-soft); border: 1px solid #a7f3d0; }
+  .tag.p3 { color: #6d28d9; background: var(--violet-soft); border: 1px solid #ddd6fe; }
+  .tag.apx { color: #be123c; background: var(--rose-soft); border: 1px solid #fecdd3; }
+  .chapter-head h2 { margin: 0 0 6px; font-size: 26px; font-weight: 800; }
+  .chapter-head .chnum { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+  .chapter-head .one-liner { color: var(--muted); font-size: 15.5px; margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+  .chips a {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: 999px;
+    padding: 4px 11px;
+    transition: all .12s;
+  }
+  .chips a:hover { color: var(--accent-strong); border-color: #bfdbfe; background: var(--accent-soft); text-decoration: none; }
+
+  /* ---------- Concept cards ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 6px 0 20px; }
+  .concept {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .concept b {
+    display: block;
+    font-size: 14.5px;
+    margin-bottom: 5px;
+    color: var(--accent-strong);
+  }
+  .concept span { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+
+  /* ---------- Glossary ---------- */
+  .glossary {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 6px 0 20px;
+    background: var(--surface);
+  }
+  .glossary > div {
+    display: grid;
+    grid-template-columns: 38% 62%;
+    border-bottom: 1px solid var(--border);
+  }
+  .glossary > div:last-child { border-bottom: none; }
+  .glossary dt {
+    padding: 9px 14px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    background: var(--surface-2);
+    border-right: 1px solid var(--border);
+    color: var(--text);
+  }
+  .glossary dd {
+    margin: 0;
+    padding: 9px 14px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  /* ---------- Trade-offs ---------- */
+  .tradeoffs { list-style: none; padding: 0; margin: 6px 0 20px; }
+  .tradeoffs li {
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    border-radius: 8px;
+    background: var(--amber-soft);
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .tradeoffs li::before { content: '⚖'; flex: none; }
+
+  /* ---------- Source list (appendix) ---------- */
+  .sources { list-style: none; padding: 0; margin: 6px 0 20px; column-count: 2; column-gap: 28px; }
+  .sources li {
+    font-size: 12.5px;
+    margin-bottom: 8px;
+    padding-left: 18px;
+    position: relative;
+    color: var(--muted);
+    break-inside: avoid;
+  }
+  .sources li::before { content: '↗'; position: absolute; left: 0; color: var(--accent); }
+  .sources a { color: var(--accent-strong); }
+  @media (max-width: 760px) { .sources { column-count: 1; } }
+
+  /* ---------- Callouts ---------- */
+  .callout {
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 18px 0;
+    font-size: 14.5px;
+    border: 1px solid;
+  }
+  .callout .ttl {
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .callout.facts { background: var(--accent-soft); border-color: #bfdbfe; }
+  .callout.facts .ttl { color: #1d4ed8; }
+  .callout.warn { background: var(--amber-soft); border-color: #fde68a; }
+  .callout.warn .ttl { color: var(--amber); }
+  .callout.note { background: var(--green-soft); border-color: #a7f3d0; }
+  .callout.note .ttl { color: #047857; }
+
+  /* ---------- Figures / diagrams ---------- */
+  figure {
+    margin: 22px 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  figure .diagram {
+    padding: 24px 18px 10px;
+    overflow-x: auto;
+    background: linear-gradient(180deg, #fbfdff, #ffffff);
+  }
+  figure .diagram svg { margin: 0 auto; display: block; max-width: 100%; height: auto; }
+  figcaption {
+    font-size: 13px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding: 9px 16px;
+    background: var(--surface-2);
+    display: flex;
+    gap: 8px;
+  }
+  figcaption .fig-num {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--accent-strong);
+    flex: none;
+  }
+
+  .ch-close {
+    margin-top: 26px;
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    border: 1px dashed var(--border-strong);
+    font-size: 13.5px;
+    color: var(--muted);
+    display: flex;
+    gap: 10px;
+  }
+  .ch-close::before { content: '◆'; color: var(--accent); }
+
+  /* ---------- Back to top ---------- */
+  #to-top {
+    position: fixed;
+    right: 22px; bottom: 22px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    font-size: 18px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: all .2s;
+    z-index: 1500;
+  }
+  #to-top.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  #to-top:hover { border-color: var(--accent); color: var(--accent-strong); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    margin-top: 60px;
+    padding: 28px 0 40px;
+  }
+  footer .container { padding-bottom: 0; }
+  footer p { font-size: 13.5px; color: var(--muted); }
+  footer .fine { font-size: 12px; color: #94a3b8; margin-top: 12px; }
+
+  /* ---------- Mobile ---------- */
+  #menu-btn { display: none; }
+  @media (max-width: 960px) {
+    #sidebar {
+      transform: translateX(-100%);
+      transition: transform .22s ease;
+      box-shadow: none;
+    }
+    #sidebar.open { transform: translateX(0); box-shadow: 0 0 0 100vmax rgba(15,23,42,.55); }
+    main { margin-left: 0; }
+    #menu-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      top: 14px; left: 14px;
+      z-index: 1200;
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--text);
+    }
+    .hero { padding: 64px 20px 44px; }
+    .container { padding: 0 20px 60px; }
+    .chapter { padding: 24px 20px 30px; }
+    .glossary > div { grid-template-columns: 1fr; }
+    .glossary dt { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+
+  /* ---------- Print ---------- */
+  @media print {
+    #sidebar, #progress, #to-top, #menu-btn, .chips, .skip-link { display: none !important; }
+    main { margin-left: 0; }
+    body { background: #fff; }
+    .chapter { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
+    figure { page-break-inside: avoid; }
+    .hero { background: #fff; }
+    a { color: inherit; }
+    * { color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<a class="skip-link" href="#content">Skip to content</a>
+<button id="menu-btn" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+
+<!-- ===================== SIDEBAR ===================== -->
+<aside id="sidebar">
+  <div class="brand">
+    <span class="badge">Study Companion</span>
+    <h1>Designing Data-Intensive Applications</h1>
+    <p>Martin Kleppmann · O'Reilly, 2017 · 12 chapters</p>
+  </div>
+
+  <div id="search-wrap">
+    <input id="search" type="search" placeholder="Search chapters…" autocomplete="off" aria-label="Search chapters" />
+    <div id="search-count"></div>
+  </div>
+
+  <nav aria-label="Table of contents">
+    <details open>
+      <summary><span class="dot" style="background:#2563eb"></span>Part I · Foundations</summary>
+      <ul>
+        <li><a href="#ch1" data-spy="ch1"><span class="num">1</span>Reliable, Scalable &amp; Maintainable</a></li>
+        <li><a href="#ch2" data-spy="ch2"><span class="num">2</span>Data Models &amp; Query Languages</a></li>
+        <li><a href="#ch3" data-spy="ch3"><span class="num">3</span>Storage &amp; Retrieval</a></li>
+        <li><a href="#ch4" data-spy="ch4"><span class="num">4</span>Encoding &amp; Evolution</a></li>
+      </ul>
+    </details>
+    <details open>
+      <summary><span class="dot" style="background:#059669"></span>Part II · Distributed Data</summary>
+      <ul>
+        <li><a href="#ch5" data-spy="ch5"><span class="num">5</span>Replication</a></li>
+        <li><a href="#ch6" data-spy="ch6"><span class="num">6</span>Partitioning</a></li>
+        <li><a href="#ch7" data-spy="ch7"><span class="num">7</span>Transactions</a></li>
+        <li><a href="#ch8" data-spy="ch8"><span class="num">8</span>The Trouble with Distributed Systems</a></li>
+        <li><a href="#ch9" data-spy="ch9"><span class="num">9</span>Consistency &amp; Consensus</a></li>
+      </ul>
+    </details>
+    <details open>
+      <summary><span class="dot" style="background:#7c3aed"></span>Part III · Derived Data</summary>
+      <ul>
+        <li><a href="#ch10" data-spy="ch10"><span class="num">10</span>Batch Processing</a></li>
+        <li><a href="#ch11" data-spy="ch11"><span class="num">11</span>Stream Processing</a></li>
+        <li><a href="#ch12" data-spy="ch12"><span class="num">12</span>The Future of Data Systems</a></li>
+      </ul>
+    </details>
+    <details open>
+      <summary><span class="dot" style="background:#e11d48"></span>Appendix · Post-2017</summary>
+      <ul>
+        <li><a href="#evolutions" data-spy="evolutions"><span class="num">+</span>Evolutions since 2017</a></li>
+      </ul>
+    </details>
+  </nav>
+
+  <div class="sidebar-foot">
+    Content summarised from the book for personal study.<br />
+    Official site: <a href="https://dataintensive.net" target="_blank" rel="noopener">dataintensive.net</a>
+  </div>
+</aside>
+
+<!-- ===================== MAIN ===================== -->
+<main id="content">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="container">
+      <span class="kicker">Book · Study Notes · Diagrams</span>
+      <h2>Designing Data-Intensive<br />Applications</h2>
+      <p class="sub">
+        An interactive, navigable companion to Martin Kleppmann's classic — every chapter distilled into
+        key concepts, glossaries, trade-offs and the numbers that matter, illustrated with diagrams.
+      </p>
+      <div class="meta">
+        <span><b>Author</b> Martin Kleppmann</span>
+        <span><b>Edition</b> 1st, O'Reilly Media</span>
+        <span><b>Year</b> 2017</span>
+        <span><b>Chapters</b> 12</span>
+      </div>
+      <div class="badges">
+        <span>🔍 Searchable</span>
+        <span>🧭 Sidebar navigation</span>
+        <span>📊 Mermaid diagrams</span>
+        <span>🖨 Print-ready</span>
+        <span>📈 Post-2017 appendix</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- HOW TO USE -->
+    <div class="callout note" style="margin-top:-8px">
+      <span class="ttl">How to use this companion</span>
+      Navigate via the sidebar on the left (type to filter chapters). Read top to bottom to follow the book's
+      arc — <strong>Part I</strong> foundations → <strong>Part II</strong> distributed data → <strong>Part III</strong> derived data.
+      Diagrams render with <a href="https://mermaid.js.org" target="_blank" rel="noopener">Mermaid.js</a> (loads from CDN;
+      open this file over the internet once). Export to PDF anytime via your browser's <em>Print</em> dialog.
+    </div>
+
+    <!-- ============================ PART I ============================ -->
+    <section class="part p1" id="part1">
+      <span class="chip">Part I</span>
+      <h2 class="part-title"><span class="pnum">01</span>Foundations of Data Systems</h2>
+      <p>
+        How a single-machine data system works end to end: what makes an application reliable, scalable and
+        maintainable; how to choose a data model; how storage engines and indexes work under the hood; and how
+        to evolve data formats as your application changes.
+      </p>
+    </section>
+
+    <!-- ============ CH 1 ============ -->
+    <section class="chapter" id="ch1">
+      <div class="chapter-head">
+        <span class="tag p1">Part I · Foundations</span>
+        <span class="chnum">CHAPTER 01</span>
+        <h2>Reliable, Scalable and Maintainable Applications</h2>
+        <p class="one-liner">The three goals every data system should optimise for — and how to measure them.</p>
+        <div class="chips">
+          <a href="#ch1-rel">Reliability</a>
+          <a href="#ch1-scal">Scalability</a>
+          <a href="#ch1-maint">Maintainability</a>
+        </div>
+      </div>
+
+      <h3 id="ch1-rel"><span class="hash">#</span> Reliability — "continuing to work correctly, even when things go wrong"</h3>
+      <p>
+        A system is <strong>reliable</strong> if it keeps delivering the expected service despite <strong>faults</strong>.
+        The key distinction: a <em>fault</em> is one component deviating from its spec; a <em>failure</em> is the whole
+        system stopping service. Reliability is about tolerating faults so they never escalate into failures.
+      </p>
+      <div class="grid">
+        <div class="concept"><b>Hardware faults</b><span>Random &amp; uncorrelated (disk, RAM, network). Handled with <em>redundancy</em> — replicas, spare machines, RAID.</span></div>
+        <div class="concept"><b>Software errors</b><span>Systematic bugs, e.g. a runaway process or cascading failure. Harder — no redundancy fixes a bad bug; need isolation, timeouts, careful rollout.</span></div>
+        <div class="concept"><b>Human errors</b><span>The leading cause of outages. Mitigate with training, sandboxes, good monitoring, and fast rollback.</span></div>
+      </div>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    T[User posts a tweet<br/>4.6k writes/sec] --> FO[Fan-out to<br/>per-user timeline caches<br/>345k writes/sec]
+    FO --> HT[Read home timeline<br/>300k reads/sec]
+    CELEB[Account with 30M followers] --> FO
+    CELEB -.single tweet = 30M writes.-> FO
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 1</span>Twitter's fan-out problem (book fig 1-3): reads outnumber writes ~65:1, so timelines are pre-computed at write time. Celebrity tweets are exempt from fan-out and merged on read.</figcaption>
+      </figure>
+
+      <h3 id="ch1-scal"><span class="hash">#</span> Scalability — describing load, then coping with it</h3>
+      <p>
+        Scalability is the ability to keep performing well as load grows. First <strong>describe load</strong> with
+        <em>load parameters</em> (requests/sec, read/write ratio, cache hit rate, fan-out), then describe
+        <strong>performance</strong>.
+      </p>
+      <div class="grid">
+        <div class="concept"><b>Latency percentiles</b><span>The mean is a poor "typical" value. Use p50 (median), p95, p99, p999 — thresholds below which that fraction of requests fall.</span></div>
+        <div class="concept"><b>Tail at scale</b><span>One slow call can stall an entire end-user request (head-of-line blocking). High percentiles matter disproportionately; average percentiles are meaningless.</span></div>
+        <div class="concept"><b>Scale up vs out</b><span>Vertical (bigger machine) vs horizontal (more machines); elastic (auto) vs manual scaling for predictable load.</span></div>
+      </div>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+xychart-beta
+    title "Response-time percentiles (illustrative)"
+    x-axis [p50, p95, p99, p999]
+    y-axis "latency" 0 --> 250
+    bar [12, 28, 55, 210]
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 2</span>Tail latency matters: p999 can be an order of magnitude worse than p50 (book fig 1-4).</figcaption>
+      </figure>
+
+      <h3 id="ch1-maint"><span class="hash">#</span> Maintainability — the three design principles</h3>
+      <ul>
+        <li><strong>Operability</strong> — operations teams can keep the system healthy: visibility, monitoring, good default behaviour.</li>
+        <li><strong>Simplicity</strong> — manage complexity with good abstractions, so new engineers can understand it.</li>
+        <li><strong>Evolvability</strong> — making change easy: adapt to new requirements without rewriting everything.</li>
+      </ul>
+
+      <h4>Key terms</h4>
+      <dl class="glossary">
+        <div><dt>fault vs failure</dt><dd>component deviates from spec vs the whole system stops providing its service</dd></div>
+        <div><dt>load parameter</dt><dd>a number that captures load, e.g. tweets/sec, followers per user, cache hit rate</dd></div>
+        <div><dt>fan-out</dt><dd>delivering one new item to many recipients' caches</dd></div>
+        <div><dt>percentile (p95)</dt><dd>95% of requests are faster than this latency</dd></div>
+        <div><dt>SLO / SLA</dt><dd>service-level objective / agreement: e.g. median &lt; 200 ms, p99 &lt; 1 s, uptime ≥ 99.9%</dd></div>
+        <div><dt>redundancy</dt><dd>duplicated hardware to lower the chance of failure</dd></div>
+      </dl>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        <strong>Twitter, Nov 2012</strong>: 4,600 tweets/sec average (12k+ peak), 300k home-timeline reads/sec. A tweet to an
+        average account (~75 followers) becomes 75 cache writes — so 4.6k writes/sec becomes ~345k writes/sec.
+        <strong>Hard disks</strong>: MTTF ~10–50 years ⇒ a 10,000-disk cluster should expect ~1 disk failure per day.
+        <strong>Amazon</strong> specs services at the 99.9th percentile; a 100 ms latency increase cut sales ~1%; config/operator
+        errors caused most outages, with hardware only 10–25%.
+      </div>
+
+      <ul class="tradeoffs">
+        <li>Work at write time (fan-out, fast reads) vs work at read time (JOIN on read) — Twitter chose writes because reads outnumber writes ~65:1.</li>
+        <li>Hardware redundancy protects against hardware faults but does nothing for software bugs.</li>
+        <li>Scaling up vs scaling out; elastic auto-scaling vs manual scaling for predictable load.</li>
+      </ul>
+    </section>
+
+    <!-- ============ CH 2 ============ -->
+    <section class="chapter" id="ch2">
+      <div class="chapter-head">
+        <span class="tag p1">Part I · Foundations</span>
+        <span class="chnum">CHAPTER 02</span>
+        <h2>Data Models and Query Languages</h2>
+        <p class="one-liner">The data model you pick shapes what problems you can express easily.</p>
+        <div class="chips">
+          <a href="#ch2-rel">Relational vs Document</a>
+          <a href="#ch2-query">Query languages</a>
+          <a href="#ch2-graph">Graph models</a>
+        </div>
+      </div>
+
+      <p>
+        Data models are <strong>layered</strong>: bytes on disk → data structures → the data model → how your application
+        sees the data. History: the hierarchical model couldn't express many-to-many, so the <strong>relational model</strong>
+        (Codd, 1970) won; then NoSQL split into <strong>document stores</strong> (self-contained docs) and <strong>graph databases</strong>
+        (everything possibly related). No single model fits every use case.
+      </p>
+
+      <h3 id="ch2-rel"><span class="hash">#</span> Relational model vs document model</h3>
+      <div class="grid">
+        <div class="concept"><b>Relational (SQL)</b><span>Tables, rows, columns, joins. Handles many-to-many via normalised foreign keys. Strict schema.</span></div>
+        <div class="concept"><b>Document (NoSQL)</b><span>Self-contained JSON-like documents — good locality, no joins, schema-on-read. Suits mostly-one-to-many / tree data.</span></div>
+        <div class="concept"><b>Impedance mismatch</b><span>The awkward fit between objects in your code and relational rows. JSON reduces it for hierarchical data.</span></div>
+      </div>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TB
+    subgraph Rel["Relational model"]
+        R1[Users table] --> R2[Positions table<br/>normalised via foreign keys]
+        R2 --> R3[JOIN on read]
+    end
+    subgraph Doc["Document model"]
+        D1[One JSON doc<br/>per profile] --> D2[No joins<br/>good locality]
+    end
+    subgraph Gr["Graph model"]
+        G1[Vertices + labelled edges] --> G2[Traversals<br/>pattern matching]
+    end
+    App[Your data] --> Rel
+    App --> Doc
+    App --> Gr
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 3</span>The same résumé as relational tables vs a nested document vs a property graph — the model shapes how you query.</figcaption>
+      </figure>
+
+      <h3 id="ch2-query"><span class="hash">#</span> Declarative vs imperative query languages</h3>
+      <p>
+        <strong>Declarative</strong> (SQL, Cypher, MongoDB's aggregation pipeline) says <em>what</em> you want and lets the system
+        decide <em>how</em> — good for parallelism and reuse. <strong>Imperative</strong> says how, step by step. MapReduce sits in
+        between: declarative at the framework level, with imperative <code>map</code>/<code>reduce</code> functions inside.
+      </p>
+<pre><code><span class="cmt">// MongoDB's MapReduce for a URL-counting job (book fig 2-5)</span>
+db.observations.mapReduce(
+  function map() { emit(this.month, this.num); },
+  function reduce(month, nums) { return Array.sum(nums); },
+  { out: "monthly-sales" }
+)</code></pre>
+
+      <h3 id="ch2-graph"><span class="hash">#</span> Graph-like data models</h3>
+      <p>
+        When relationships are the point (social networks, recommendation, fraud detection), use a <strong>property graph</strong>:
+        vertices and edges with labels and key-value properties, queried declaratively. <strong>Triple-stores</strong> express the
+        same idea as (subject, predicate, object) triples queried with SPARQL.
+      </p>
+<pre><code><span class="cmt">// Cypher — declarative graph query on the example below</span>
+MATCH (person) -[:BORN_IN]-> () -[:WITHIN*0..]-> (loc {name: "United States"})
+RETURN person.name</code></pre>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    LU[Lucy<br/>born in Idaho, USA] -->|BORN_IN| ID[(Idaho)]
+    AL[Alain<br/>born in Beaune, France] -->|BORN_IN| BE[(Beaune)]
+    LU -->|LIVES_IN| LN[(London, UK)]
+    AL -->|LIVES_IN| LN
+    LU <-->|MARRIED_TO| AL
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 4</span>Property-graph example from the book (fig 2-5): Lucy and Alain, married, both living in London.</figcaption>
+      </figure>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        The marine-biologist shark-count query (count per month) is expressible in SQL, MapReduce and the aggregation
+        pipeline — the "moral": NoSQL keeps reinventing SQL. <strong>Schema-on-read</strong> (structure implicit until read) vs
+        <strong>schema-on-write</strong> (enforced at write, like static typing) is a key flexibility trade-off.
+      </div>
+
+      <ul class="tradeoffs">
+        <li>Document locality (whole doc stored together, fast) vs needing joins/references across documents (doc model's weakness).</li>
+        <li>Schema flexibility / schema-on-read (easy evolution) vs enforced schema (integrity, clarity).</li>
+        <li>Normalised (no duplication, but joins needed) vs denormalised (fast reads, duplication to manage).</li>
+      </ul>
+    </section>
+
+    <!-- ============ CH 3 ============ -->
+    <section class="chapter" id="ch3">
+      <div class="chapter-head">
+        <span class="tag p1">Part I · Foundations</span>
+        <span class="chnum">CHAPTER 03</span>
+        <h2>Storage and Retrieval</h2>
+        <p class="one-liner">How databases actually store and find your data: LSM-trees, B-trees, and columnar storage.</p>
+        <div class="chips">
+          <a href="#ch3-engines">Storage engines</a>
+          <a href="#ch3-oltp">OLTP vs OLAP</a>
+          <a href="#ch3-column">Columnar storage</a>
+        </div>
+      </div>
+
+      <p>
+        Storage engines split into <strong>OLTP</strong> (many small lookups, disk <em>seek</em> is the bottleneck) and
+        <strong>OLAP</strong> / data warehouses (few huge scans, disk <em>bandwidth</em> is the bottleneck). OLTP engines come from
+        two schools: <strong>log-structured</strong> (LSM) and <strong>update-in-place</strong> (B-tree).
+      </p>
+
+      <h3 id="ch3-engines"><span class="hash">#</span> LSM-trees — append-only, merge in the background</h3>
+      <p>
+        Start with an append-only log + in-memory <strong>hash index</strong> (Bitcask). Evolve to <strong>SSTables</strong> (sorted
+        string tables — keys sorted, so a sparse in-memory index suffices) and merge them into an <strong>LSM-tree</strong>:
+        writes land in an in-memory <strong>memtable</strong> that flushes to an SSTable; a background <strong>compaction</strong>
+        merges segments and discards stale values. Bloom filters skip disk reads for keys that are absent.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    subgraph Wpath["Write path"]
+        W[Write] --> M[MemTable<br/>in-memory sorted tree]
+        M -->|flush when large| S0[SSTable 0]
+        S0 -->|background compaction| S1[SSTable 1<br/>merged + sorted]
+    end
+    subgraph Rpath["Read path"]
+        R[Lookup key] --> M
+        R --> S0
+        R --> S1
+        BF[Bloom filter] -.proves key absent.-> R
+    end
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 5</span>LSM-tree: sequential writes, background compaction. Used by LevelDB, RocksDB, Cassandra, HBase.</figcaption>
+      </figure>
+
+      <h4>B-trees — update in place</h4>
+      <p>
+        The other school keeps keys in fixed-size <strong>pages</strong> (traditionally 4 KB) updated in place, with a
+        write-ahead log (WAL) for crash recovery. Balanced, height O(log n), one key lives in one place. Rule of thumb:
+        <strong>LSM is faster for writes, B-trees for reads</strong>; LSM compaction can cause latency spikes at high percentiles.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    Root[(Root page<br/>keys 5, 15, 25)] --> A[(page 1-4)]
+    Root --> B[(page 6-14)]
+    Root --> C[(page 16-24)]
+    Root --> D[(page 26+)]
+    A --> A1[(leaf page)]
+    B --> B1[(leaf page)]
+    C --> C1[(leaf page)]
+    D --> D1[(leaf page)]
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 6</span>B-tree: each page holds k keys and k+1 child pointers; real branching factors are in the hundreds, so trees stay shallow.</figcaption>
+      </figure>
+
+      <h3 id="ch3-oltp"><span class="hash">#</span> Transaction processing vs analytics</h3>
+      <p>
+        <strong>OLTP</strong> is user-facing, keyed lookups, write-heavy. <strong>OLAP</strong> runs big analytical scans over most of
+        the dataset. The <strong>data warehouse</strong> holds a copy of the data loaded by <strong>ETL</strong>, usually in a
+        <strong>star schema</strong>: one central <em>fact table</em> (events) surrounded by <em>dimension tables</em> ("who, what,
+        where, when"); a snowflake schema is a further-normalised star.
+      </p>
+
+      <h3 id="ch3-column"><span class="hash">#</span> Column-oriented storage</h3>
+      <p>
+        Instead of storing each row together, store each <strong>column's values together</strong> so a query reads only the
+        columns it needs. Enables compact encodings — <strong>bitmap encoding</strong> plus <strong>run-length encoding</strong> —
+        and multiple sort orders. Precomputed aggregates can be accelerated with <strong>data cubes</strong>, but cubes can't
+        answer questions about dimensions they don't include.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    subgraph Row["Row-oriented (OLTP)"]
+        R1[Row 1: id, product, buyer, date]
+        R2[Row 2: id, product, buyer, date]
+        R3[Row 3: id, product, buyer, date]
+    end
+    subgraph Col["Column-oriented (OLAP)"]
+        C1[Column id: 1,2,3,...]
+        C2[Column product: ...]
+        C3[Column buyer: ...]
+        C4[Column date: ...]
+    end
+    Q[Analytics query<br/>only needs 2 columns] -.reads just those.-> Col
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 7</span>Row vs columnar layout: columnar reads only the needed columns and compresses better.</figcaption>
+      </figure>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        Memtables flush at "typically a few megabytes". B-tree pages are "traditionally 4 KB". Big enterprises (Apple,
+        Walmart, eBay) hold tens of petabytes, mostly in fact tables. Sorted/run-length-compressed columns can shrink to a
+        few KB even with billions of rows (Vertica uses multiple sort orders).
+      </div>
+
+      <ul class="tradeoffs">
+        <li>LSM vs B-tree: write throughput vs read performance and predictability; keys copied in many SSTables (LSM) vs one location (B-tree).</li>
+        <li>Append-only sequential writes vs update-in-place pages with WAL overhead.</li>
+        <li>Row-oriented (OLTP) vs column-oriented (OLAP) layout.</li>
+        <li>Precomputed cubes (fast, inflexible) vs raw data (flexible, slower).</li>
+      </ul>
+    </section>
+
+    <!-- ============ CH 4 ============ -->
+    <section class="chapter" id="ch4">
+      <div class="chapter-head">
+        <span class="tag p1">Part I · Foundations</span>
+        <span class="chnum">CHAPTER 04</span>
+        <h2>Encoding and Evolution</h2>
+        <p class="one-liner">Turning data into bytes — and staying compatible as your schema changes.</p>
+        <div class="chips">
+          <a href="#ch4-formats">Encoding formats</a>
+          <a href="#ch4-evol">Schema evolution</a>
+          <a href="#ch4-flow">Modes of data flow</a>
+        </div>
+      </div>
+
+      <h3 id="ch4-formats"><span class="hash">#</span> Formats for encoding data</h3>
+      <p>
+        Two goals: <strong>backward compatibility</strong> (new code reads old data) and <strong>forward compatibility</strong>
+        (old code reads new data) — both needed for <strong>rolling upgrades</strong>. Formats span language-specific serialisation,
+        textual JSON/XML/CSV, and schema-driven binary formats (Thrift, Protobuf, Avro).
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+xychart-beta
+    title "Encoded size of the same record (bytes) — book figs 4-1..4-5"
+    x-axis [JSON, MessagePack, Thrift Binary, Thrift Compact, Protobuf, Avro]
+    y-axis "bytes" 0 --> 90
+    bar [81, 66, 59, 34, 33, 32]
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 8</span>The same <code>Person</code> record encoded in six formats — schema-driven binary formats are far more compact.</figcaption>
+      </figure>
+
+      <div class="grid">
+        <div class="concept"><b>Protobuf / Thrift</b><span>Fields are identified by numeric <em>tags</em>. The tag is the meaning: renaming a field is fine, changing a tag breaks old data; never reuse a tag.</span></div>
+        <div class="concept"><b>Avro</b><span>Tag-free. Writer's schema and reader's schema are resolved at read time by field <em>name</em> — order-independent.</span></div>
+        <div class="concept"><b>Language-specific formats</b><span>Convenient and fast, but single-language and fragile — deserialising untrusted data is a security risk.</span></div>
+      </div>
+
+      <h3 id="ch4-evol"><span class="hash">#</span> Schema evolution</h3>
+      <p>
+        <strong>Protobuf/Thrift:</strong> added fields must be optional or have defaults; a required field can never be removed.
+        <strong>Avro:</strong> you may only add/remove fields that have defaults; null needs an explicit union type; renaming uses
+        aliases (backward- but not forward-compatible). Avro's tag-free approach means schemas can be generated dynamically
+        (e.g. exported from a relational schema) with no manual tag bookkeeping.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    W[Writer schema<br/>fields: a, b, c] -->|encodes record| R[Reader schema<br/>fields: a, c, d]
+    R --> M{Match by field name}
+    M -->|a and c present| OK[used]
+    M -->|b unknown to reader| IG[ignored]
+    M -->|d missing in writer| DF[filled with default]
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 9</span>Avro schema resolution: fields match by name; unknown fields ignored, missing fields defaulted.</figcaption>
+      </figure>
+
+      <h3 id="ch4-flow"><span class="hash">#</span> Modes of data flow</h3>
+      <p>
+        Compatibility must hold wherever data flows: <strong>through databases</strong> (writer encodes, reader decodes), through
+        <strong>services / REST / RPC</strong>, and through <strong>asynchronous message passing</strong> (message brokers or actors).
+      </p>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        The record with <code>userName "Martin"</code>, <code>favoriteNumber 1337</code>, interests
+        <code>[daydreaming, hacking]</code> encodes to 81 bytes (JSON) → 66 (MessagePack) → 59 (Thrift binary) → 34 (Thrift compact)
+        → 33 (Protobuf) → 32 (Avro). Twitter returns tweet IDs twice — as number <em>and</em> string — because JSON numbers lose
+        precision above 2^53.
+      </div>
+
+      <ul class="tradeoffs">
+        <li>Human-readable textual (JSON/XML) vs compact efficient binary (Thrift/Protobuf/Avro).</li>
+        <li>Protobuf/Thrift tags: stable and compact, but tags must be managed manually; Avro's tag-free scheme is dynamic-schema friendly but resolves at read time.</li>
+        <li>Binary formats save bandwidth/storage but need decoding to be human-readable.</li>
+      </ul>
+    </section>
+
+    <!-- ============================ PART II ============================ -->
+    <section class="part p2" id="part2">
+      <span class="chip">Part II</span>
+      <h2 class="part-title"><span class="pnum">02</span>Distributed Data</h2>
+      <p>
+        What changes when data lives on many machines: replicating for availability, partitioning for scale, transactions and
+        their isolation levels, why distributed systems are genuinely hard (unreliable networks and clocks), and how consensus
+        algorithms (Paxos, Raft) turn a hard problem into a service you can call.
+      </p>
+    </section>
+
+    <!-- ============ CH 5 ============ -->
+    <section class="chapter" id="ch5">
+      <div class="chapter-head">
+        <span class="tag p2">Part II · Distributed Data</span>
+        <span class="chnum">CHAPTER 05</span>
+        <h2>Replication</h2>
+        <p class="one-liner">Keeping copies of the same data on multiple machines — and what consistency you sacrifice.</p>
+        <div class="chips">
+          <a href="#ch5-leader">Leaders &amp; followers</a>
+          <a href="#ch5-lag">Replication lag</a>
+          <a href="#ch5-multi">Multi-leader</a>
+          <a href="#ch5-leaderless">Leaderless</a>
+        </div>
+      </div>
+
+      <h3 id="ch5-leader"><span class="hash">#</span> Leaders and followers</h3>
+      <p>
+        <strong>Single-leader replication</strong>: all writes go to one <em>leader</em>, which streams changes to
+        <em>followers</em> via a replication log; reads may hit any replica. Used by PostgreSQL, MySQL, MongoDB, Kafka.
+        Replication can be <strong>synchronous</strong> (a follower confirms before commit — no data loss, but a slow follower
+        blocks writes) or <strong>asynchronous</strong> (fast, but committed writes can be lost on leader failover). Practical
+        systems use semi-synchronous: one sync follower, the rest async.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    C[Client] -->|write| L((Leader))
+    L -->|replication log| F1[Follower 1]
+    L -->|replication log| F2[Follower 2]
+    F1 -->|read| C
+    F2 -->|read| C
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 10</span>Single-leader replication: writes go to the leader; reads can hit any replica.</figcaption>
+      </figure>
+
+      <h3 id="ch5-lag"><span class="hash">#</span> Problems with replication lag</h3>
+      <p>With async replication, a follower can be briefly behind. Three classic consistency models protect users:</p>
+      <div class="grid">
+        <div class="concept"><b>Read-your-writes</b><span>A user always sees their own writes — route reads to the leader, or exclude followers more than ~1 minute behind.</span></div>
+        <div class="concept"><b>Monotonic reads</b><span>Reads never go backwards in time for one user — don't let a user bounce between an old and a new replica.</span></div>
+        <div class="concept"><b>Consistent prefix reads</b><span>State makes causal sense — e.g. you never see an answer before its question.</span></div>
+      </div>
+
+      <h3 id="ch5-multi"><span class="hash">#</span> Multi-leader replication</h3>
+      <p>
+        Writes accepted at several leaders (e.g. one per datacenter). Enables multi-datacenter writes and offline operation,
+        but creates <strong>write conflicts</strong> that must be resolved: last-write-wins (LWW) forces an arbitrary order and
+        silently discards concurrent writes; safer options merge concurrent values tracked with <strong>version vectors</strong>,
+        or use <strong>CRDTs</strong> that auto-merge.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    subgraph Circ["Circular"]
+        L1a[Leader] --> L1b[Leader]
+        L1b --> L1c[Leader]
+        L1c --> L1a
+    end
+    subgraph Star["Star"]
+        L2a[Leader] --> L2b[Leader]
+        L2a --> L2c[Leader]
+        L2a --> L2d[Leader]
+    end
+    subgraph All["All-to-all"]
+        L3a[Leader] <--> L3b[Leader]
+        L3a <--> L3c[Leader]
+        L3b <--> L3c[Leader]
+    end
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 11</span>Multi-leader topologies: circular (MySQL default), star, and all-to-all — the most general, but writes can "overtake" and arrive out of causal order.</figcaption>
+      </figure>
+
+      <h3 id="ch5-leaderless"><span class="hash">#</span> Leaderless replication (Dynamo-style)</h3>
+      <p>
+        The client sends each write to several nodes and reads from several in parallel. With <strong>n</strong> replicas,
+        require <strong>w</strong> write acks and <strong>r</strong> read acks; <strong>w + r &gt; n</strong> guarantees at least
+        one up-to-date replica is read. Convergence happens via <strong>read repair</strong> and <strong>anti-entropy</strong>.
+        <em>Sloppy quorums</em> + <em>hinted handoff</em> raise write availability when home nodes are unreachable.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    C[Client] -->|write w=2| N1[(Replica 1)]
+    C -->|write w=2| N2[(Replica 2)]
+    C -->|write w=2| N3[(Replica 3)]
+    N1 -->|read r=2| C
+    N2 -->|read r=2| C
+    RR[Read repair] -.detects & fixes stale replica.-> N3
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 12</span>Leaderless quorum with n=3, w=2, r=2 (w + r &gt; n) plus read repair — used by Riak, Cassandra, Voldemort.</figcaption>
+      </figure>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        Common config: odd n (3 or 5), w = r = (n+1)/2 rounded up. A read-heavy workload may use w = n, r = 1 — fast reads,
+        but one failed node blocks all writes. Setting up a follower = consistent snapshot + catch-up position in the leader's
+        log (PostgreSQL LSN, MySQL binlog coordinates).
+      </div>
+
+      <ul class="tradeoffs">
+        <li>Sync replication (no data loss, but blocks on a slow follower) vs async (available, but may lose recent writes on failover).</li>
+        <li>Single-leader (easy to reason about) vs multi-leader / leaderless (more robust, but weaker consistency and conflict handling needed).</li>
+        <li>Strict quorum (stronger guarantee, lower availability) vs sloppy quorum (higher write availability, weaker guarantee).</li>
+      </ul>
+    </section>
+
+    <!-- ============ CH 6 ============ -->
+    <section class="chapter" id="ch6">
+      <div class="chapter-head">
+        <span class="tag p2">Part II · Distributed Data</span>
+        <span class="chnum">CHAPTER 06</span>
+        <h2>Partitioning</h2>
+        <p class="one-liner">Splitting a dataset that no longer fits one machine into shards — evenly, and without hot spots.</p>
+        <div class="chips">
+          <a href="#ch6-key">Key partitioning</a>
+          <a href="#ch6-idx">Secondary indexes</a>
+          <a href="#ch6-rebal">Rebalancing &amp; routing</a>
+        </div>
+      </div>
+
+      <h3 id="ch6-key"><span class="hash">#</span> Key-range vs hash partitioning</h3>
+      <div class="grid">
+        <div class="concept"><b>Key-range</b><span>Keys sorted; each partition owns a contiguous range. Efficient range scans, but hot spots when adjacent keys are hot (e.g. all writes go to "today").</span></div>
+        <div class="concept"><b>Hash</b><span>hash(key) decides the partition. Even load, but destroys ordering — range queries become inefficient. Cassandra/MongoDB use MD5; Voldemort uses FNV.</span></div>
+        <div class="concept"><b>Compound keys</b><span>A hybrid: one key part picks the partition, another provides sort order within it.</span></div>
+      </div>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    subgraph Range["Key-range partitioning"]
+        RA[Keys a-h] --> RP1[Partition 1]
+        RB[Keys i-p] --> RP2[Partition 2]
+        RC[Keys q-z] --> RP3[Partition 3]
+    end
+    subgraph Hash["Hash partitioning"]
+        HA["hash(key) mod n"] --> HP1[Partition 1]
+        HA --> HP2[Partition 2]
+        HA --> HP3[Partition 3]
+    end
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 13</span>Range partitioning (like encyclopedia volumes) preserves order; hash partitioning spreads load evenly.</figcaption>
+      </figure>
+
+      <h3 id="ch6-idx"><span class="hash">#</span> Partitioning and secondary indexes</h3>
+      <ul>
+        <li><strong>Document-partitioned (local index)</strong> — cheap writes, but queries are <em>scatter/gather</em> across all partitions.</li>
+        <li><strong>Term-partitioned (global index)</strong> — reads served from one partition, but a write touches several index partitions.</li>
+      </ul>
+
+      <h3 id="ch6-rebal"><span class="hash">#</span> Rebalancing and request routing</h3>
+      <p>
+        Avoid <code>hash mod N</code> — most keys move whenever N changes. Instead use a <strong>fixed number of partitions per
+        node</strong>, or <strong>dynamic split/merge</strong> of ranges (HBase splits partitions over 10 GB by default).
+        For routing, clients can contact any node (which forwards), use a <strong>routing tier</strong>, or be partition-aware;
+        ZooKeeper tracks partition→node assignments (used by HBase, SolrCloud, Kafka, Espresso).
+      </p>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        Fixed-partition example: a 10-node cluster split into 1,000 partitions (~100 per node), moving whole partitions on
+        add/remove. Range partitioning: BigTable, HBase, RethinkDB, MongoDB &lt; 2.4. Hash partitioning: Cassandra, DynamoDB,
+        Riak, Voldemort.
+      </div>
+
+      <ul class="tradeoffs">
+        <li>Range (efficient range queries) vs hash (even load, no range queries).</li>
+        <li>Document-partitioned secondary index (cheap writes, expensive reads) vs term-partitioned (cheap reads, expensive writes).</li>
+        <li>Fixed partitions (operationally simple, caps max nodes) vs dynamic partitioning (flexible, more complex).</li>
+      </ul>
+    </section>
+
+    <!-- ============ CH 7 ============ -->
+    <section class="chapter" id="ch7">
+      <div class="chapter-head">
+        <span class="tag p2">Part II · Distributed Data</span>
+        <span class="chnum">CHAPTER 07</span>
+        <h2>Transactions</h2>
+        <p class="one-liner">Making the app pretend that concurrency problems and faults don't exist — and what that costs.</p>
+        <div class="chips">
+          <a href="#ch7-acid">ACID</a>
+          <a href="#ch7-isol">Isolation levels</a>
+          <a href="#ch7-serial">Serializability</a>
+        </div>
+      </div>
+
+      <h3 id="ch7-acid"><span class="hash">#</span> The slippery concept of a transaction</h3>
+      <div class="grid">
+        <div class="concept"><b>Atomicity</b><span>All-or-nothing: an aborted transaction writes nothing.</span></div>
+        <div class="concept"><b>Consistency</b><span>App-level invariants hold (the least well-defined of the four).</span></div>
+        <div class="concept"><b>Isolation</b><span>Concurrent transactions don't interfere.</span></div>
+        <div class="concept"><b>Durability</b><span>Committed data survives crashes (WAL, replication).</span></div>
+      </div>
+
+      <h3 id="ch7-isol"><span class="hash">#</span> Weak isolation levels</h3>
+      <p>
+        Databases default to levels weaker than serializable. <strong>Read committed</strong> prevents dirty reads and dirty
+        writes (a popular default). <strong>Snapshot isolation (MVCC)</strong> reads a consistent snapshot: readers never block
+        writers and vice versa, and it prevents read skew — but not lost updates or write skew.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    RU["Read uncommitted<br/>dirty reads possible"] --> RC["Read committed<br/>no dirty reads or writes"]
+    RC --> SI["Snapshot isolation / MVCC<br/>consistent snapshot"]
+    SI --> SER["Serializable<br/>= runs as if one at a time"]
+    SER --> SSI["SSI (optimistic)<br/>aborts conflicting transactions"]
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 14</span>The isolation-level ladder. Only serializable prevents all six race conditions.</figcaption>
+      </figure>
+
+      <h4>The six race conditions serializability prevents</h4>
+      <ul>
+        <li><strong>Dirty read</strong> — reading another transaction's uncommitted write.</li>
+        <li><strong>Dirty write</strong> — overwriting another's uncommitted write.</li>
+        <li><strong>Read skew</strong> — seeing inconsistent state across reads.</li>
+        <li><strong>Lost update</strong> — a concurrent read-modify-write cycle overwrites another's write.</li>
+        <li><strong>Write skew</strong> — acting on a premise stale by commit time (two on-call doctors both deciding to go off-call).</li>
+        <li><strong>Phantom</strong> — a write that changes the result of another transaction's search.</li>
+      </ul>
+
+      <h3 id="ch7-serial"><span class="hash">#</span> Three ways to implement serializability</h3>
+      <div class="grid">
+        <div class="concept"><b>Actual serial execution</b><span>Run transactions one thread at a time (VoltDB, Redis, Datomic). Simple, but single-core throughput and requires short transactions as stored procedures.</span></div>
+        <div class="concept"><b>Two-phase locking (2PL)</b><span>Shared/exclusive locks held until commit; index-range locks stop phantoms. Correct but poor performance, deadlocks, unstable latency.</span></div>
+        <div class="concept"><b>Serializable snapshot isolation (SSI)</b><span>Optimistic: let transactions run, abort any whose execution wasn't serializable at commit (detects stale reads and writes that affect prior reads).</span></div>
+      </div>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        Alice's $500 + $500 accounts: a $100 transfer observed mid-way shows only $900 total (read skew). SSI first described
+        in 2008; serializable in PostgreSQL since 9.1; FoundationDB uses a similar algorithm. 2PL used by MySQL (InnoDB) and
+        SQL Server serializable.
+      </div>
+
+      <ul class="tradeoffs">
+        <li>Weak isolation (good performance, but the app handles race conditions manually) vs serializable (correct, slower).</li>
+        <li>2PL (correct, slow/unstable under contention) vs serial execution (simple, single-core bound) vs SSI (near-snapshot performance, but aborts under high contention).</li>
+      </ul>
+    </section>
+
+    <!-- ============ CH 8 ============ -->
+    <section class="chapter" id="ch8">
+      <div class="chapter-head">
+        <span class="tag p2">Part II · Distributed Data</span>
+        <span class="chnum">CHAPTER 08</span>
+        <h2>The Trouble with Distributed Systems</h2>
+        <p class="one-liner">Unreliable networks, unreliable clocks, and the truth problem — why distributed systems are hard.</p>
+        <div class="chips">
+          <a href="#ch8-faults">Partial failures</a>
+          <a href="#ch8-net">Unreliable networks</a>
+          <a href="#ch8-clocks">Unreliable clocks</a>
+          <a href="#ch8-truth">Truth &amp; lies</a>
+        </div>
+      </div>
+
+      <h3 id="ch8-faults"><span class="hash">#</span> Faults and partial failures</h3>
+      <p>
+        A distributed system never fails all at once — <strong>any node can be slow, unresponsive, or dead</strong>. A timeout
+        cannot distinguish "packet lost", "delayed" or "still processing". There is no shared state, so nodes must agree over an
+        unreliable network.
+      </p>
+
+      <h3 id="ch8-net"><span class="hash">#</span> Unreliable networks</h3>
+      <p>
+        Packets may be lost or arbitrarily delayed; the reply can be lost even when the message was delivered. Real networks
+        have <strong>unbounded delays</strong> (bounded-delay "synchronous" networks are expensive), so algorithms lean on
+        timeouts — which are guesses.
+      </p>
+
+      <h3 id="ch8-clocks"><span class="hash">#</span> Unreliable clocks</h3>
+      <div class="grid">
+        <div class="concept"><b>Time-of-day (wall) clocks</b><span>NTP-synced, can jump forward/back, ignore leap seconds. Dangerous for ordering decisions.</span></div>
+        <div class="concept"><b>Monotonic clocks</b><span>Measure durations only; always move forward; meaningless across machines (CLOCK_MONOTONIC, nanoTime).</span></div>
+      </div>
+      <p>
+        <strong>Process pauses</strong> (stop-the-world GC, scheduling) can pause a node so long it's declared dead and later
+        "resurrects" — hence leases and <strong>fencing tokens</strong> to block stale actions.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+    participant Old as Old leader
+    participant Lock as Lock service
+    participant New as New leader
+    participant Stor as Storage
+    Old->>Lock: acquire lock (token 33)
+    Note over Old: process pause (GC stop-the-world)
+    New->>Lock: acquire lock (token 34)
+    Lock-->>New: OK
+    Note over Old: old leader resumes
+    Old->>Stor: write with token 33
+    Stor-->>Old: rejected (stale fencing token)
+    New->>Stor: write with token 34
+    Stor-->>New: accepted
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 15</span>Fencing tokens (book fig 8-4/8-5): a monotonic token lets storage reject writes from a stale lock holder.</figcaption>
+      </figure>
+
+      <h3 id="ch8-truth"><span class="hash">#</span> Knowledge, truth and lies</h3>
+      <p>
+        A node cannot trust its own judgment — <strong>truth is decided by the majority</strong>. <strong>Byzantine faults</strong>
+        (nodes that deliberately lie) require a supermajority (&gt; 2/3) and are impractical in datacenter systems, where nodes
+        are assumed "unreliable but honest". Algorithms must match the real <em>system model</em>, not a tidy theoretical one.
+      </p>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        Google assumes 200 ppm clock drift ≈ 6 ms drift with 30 s resync, or 17 s drift with daily resync. NTP over the
+        internet: minimum error ~35 ms, occasional spikes around a second. Byzantine tolerance: with 4 nodes, at most 1 may
+        malfunction. A Gigabit NIC can "limp" at 1 kilobit/s (driver bug) — a degraded-but-alive node.
+      </div>
+
+      <ul class="tradeoffs">
+        <li>Bounded-delay networks give guarantees but are expensive and under-utilise hardware; most systems choose cheap and unreliable.</li>
+        <li>Timeouts: too short → false suspicions and churn; too long → slow failure detection.</li>
+        <li>Byzantine fault tolerance is impractical for datacenters; assume honest-but-fallible nodes instead.</li>
+      </ul>
+    </section>
+
+    <!-- ============ CH 9 ============ -->
+    <section class="chapter" id="ch9">
+      <div class="chapter-head">
+        <span class="tag p2">Part II · Distributed Data</span>
+        <span class="chnum">CHAPTER 09</span>
+        <h2>Consistency and Consensus</h2>
+        <p class="one-liner">From linearizability to total order broadcast, distributed transactions, and consensus algorithms.</p>
+        <div class="chips">
+          <a href="#ch9-lin">Linearizability</a>
+          <a href="#ch9-order">Ordering guarantees</a>
+          <a href="#ch9-cons">Consensus</a>
+        </div>
+      </div>
+
+      <h3 id="ch9-lin"><span class="hash">#</span> Consistency guarantees and linearizability</h3>
+      <p>
+        <strong>Linearizability</strong> makes replicated data behave like a single atomic copy: each operation appears to take
+        effect at one point between its start and end, and reads see the latest write. Cost: Attiya &amp; Welch proved response
+        time must be at least proportional to network-delay uncertainty. <strong>Causality</strong> ("happens-before") is weaker
+        but needs far less coordination, captured by version vectors or Lamport timestamps. Lamport timestamps give a total
+        order consistent with causality, but can't decide <em>concurrency</em> — which motivates consensus.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    A[Linearizable<br/>compare-and-set] --> C{Consensus}
+    B[Atomic commit] --> C
+    D[Locks and leases] --> C
+    E[Total order broadcast] --> C
+    F[Unique constraints] --> C
+    C --> G[Paxos / Raft / Zab<br/>majority quorum]
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 16</span>A whole family of problems reduces to consensus — get one algorithm, get them all.</figcaption>
+      </figure>
+
+      <h3 id="ch9-order"><span class="hash">#</span> Ordering guarantees</h3>
+      <p>
+        <strong>Total order broadcast</strong> (a.k.a. atomic broadcast) = reliable delivery + totally ordered delivery to all
+        nodes — equivalent to a replication log and to repeated rounds of consensus, and the basis of
+        <strong>state-machine replication</strong> (every replica applies the same writes in the same order).
+      </p>
+
+      <h4>Distributed transactions: two-phase commit</h4>
+      <p>
+        <strong>2PC</strong>: a coordinator asks each participant to <em>prepare</em>; on unanimous "yes" it decides commit —
+        participants may not abort after "yes". If the coordinator crashes after votes, in-doubt participants wait indefinitely
+        (no termination). Not to be confused with two-phase <em>locking</em>.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+    participant Coord as Coordinator
+    participant A as Database A
+    participant B as Database B
+    Coord->>A: prepare
+    Coord->>B: prepare
+    A-->>Coord: ready
+    B-->>Coord: ready
+    Note over Coord: commit point —<br/>decision durably written
+    Coord->>A: commit
+    Coord->>B: commit
+    A-->>Coord: ok
+    B-->>Coord: ok
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 17</span>Two-phase commit (book fig 9-9/9-10). If the coordinator dies after votes, in-doubt transactions are stuck.</figcaption>
+      </figure>
+
+      <h3 id="ch9-cons"><span class="hash">#</span> Fault-tolerant consensus</h3>
+      <p>
+        Consensus properties: <strong>agreement, integrity, validity, termination</strong>. Requires a <em>majority quorum</em> and
+        assumes crash-stop, no Byzantine faults. Algorithms: Viewstamped Replication, Paxos (via Multi-Paxos), Raft, Zab.
+        A leader needs a majority for every decision, so only the majority side of a partition can make progress. Coordination
+        services like <strong>ZooKeeper</strong> and <strong>etcd</strong> expose total order broadcast, linearizable
+        compare-and-set, locks/leases, fencing tokens and group membership.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+stateDiagram-v2
+    [*] --> Follower
+    Follower --> Candidate: election timeout
+    Candidate --> Leader: receives majority votes
+    Candidate --> Follower: discovers higher term
+    Leader --> Follower: discovers higher term
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 18</span>Raft leader election. An epoch/term number plus majority votes makes the leader unique.</figcaption>
+      </figure>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        Majority math: 3 nodes tolerate 1 failure; 5 nodes tolerate 2. Linearizable CAS can be built from a replicated log:
+        append the intent, wait for delivery, and check the first claim wins. ZooKeeper's zxid doubles as a fencing token.
+        Raft edge case: one consistently unreliable link can bounce leadership forever so the system never makes progress.
+      </div>
+
+      <ul class="tradeoffs">
+        <li>Linearizability (easy to reason about, slow under high network delay) vs causal consistency (faster, but can't implement uniqueness).</li>
+        <li>Consensus gives safety + fault tolerance but needs majority quorums, is effectively synchronous replication, and only the majority side progresses.</li>
+        <li>Prefer a proven coordination service (ZooKeeper) over writing your own consensus — implementing it correctly is very hard.</li>
+      </ul>
+    </section>
+
+    <!-- ============================ PART III ============================ -->
+    <section class="part p3" id="part3">
+      <span class="chip">Part III</span>
+      <h2 class="part-title"><span class="pnum">03</span>Derived Data</h2>
+      <p>
+        Data that is <em>derived</em> from other data: batch and stream processing as the machinery for building indexes,
+        caches, and analytics — and the concluding vision of integrated, "unbundled" data systems that treat every database as
+        a stream.
+      </p>
+    </section>
+
+    <!-- ============ CH 10 ============ -->
+    <section class="chapter" id="ch10">
+      <div class="chapter-head">
+        <span class="tag p3">Part III · Derived Data</span>
+        <span class="chnum">CHAPTER 10</span>
+        <h2>Batch Processing</h2>
+        <p class="one-liner">Bounded input, terminating job: Unix philosophy → MapReduce → dataflow engines.</p>
+        <div class="chips">
+          <a href="#ch10-unix">Unix philosophy</a>
+          <a href="#ch10-mr">MapReduce</a>
+          <a href="#ch10-join">Joins</a>
+          <a href="#ch10-dataflow">Dataflow engines</a>
+        </div>
+      </div>
+
+      <h3 id="ch10-unix"><span class="hash">#</span> Batch processing with Unix tools</h3>
+      <p>
+        Batch jobs read a <strong>bounded input</strong>, produce output derived from it, and <em>terminate</em>. The Unix
+        philosophy — do one thing well; compose small tools; uniform interface of files/pipes — is the seed of everything that
+        follows. The canonical example: count URL frequencies in a web log.
+      </p>
+<pre><code><span class="cmt"># count URL frequencies (book fig 10-1)</span>
+cat /var/log/nginx/access.log |
+  awk '{print $7}' |
+  sort |
+  uniq -c</code></pre>
+
+      <h3 id="ch10-mr"><span class="hash">#</span> MapReduce and distributed filesystems</h3>
+      <p>
+        Write two <strong>stateless callbacks</strong>: <code>map</code> (emit a key/value per record) and
+        <code>reduce</code> (combine values sharing a key). The framework <strong>shuffles and sorts</strong> all key/value
+        pairs by key between the phases. On top of a <strong>distributed filesystem</strong> (GFS/HDFS): shared-nothing, blocks
+        replicated for fault tolerance, a central NameNode tracks placement, and data locality matters.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    IN[Input<br/>key-value pairs] --> M1[Map]
+    IN --> M2[Map]
+    IN --> M3[Map]
+    M1 --> SH[Shuffle / sort<br/>group by key]
+    M2 --> SH
+    M3 --> SH
+    SH --> R1[Reduce]
+    SH --> R2[Reduce]
+    R1 --> OUT[Output]
+    R2 --> OUT
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 19</span>The MapReduce pipeline: stateless map, framework shuffle/sort, then reduce.</figcaption>
+      </figure>
+
+      <h3 id="ch10-join"><span class="hash">#</span> Joins</h3>
+      <ul>
+        <li><strong>Sort-merge join</strong> (reduce-side): both inputs partitioned and sorted by join key; the reducer merges them.</li>
+        <li><strong>Broadcast hash join</strong> (map-side): the small input is loaded as a hash table into every mapper of the large input.</li>
+        <li><strong>Partitioned hash join</strong> (map-side): both inputs share the same partitioning, hash-joined per partition.</li>
+      </ul>
+
+      <h3 id="ch10-dataflow"><span class="hash">#</span> Beyond MapReduce: dataflow engines</h3>
+      <p>
+        Spark, Tez, Flink (rooted in Dryad, FlumeJava) pipe data between operators, avoiding the sort + materialise-to-disk
+        step unless needed, keep more in memory, and recompute lost data on failure. Declarative APIs with query optimisers
+        (Hive, Spark DataFrames, Impala) converge with MPP databases while keeping the flexibility to run arbitrary code.
+      </p>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        HDFS deployments at the time of writing: tens of thousands of machines, hundreds of petabytes. Mapper output goes to
+        the mapper's local disk, then partitioned/sorted/merged into a configurable number of reducer partitions. Because
+        failed tasks are retried and their partial output discarded, the visible result appears as if every record was
+        processed exactly once.
+      </div>
+
+      <ul class="tradeoffs">
+        <li>MapReduce materialises intermediate state to the distributed filesystem (easy recovery, but slow even with no failures) vs dataflow engines that keep data in memory (faster, but recompute more on failure and need deterministic operators).</li>
+        <li>Sorting is expensive — dataflow engines skip it unless required.</li>
+        <li>The restricted model (stateless callbacks, no side effects) buys strong reliability but sacrifices expressiveness.</li>
+      </ul>
+    </section>
+
+    <!-- ============ CH 11 ============ -->
+    <section class="chapter" id="ch11">
+      <div class="chapter-head">
+        <span class="tag p3">Part III · Derived Data</span>
+        <span class="chnum">CHAPTER 11</span>
+        <h2>Stream Processing</h2>
+        <p class="one-liner">The same work as batch, but continuous — on an unbounded input that never ends.</p>
+        <div class="chips">
+          <a href="#ch11-events">Event streams</a>
+          <a href="#ch11-brokers">Brokers</a>
+          <a href="#ch11-cdc">CDC &amp; event sourcing</a>
+          <a href="#ch11-once">Exactly-once</a>
+        </div>
+      </div>
+
+      <h3 id="ch11-events"><span class="hash">#</span> Transmitting event streams</h3>
+      <p>
+        Event streams — user activity, sensor readings, market data — are <strong>unbounded</strong> inputs, so a stream job
+        never completes. The streaming equivalent of a filesystem is the <strong>message broker</strong>.
+      </p>
+
+      <h3 id="ch11-brokers"><span class="hash">#</span> Two kinds of brokers</h3>
+      <div class="grid">
+        <div class="concept"><b>AMQP / JMS style</b><span>Each message to one consumer, individual acks, messages deleted after ack — good as async task queues.</span></div>
+        <div class="concept"><b>Log-based (Kafka, Kinesis)</b><span>Messages kept on disk; all messages in a partition delivered in order to one consumer; progress tracked by checkpointed <em>offsets</em>; replayable.</span></div>
+      </div>
+
+      <h3 id="ch11-cdc"><span class="hash">#</span> Databases and streams: CDC &amp; event sourcing</h3>
+      <p>
+        <strong>Change data capture (CDC)</strong> extracts a database's changelog (Databus, Debezium, Maxwell, Bottled Water) so
+        derived systems stay in sync. <strong>Log compaction</strong> keeps only the latest value per key — a compacted topic is
+        effectively a full copy of the database. <strong>Event sourcing</strong> stores application state as an append-only log
+        of immutable <em>events</em>; state is derived by deterministic replay.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    DB[(Source database)] -->|change data capture| TOP[(Log-based broker<br/>partitioned topic)]
+    TOP -->|consumer group<br/>checkpointed offsets| CP[Stream processor]
+    CP --> IDX[(Search index)]
+    CP --> CACH[(Cache)]
+    CP --> AN[(Analytics)]
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 20</span>Databases as streams: CDC feeds a broker, and derived systems (index, cache, analytics) consume it.</figcaption>
+      </figure>
+
+      <h3 id="ch11-once"><span class="hash">#</span> Processing streams, windows, and exactly-once</h3>
+      <ul>
+        <li><strong>Stream joins:</strong> stream-stream (match two events within a window), stream-table (enrichment), table-table (two changelogs → a materialized view).</li>
+        <li><strong>Time:</strong> distinguish <em>processing time</em> from event <em>timestamps</em>; out-of-order stragglers complicate event-time windows.</li>
+        <li><strong>Exactly-once:</strong> microbatching (Spark Streaming, ~1 s), periodic checkpointing (Flink barriers), atomic commit of output+state+offset (Cloud Dataflow), or idempotent writes (offset stored with the value).</li>
+      </ul>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        Kafka benchmark cited in the book: ~2 million writes/second on three commodity machines. Flink writes periodic rolling
+        checkpoints to durable storage, triggered by barriers in the stream. Twitter's stream-table example: home timelines as
+        the join of <code>tweets</code> and <code>follows</code>. Samza / Kafka Streams replicate operator state to a
+        log-compacted topic.
+      </div>
+
+      <ul class="tradeoffs">
+        <li>AMQP/JMS brokers (simple task queues, delete-after-ack) vs log-based brokers (ordered, replayable — right for streams and derived data).</li>
+        <li>Microbatching (simpler, ~1 s latency, processing-time windows) vs continuous checkpointing (lower latency, more complexity).</li>
+        <li>Exactly-once via idempotence (cheap, but needs ordered replay and determinism) vs atomic commit (correct, but coordination overhead).</li>
+      </ul>
+    </section>
+
+    <!-- ============ CH 12 ============ -->
+    <section class="chapter" id="ch12">
+      <div class="chapter-head">
+        <span class="tag p3">Part III · Derived Data</span>
+        <span class="chnum">CHAPTER 12</span>
+        <h2>The Future of Data Systems</h2>
+        <p class="one-liner">Integrating many specialised systems — and unbundling the database.</p>
+        <div class="chips">
+          <a href="#ch12-int">Data integration</a>
+          <a href="#ch12-unb">Unbundling</a>
+          <a href="#ch12-resp">Responsibility</a>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="ttl">Source note</span>
+        Chapter 12 is the book's synthesis chapter. This summary is reconstructed from the published book's known content
+        (the supplied PDF's text extraction ends at Chapter 11's references); the page-level detail is faithful in substance,
+        but verify specifics against your copy.
+      </div>
+
+      <h3 id="ch12-int"><span class="hash">#</span> Data integration — the two strategies for keeping systems in sync</h3>
+      <p>
+        No one system fits all problems, so applications combine databases, caches, search indexes, analytics and ML tools —
+        the hard part is <strong>keeping them consistent</strong>. Kleppmann frames two fundamental strategies:
+      </p>
+      <ul>
+        <li><strong>Distributed transactions</strong> — synchronous coordination: atomicity and linearizability, but expensive and fragile.</li>
+        <li><strong>Derived data</strong> — one <em>system of record</em>, every other system a <em>derived view</em> updated asynchronously from a change log.</li>
+      </ul>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TB
+    subgraph DT["Distributed transactions"]
+        X[Atomic commit / 2PC<br/>strong consistency, costly]
+    end
+    subgraph DD["Derived data"]
+        Y[System of record<br/>+ async change streams<br/>eventual consistency]
+    end
+    S{Keeping systems in sync} --> DT
+    S --> DD
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 21</span>The central choice of Part III: synchronous coordination vs asynchronous derived data.</figcaption>
+      </figure>
+
+      <h3 id="ch12-unb"><span class="hash">#</span> Unbundling the database</h3>
+      <p>
+        A single database is internally a composition of <em>indexes and materialized views</em>. <strong>Unbundling</strong>
+        re-implements this by composing separate specialised products connected by asynchronous streams — e.g. Twitter combines
+        MySQL (system of record), Redis (cache), Lucene (search) and analytics. The application code that consumes the change
+        log and updates derived systems is itself the <strong>derivation function</strong> maintaining those views.
+      </p>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    DB[(System of record<br/>e.g. MySQL)] -->|change stream| BUS[(Log-based broker)]
+    BUS --> IDX[(Search index<br/>e.g. Lucene)]
+    BUS --> CACH[(Cache<br/>e.g. Redis)]
+    BUS --> AN[(Analytics<br/>column store)]
+    BUS --> ML[(Machine learning)]
+    APP[Application] --> DB
+    APP --> IDX
+    APP --> CACH
+    APP --> AN
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 22</span>An unbundled architecture (the Twitter example): one system of record, many derived systems fed by change streams.</figcaption>
+      </figure>
+
+      <h4>Write path vs read path</h4>
+      <p>
+        Separate the <strong>write path</strong> (updating derived state from the log) from the <strong>read path</strong>
+        (serving queries from that state) — a clean way to optimise caching, materialized views, and offline-capable clients.
+        A search index or a cache can be rebuilt from scratch by consuming a log-compacted change stream from offset 0.
+      </p>
+
+      <h3 id="ch12-resp"><span class="hash">#</span> Doing the right thing</h3>
+      <p>
+        The book closes on <strong>responsibility</strong>: predictive analytics and algorithmic decisions affect people's lives.
+        Designers are responsible for <strong>algorithmic accountability</strong>, fairness and bias awareness, privacy, and
+        guarding against surveillance. Technology is not neutral — and the engineer chooses the consequences.
+      </p>
+
+      <div class="callout facts">
+        <span class="ttl">From the book</span>
+        A search index, a cache, and an analytics column store are each a <em>materialized view</em> of the same system of
+        record. Validation must happen <em>before</em> a command becomes an immutable event — consumers can't reject an
+        already-written event; a tentative-event-then-confirm pattern allows asynchronous validation (e.g. reserving a unique
+        seat).
+      </div>
+
+      <ul class="tradeoffs">
+        <li>Distributed transactions (strong atomicity/linearizability, but coordination cost, availability risk, poor scaling) vs derived data (cheap, scalable, asynchronous, but only eventual consistency — and uniqueness/multi-object writes need care).</li>
+        <li>Monolithic database (simpler integrity guarantees, one vendor) vs unbundled systems (best tool per job, but you own the glue code, schema changes and constraint enforcement).</li>
+        <li>Prediction, personalisation and tracking trade off against privacy, fairness and accountability — these are design choices, not givens.</li>
+      </ul>
+
+      <div class="ch-close">
+        The arc of the book: foundations → distributed data → derived data. If you remember one idea, make it this —
+        <strong>decouple the write path from the read path, and treat every system of record as a stream.</strong>
+      </div>
+    </section>
+
+    <!-- ============ APPENDIX: EVOLUTIONS SINCE 2017 ============ -->
+    <section class="chapter" id="evolutions" style="border-top:3px solid #e11d48">
+      <div class="chapter-head">
+        <span class="tag apx">Appendix · Post-publication</span>
+        <span class="chnum">SINCE THE 2017 EDITION</span>
+        <h2>How the field evolved after 2017</h2>
+        <p class="one-liner">
+          Kleppmann wrote the book for the data landscape of 2017. Nearly a decade on, most of its bets were validated — and
+          reshaped by cloud-native infrastructure, open table formats, vector search, and large language models.
+        </p>
+        <div class="chips">
+          <a href="#evo-storage">Storage &amp; retrieval</a>
+          <a href="#evo-consensus">Consensus &amp; the cloud</a>
+          <a href="#evo-streams">Streaming &amp; CDC</a>
+          <a href="#evo-ai">AI convergence</a>
+        </div>
+      </div>
+
+      <div class="callout note">
+        <span class="ttl">Scope &amp; verification</span>
+        This appendix maps the major post-2017 movements back to the book's chapters. Dates and claims were verified against
+        public sources (linked at the bottom) in mid-2026; specific product facts may drift after that. It is a snapshot of
+        where the field stands, not an exhaustive survey.
+      </div>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+timeline
+    title The data landscape after 2017
+    2017 : Book published : Google Spanner goes public on GCP
+    2018 : Apache Iceberg open-sourced (Netflix) : Apache Hudi (Uber)
+    2019 : DuckDB unveiled at SIGMOD : Delta Lake released : Data mesh coined (Dehghani) : KIP-500 (KRaft)
+    2020 : Lakehouse architecture (Databricks)
+    2021 : Neon launches serverless Postgres : KRaft preview in Kafka 2.8 : DuckDB Labs spun off
+    2022 : KRaft production-ready (Kafka 3.3) : Redpanda on the rise : MotherDuck founded
+    2023 : pgvector 0.5 adds HNSW : Flink momentum (Confluent + Immerok) : ZooKeeper deprecated (Kafka 3.5)
+    2024 : DuckDB 1.0 : Debezium 3.0 : Kafka 3.9, final ZooKeeper release : Model Context Protocol (Anthropic)
+    2025 : Kafka 4.0 removes ZooKeeper : GraphRAG and AI agents mainstream
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 23</span>A rough timeline of the movements since 2017 — from the lakehouse to LLM-driven data systems.</figcaption>
+      </figure>
+
+      <h3 id="evo-storage"><span class="hash">#</span> Storage &amp; retrieval (Ch 3) — the lakehouse, in-process OLAP, vector indexes</h3>
+      <p>
+        The biggest structural change since 2017 is the collapse of the warehouse / lake / engine distinction into
+        <strong>open table formats</strong> over object storage, plus a new family of <strong>in-process</strong> and
+        <strong>vector</strong> engines the book could only gesture at.
+      </p>
+      <div class="grid">
+        <div class="concept"><b>Lakehouse &amp; open table formats</b><span>Delta Lake (Databricks, 2019), Apache Iceberg (Netflix → Apache, 2018) and Apache Hudi (Uber, 2017) bring warehouse-grade ACID, versioning, time travel and schema evolution to Parquet files on S3. Databricks popularised the "lakehouse" term in 2020; Iceberg became the de facto standard — Snowflake and AWS now support it natively, and Databricks acquired Tabular (its creators) in June 2024.</span></div>
+        <div class="concept"><b>In-process OLAP: DuckDB</b><span>DuckDB (SIGMOD 2019, v1.0 in June 2024) is "SQLite for analytics" — a vectorised columnar engine that queries Parquet/CSV directly, no server. DuckDB Labs (2021) and MotherDuck (2022) industrialised it. It validates Ch 3's OLAP story while inverting the assumption that analytics must be distributed.</span></div>
+        <div class="concept"><b>Real-time columnar: ClickHouse</b><span>Open-sourced by Yandex in 2016, ClickHouse became the default for real-time analytics and observability — billions of rows/sec per server, C++, no JVM, shard/replica scale-out.</span></div>
+        <div class="concept"><b>Vector indexes — a new storage tier</b><span>Embeddings created demand for similarity search: pgvector (HNSW index in v0.5.0, Aug 2023), Milvus, Qdrant, Weaviate, Pinecone. Graph-based ANN (HNSW) is the modern extension of Ch 3's "other indexing structures" — a whole new index type for ML workloads.</span></div>
+      </div>
+
+      <h4>Encoding &amp; schemas (Ch 4) — columnar interchange as the new "schema"</h4>
+      <p>
+        <strong>Apache Arrow</strong> (2016) standardised an in-memory columnar layout with zero-copy exchange between engines;
+        <strong>Parquet</strong> (2013) is its on-disk counterpart. Query engines (DuckDB, Polars, DataFusion, pandas) now share
+        one memory layout. Meanwhile open table formats made <em>schema evolution</em> a first-class, versioned operation — the
+        Ch 4 lesson ("schemas are about compatibility over time") is now enforced by the storage layer itself.
+      </p>
+
+      <h3 id="evo-consensus"><span class="hash">#</span> Consensus &amp; the cloud (Ch 5, 6, 9) — distributed SQL and storage/compute separation</h3>
+      <div class="grid">
+        <div class="concept"><b>Distributed SQL went mainstream</b><span>CockroachDB (Raft, PostgreSQL-wire, serializable isolation), TiDB (Raft, MySQL-wire, TiFlash columnar HTAP), YugabyteDB, and Google Spanner (public on GCP since 2017) productised Ch 9's Paxos/Raft + serializable-snapshot ideas. Raft, not Paxos, won the implementation race.</span></div>
+        <div class="concept"><b>Kafka deleted ZooKeeper</b><span>KRaft (KIP-500, 2019 → production in Kafka 3.3, 2022 → ZooKeeper fully removed in Kafka 4.0, March 2025) replaced the ZooKeeper that Ch 9 discusses as the coordination service. Kafka 4.0 also added a new consumer-rebalance protocol (KIP-848) and "queues" semantics (KIP-932).</span></div>
+        <div class="concept"><b>Storage/compute separation became the cloud default</b><span>AWS Aurora (log-based storage, 6-way replication with 4/6 quorum) and Neon (serverless Postgres; pageserver + Paxos-based safekeepers; scale-to-zero; code-like branching) make compute stateless and elastic. Snowflake/BigQuery do the same at warehouse scale — Ch 6's partitioning story, now at the architectural level.</span></div>
+        <div class="concept"><b>Serverless &amp; autoscaling</b><span>Databases now scale to zero and resume on demand (Neon), or autoscale within a pool — an operational evolution of Ch 1's "approaches for coping with load".</span></div>
+      </div>
+
+      <h3 id="evo-streams"><span class="hash">#</span> Streaming &amp; CDC (Ch 5, 11) — Flink rises, brokers evolve, CDC becomes standard</h3>
+      <div class="grid">
+        <div class="concept"><b>Apache Flink became the strategic stream engine</b><span>Confluent acquired Immerok (Jan 2023) and bet on Flink SQL; ksqlDB is effectively in maintenance mode. Flink's watermarks, externalised state, and true event-time won over library-based approaches for serious stateful pipelines.</span></div>
+        <div class="concept"><b>Brokers diversified</b><span>Redpanda (C++/Seastar, Raft-based, Kafka-API compatible, source-available BSL) targets lean ops and low latency; Apache Pulsar (BookKeeper-based compute/storage separation) targets multi-tenant and long-retention use cases.</span></div>
+        <div class="concept"><b>CDC is now standard practice</b><span>Debezium (3.0, Oct 2024; moved to the Commonhaus Foundation in 2025) is built into Confluent, AWS MSK and most modern stacks. Ch 11's "databases as streams" thesis — change data capture plus the outbox pattern — is a commodity every team reaches for.</span></div>
+        <div class="concept"><b>Object-storage tiering</b><span>Kafka 4.0's diskless topics (KIP-1150) let brokers serve from object storage — the streaming-log equivalent of Ch 3's "keep everything in memory" pushed to cheap tiers.</span></div>
+      </div>
+
+      <h3 id="evo-ai"><span class="hash">#</span> Ch 12's vision, supercharged by AI</h3>
+      <p>
+        The book's closing thesis — <em>unbundle the database; treat every system of record as a stream; derive everything
+        else</em> — turned out to describe the 2020s. Two developments extended it:
+      </p>
+      <ul>
+        <li><strong>Data mesh</strong> (Zhamak Dehghani, Thoughtworks, 2019): domain-oriented decentralised ownership, data as a product, a self-serve platform, and federated governance — the <em>organisational</em> answer to the integration problem Ch 12 poses.</li>
+        <li><strong>The AI convergence</strong>: <strong>RAG</strong> made vector stores a new derived-data tier on top of the system of record; <strong>GraphRAG</strong> (Microsoft, open-sourced July 2024) added knowledge-graph retrieval; <strong>Model Context Protocol</strong> (Anthropic, Nov 2024) became the standard for agents to talk to data systems; "context engineering" replaced prompt stuffing. LLMs are the new consumers of your change logs.</li>
+      </ul>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    SRC[(System of record<br/>OLTP database)] -->|change data capture| ST[(Streaming bus<br/>Kafka / Redpanda / Flink)]
+    ST --> CHG[(Change log<br/>full copy via log compaction)]
+    CHG --> VEC[(Vector index<br/>pgvector / Milvus)]
+    CHG --> LAKE[(Lakehouse<br/>Iceberg / Delta<br/>on object store)]
+    LAKE --> ENG[(Analytical engines<br/>DuckDB / ClickHouse / Polars)]
+    VEC --> AI[(LLM applications<br/>RAG + agents)]
+    ENG --> AI
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 24</span>The post-2017 architecture is the book's Ch 12 diagram with vector stores and LLMs added: one system of record, many derived systems, all fed by streams.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    DOC[Documents / data] --> EMB[Embedding model]
+    EMB --> VDB[(Vector DB<br/>HNSW index)]
+    Q[User question] --> EMB
+    Q --> VDB
+    VDB --> TOP[Top-k similar chunks]
+    TOP --> LLM[LLM context window]
+    LLM --> ANS[Answer with sources]
+</pre>
+        </div>
+        <figcaption><span class="fig-num">Fig 25</span>Retrieval-augmented generation — the vector database as the modern "secondary index" over unstructured data.</figcaption>
+      </figure>
+
+      <h4>Sources</h4>
+      <p style="font-size:13.5px;color:var(--muted)">
+        Primary and analysis sources used for this appendix (dates verified mid-2026):
+      </p>
+      <ul class="sources">
+        <li><a href="https://www.databricks.com/blog/2019/10/29/what-is-a-data-lakehouse.html" target="_blank" rel="noopener">Databricks — What is a Data Lakehouse?</a></li>
+        <li><a href="https://www.databricks.com/company/newsroom/press-releases/databricks-agrees-acquire-tabular-company-founded-original-creators" target="_blank" rel="noopener">Databricks acquires Tabular (Iceberg creators), 2024</a></li>
+        <li><a href="https://dl.acm.org/doi/10.1145/3299869.3320212" target="_blank" rel="noopener">DuckDB — SIGMOD 2019 paper</a></li>
+        <li><a href="https://www.kdnuggets.com/2023/07/duckdb-getting-popular.html" target="_blank" rel="noopener">KDnuggets — Why DuckDB is getting popular</a></li>
+        <li><a href="https://clickhouse.com/company/our-story" target="_blank" rel="noopener">ClickHouse — Our Story (open-sourced 2016)</a></li>
+        <li><a href="https://clickhouse.com/resources/engineering/columnar-storage-formats" target="_blank" rel="noopener">ClickHouse — Parquet, ORC, Arrow explained</a></li>
+        <li><a href="https://spice.ai/learn/apache-arrow" target="_blank" rel="noopener">What is Apache Arrow?</a></li>
+        <li><a href="https://aws.amazon.com/blogs/database/accelerate-hnsw-indexing-and-searching-with-pgvector-on-amazon-aurora-postgresql-compatible-edition-and-amazon-rds-for-postgresql/" target="_blank" rel="noopener">AWS — pgvector 0.5 with HNSW on RDS/Aurora</a></li>
+        <li><a href="https://kafka.apache.org/blog/2024/11/06/apache-kafka-3.9.0-release-announcement/" target="_blank" rel="noopener">Apache Kafka 3.9 — final ZooKeeper release</a></li>
+        <li><a href="https://softwaremill.com/zookeeper-less-kafka/" target="_blank" rel="noopener">softwaremill — ZooKeeper-less Kafka</a></li>
+        <li><a href="https://www.openlogic.com/blog/upgrade-kafka-4-planning" target="_blank" rel="noopener">OpenLogic — Upgrading to Kafka 4</a></li>
+        <li><a href="https://www.confluent.io/events/kafka-summit-london-2023/apples-and-oranges-comparing-kafka-streams-and-flink/" target="_blank" rel="noopener">Kafka Summit 2023 — Kafka Streams vs Flink</a></li>
+        <li><a href="https://www.infoworld.com/article/2335371/review-redpanda-gives-kafka-a-run-for-its-money.html" target="_blank" rel="noopener">InfoWorld — Redpanda review</a></li>
+        <li><a href="https://debezium.io/blog/2024/09/16/debezium-3-0-cr1-released/" target="_blank" rel="noopener">Debezium 3.0 release series</a></li>
+        <li><a href="https://www.infoq.com/news/2025/02/debezium-joins-commonhaus/" target="_blank" rel="noopener">InfoQ — Debezium joins Commonhaus</a></li>
+        <li><a href="https://github.com/neondatabase/neon" target="_blank" rel="noopener">Neon — serverless Postgres, storage/compute separation</a></li>
+        <li><a href="https://martinfowler.com/articles/data-monolith-to-mesh.html" target="_blank" rel="noopener">Dehghani — Data Mesh (2019)</a></li>
+        <li><a href="https://www.anthropic.com/news/model-context-protocol" target="_blank" rel="noopener">Anthropic — Introducing MCP (Nov 2024)</a></li>
+        <li><a href="https://www.pinecone.io/learn/rag-2025/" target="_blank" rel="noopener">Pinecone — Why RAG remains essential (2025)</a></li>
+        <li><a href="https://microsoft.github.io/graphrag/" target="_blank" rel="noopener">Microsoft — GraphRAG (open-sourced 2024)</a></li>
+      </ul>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container">
+        <p><strong>Designing Data-Intensive Applications</strong> — interactive study companion.</p>
+        <p>Summarised from the 1st edition (O'Reilly Media, 2017) for personal study. Diagrams use
+          <a href="https://mermaid.js.org" target="_blank" rel="noopener">Mermaid.js</a>; fonts are
+          <a href="https://rsms.me/inter/" target="_blank" rel="noopener">Inter</a> and
+          <a href="https://www.jetbrains.com/lp/mono/" target="_blank" rel="noopener">JetBrains Mono</a>.
+          Official book site: <a href="https://dataintensive.net" target="_blank" rel="noopener">dataintensive.net</a>.</p>
+        <p class="fine">© 2017 Martin Kleppmann. This page is not affiliated with or endorsed by the author or publisher.
+          For full content, purchase the book.</p>
+      </div>
+    </footer>
+  </div>
+</main>
+
+<button id="to-top" aria-label="Back to top">↑</button>
+
+<!-- Mermaid (UMD build works from file://) -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    securityLevel: 'strict',
+    themeVariables: {
+      fontFamily: "'Inter', system-ui, sans-serif",
+      fontSize: '13.5px',
+      primaryColor: '#eff6ff',
+      primaryTextColor: '#1e3a8a',
+      primaryBorderColor: '#93c5fd',
+      lineColor: '#64748b',
+      secondaryColor: '#ecfdf5',
+      secondaryTextColor: '#065f46',
+      secondaryBorderColor: '#6ee7b7',
+      tertiaryColor: '#f5f3ff',
+      tertiaryTextColor: '#5b21b6',
+      tertiaryBorderColor: '#c4b5fd',
+      clusterBkg: '#f8fafc',
+      clusterBorder: '#cbd5e1',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#eff6ff',
+      actorBorder: '#93c5fd',
+      actorTextColor: '#1e3a8a',
+      signalColor: '#334155',
+      signalTextColor: '#334155',
+      labelBoxBkgColor: '#eff6ff',
+      labelBoxBorderColor: '#93c5fd',
+      stateBkg: '#eff6ff',
+      stateBorder: '#93c5fd',
+      stateLabelColor: '#1e3a8a'
+    }
+  });
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Reading progress ---------- */
+  var progress = document.getElementById('progress');
+  function onScroll() {
+    var h = document.documentElement;
+    var max = (h.scrollHeight - h.clientHeight) || 1;
+    progress.style.width = (h.scrollTop / max * 100) + '%';
+    var topBtn = document.getElementById('to-top');
+    if (h.scrollTop > 600) topBtn.classList.add('show'); else topBtn.classList.remove('show');
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  /* ---------- Back to top ---------- */
+  document.getElementById('to-top').addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  /* ---------- Mobile sidebar ---------- */
+  var menuBtn = document.getElementById('menu-btn');
+  var sidebar = document.getElementById('sidebar');
+  menuBtn.addEventListener('click', function () {
+    var open = sidebar.classList.toggle('open');
+    menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  sidebar.addEventListener('click', function (e) {
+    if (e.target.closest('a') && sidebar.classList.contains('open')) {
+      sidebar.classList.remove('open');
+      menuBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  /* ---------- Search filter ---------- */
+  var search = document.getElementById('search');
+  var count = document.getElementById('search-count');
+  var allLinks = Array.prototype.slice.call(document.querySelectorAll('#sidebar nav a'));
+  function doSearch() {
+    var q = search.value.trim().toLowerCase();
+    var matched = 0;
+    allLinks.forEach(function (a) {
+      var text = a.textContent.toLowerCase();
+      var show = !q || text.indexOf(q) !== -1;
+      a.style.display = show ? '' : 'none';
+      if (show) matched++;
+    });
+    // Open any group that has a visible link
+    document.querySelectorAll('#sidebar nav details').forEach(function (d) {
+      var any = d.querySelector('li a') && Array.prototype.some.call(d.querySelectorAll('li a'), function (a) {
+        return a.style.display !== 'none';
+      });
+      if (q) d.open = any; else d.open = true;
+    });
+    count.style.display = q ? 'block' : 'none';
+    count.textContent = q ? matched + ' match' + (matched === 1 ? '' : 'es') : '';
+  }
+  search.addEventListener('input', doSearch);
+
+  /* ---------- Scrollspy ---------- */
+  var spyMap = {};
+  document.querySelectorAll('#sidebar nav a[data-spy]').forEach(function (a) {
+    spyMap[a.dataset.spy] = a;
+  });
+  var spySections = Object.keys(spyMap).map(function (id) {
+    return document.getElementById(id);
+  }).filter(Boolean);
+
+  function setActive(id) {
+    Object.keys(spyMap).forEach(function (k) {
+      spyMap[k].classList.toggle('active', k === id);
+    });
+  }
+
+  if ('IntersectionObserver' in window) {
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) setActive(entry.target.id);
+      });
+    }, { rootMargin: '-15% 0px -70% 0px' });
+    spySections.forEach(function (s) { spy.observe(s); });
+  } else {
+    window.addEventListener('scroll', function () {
+      var id = null;
+      spySections.forEach(function (s) {
+        if (s.getBoundingClientRect().top < window.innerHeight / 2) id = s.id;
+      });
+      if (id) setActive(id);
+    }, { passive: true });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3 · The Design Patterns · Personify-Service</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <div class="shell">
+        <nav class="nav">
+            <a class="brand" href="index.html">
+                <span class="mark">P</span> Personify-Service · Reading Guide
+            </a>
+            <span class="spacer"></span>
+            <a class="link" href="01_architecture.html">Architecture</a>
+            <a class="link" href="03_design_patterns.html">Patterns</a>
+            <a class="link" href="05_learnings_checklist.html">Self-Check</a>
+            <a class="link" href="06_scenarios.html">Practice</a>
+            <a class="link" href="../index.html">↩ Side Projects</a>
+        </nav>
+
+        <header class="hero">
+            <span class="eyebrow">Chapter 3 · Name the Patterns</span>
+            <h1>The Design Patterns</h1>
+            <p class="lead">
+                This codebase is a tidy catalogue of classic patterns. Once you can <em>name</em> each one and
+                point to where it lives, you can read any file and predict what it does. Here are the eight that
+                matter most, each with the real code.
+            </p>
+        </header>
+
+        <div class="toc">
+            <div class="tt">The patterns</div>
+            <ol>
+                <li><a href="#repo">Repository</a></li>
+                <li><a href="#uow">Unit of Work</a></li>
+                <li><a href="#factory">Factory</a></li>
+                <li><a href="#adapter">Adapter</a></li>
+                <li><a href="#di">Dependency Injection</a></li>
+                <li><a href="#generics">Generics / type parameters</a></li>
+                <li><a href="#template">Template Method</a></li>
+                <li><a href="#strategy">Strategy (per-method schemas)</a></li>
+                <li><a href="#map">How they fit together</a></li>
+                <li><a href="#quiz">Check yourself</a></li>
+            </ol>
+        </div>
+
+        <h2 id="repo">1 · Repository</h2>
+        <p>
+            <strong>Intent:</strong> hide <em>how</em> data is stored behind a collection-like interface
+            (<code>add</code>, <code>get</code>, <code>get_by_key</code>, <code>update</code>,
+            <code>remove</code>). Services speak this vocabulary and never see SQL or BSON.
+        </p>
+        <pre><code><span class="c-com"># infra/data/repositories/mongo_repository.py</span>
+<span class="c-kw">class</span> <span class="c-cls">MongoRepository</span>(<span class="c-cls">BaseRepository</span>[<span class="c-cls">TEntityModel</span>]):
+    <span class="c-kw">def</span> <span class="c-fn">add</span>(<span class="c-self">self</span>, data):
+        <span class="c-kw">return</span> <span class="c-self">self</span>.context.<span class="c-fn">insert_one</span>(
+            db_name=<span class="c-self">self</span>.database, collection_name=<span class="c-self">self</span>.collection,
+            data=<span class="c-self">self</span>._model_type().<span class="c-fn">dump</span>(obj=data))
+
+    <span class="c-kw">def</span> <span class="c-fn">get_by_key</span>(<span class="c-self">self</span>, key):
+        _result = <span class="c-self">self</span>.context.<span class="c-fn">find_one</span>(... key=key)
+        <span class="c-kw">return</span> <span class="c-self">self</span>._model_type().<span class="c-fn">load</span>(data=_result) <span class="c-kw">if</span> _result <span class="c-kw">else</span> <span class="c-kw">None</span></code></pre>
+        <p>The Postgres twin (<code>postgres_repository.py</code>) exposes the <em>same method names</em> but
+            uses SQLAlchemy sessions and binary expressions. Identical interface, different engine — that's
+            the power of Repository.</p>
+        <div class="callout tip">
+            <div class="ct">Tell-tale sign</div>
+            <p>Two classes with matching method signatures (<code>add/get/remove…</code>) over different
+                databases = Repository pattern. Swap one for the other and callers don't change.</p>
+        </div>
+
+        <h2 id="uow">2 · Unit of Work</h2>
+        <p>
+            <strong>Intent:</strong> treat a set of changes as a single transaction. The UoW is a
+            <em>context manager</em> that owns the session, hands out a repository, and decides commit vs.
+            rollback when the block ends.
+        </p>
+        <pre><code><span class="c-com"># infra/data/unit_of_work/base_unit_of_work.py</span>
+<span class="c-kw">class</span> <span class="c-cls">BaseUnitOfWork</span>(<span class="c-cls">Generic</span>[<span class="c-cls">T</span>]):
+    <span class="c-kw">def</span> <span class="c-fn">__exit__</span>(<span class="c-self">self</span>, exc_type, exc_val, exc_tb):
+        <span class="c-kw">if</span> exc_type <span class="c-kw">is</span> <span class="c-kw">None</span>:
+            <span class="c-self">self</span>.<span class="c-fn">commit</span>()       <span class="c-com"># clean exit -> persist</span>
+        <span class="c-kw">else</span>:
+            <span class="c-self">self</span>._logger.<span class="c-fn">exception</span>(exc_val)
+            <span class="c-self">self</span>.<span class="c-fn">rollback</span>()     <span class="c-com"># error -> undo everything</span></code></pre>
+        <pre><code><span class="c-com"># infra/data/unit_of_work/postgres_unit_of_work.py</span>
+<span class="c-kw">class</span> <span class="c-cls">PostgresUnitOfWork</span>(<span class="c-cls">BaseUnitOfWork</span>[<span class="c-cls">TSQLEntityModel</span>]):
+    <span class="c-kw">def</span> <span class="c-fn">__init__</span>(<span class="c-self">self</span>, logger, db_adapter, model_type, scope):
+        <span class="c-bi">super</span>().<span class="c-fn">__init__</span>(logger=logger, model_type=model_type)
+        <span class="c-self">self</span>._session = <span class="c-fn">sessionmaker</span>(db_adapter.engine)()  <span class="c-com"># fresh session per request</span>
+        <span class="c-self">self</span>._repository = <span class="c-cls">PostgresRepository</span>(... session=<span class="c-self">self</span>.session ...)
+
+    <span class="c-kw">def</span> <span class="c-fn">commit</span>(<span class="c-self">self</span>):   <span class="c-self">self</span>.session.<span class="c-fn">commit</span>()
+    <span class="c-kw">def</span> <span class="c-fn">rollback</span>(<span class="c-self">self</span>): <span class="c-self">self</span>.session.<span class="c-fn">rollback</span>()</code></pre>
+        <p>Recall from <a href="02_request_lifecycle.html">Chapter 2</a> how the service uses it:</p>
+        <pre><code><span class="c-kw">with</span> <span class="c-self">self</span>.unit_of_work <span class="c-kw">as</span> _uow:
+    <span class="c-kw">return</span> _uow.repository.<span class="c-fn">add</span>(data=data)
+<span class="c-com"># commit happens here, automatically, on a clean exit</span></code></pre>
+        <div class="callout warn">
+            <div class="ct">A nuance worth noticing</div>
+            <p>The Mongo UoW's <code>commit()</code> / <code>rollback()</code> are intentionally no-ops —
+                a single document write in MongoDB is atomic on its own, so there's no multi-statement
+                transaction to manage here. The pattern is still applied for a <em>uniform</em> service interface.</p>
+        </div>
+
+        <h2 id="factory">3 · Factory</h2>
+        <p>
+            <strong>Intent:</strong> centralise the messy construction of an object graph. A
+            <code>UserServiceFactory</code> knows how to build a fully-wired <code>UserService</code> — which
+            UoW, which model, which logger — so handlers don't.
+        </p>
+        <pre><code><span class="c-com"># app/factory/build_user_service.py</span>
+<span class="c-kw">class</span> <span class="c-cls">UserServiceFactory</span>(<span class="c-cls">BaseServiceFactory</span>):
+    <span class="c-kw">def</span> <span class="c-fn">build</span>(<span class="c-self">self</span>, scope: <span class="c-bi">str</span>) -> <span class="c-cls">UserService</span>:
+        _uow = <span class="c-cls">PostgresUnitOfWorkFactory</span>(bootstrap=<span class="c-self">self</span>._bootstrap)\
+                  .<span class="c-fn">build</span>(model_type=<span class="c-cls">UserModel</span>, scope=scope)
+        <span class="c-kw">return</span> <span class="c-cls">UserService</span>(
+            logger=<span class="c-self">self</span>._bootstrap.logger,
+            uow=_uow,
+            model_type=<span class="c-cls">UserModel</span>)</code></pre>
+        <p>There are <em>two tiers</em> of factory — one builds services, one builds units of work — so the
+            wiring is composable. The handler just calls <code>service_factory.build(scope=request_id)</code>.</p>
+
+        <h2 id="adapter">4 · Adapter</h2>
+        <p>
+            <strong>Intent:</strong> wrap a third-party library behind your own interface so the rest of the
+            app depends on <em>your</em> contract, not the vendor's. <code>PyMongoAdapter</code> wraps PyMongo;
+            <code>PostgresAdapter</code> wraps SQLAlchemy; MinIO adapters wrap the S3 client.
+        </p>
+        <pre><code><span class="c-com"># infra/adapters/base_adapter.py</span>
+<span class="c-kw">class</span> <span class="c-cls">BaseAdapter</span>(<span class="c-cls">ABC</span>):
+    <span class="c-str">'''Base Adapter for resources'''</span>
+    <span class="c-kw">def</span> <span class="c-fn">__init__</span>(<span class="c-self">self</span>, logger): <span class="c-self">self</span>._logger = logger</code></pre>
+        <div class="callout">
+            <div class="ct acc">Adapter vs. Repository — what's the difference?</div>
+            <p>The <strong>adapter</strong> wraps the <em>driver</em> (raw connection, low-level calls). The
+                <strong>repository</strong> wraps the <em>adapter</em> and speaks in domain models. Two layers of
+                insulation: vendor → adapter → repository → service.
+            </p>
+        </div>
+
+        <h2 id="di">5 · Dependency Injection</h2>
+        <p>
+            <strong>Intent:</strong> objects receive their collaborators instead of creating them. Look at any
+            constructor or handler <code>initialize()</code> — everything comes in as an argument.
+        </p>
+        <pre><code><span class="c-com"># interfaces/.../base_user_handler.py — DI via Tornado's initialize()</span>
+<span class="c-kw">def</span> <span class="c-fn">initialize</span>(<span class="c-self">self</span>, logger, schema_method_validators,
+               service_factory, query_argument_validator=<span class="c-kw">None</span>):
+    <span class="c-self">self</span>.logger = logger
+    <span class="c-self">self</span>.schema_method_validators = schema_method_validators
+    <span class="c-self">self</span>._service = service_factory.<span class="c-fn">build</span>(scope=<span class="c-self">self</span>.request_id)</code></pre>
+        <p>The route table in <code>tornado_app.py</code> is the place where the concrete dependencies are
+            chosen. Everywhere else just consumes abstractions — which is exactly what makes the code unit
+            testable with fakes.</p>
+
+        <h2 id="generics">6 · Generics / type parameters</h2>
+        <p>
+            <strong>Intent:</strong> write a base once, reuse it for every model. <code>BaseGenericService[T]</code>,
+            <code>BaseRepository[T]</code>, and <code>BaseUnitOfWork[T]</code> are all parameterised over the
+            entity type.
+        </p>
+        <pre><code><span class="c-com"># app/base_generic_service.py</span>
+<span class="c-cls">T</span> = <span class="c-fn">TypeVar</span>(<span class="c-str">'T'</span>)
+<span class="c-kw">class</span> <span class="c-cls">BaseGenericService</span>(<span class="c-cls">Generic</span>[<span class="c-cls">T</span>]):
+    <span class="c-kw">def</span> <span class="c-fn">_add</span>(<span class="c-self">self</span>, data):
+        <span class="c-kw">with</span> <span class="c-self">self</span>.unit_of_work <span class="c-kw">as</span> _uow:
+            <span class="c-kw">return</span> _uow.repository.<span class="c-fn">add</span>(data=data)
+    <span class="c-com"># _get, _get_by_key, _update, _remove ... all generic</span></code></pre>
+        <p><code>UserService</code> and <code>ContactService</code> inherit all five CRUD helpers for free —
+            they only add the <em>business</em> methods (<code>loginUserWithCredentials</code>,
+            <code>getUserContacts</code>, …).
+        </p>
+
+        <h2 id="template">7 · Template Method</h2>
+        <p>
+            <strong>Intent:</strong> the base class fixes the <em>skeleton</em> of an algorithm and lets
+            subclasses fill in the blanks. <code>BaseRequestHandler.prepare()</code> always runs
+            "set context → parse → validate"; each concrete handler only implements <code>get</code>/<code>post</code>.
+        </p>
+        <pre><code><span class="c-com"># the skeleton lives in the base; subclasses supply the verb method</span>
+<span class="c-kw">def</span> <span class="c-fn">prepare</span>(<span class="c-self">self</span>):
+    <span class="c-self">self</span>.<span class="c-fn">_set_log_context</span>()
+    <span class="c-self">self</span>.<span class="c-fn">_set_authentication_context</span>()   <span class="c-com"># user handlers only</span>
+    <span class="c-self">self</span>.<span class="c-fn">_parse_json_body</span>()
+    <span class="c-kw">return</span> <span class="c-bi">super</span>().<span class="c-fn">prepare</span>()</code></pre>
+        <p>And the queryable variant adds one more abstract hook subclasses must implement:</p>
+        <pre><code><span class="c-kw">class</span> <span class="c-cls">BaseUserQueryableRequestHandler</span>(<span class="c-cls">BaseUserRequestHandler</span>):
+    <span class="c-dec">@abstractmethod</span>
+    <span class="c-kw">def</span> <span class="c-fn">_process_query_arguments</span>(<span class="c-self">self</span>): <span class="c-kw">raise</span> <span class="c-cls">NotImplementedError</span></code></pre>
+
+        <h2 id="strategy">8 · Strategy (schema-per-method)</h2>
+        <p>
+            <strong>Intent:</strong> pick an algorithm at runtime from a lookup. Each handler is given a
+            <code>schema_method_validators</code> dict — <code>{"POST": SignUpSchema, ...}</code> — and
+            <code>prepare()</code> selects the right validator for the current HTTP verb.
+        </p>
+        <pre><code><span class="c-kw">def</span> <span class="c-fn">__get_method_schema</span>(<span class="c-self">self</span>):
+    selected = <span class="c-self">self</span>.schema_method_validators.<span class="c-fn">get</span>(<span class="c-self">self</span>.request.method)
+    <span class="c-kw">if</span> selected <span class="c-kw">is</span> <span class="c-kw">None</span>:
+        <span class="c-kw">raise</span> <span class="c-cls">HTTPError</span>(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, ...)
+    <span class="c-kw">return</span> selected</code></pre>
+        <p>Adding a <code>PUT</code> to an endpoint is just adding a key to the dict — no <code>if/elif</code>
+            ladder to edit.</p>
+
+        <h2 id="map">9 · How they fit together</h2>
+        <div class="diagram">
+            <div class="mermaid">
+                flowchart TB
+                H["Handler<br />(Template Method + DI + Strategy)"] --> SF["Service Factory<br />(Factory)"]
+                SF --> SVC["Service<br />(Generics)"]
+                SVC --> UOW["Unit of Work<br />(context manager)"]
+                UOW --> REPO["Repository<br />(collection interface)"]
+                REPO --> AD["Adapter<br />(wraps driver)"]
+                AD --> DRV["pymongo / sqlalchemy / minio"]
+                classDef a fill:#ece3fd,stroke:#7c3aed,color:#6d28d9;
+                classDef n fill:#f7e6c4,stroke:#b45309,color:#92400e;
+                classDef i fill:#dbe7fe,stroke:#2563eb,color:#1d4ed8;
+                class H i;
+                class SF,SVC a;
+                class UOW,REPO,AD,DRV n;
+            </div>
+            <div class="cap">Each box is one pattern doing one job. Read top-to-bottom and you have the entire
+                write-path of the service.</div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>Lives in</th>
+                        <th>One-line job</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Repository</td>
+                        <td><code>infra/data/repositories</code></td>
+                        <td>Collection-like data access</td>
+                    </tr>
+                    <tr>
+                        <td>Unit of Work</td>
+                        <td><code>infra/data/unit_of_work</code></td>
+                        <td>Transaction boundary</td>
+                    </tr>
+                    <tr>
+                        <td>Factory</td>
+                        <td><code>app/factory</code>, <code>…/unit_of_work/factory</code></td>
+                        <td>Build wired objects</td>
+                    </tr>
+                    <tr>
+                        <td>Adapter</td>
+                        <td><code>infra/adapters</code></td>
+                        <td>Wrap third-party drivers</td>
+                    </tr>
+                    <tr>
+                        <td>Dependency Injection</td>
+                        <td><code>tornado_app.py</code> + every <code>initialize</code></td>
+                        <td>Pass in collaborators</td>
+                    </tr>
+                    <tr>
+                        <td>Generics</td>
+                        <td><code>base_generic_service</code>, base repo/UoW</td>
+                        <td>Reuse logic across models</td>
+                    </tr>
+                    <tr>
+                        <td>Template Method</td>
+                        <td><code>handlers/base_*</code></td>
+                        <td>Fixed skeleton, custom verbs</td>
+                    </tr>
+                    <tr>
+                        <td>Strategy</td>
+                        <td><code>schema_method_validators</code></td>
+                        <td>Pick validator per HTTP method</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 id="quiz">Check yourself</h2>
+        <details class="quiz">
+            <summary>What's the difference between an Adapter and a Repository here?</summary>
+            <div class="ans">The <strong>adapter</strong> wraps the raw driver (pymongo/sqlalchemy). The
+                <strong>repository</strong> wraps the adapter and exposes domain-model CRUD. Repository depends on
+                adapter, not the other way round.
+            </div>
+        </details>
+        <details class="quiz">
+            <summary>Why is the Mongo Unit of Work's <code>commit()</code> empty?</summary>
+            <div class="ans">A single-document Mongo write is atomic by itself, so there's no multi-statement
+                transaction to commit/rollback. The pattern is still implemented to keep one uniform service
+                interface across both stores.</div>
+        </details>
+        <details class="quiz">
+            <summary>You need to support a new entity, <code>NoteModel</code>, in Postgres. What do you write?</summary>
+            <div class="ans">A <code>NoteModel</code> (domain), a <code>NoteService</code> extending
+                <code>BaseGenericService[NoteModel]</code> for any custom rules, and a
+                <code>NoteServiceFactory</code>. The generic repository + Postgres UoW are reused — minimal new code.
+            </div>
+        </details>
+        <details class="quiz">
+            <summary>Which pattern lets you add a <code>PUT</code> handler without an <code>if/elif</code> chain?
+            </summary>
+            <div class="ans"><strong>Strategy</strong> via the <code>schema_method_validators</code> dict — you add a
+                <code>"PUT"</code> key mapping to its schema, and <code>prepare()</code> picks it automatically.
+            </div>
+        </details>
+
+        <div class="pager">
+            <a href="02_request_lifecycle.html">
+                <span class="dir">← Back</span>
+                <span class="ttl">2 · A Request's Lifecycle</span>
+            </a>
+            <a class="next" href="04_how_to_read.html">
+                <span class="dir">Next →</span>
+                <span class="ttl">4 · How to Read This Codebase</span>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p><strong>Personify-Service · Code Reading Guide</strong> — Chapter 3 of 5.</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#e0e7ff',
+                primaryTextColor: '#312e81',
+                primaryBorderColor: '#4338ca',
+                lineColor: '#7c83b8',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

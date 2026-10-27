@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LangGraph End to End</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="mcp-server.html">MCP Server</a>
+                <a href="grpc.html">gRPC</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What LangGraph is</a>
+            <a href="#components">Core components</a>
+            <a href="#flow">End-to-end flow</a>
+            <a href="#example">End-to-end example</a>
+            <a href="#react-compare">React tools vs LangGraph</a>
+            <a href="#wins">Which one wins</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Systems track</p>
+                    <h1>LangGraph end to end</h1>
+                    <p><strong>LangGraph</strong> is a framework for building agent workflows as graphs. Instead of one
+                        prompt calling one tool and returning one answer, you define nodes, shared state, and edges that
+                        control how the agent moves from planning to tools to validation to final response.</p>
+                    <p>The simplest mental model is: LangGraph is for <strong>stateful, multi-step agent
+                            execution</strong>. It helps when the agent must branch, retry, loop, or coordinate multiple
+                        tools instead of doing a single straight-line call.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core flow</h2>
+                    <p class="formula">input -> state -> node -> edge -> next node -> final output</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What problem it solves</h3>
+                        <p>Simple agent loops become messy when you need controlled multi-step reasoning, tool retries,
+                            conditional routing, memory, human approval, or checkpointing. LangGraph makes those control
+                            flows explicit.</p>
+                    </div>
+                    <div class="card">
+                        <h3>What it is not</h3>
+                        <p>It is not just a tool list and it is not just prompt chaining. It is a workflow engine for
+                            agent logic where the graph structure controls how execution progresses.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="components">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Building blocks</p>
+                        <h2>Core components involved</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>What it means</th>
+                                <th>Why it matters</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>State</td>
+                                <td>Shared data passed through the workflow.</td>
+                                <td>Keeps messages, tool outputs, plan steps, and intermediate decisions together.</td>
+                            </tr>
+                            <tr>
+                                <td>Node</td>
+                                <td>A unit of work such as an LLM call, tool call, router, or validator.</td>
+                                <td>Lets you separate planning, action, checking, and response generation.</td>
+                            </tr>
+                            <tr>
+                                <td>Edge</td>
+                                <td>A connection between nodes.</td>
+                                <td>Defines execution order.</td>
+                            </tr>
+                            <tr>
+                                <td>Conditional edge</td>
+                                <td>A route chosen based on current state.</td>
+                                <td>Enables branching such as "call tool" versus "answer directly".</td>
+                            </tr>
+                            <tr>
+                                <td>Checkpointing</td>
+                                <td>Saving workflow state between steps.</td>
+                                <td>Supports resume, debugging, long-running tasks, and human-in-the-loop flows.</td>
+                            </tr>
+                            <tr>
+                                <td>Tool node</td>
+                                <td>A node that invokes external tools.</td>
+                                <td>Connects the graph to APIs, databases, search, or even MCP servers.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="flow">
+                <div class="diagram-card">
+                    <img src="assets/langgraph-flow.svg"
+                        alt="Diagram showing LangGraph input, state, node, edge, planner node, tool node, response node, and looping state updates.">
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. User input enters the graph</h3>
+                        <p>The graph starts with an initial state, often containing messages, metadata, and task
+                            context.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. A planner or router node runs</h3>
+                        <p>This node decides whether the request can be answered directly, needs tools, needs
+                            clarification, or should branch into another workflow.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Tool nodes or reasoning nodes execute</h3>
+                        <p>The graph may call APIs, run retrieval, query a database, invoke MCP tools, or use additional
+                            LLM steps.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. State is updated after each node</h3>
+                        <p>Tool outputs and intermediate reasoning are stored in the shared state so later nodes can use
+                            them.</p>
+                    </div>
+                    <div class="step">
+                        <h3>5. Conditional edges decide what happens next</h3>
+                        <p>If a tool fails, the graph can retry. If data is missing, it can ask a follow-up question. If
+                            enough information is available, it can move to answer generation.</p>
+                    </div>
+                    <div class="step">
+                        <h3>6. Final response node returns the answer</h3>
+                        <p>The agent uses accumulated context from the full graph execution to produce the final
+                            response.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="example">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Concrete example</p>
+                        <h2>End-to-end LangGraph example: sales analysis agent</h2>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>User asks:</strong> "Analyze last month sales, tell me the top weak regions, and
+                        recommend three actions."</p>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>Node 1: planner</h3>
+                        <p>The planner inspects the request and decides it needs structured data, summary logic, and
+                            recommendation logic.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Node 2: fetch sales data</h3>
+                        <p>A tool node calls a backend or MCP-exposed tool such as <strong>get_sales_data</strong>.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Node 3: validate completeness</h3>
+                        <p>A validator checks whether all expected regions are present. If not, the graph can branch to
+                            retry or ask for narrower scope.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Node 4: summarize trends</h3>
+                        <p>An LLM node or analytics node creates a structured summary of weak regions, growth drops, and
+                            anomalies.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Node 5: recommendation engine</h3>
+                        <p>Another node converts the analysis into operational recommendations such as pricing
+                            corrections, stock actions, or sales-force focus areas.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Node 6: final response</h3>
+                        <p>The final node formats the result into a concise answer for the user with evidence and
+                            recommendations.</p>
+                    </div>
+                </div>
+                <div class="code-card">
+                    <h3>What the graph gives you here</h3>
+                    <pre>state = {
+  "user_query": "Analyze last month sales...",
+  "sales_data": ...,
+  "validation_status": "ok",
+  "trend_summary": ...,
+  "recommendations": ...
+}
+
+planner -> fetch_sales_data -> validate_data
+if invalid -> retry_or_clarify
+if valid -> summarize_trends -> recommend_actions -> respond</pre>
+                </div>
+            </section>
+
+            <section class="section" id="react-compare">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Practical comparison</p>
+                        <h2>Is LangGraph similar to React agent tool orchestration?</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Question</th>
+                                <th>Answer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>If my React agent already has tools and tool descriptions, is that similar?</td>
+                                <td>Yes, conceptually. Both setups let the model choose tools and call backend logic.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>So what does LangGraph add?</td>
+                                <td>LangGraph adds explicit workflow structure: shared state, graph nodes, conditional
+                                    branching, loops, retries, checkpoints, and more disciplined control over multi-step
+                                    execution.</td>
+                            </tr>
+                            <tr>
+                                <td>What is the main difference?</td>
+                                <td>A React tool setup is often an agent plus a tool list. LangGraph is an orchestration
+                                    engine for the whole multi-step reasoning workflow.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>React-style tool orchestration is enough when</h3>
+                        <ul class="stack-list">
+                            <li>You have a small set of tools.</li>
+                            <li>The workflow is mostly straight line.</li>
+                            <li>You do not need complex branching or checkpointing.</li>
+                            <li>You want low setup overhead.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>LangGraph wins when</h3>
+                        <ul class="stack-list">
+                            <li>You need multiple dependent steps with clear routing.</li>
+                            <li>You want retries, fallbacks, or validation loops.</li>
+                            <li>You need persistent state across an execution.</li>
+                            <li>You want an auditable, debuggable workflow instead of implicit agent behavior.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="wins">
+                <div class="checkpoint">
+                    <h2>Which one wins?</h2>
+                    <p><strong>Neither wins universally.</strong> If your React agent setup is simple and works well,
+                        LangGraph may be unnecessary overhead. But if your agent is becoming messy because of branching
+                        logic, multi-tool dependency chains, retries, or long-lived state, LangGraph usually wins by
+                        making execution explicit and maintainable.</p>
+                    <p>A good way to say it is: <strong>tool orchestration is a pattern; LangGraph is a workflow
+                            framework for that pattern.</strong></p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why use a graph instead of a simple agent loop?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because real agent workflows often need branching, retries, validation, checkpoints, and
+                                explicit state management. A graph makes those transitions controllable and debuggable.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What is the main role of shared state in LangGraph?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Shared state carries the evolving task context across nodes, so planning outputs, tool
+                                results, validations, and response drafts can all influence later steps.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your agent needs to call three tools, verify output quality, and retry on failure. Why is
+                            LangGraph a good fit?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Because that is not just tool selection anymore. It is a controlled workflow with state,
+                                validation, branching, and retry logic, which is exactly what a graph structure
+                                expresses well.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>An interviewer says, “This is just tool orchestration with extra ceremony.” What is a good
+                            reply?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>At small scale that criticism can be fair. But once workflows need explicit branching,
+                                state transitions, observability, and resumability, the extra structure stops being
+                                ceremony and becomes operationally useful.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>LangGraph is best understood as a workflow engine for stateful agents, not just another way to register
+                tools.</p>
+            <div class="mini-links">
+                <a href="mcp-server.html">MCP</a>
+                <a href="grpc.html">gRPC</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

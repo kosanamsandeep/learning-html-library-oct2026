@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust P5 — Contact Management</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Rust projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p5_contact_management/README.html">Python p5</a>
+                <a href="../../go_projects/p5_contact_management/README.html">Go p5</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust · P5</span></p>
+            <h1>Contact Management — multi-error validator + an enum for phone kind</h1>
+            <p class="lead">Rust's <code>enum</code> turns "kind is mobile/work/home" into a closed set of values the
+                compiler knows about. Unknown strings produce <code>None</code> — which the validator reports as a
+                friendly error rather than crashing.</p>
+        </section>
+
+        <section class="card">
+            <h2>The enum trick</h2>
+            <pre><code>enum PhoneKind { Mobile, Work, Home }
+
+impl PhoneKind {
+    fn parse(s: &amp;str) -&gt; Option&lt;Self&gt; {
+        match s {
+            "mobile" =&gt; Some(Self::Mobile),
+            "work"   =&gt; Some(Self::Work),
+            "home"   =&gt; Some(Self::Home),
+            _        =&gt; None,
+        }
+    }
+}</code></pre>
+            <p>Anywhere downstream that takes a <code>PhoneKind</code> can <code>match</code> on it exhaustively. Add a
+                fourth kind tomorrow and every <code>match</code> in the codebase will refuse to compile until you
+                handle the new arm. That is how Rust prevents drift in large codebases.</p>
+        </section>
+
+        <section class="card">
+            <h2><code>Result&lt;(), Vec&lt;String&gt;&gt;</code> — collecting errors</h2>
+            <p>Returning a <em>vector</em> of errors instead of stopping at the first is a friendly API choice and
+                equally valid in any language. Rust just gives you a clean way to express it in the type signature.</p>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd rust_projects/p5_contact_management
+cargo run</code></pre>
+            <p>Files: <a href="src/main.rs">src/main.rs</a> · <a href="Cargo.toml">Cargo.toml</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

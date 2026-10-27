@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 17 — Reasoning Techniques</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 17 — Reasoning Techniques</h1>
+  <p>CoT, ToT, Self-Consistency, ReAct, Reflexion — make the model's thinking explicit.</p>
+  <p><span class="tag">CoT</span><span class="tag">ToT</span><span class="tag">ReAct</span><span class="tag">Self-Consistency</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Spend more inference compute to get better answers on hard questions. Five canonical techniques:</p>
+<ul>
+  <li><strong>Chain-of-Thought (CoT):</strong> "think step by step." One linear chain.</li>
+  <li><strong>Tree-of-Thoughts (ToT):</strong> branch into multiple thoughts, prune by self-evaluation.</li>
+  <li><strong>Self-Consistency:</strong> sample N CoTs and majority-vote.</li>
+  <li><strong>ReAct:</strong> interleave Thought / Action (tool) / Observation steps.</li>
+  <li><strong>Reflexion:</strong> after failure, write a verbal lesson and retry.</li>
+</ul>
+</section>
+
+<section>
+<h2>Comparison</h2>
+<div class="mermaid">
+flowchart LR
+  A[CoT — single linear chain] --> AA[Cheap, fast]
+  B[Self-Consistency — N samples + vote] --> BB[Robust, ~Nx cost]
+  C[ToT — branch + score + prune] --> CC[Best for hard logic, costly]
+  D[ReAct — think+act+observe] --> DD[Best with tools]
+  E[Reflexion — fail → lesson → retry] --> EE[Multi-attempt tasks]
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Math tutoring app</h2>
+<div class="callout scenario">
+A 2026 K-12 math app uses CoT for routine problems, samples 5 CoTs and votes for word problems (self-consistency), and switches to ReAct + a Python tool for ones that need numerical solving. Result: 96% accuracy on JEE-level questions vs 78% with single-shot.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant S as Student
+  participant T as Tutor
+  participant L as LLM
+  participant Py as Python tool
+  S->>T: "If 3x²+5x-2=0, what's x?"
+  T->>L: ReAct: "I should solve via tool"
+  L-->>T: action: run_python("solve(...)")
+  T->>Py: execute
+  Py-->>T: x = 1/3, x = -2
+  T-->>S: explained answer + steps
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>Reasoning support</th></tr>
+  <tr><td>LangChain / LangGraph</td><td>ReAct templates, custom CoT prompts.</td></tr>
+  <tr><td>DSPy</td><td><code>ChainOfThought</code>, <code>ProgramOfThought</code>, <code>ReAct</code> modules.</td></tr>
+  <tr><td>OpenAI o1 / o3 / Gemini reasoning</td><td>Native "extended thinking" — reasoning baked into the model.</td></tr>
+  <tr><td>Reflexion / Voyager</td><td>Verbal-RL retrying loops.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Strategy</strong></td><td><code>Reasoner</code> — CoT / SelfConsistent / ReAct interchangeable.</td></tr>
+  <tr><td><strong>Composite (ToT)</strong></td><td>Tree of thoughts with scoring node.</td></tr>
+  <tr><td><strong>Iterator</strong></td><td>ReAct loop yields one (thought, action, obs) per step.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── reasoners.py    # CoT, SelfConsistency, ReAct
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>When does CoT actually help?</summary><div>For multi-step arithmetic, logic, code reasoning. For trivia / classification it adds tokens with no gain. Always measure on a held-out set first.</div></details>
+<details class="qa"><summary>Reasoning models (o1 / Gemini-Thinking) vs prompted CoT?</summary><div>Reasoning models do CoT internally and aren't shown to the user. They're more accurate on hard problems but slower / pricier. Prompted CoT gives you visibility and control; reasoning models trade that for raw quality.</div></details>
+</section>
+
+</main>
+<footer>Chapter 17 of 21.</footer>
+</body>
+</html>

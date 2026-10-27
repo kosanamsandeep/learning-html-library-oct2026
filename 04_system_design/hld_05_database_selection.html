@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLD 05 — Choosing the Right Database</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Mermaid diagram wrapper — keep diagrams readable on the paper background */
+        .mermaid-wrap {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            margin: 1.2rem 0;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+
+        .mermaid-wrap .caption {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin: 0.4rem 0 0.8rem;
+            font-style: italic;
+        }
+
+        .db-card {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-left: 6px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 1.2rem 1.4rem;
+            margin: 1rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .db-card h3 {
+            margin-top: 0;
+            color: var(--accent);
+        }
+
+        .db-card .tagline {
+            color: var(--muted);
+            font-style: italic;
+            margin-top: -0.4rem;
+        }
+
+        .horror {
+            background: var(--bad-soft);
+            border: 1px solid var(--bad);
+            border-left: 6px solid var(--bad);
+            border-radius: var(--radius);
+            padding: 1rem 1.2rem;
+            margin: 0.8rem 0;
+        }
+
+        .horror h4 {
+            margin: 0 0 0.4rem;
+            color: var(--bad);
+        }
+
+        .win {
+            background: var(--good-soft);
+            border: 1px solid var(--good);
+            border-left: 6px solid var(--good);
+            border-radius: var(--radius);
+            padding: 1rem 1.2rem;
+            margin: 0.8rem 0;
+        }
+
+        .win h4 {
+            margin: 0 0 0.4rem;
+            color: var(--good);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html"><span class="brand-mark">SD</span><span>HLD · 05 Database
+                    Selection</span></a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="hld_02_databases_caching.html">← DB basics</a>
+                <a href="hld_04_case_studies.html">Case studies</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">The single most expensive decision in any system</p>
+                <h1>Choosing the right database — a story-first guide</h1>
+                <p>"Which database should I use?" is the question every senior engineer is paid to answer well.
+                    Pick wrong and you'll spend the next 18 months migrating, firefighting, or watching latency
+                    graphs climb. Pick right and the database disappears — it just works.</p>
+                <p>This page walks the entire database landscape, tells you <strong>why each one exists</strong>,
+                    <strong>when to pick it</strong>, and <strong>what specifically goes wrong</strong> when you
+                    pick the wrong one. Plain words, real stories, decision diagrams.
+                </p>
+            </section>
+
+            <div class="layout">
+                <aside class="toc">
+                    <h3>On this page</h3>
+                    <ol>
+                        <li><a href="#mental-model">The mental model</a></li>
+                        <li><a href="#decision-tree">Decision tree</a></li>
+                        <li><a href="#families">Database families</a></li>
+                        <li><a href="#sql">Relational (PostgreSQL, MySQL)</a></li>
+                        <li><a href="#mongo">Document (MongoDB)</a></li>
+                        <li><a href="#redis">Key-Value (Redis, DynamoDB)</a></li>
+                        <li><a href="#cassandra">Wide-Column (Cassandra)</a></li>
+                        <li><a href="#graph">Graph (Neo4j)</a></li>
+                        <li><a href="#search">Search (Elasticsearch)</a></li>
+                        <li><a href="#timeseries">Time-Series (InfluxDB)</a></li>
+                        <li><a href="#vector">Vector (Pinecone, pgvector)</a></li>
+                        <li><a href="#object">Object store (S3)</a></li>
+                        <li><a href="#newsql">NewSQL (Spanner, Cockroach)</a></li>
+                        <li><a href="#use-cases">Use-case recipes</a></li>
+                        <li><a href="#horror">Horror stories</a></li>
+                        <li><a href="#polyglot">Polyglot persistence</a></li>
+                        <li><a href="#cheatsheet">One-page cheatsheet</a></li>
+                    </ol>
+                </aside>
+
+                <div>
+                    <!-- ===================== MENTAL MODEL ===================== -->
+                    <section class="concept" id="mental-model">
+                        <h2>1 · The mental model — every database is a tradeoff</h2>
+                        <p>Every database makes a deal with you. It says: <em>"I will be amazing at X, decent
+                                at Y, and terrible at Z."</em> Your job is to know which X you need today, which Y
+                            you can live with, and which Z would kill you.</p>
+                        <p>The three big axes are:</p>
+                        <ul>
+                            <li><strong>Shape of data</strong> — rows? documents? graph? key-value? time-stamped
+                                points?</li>
+                            <li><strong>Access pattern</strong> — read-heavy or write-heavy? known queries or
+                                ad-hoc? joins or single lookups?</li>
+                            <li><strong>Consistency vs scale</strong> — do you need strict ACID, or can you trade
+                                some consistency for massive horizontal scale?</li>
+                        </ul>
+
+                        <div class="story"><strong>Story:</strong> A startup builds their MVP on MongoDB because
+                            "it's flexible". Six months later they need a report that joins users, orders,
+                            payments, refunds, and shipping. Mongo can do it, but the query is 300 lines of
+                            <code>$lookup</code> pipeline and takes 40 seconds. The same query in PostgreSQL is
+                            8 lines of SQL and runs in 80 ms. The team migrates. Cost: 4 engineer-months.
+                            <strong>Lesson:</strong> "flexible schema" is not a free lunch — joins, transactions,
+                            and reporting are why relational databases exist.
+                        </div>
+                    </section>
+
+                    <!-- ===================== DECISION TREE ===================== -->
+                    <section class="concept" id="decision-tree">
+                        <h2>2 · The decision tree (start here)</h2>
+                        <p>When facing a new feature, walk this tree top to bottom. It's not absolute law, but
+                            it answers the question correctly about 80% of the time.</p>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart TD
+    Start([What kind of data?]) --> Q1{Does it have<br/>strong relationships<br/>& need transactions?}
+    Q1 -- Yes --> Q1a{Need to scale<br/>writes globally?}
+    Q1a -- No --> SQL[(PostgreSQL / MySQL<br/>classic relational)]
+    Q1a -- Yes --> NewSQL[(Spanner / CockroachDB<br/>NewSQL)]
+
+    Q1 -- No --> Q2{Mostly key-based<br/>lookups, ultra-fast?}
+    Q2 -- Yes --> Q2a{Need persistence<br/>or ephemeral?}
+    Q2a -- Ephemeral --> Redis[(Redis<br/>cache, sessions, queues)]
+    Q2a -- Persistent --> DDB[(DynamoDB / KeyDB<br/>scalable KV)]
+
+    Q2 -- No --> Q3{Data is<br/>document-shaped<br/>with varying fields?}
+    Q3 -- Yes --> Mongo[(MongoDB / Couchbase<br/>document DB)]
+
+    Q3 -- No --> Q4{Huge write volume<br/>time-stamped,<br/>append-mostly?}
+    Q4 -- Yes --> Q4a{Pure metrics<br/>or general events?}
+    Q4a -- Metrics --> TS[(InfluxDB / Timescale<br/>time-series)]
+    Q4a -- Events --> Cass[(Cassandra / Scylla<br/>wide-column)]
+
+    Q4 -- No --> Q5{Many-to-many<br/>relationships<br/>are the question?}
+    Q5 -- Yes --> Graph[(Neo4j / Neptune<br/>graph DB)]
+
+    Q5 -- No --> Q6{Full-text search<br/>or fuzzy match?}
+    Q6 -- Yes --> ES[(Elasticsearch<br/>OpenSearch)]
+
+    Q6 -- No --> Q7{Similarity search<br/>over embeddings?}
+    Q7 -- Yes --> Vec[(Pinecone / pgvector<br/>vector DB)]
+
+    Q7 -- No --> Q8{Just files / blobs?}
+    Q8 -- Yes --> S3[(S3 / GCS / Blob<br/>object storage)]
+    Q8 -- No --> Back[Reconsider — most apps<br/>still want PostgreSQL]
+</pre>
+                            <p class="caption">Decision tree for picking a primary store. Real systems often
+                                combine 2–3 of these (polyglot persistence).</p>
+                        </div>
+                        <div class="callout"><strong>Default rule of thumb:</strong> if you can't immediately
+                            justify something else, <strong>start with PostgreSQL</strong>. It scales further
+                            than people think, and migrating away later is easier than migrating
+                            <em>back</em> to it.
+                        </div>
+                    </section>
+
+                    <!-- ===================== FAMILIES ===================== -->
+                    <section class="concept" id="families">
+                        <h2>3 · The full database family tree</h2>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    DB[(Databases)]
+    DB --> R[Relational / SQL]
+    DB --> N[NoSQL]
+    DB --> S[Specialized]
+    DB --> NSQL[NewSQL / Distributed SQL]
+
+    R --> R1[PostgreSQL]
+    R --> R2[MySQL / MariaDB]
+    R --> R3[SQLite]
+    R --> R4[Oracle / SQL Server]
+
+    N --> N1[Document<br/>MongoDB · Couchbase]
+    N --> N2[Key-Value<br/>Redis · DynamoDB · Memcached]
+    N --> N3[Wide-Column<br/>Cassandra · Scylla · HBase]
+    N --> N4[Graph<br/>Neo4j · Neptune · ArangoDB]
+
+    S --> S1[Search<br/>Elasticsearch · OpenSearch · Solr]
+    S --> S2[Time-Series<br/>InfluxDB · TimescaleDB · Prometheus]
+    S --> S3[Vector<br/>Pinecone · Weaviate · Milvus · pgvector]
+    S --> S4[Object Storage<br/>S3 · GCS · Azure Blob]
+    S --> S5[OLAP / Warehouse<br/>Snowflake · BigQuery · Redshift · ClickHouse]
+
+    NSQL --> NS1[Spanner]
+    NSQL --> NS2[CockroachDB]
+    NSQL --> NS3[YugabyteDB]
+    NSQL --> NS4[Aurora]
+</pre>
+                            <p class="caption">The landscape. The boundaries blur — PostgreSQL has JSON,
+                                MongoDB has transactions, Redis has search modules. The label is just a hint
+                                about where each one is <em>strongest</em>.</p>
+                        </div>
+                    </section>
+
+                    <!-- ===================== SQL ===================== -->
+                    <section class="concept" id="sql">
+                        <h2>4 · Relational / SQL — PostgreSQL, MySQL</h2>
+                        <div class="db-card">
+                            <h3>PostgreSQL · MySQL · MariaDB · Oracle · SQL Server</h3>
+                            <p class="tagline">Rows in tables. Relationships via foreign keys. Queries in SQL.
+                                ACID transactions out of the box.</p>
+                            <p><strong>Why they exist:</strong> Most business data is <em>relational</em> —
+                                orders belong to customers, line items belong to orders, payments link to both.
+                                Relational DBs model this naturally and let you ask any question after the fact
+                                with SQL.</p>
+                            <p><strong>Strengths:</strong></p>
+                            <ul>
+                                <li><strong>ACID transactions</strong> — money moves correctly, no half-updates.</li>
+                                <li><strong>Joins &amp; aggregations</strong> — "show me revenue by region by
+                                    month" is a one-line query.</li>
+                                <li><strong>Mature ecosystem</strong> — every ORM, BI tool, and migration
+                                    framework speaks SQL.</li>
+                                <li><strong>Constraints</strong> — the database itself stops bad data
+                                    (foreign keys, unique, check constraints).</li>
+                            </ul>
+                            <p><strong>Weaknesses:</strong></p>
+                            <ul>
+                                <li>Vertical scaling has a ceiling — really big instances cost a lot.</li>
+                                <li>Sharding across many machines is doable but operationally painful.</li>
+                                <li>Schema migrations on huge tables can be scary (locks, rewrites).</li>
+                            </ul>
+                        </div>
+
+                        <h3>Concrete "use it when" examples</h3>
+                        <ul>
+                            <li><strong>E-commerce:</strong> orders, customers, inventory, payments. You need
+                                "did the order get placed AND inventory get decremented AND payment captured"
+                                to all succeed or all fail. That's exactly what ACID is for.</li>
+                            <li><strong>Banking / Fintech ledger:</strong> double-entry accounting. PostgreSQL
+                                or Oracle. Always.</li>
+                            <li><strong>SaaS app with tenants, users, projects, tasks:</strong> classic
+                                relational shape.</li>
+                            <li><strong>Anything that will need reporting / BI later</strong> — and almost
+                                everything needs that eventually.</li>
+                        </ul>
+
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>✅ Use SQL when</h4>
+                                <ul>
+                                    <li>Entities have clear relationships.</li>
+                                    <li>You need transactions (money, inventory, bookings).</li>
+                                    <li>You don't yet know all the queries you'll need.</li>
+                                    <li>Strong consistency matters.</li>
+                                    <li>Data fits in &lt; ~10 TB (most apps do for years).</li>
+                                </ul>
+                            </div>
+                            <div class="mini bad">
+                                <h4>❌ Avoid when</h4>
+                                <ul>
+                                    <li>You're storing 500 GB of raw IoT readings per day → wide-column or
+                                        time-series.</li>
+                                    <li>You need sub-millisecond key lookups at huge QPS → Redis or DynamoDB.</li>
+                                    <li>You're doing graph traversal 6 hops deep → graph DB.</li>
+                                    <li>You need full-text search with ranking and typo tolerance → search engine.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 What goes wrong if you skip SQL when you needed it</h4>
+                            <p><strong>Scenario:</strong> A team picked MongoDB for an online food-delivery
+                                ordering system. Order, restaurant, driver, customer, payment all became
+                                separate collections.</p>
+                            <p><strong>What broke:</strong></p>
+                            <ol>
+                                <li>A driver picked up an order, but a network blip caused the order status to
+                                    update without the payment hold being placed. <em>No transactions across
+                                        collections</em> — money was lost on hundreds of orders before they noticed.
+                                </li>
+                                <li>The finance team asked for "revenue per restaurant per day, after refunds".
+                                    The query needed 4-way <code>$lookup</code> joins. Ran for 12 minutes and
+                                    timed out.</li>
+                                <li>Schema drifted — some orders had <code>price</code>, newer ones had
+                                    <code>totalPrice</code>, oldest ones had <code>amount</code>. No constraint
+                                    caught it.
+                                </li>
+                            </ol>
+                            <p><strong>Cure:</strong> migrated core entities to PostgreSQL. Kept Mongo only for
+                                the restaurant menu catalog (truly variable shape). Outage rate dropped 90%.</p>
+                        </div>
+
+                        <div class="win">
+                            <h4>✅ Story: when SQL was the obvious right pick</h4>
+                            <p>Stack Overflow runs on a single primary SQL Server with read replicas. ~5,000 QPS,
+                                hundreds of millions of rows, a few hundred GB. They've been on this stack for
+                                a decade. Boring SQL handles it because reads are cacheable and writes are
+                                bounded. Most "we need NoSQL because we'll be huge" stories never grow that big.</p>
+                        </div>
+                    </section>
+
+                    <!-- ===================== MONGO ===================== -->
+                    <section class="concept" id="mongo">
+                        <h2>5 · Document DB — MongoDB, Couchbase, DynamoDB (document mode)</h2>
+                        <div class="db-card">
+                            <h3>MongoDB · Couchbase · Amazon DocumentDB</h3>
+                            <p class="tagline">Stores JSON-like documents. No fixed schema. Query by any field.
+                                Scales horizontally by sharding.</p>
+                            <p><strong>Why they exist:</strong> Some data is genuinely nested and varies in
+                                shape — product catalogs where every category has different attributes, CMS
+                                articles with embedded blocks, event payloads from third-party APIs.</p>
+                            <p><strong>Strengths:</strong></p>
+                            <ul>
+                                <li>Flexible schema — add a field without a migration.</li>
+                                <li>Documents map naturally to JSON used by APIs and front-ends.</li>
+                                <li>Horizontal scaling via sharding is built in.</li>
+                                <li>Single-document writes are atomic.</li>
+                            </ul>
+                            <p><strong>Weaknesses:</strong></p>
+                            <ul>
+                                <li>Multi-document / multi-collection transactions exist but are slower and
+                                    discouraged.</li>
+                                <li>Joins (<code>$lookup</code>) are limited and slow.</li>
+                                <li>"Flexible schema" almost always becomes "no schema discipline" — bugs follow.</li>
+                            </ul>
+                        </div>
+
+                        <h3>Concrete "use it when" examples</h3>
+                        <ul>
+                            <li><strong>Product catalogs</strong> where each category has unique attributes
+                                (a phone has RAM and camera MP; a book has ISBN and page count).</li>
+                            <li><strong>CMS / blog platforms</strong> where each article is a tree of typed
+                                blocks (text, image, embed).</li>
+                            <li><strong>Logging / event sinks</strong> where the payload shape is owned by many
+                                producers.</li>
+                            <li><strong>Per-user settings / profiles</strong> where the document is read or
+                                written in full and never joined.</li>
+                            <li><strong>Game state snapshots</strong> stored as one document per player.</li>
+                        </ul>
+
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>✅ Use Mongo when</h4>
+                                <ul>
+                                    <li>Each record is naturally a self-contained document.</li>
+                                    <li>You read/write the whole document at once.</li>
+                                    <li>Schema legitimately varies across rows.</li>
+                                    <li>You need easy horizontal scaling out of the box.</li>
+                                </ul>
+                            </div>
+                            <div class="mini bad">
+                                <h4>❌ Don't use when</h4>
+                                <ul>
+                                    <li>Data has many cross-entity relationships.</li>
+                                    <li>You need multi-document transactions (money!).</li>
+                                    <li>You'll need ad-hoc analytical queries with joins.</li>
+                                    <li>You haven't honestly justified why SQL wouldn't work.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 What goes wrong when you use Mongo as default</h4>
+                            <p>An analytics SaaS stored "users", "workspaces", "dashboards", "widgets",
+                                "permissions" all in Mongo. Six months in:</p>
+                            <ul>
+                                <li>Permission checks need to join user → workspace → dashboard → widget. Every
+                                    page load fires 4 round-trips to Mongo.</li>
+                                <li>A bug duplicated a workspace ID across two users. <em>No foreign-key
+                                        constraint</em> caught it. Customers saw each other's dashboards.</li>
+                                <li>Adding "soft delete" required a script that touched every collection. No
+                                    unified WHERE clause.</li>
+                            </ul>
+                            <p><strong>Cure:</strong> moved relational entities to PostgreSQL with proper FKs.
+                                Kept Mongo for dashboard layout JSON (truly document-shaped).</p>
+                        </div>
+                    </section>
+
+                    <!-- ===================== REDIS / KV ===================== -->
+                    <section class="concept" id="redis">
+                        <h2>6 · Key-Value — Redis, DynamoDB, Memcached</h2>
+                        <div class="db-card">
+                            <h3>Redis · Memcached · DynamoDB · KeyDB</h3>
+                            <p class="tagline">Get / set by key. Sub-millisecond. In-memory (Redis) or on-disk
+                                (DynamoDB).</p>
+                            <p><strong>Why they exist:</strong> Many lookups are "give me the value for this key,
+                                fast". A database engine designed only for that is orders of magnitude faster
+                                than a general-purpose SQL DB.</p>
+                            <p><strong>Why Redis specifically:</strong> not just a cache. It's a Swiss-army
+                                knife with built-in types: strings, hashes, lists, sets, sorted sets,
+                                streams, pub/sub, geo, HyperLogLog. That's why it shows up in 9 different
+                                roles in modern systems.</p>
+                        </div>
+
+                        <h3>The 8 roles Redis plays in production</h3>
+                        <ol>
+                            <li><strong>Cache</strong> — sit in front of PostgreSQL, store hot rows for 60s.
+                                Reduces DB load 10–100x.</li>
+                            <li><strong>Session store</strong> — login cookies, JWTs, OAuth state.
+                                Stateless app servers + Redis = horizontal scaling.</li>
+                            <li><strong>Rate limiting</strong> — <code>INCR</code> with TTL. "Allow 100 req per
+                                minute per IP" is 3 lines.</li>
+                            <li><strong>Leaderboards</strong> — sorted sets. Top 10 players in O(log n).</li>
+                            <li><strong>Distributed locks</strong> — <code>SETNX</code> with TTL.</li>
+                            <li><strong>Job queue</strong> — lists with <code>LPUSH</code>/<code>BRPOP</code>,
+                                or Streams for richer semantics.</li>
+                            <li><strong>Pub/Sub</strong> — fan-out events to many subscribers.</li>
+                            <li><strong>Real-time counters</strong> — page views, likes,
+                                "users currently online".</li>
+                        </ol>
+
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    User[👤 User] --> App[App server]
+    App -- "1. check cache" --> Redis[(Redis)]
+    Redis -- "hit ⚡" --> App
+    App -- "2. on miss" --> DB[(PostgreSQL)]
+    DB -- "row" --> App
+    App -- "3. set with TTL" --> Redis
+    App -- "response" --> User
+</pre>
+                            <p class="caption">Cache-aside pattern — the most common Redis use. Cuts SQL load
+                                by an order of magnitude on read-heavy endpoints.</p>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>✅ Use Redis / KV when</h4>
+                                <ul>
+                                    <li>Sub-ms latency required.</li>
+                                    <li>You always look up by a known key.</li>
+                                    <li>Data fits in RAM (Redis) or you need infinite scale (DynamoDB).</li>
+                                    <li>Need pub/sub, locks, queues, or sorted leaderboards.</li>
+                                </ul>
+                            </div>
+                            <div class="mini bad">
+                                <h4>❌ Don't</h4>
+                                <ul>
+                                    <li>Use Redis as the <em>only</em> store for important data — RAM-based,
+                                        memory limits.</li>
+                                    <li>Run ad-hoc queries — there's no query planner.</li>
+                                    <li>Store huge values (&gt; few MB).</li>
+                                    <li>Treat it as your source of truth for ledger / finance data.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 Story: when Redis was the wrong choice</h4>
+                            <p>A team built a "messages" feature backed only by Redis. It worked great until
+                                a memory eviction policy kicked in and silently deleted older chats. Customers
+                                lost months of conversation. Lesson: <strong>Redis is a cache, not a database
+                                    of record</strong> unless you configure persistence (AOF) carefully and budget
+                                for memory.</p>
+                        </div>
+
+                        <div class="win">
+                            <h4>✅ When Redis was the obvious right pick</h4>
+                            <p>Twitter's tweet timeline cache, Stack Overflow's hot-questions cache, GitHub's
+                                rate limiter, almost every login session in modern web apps. All Redis.
+                                Anywhere you said "this needs to be fast and the data is short-lived",
+                                Redis is the answer.</p>
+                        </div>
+                    </section>
+
+                    <!-- ===================== CASSANDRA / WIDE-COLUMN ===================== -->
+                    <section class="concept" id="cassandra">
+                        <h2>7 · Wide-Column — Cassandra, ScyllaDB, HBase</h2>
+                        <div class="db-card">
+                            <h3>Cassandra · ScyllaDB · HBase · BigTable</h3>
+                            <p class="tagline">Rows keyed by a partition key, distributed across many machines.
+                                Write-optimized. Single-digit-ms reads if the query matches the partition design.</p>
+                            <p><strong>Why they exist:</strong> Some workloads write so much data that no single
+                                machine can keep up — IoT telemetry, ad-tech impressions, social-feed inboxes,
+                                game telemetry. Wide-column DBs are designed to absorb millions of writes per
+                                second by spreading them across hundreds of nodes.</p>
+                        </div>
+
+                        <h3>Concrete use cases</h3>
+                        <ul>
+                            <li><strong>Netflix viewing history</strong> — every "you watched X for Y seconds"
+                                event.</li>
+                            <li><strong>Apple iMessage delivery state</strong>.</li>
+                            <li><strong>Discord messages</strong> — billions of messages, scaled by channel ID.</li>
+                            <li><strong>IoT sensor streams</strong> — fleet of trucks reporting GPS every second.</li>
+                            <li><strong>Ad-tech impression / click logs</strong>.</li>
+                        </ul>
+
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>✅ Use when</h4>
+                                <ul>
+                                    <li>Massive write throughput (10k+ writes/sec sustained).</li>
+                                    <li>Data is append-mostly, rarely updated.</li>
+                                    <li>You can design queries up front around a partition key.</li>
+                                    <li>You need active-active multi-region with tunable consistency.</li>
+                                </ul>
+                            </div>
+                            <div class="mini bad">
+                                <h4>❌ Don't</h4>
+                                <ul>
+                                    <li>Need ad-hoc queries — Cassandra punishes queries that don't match its
+                                        partition key.</li>
+                                    <li>Need joins or strong transactions — you won't get them.</li>
+                                    <li>Have a small team — operating Cassandra well is a job.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 The classic Cassandra anti-pattern</h4>
+                            <p>A team picked Cassandra "to scale". Their data model: one big table, queried
+                                multiple different ways. They used <code>ALLOW FILTERING</code> on every query.
+                                Latency was 8 seconds per page. They needed to either redesign every query
+                                (which means a new table per query in Cassandra) or move to a more flexible DB.
+                                <strong>In Cassandra you design the schema around the query, not the data.</strong>
+                            </p>
+                        </div>
+                    </section>
+
+                    <!-- ===================== GRAPH ===================== -->
+                    <section class="concept" id="graph">
+                        <h2>8 · Graph — Neo4j, Amazon Neptune, ArangoDB</h2>
+                        <div class="db-card">
+                            <h3>Neo4j · Amazon Neptune · ArangoDB · TigerGraph</h3>
+                            <p class="tagline">Nodes and edges. First-class traversal. Made for "find me X that
+                                is connected via Y to Z".</p>
+                            <p><strong>Why they exist:</strong> Some questions are about <em>relationships</em>,
+                                not entities. "Friends of friends who like jazz". "All accounts that share a
+                                device with this fraudulent account, up to 5 hops". In SQL these are
+                                self-joining nightmares; in a graph DB they're one-line queries.</p>
+                        </div>
+
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    A((Alice)) -- FRIEND --> B((Bob))
+    B -- FRIEND --> C((Carol))
+    C -- FRIEND --> D((Dan))
+    A -- LIKES --> J[Jazz]
+    D -- LIKES --> J
+    B -- LIKES --> R[Rock]
+    C -- LIKES --> J
+</pre>
+                            <p class="caption">"Find friends-of-friends of Alice who like Jazz." In Cypher
+                                (Neo4j) that's one line: <code>MATCH (a:Person {name:'Alice'})-[:FRIEND*2..3]-(p)
+                                -[:LIKES]->(:Genre {name:'Jazz'})</code>. In SQL it's three self-joins per hop.</p>
+                        </div>
+
+                        <h3>Real-world graph use cases</h3>
+                        <ul>
+                            <li><strong>Social networks</strong> — LinkedIn "people you may know".</li>
+                            <li><strong>Fraud detection</strong> — PayPal, banks: "does this account share
+                                a device, address, or beneficiary with a known fraudster within 4 hops?"</li>
+                            <li><strong>Recommendation engines</strong> — "users like you also bought…"</li>
+                            <li><strong>Knowledge graphs</strong> — Google's, Wikidata, internal enterprise
+                                knowledge bases, GraphRAG for LLMs.</li>
+                            <li><strong>Network &amp; IT topology</strong> — "if this switch dies, what services
+                                go down?"</li>
+                            <li><strong>Identity / access management</strong> — "which permissions does this
+                                user inherit through which groups?"</li>
+                        </ul>
+
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>✅ Use a graph DB when</h4>
+                                <ul>
+                                    <li>The questions are about paths and connections, not entities.</li>
+                                    <li>You traverse 3+ relationships in a single query.</li>
+                                    <li>Relationships are first-class objects (typed edges with properties).</li>
+                                </ul>
+                            </div>
+                            <div class="mini bad">
+                                <h4>❌ Don't</h4>
+                                <ul>
+                                    <li>Use it as your primary store for typical CRUD — overkill.</li>
+                                    <li>Pick it just because you have "users with friends" — that's still SQL
+                                        territory until you actually do traversals.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 Story: fraud system without a graph</h4>
+                            <p>A fintech tried to do fraud detection in PostgreSQL. The "are these two accounts
+                                linked via shared devices, IPs, or beneficiaries within 5 hops" query needed
+                                recursive CTEs that timed out. They missed real fraud rings until they moved to
+                                Neo4j — the same query then ran in 200 ms and caught $4M in attempted fraud per
+                                month.</p>
+                        </div>
+                    </section>
+
+                    <!-- ===================== SEARCH ===================== -->
+                    <section class="concept" id="search">
+                        <h2>9 · Search — Elasticsearch, OpenSearch, Solr</h2>
+                        <div class="db-card">
+                            <h3>Elasticsearch · OpenSearch · Solr · Meilisearch · Typesense</h3>
+                            <p class="tagline">Inverted index. Designed for full-text search with ranking, typo
+                                tolerance, faceting, and aggregation.</p>
+                            <p><strong>Why they exist:</strong> <code>SELECT * FROM products WHERE name LIKE
+                                '%nike%'</code> is slow on big tables and can't rank by relevance, handle typos,
+                                or boost recent items. Search engines are designed exactly for this.</p>
+                        </div>
+
+                        <h3>When to add Elasticsearch</h3>
+                        <ul>
+                            <li><strong>E-commerce search</strong> with filters (size, color, brand, price
+                                range) and "did you mean".</li>
+                            <li><strong>Log search</strong> at scale — ELK / OpenSearch stack. Grep across
+                                billions of log lines.</li>
+                            <li><strong>Application search</strong> — Slack message search, GitHub code
+                                search, Jira issue search.</li>
+                            <li><strong>Aggregations / analytics dashboards</strong> over event data, when
+                                queries are predictable.</li>
+                        </ul>
+
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>✅ Use search engines when</h4>
+                                <ul>
+                                    <li>Users type free-text queries.</li>
+                                    <li>You need ranking, typo tolerance, synonyms.</li>
+                                    <li>You need fast faceted filtering on many fields.</li>
+                                </ul>
+                            </div>
+                            <div class="mini bad">
+                                <h4>❌ Don't</h4>
+                                <ul>
+                                    <li>Use Elasticsearch as the source of truth — sync from your SQL DB into it.</li>
+                                    <li>Use it for transactional updates — it's eventually consistent.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ===================== TIME-SERIES ===================== -->
+                    <section class="concept" id="timeseries">
+                        <h2>10 · Time-Series — InfluxDB, TimescaleDB, Prometheus</h2>
+                        <div class="db-card">
+                            <h3>InfluxDB · TimescaleDB · Prometheus · QuestDB · VictoriaMetrics</h3>
+                            <p class="tagline">Append-only, time-keyed data. Heavily compressed. Built-in
+                                downsampling, retention policies, and time-window queries.</p>
+                            <p><strong>Why they exist:</strong> A general DB will store a billion <code>(time,
+                                metric, value)</code> rows but query them slowly and waste 10x the disk.
+                                Time-series engines compress like crazy and answer "average CPU per minute over
+                                last 24h" instantly.</p>
+                        </div>
+
+                        <h3>Use cases</h3>
+                        <ul>
+                            <li><strong>Server metrics</strong> — CPU, memory, latency. Prometheus + Grafana.</li>
+                            <li><strong>IoT</strong> — sensor readings, smart-home telemetry.</li>
+                            <li><strong>Financial tick data</strong> — stock prices, FX rates.</li>
+                            <li><strong>Application performance monitoring</strong> — Datadog, New Relic.</li>
+                        </ul>
+
+                        <div class="callout"><strong>Tip:</strong> If you're already on PostgreSQL,
+                            <strong>TimescaleDB</strong> is a Postgres extension that gives you time-series
+                            performance without adopting another database. Best of both worlds for small teams.
+                        </div>
+                    </section>
+
+                    <!-- ===================== VECTOR ===================== -->
+                    <section class="concept" id="vector">
+                        <h2>11 · Vector — Pinecone, Weaviate, Milvus, pgvector</h2>
+                        <div class="db-card">
+                            <h3>Pinecone · Weaviate · Milvus · Qdrant · pgvector · Chroma</h3>
+                            <p class="tagline">Stores high-dimensional vectors (embeddings) and finds nearest
+                                neighbors in milliseconds. The backbone of every modern RAG / LLM app.</p>
+                            <p><strong>Why they exist:</strong> Asking "find documents semantically similar to
+                                this question" requires comparing 1536-dim vectors. SQL DBs can't index that.
+                                Vector DBs use HNSW, IVF, or product-quantized indexes to do it at scale.</p>
+                        </div>
+
+                        <h3>Use cases</h3>
+                        <ul>
+                            <li><strong>RAG over docs</strong> for LLMs (ChatGPT-on-your-docs).</li>
+                            <li><strong>Semantic search</strong> — "find articles about renewable energy" returns
+                                docs even if the word "renewable" isn't in them.</li>
+                            <li><strong>Recommendations</strong> — "users with similar embedding profiles".</li>
+                            <li><strong>Image / audio similarity</strong> — reverse image search, song matching.</li>
+                            <li><strong>Anomaly detection</strong> — items far from any known cluster.</li>
+                        </ul>
+
+                        <div class="callout"><strong>Start small:</strong> if you're under ~1M vectors,
+                            <strong>pgvector</strong> (PostgreSQL extension) is plenty. Reach for dedicated
+                            Pinecone / Milvus when you cross 10M+ vectors or need very low p99 latency.
+                        </div>
+                    </section>
+
+                    <!-- ===================== OBJECT STORE ===================== -->
+                    <section class="concept" id="object">
+                        <h2>12 · Object Storage — S3, GCS, Azure Blob</h2>
+                        <div class="db-card">
+                            <h3>Amazon S3 · Google Cloud Storage · Azure Blob · MinIO</h3>
+                            <p class="tagline">Cheap, durable, virtually infinite storage of files. Pay per GB
+                                and per request. 11 nines of durability.</p>
+                            <p><strong>Why they exist:</strong> Storing images, videos, PDFs, backups, ML model
+                                artifacts in a relational DB blows up the DB and costs a fortune. Object stores
+                                are 10–100x cheaper per GB and don't slow down with size.</p>
+                        </div>
+
+                        <h3>Pattern: never store binary blobs in your main DB</h3>
+                        <p>Upload to S3, store the <strong>S3 URL</strong> in PostgreSQL. Every modern app does
+                            this — user avatars, document uploads, ML datasets, video transcodes, daily DB
+                            backups.</p>
+
+                        <div class="horror">
+                            <h4>💥 Story: PDFs in PostgreSQL</h4>
+                            <p>An insurance startup stored claim PDFs as <code>bytea</code> columns. The
+                                <code>claims</code> table grew to 800 GB in 8 months. Every backup took 6 hours.
+                                Replication lagged constantly. <strong>Cure:</strong> moved PDFs to S3, stored
+                                URLs in Postgres. Table shrank to 4 GB. Backups now take 5 minutes.
+                            </p>
+                        </div>
+                    </section>
+
+                    <!-- ===================== NEWSQL ===================== -->
+                    <section class="concept" id="newsql">
+                        <h2>13 · NewSQL / Distributed SQL — Spanner, CockroachDB</h2>
+                        <div class="db-card">
+                            <h3>Google Spanner · CockroachDB · YugabyteDB · TiDB · Aurora</h3>
+                            <p class="tagline">Speak SQL. Look like PostgreSQL. Scale horizontally across regions
+                                like NoSQL. Keep ACID transactions.</p>
+                            <p><strong>Why they exist:</strong> NoSQL gave up SQL to get scale. NewSQL gives you
+                                both — at the cost of higher latency per query and operational complexity.</p>
+                        </div>
+
+                        <h3>Use cases</h3>
+                        <ul>
+                            <li>Global apps that need strongly consistent writes across continents
+                                (Spanner powers Gmail, Google Ads).</li>
+                            <li>Companies that outgrew a single-master PostgreSQL but don't want to fragment
+                                into NoSQL.</li>
+                        </ul>
+
+                        <div class="callout warn"><strong>Reality check:</strong> 99% of apps never need NewSQL.
+                            PostgreSQL with read replicas + good caching handles way more traffic than people
+                            assume. Reach for Spanner / Cockroach only when you've actually hit the wall.</div>
+                    </section>
+
+                    <!-- ===================== USE CASE RECIPES ===================== -->
+                    <section class="concept" id="use-cases">
+                        <h2>14 · Recipes by use case</h2>
+                        <p>Below: which databases real systems combine for common product shapes.</p>
+
+                        <h3>🛒 E-commerce (Amazon-style)</h3>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    User --> App
+    App --> PG[(PostgreSQL<br/>orders · users · payments)]
+    App --> Redis[(Redis<br/>cart · sessions · cache)]
+    App --> ES[(Elasticsearch<br/>product search)]
+    App --> S3[(S3<br/>product images)]
+    App --> Mongo[(MongoDB<br/>product catalog)]
+    App --> Vec[(pgvector<br/>recommendations)]
+</pre>
+                        </div>
+
+                        <h3>💬 Chat app (WhatsApp / Slack-style)</h3>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    User --> App
+    App --> PG[(PostgreSQL<br/>users · workspaces · channels)]
+    App --> Cass[(Cassandra<br/>messages by channel)]
+    App --> Redis[(Redis<br/>presence · unread counts)]
+    App --> ES[(Elasticsearch<br/>message search)]
+    App --> S3[(S3<br/>file attachments)]
+</pre>
+                        </div>
+
+                        <h3>🚗 Ride-hailing (Uber-style)</h3>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    Rider --> App
+    Driver --> App
+    App --> PG[(PostgreSQL<br/>users · trips · payments)]
+    App --> Redis[(Redis<br/>driver locations · geohash)]
+    App --> Cass[(Cassandra<br/>trip events · telemetry)]
+    App --> TS[(InfluxDB<br/>ETA & surge metrics)]
+    App --> S3[(S3<br/>receipts)]
+</pre>
+                        </div>
+
+                        <h3>🤖 AI / RAG app (ChatGPT-on-your-docs)</h3>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    User --> App
+    App --> PG[(PostgreSQL<br/>users · conversations)]
+    App --> Vec[(Pinecone / pgvector<br/>document embeddings)]
+    App --> Redis[(Redis<br/>LLM response cache)]
+    App --> S3[(S3<br/>raw PDFs · uploads)]
+    App --> ES[(Elasticsearch<br/>keyword + hybrid search)]
+</pre>
+                        </div>
+
+                        <h3>📱 Social network (Twitter-style)</h3>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    User --> App
+    App --> PG[(PostgreSQL<br/>users · follows · auth)]
+    App --> Cass[(Cassandra<br/>tweets · timelines)]
+    App --> Redis[(Redis<br/>home timeline cache)]
+    App --> Graph[(Neo4j<br/>recommendations · who-to-follow)]
+    App --> ES[(Elasticsearch<br/>tweet search)]
+    App --> S3[(S3<br/>media)]
+</pre>
+                        </div>
+
+                        <h3>🏦 Banking / Fintech ledger</h3>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    User --> App
+    App --> PG[(PostgreSQL<br/>accounts · ledger · transactions)]
+    App --> Redis[(Redis<br/>session · rate limit)]
+    App --> Graph[(Neo4j<br/>fraud graph)]
+    App --> Kafka[Kafka<br/>audit event stream]
+    Kafka --> DW[(Snowflake<br/>compliance & BI)]
+</pre>
+                            <p class="caption">Notice: PostgreSQL is the source of truth for money. Nothing
+                                else is acceptable. Other stores are derived views.</p>
+                        </div>
+
+                        <h3>📊 SaaS analytics dashboard</h3>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    User --> App
+    App --> PG[(PostgreSQL<br/>tenants · dashboards · users)]
+    Events[Event ingestion] --> CH[(ClickHouse<br/>events & analytics)]
+    App --> CH
+    App --> Redis[(Redis<br/>query result cache)]
+    App --> S3[(S3<br/>exported reports)]
+</pre>
+                        </div>
+
+                        <h3>🌡️ IoT platform</h3>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    Sensors[10k sensors] --> Gateway
+    Gateway --> Kafka
+    Kafka --> TS[(TimescaleDB<br/>raw readings)]
+    Kafka --> Cass[(Cassandra<br/>per-device history)]
+    App --> PG[(PostgreSQL<br/>device registry · users)]
+    App --> TS
+    App --> Redis[(Redis<br/>last-known state)]
+</pre>
+                        </div>
+                    </section>
+
+                    <!-- ===================== HORROR STORIES ===================== -->
+                    <section class="concept" id="horror">
+                        <h2>15 · Horror stories — wrong choice, real cost</h2>
+
+                        <div class="horror">
+                            <h4>💥 #1 — "MongoDB will scale, we'll figure out joins later"</h4>
+                            <p>SaaS team chose Mongo for everything. After 18 months: 60% of engineering time
+                                spent on data-consistency bugs and slow reports. Migration to PostgreSQL took
+                                4 months and froze the roadmap.</p>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 #2 — "Redis is so fast, let's just store users there"</h4>
+                            <p>Used Redis as primary store. A memory eviction policy silently dropped user
+                                records under load. Lost ~3% of users' settings. Cost: refunds, churn,
+                                emergency restore from a 2-day-old backup.</p>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 #3 — "Cassandra so we can scale"</h4>
+                            <p>Pre-product-market-fit startup chose Cassandra at 0 users. 6 months later:
+                                couldn't change query patterns without rewriting every table. Migrated to
+                                PostgreSQL. Ironic ending: they never crossed 50 QPS.</p>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 #4 — Storing 4K videos in PostgreSQL</h4>
+                            <p>EdTech put lesson videos as <code>bytea</code>. DB grew to 2 TB; nightly
+                                <code>pg_dump</code> took 14 hours and blocked the box; replicas lagged 6
+                                hours. Cure: S3 + CloudFront. Backup time: 8 minutes.
+                            </p>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 #5 — "We'll do search with LIKE '%query%'"</h4>
+                            <p>Marketplace with 5M listings used SQL LIKE for search. Every search scanned the
+                                whole table. p95 latency: 9 seconds. Users left. Adding Elasticsearch dropped
+                                p95 to 80 ms.</p>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 #6 — Fraud detection in SQL with recursive CTE</h4>
+                            <p>Bank wrote a 5-hop "linked accounts" query as a recursive CTE in PostgreSQL.
+                                Each run took 90 s on production-sized data, locking parts of the table. Moving
+                                that single workload to Neo4j made the query 250 ms and uncovered $4M/month in
+                                fraud they had been missing.</p>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 #7 — Metrics in PostgreSQL</h4>
+                            <p>App stored every API call as a row in a <code>requests</code> table. 200M rows
+                                in a month. Queries for "p99 latency last 24h" took minutes. Disk filled up.
+                                Moving to Prometheus / Timescale reduced storage 30x and made the queries
+                                instant.</p>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 #8 — Embeddings in a JSON column</h4>
+                            <p>RAG side-project stored 1536-dim embeddings as JSON in PostgreSQL and did cosine
+                                similarity in Python after loading <em>all</em> rows. At 200k docs, each query
+                                took 12 seconds. Switching to pgvector with an HNSW index: 40 ms.</p>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 #9 — Storing every user setting per-key in DynamoDB</h4>
+                            <p>Mobile app stored each setting as a separate item keyed by
+                                <code>user#setting</code>. Reading all settings on app launch fired 30+ requests.
+                                Cost ballooned. Cure: store all of a user's settings as one item (a document),
+                                or move to a per-user document in MongoDB.
+                            </p>
+                        </div>
+
+                        <div class="horror">
+                            <h4>💥 #10 — Single Elasticsearch cluster as source of truth</h4>
+                            <p>A logs SaaS made Elasticsearch the only store for customer logs. A bad shard
+                                allocation caused a few hours of writes to be lost during a rolling restart.
+                                Customers noticed missing logs. Lesson: ES is great for search; pair it with a
+                                durable store (S3, Kafka topic) you can replay from.</p>
+                        </div>
+                    </section>
+
+                    <!-- ===================== POLYGLOT ===================== -->
+                    <section class="concept" id="polyglot">
+                        <h2>16 · Polyglot persistence — combining databases</h2>
+                        <p>Real systems rarely use one database. They use the right tool per workload, with one
+                            store designated as the <strong>source of truth</strong> and the others as
+                            <strong>derived views</strong> kept in sync via events / CDC.
+                        </p>
+                        <div class="mermaid-wrap">
+                            <pre class="mermaid">
+flowchart LR
+    App[Application]
+    App --> PG[(PostgreSQL<br/>source of truth)]
+    PG -- CDC<br/>Debezium --> Kafka[Kafka topic]
+    Kafka --> ES[(Elasticsearch<br/>search index)]
+    Kafka --> Redis[(Redis<br/>read cache)]
+    Kafka --> DW[(Snowflake<br/>analytics)]
+    Kafka --> Vec[(Pinecone<br/>embeddings)]
+</pre>
+                            <p class="caption">CDC (Change Data Capture) lets you treat one DB as the truth and
+                                feed all the specialized stores from a Kafka stream. This is the standard
+                                modern pattern.</p>
+                        </div>
+                        <div class="callout"><strong>Rule:</strong> exactly one source of truth per piece of
+                            data. Everything else is a cache or a projection that can be rebuilt.</div>
+                    </section>
+
+                    <!-- ===================== CHEATSHEET ===================== -->
+                    <section class="concept" id="cheatsheet">
+                        <h2>17 · One-page cheatsheet</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>I need to…</th>
+                                    <th>Reach for</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Store relational business data with transactions</td>
+                                    <td><strong>PostgreSQL</strong> (default)</td>
+                                </tr>
+                                <tr>
+                                    <td>Scale relational DB globally with ACID</td>
+                                    <td>Spanner / CockroachDB</td>
+                                </tr>
+                                <tr>
+                                    <td>Store flexible documents (catalogs, CMS, profiles)</td>
+                                    <td>MongoDB / Couchbase</td>
+                                </tr>
+                                <tr>
+                                    <td>Sub-ms cache, sessions, leaderboards, rate limit</td>
+                                    <td><strong>Redis</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Hyper-scale key-value with persistence</td>
+                                    <td>DynamoDB / ScyllaDB</td>
+                                </tr>
+                                <tr>
+                                    <td>Absorb millions of writes/sec (messages, telemetry)</td>
+                                    <td>Cassandra / Scylla</td>
+                                </tr>
+                                <tr>
+                                    <td>Traverse many-to-many relationships</td>
+                                    <td>Neo4j / Neptune</td>
+                                </tr>
+                                <tr>
+                                    <td>Full-text search, faceted filters, typo tolerance</td>
+                                    <td>Elasticsearch / OpenSearch</td>
+                                </tr>
+                                <tr>
+                                    <td>Server metrics, IoT telemetry, financial ticks</td>
+                                    <td>Prometheus / Influx / Timescale</td>
+                                </tr>
+                                <tr>
+                                    <td>Embedding similarity search (RAG, semantic search)</td>
+                                    <td>pgvector → Pinecone / Milvus</td>
+                                </tr>
+                                <tr>
+                                    <td>Store images, videos, PDFs, backups</td>
+                                    <td><strong>S3</strong> (always)</td>
+                                </tr>
+                                <tr>
+                                    <td>Analytics over billions of events</td>
+                                    <td>ClickHouse / Snowflake / BigQuery</td>
+                                </tr>
+                                <tr>
+                                    <td>Stream / event log between services</td>
+                                    <td>Kafka (not strictly a DB, but lives here)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>Three rules to remember</h3>
+                        <ol>
+                            <li><strong>Default to PostgreSQL.</strong> If you can't articulate why something
+                                else, use it.</li>
+                            <li><strong>Pick by access pattern, not by hype.</strong> Ask "how will this be
+                                queried?" before "which DB is cool?"</li>
+                            <li><strong>One source of truth per fact.</strong> Caches and search indexes are
+                                projections — be ready to rebuild them.</li>
+                        </ol>
+
+                        <p>👉 Continue: <a href="hld_02_databases_caching.html">Databases &amp; Caching deep
+                                dive</a> · <a href="hld_03_distributed.html">Distributed systems building blocks</a>
+                            · <a href="hld_04_case_studies.html">Famous system designs</a>.</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>Database selection guide · part of the System Design track.</footer>
+
+    <!-- Mermaid renderer -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#d7f3ef',
+                primaryTextColor: '#1c1917',
+                primaryBorderColor: '#0f766e',
+                lineColor: '#5f564d',
+                secondaryColor: '#fde8db',
+                tertiaryColor: '#fffaf2',
+                fontFamily: 'Segoe UI, Aptos, system-ui, sans-serif'
+            }
+        });
+    </script>
+</body>
+
+</html>

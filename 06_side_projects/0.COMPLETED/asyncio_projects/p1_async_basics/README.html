@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P1 · Asyncio Basics</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>A</span>Asyncio Projects</a>
+            <nav class="top-links"><a href="../index.html">Hub</a><a
+                    href="../p2_concurrent_api_fetcher/README.html">Next: P2</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 1 · Beginner</p>
+            <h1>Asyncio basics — event loop, coroutine, task, await, gather</h1>
+            <p class="lead">This project makes the first mental model concrete: async code is not magic speed. It lets
+                your program use waiting time instead of wasting it.</p>
+        </section>
+        <section class="card">
+            <h2>The story</h2>
+            <p>You run a small coffee counter. Making one drink includes waiting: the machine heats, milk steams, coffee
+                drips. If you stand still for every wait, three orders take the sum of all waits. If you start all waits
+                and come back as each one finishes, customers get served faster. That is asyncio.</p>
+        </section>
+        <section class="card">
+            <h2>Files</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Shows sequential awaits, concurrent <code>gather</code>, and explicit
+                            <code>create_task</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>requirements.txt</code></td>
+                        <td>No external dependencies.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="card">
+            <h2>Mental model</h2>
+            <div class="flow">
+                <div class="step">Coroutine starts</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Hits <code>await</code></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Event loop runs another task</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Coroutine resumes</div>
+            </div>
+            <p>A coroutine is an async function that can pause. A task is a coroutine scheduled on the event loop.
+                <code>await</code> is the pause point where the task gives control back.</p>
+        </section>
+        <section class="card">
+            <h2>Core code</h2>
+            <pre><code>async def make_coffee(name: str, seconds: float) -> str:
+    print(f"start {name}")
+    await asyncio.sleep(seconds)
+    return f"{name} ready"
+
+async def concurrent_demo():
+    return await asyncio.gather(
+        make_coffee("espresso", 1.0),
+        make_coffee("latte", 1.5),
+        make_coffee("mocha", 0.8),
+    )</code></pre>
+            <p><code>asyncio.sleep</code> is not real work. It is a safe teaching stand-in for network waiting, database
+                waiting, file waiting, or timer waiting.</p>
+        </section>
+        <section class="card">
+            <h2>Sequential vs concurrent</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Style</th>
+                        <th>What happens</th>
+                        <th>Time intuition</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Sequential</td>
+                        <td>Start espresso, wait, start latte, wait, start mocha, wait.</td>
+                        <td>1.0 + 1.5 + 0.8 ≈ 3.3s</td>
+                    </tr>
+                    <tr>
+                        <td>Concurrent</td>
+                        <td>Start all three, wait for all to finish.</td>
+                        <td>max(1.0, 1.5, 0.8) ≈ 1.5s</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="card">
+            <h2>How to run</h2>
+            <pre><code>cd 06_side_projects/asyncio_projects/p1_async_basics
+python main.py</code></pre>
+        </section>
+        <section class="card">
+            <h2>What to remember</h2>
+            <ul>
+                <li><code>async def</code> creates a coroutine function.</li>
+                <li><code>await</code> pauses until an awaitable is done.</li>
+                <li><code>asyncio.run(main())</code> starts the event loop.</li>
+                <li><code>asyncio.gather</code> runs multiple awaitables concurrently.</li>
+                <li><code>asyncio.create_task</code> schedules work now and lets you await it later.</li>
+            </ul>
+            <div class="callout"><strong>Interview answer:</strong> asyncio is best for I/O-bound concurrency. It lets
+                many tasks share one thread by yielding control at <code>await</code> points.</div>
+        </section>
+    </main>
+</body>
+
+</html>

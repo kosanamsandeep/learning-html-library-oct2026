@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What is an agent harness?</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        :root {
+            --accent: #6d28d9;
+            --accent-soft: #ede9fe;
+        }
+
+        pre.mermaid {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>AH</span>Agent Harness</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="what-is-an-agent-harness.html">Concept</a>
+                <a href="anatomy-of-a-harness.html">Anatomy</a>
+                <a href="harness-vs-framework-vs-app.html">Layers</a>
+                <a href="harness-showdown.html">Showdown</a>
+                <a href="build-your-own-harness.html">Build one</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Agent harness · page 1 of 5</p>
+            <h1>What is an agent harness? The brain is the model. The body is the harness.</h1>
+            <p class="lead">A language model, on its own, produces text. An agent does things: it reads your repo,
+                edits a file, runs a test, browses a page, and — crucially — <strong>keeps going based on what
+                    happened</strong>. That gap — between "produces text" and "does things" — is filled by a piece of
+                software called an <strong>agent harness</strong>.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · The one-sentence definition</h2>
+            <p><strong>An agent harness is the software scaffold around a model — the loop, the tools, the context
+                    management, and the guardrails — that turn raw model intelligence into a working agent.</strong>
+                Anthropic has used exactly this framing when describing Claude Code: the harness is what organises how
+                the model reads a project, edits code, runs commands, and adjusts based on results. When people say "X
+                runs in a harness", they mean "X is being driven by an LLM inside a controlled loop with tools, not by
+                the raw API alone."</p>
+            <p>Useful analogy from the earliest days of the term: a horse needs a <em>harness</em> before it can pull a
+                cart. The intelligence (horse) is nothing without the rig that connects its strength to a useful job —
+                and constrains where it can go. A <em>test harness</em> runs software through assertions; a
+                <em>prompt/agent harness</em> runs an LLM through a loop of perception and action.</p>
+        </section>
+
+        <section class="card">
+            <h2>2 · What the raw API gives you — and what it can't</h2>
+            <p>Call a chat API and you get back one thing: <strong>text</strong>. That text can <em>describe</em> edits,
+                but nothing changes on disk. It can <em>propose</em> a command, but nothing executes. The model has no
+                hands, no eyes on your system, and no memory of yesterday unless you supply it. All of those —
+                capability, perception, memory, control — are the harness's job.</p>
+            <div class="grid">
+                <div class="mini good">
+                    <strong>A raw model (the brain)</strong>
+                    <ul>
+                        <li>Reason, plan, and write</li>
+                        <li>Understand language &amp; code</li>
+                        <li>Generate the <em>intent</em> of an action</li>
+                    </ul>
+                </div>
+                <div class="mini bad">
+                    <strong>What the model can't do alone</strong>
+                    <ul>
+                        <li>Read your actual files or run code</li>
+                        <li>Act on the world or change state</li>
+                        <li>Remember anything between calls</li>
+                        <li>Know when to stop or ask permission</li>
+                        <li>Be interrupted, sandboxed, or audited</li>
+                    </ul>
+                </div>
+                <div class="mini good">
+                    <strong>The harness (the body)</strong>
+                    <ul>
+                        <li>Runs the loop that keeps the model going</li>
+                        <li>Gives it tools and executes them</li>
+                        <li>Manages the context window</li>
+                        <li>Enforces permissions &amp; guardrails</li>
+                        <li>Persists memory across sessions</li>
+                    </ul>
+                </div>
+            </div>
+            <p>This is why "just a wrapper around an API" is usually said by people who haven't tried to make a model do
+                real work. The wrapper — the loop, tools, and constraints — is most of the engineering.</p>
+        </section>
+
+        <section class="card">
+            <h2>3 · The agentic loop: the heart of every harness</h2>
+            <p>The single most important idea is that an agent is <strong>not one call — it's a loop</strong>. The model
+                proposes an action (usually a <em>tool call</em>), the harness executes it, feeds the result back, and
+                the model decides the next step. It repeats until the model says it's done, the harness hits a safety or
+                iteration limit, or a human interrupts.</p>
+            <pre class="mermaid">
+flowchart LR
+  U[You give a goal] --> H[Harness]
+  H --> M[Model reasons]
+  M -->|tool call: read/edit/run/search| H2[Harness executes the tool]
+  H2 -->|observation: result + errors| M
+  M -->|done / needs help| H3[Harness returns / asks permission]
+  H3 --> U
+  H2 -.->|guardrail blocks or prompts| U
+            </pre>
+            <p>Each arrow back into the model is one "turn". A long coding task can be dozens of turns. Everything that
+                makes this loop safe, fast, and effective — tool selection, context packing, stopping rules — is harness
+                engineering.</p>
+        </section>
+
+        <section class="card">
+            <h2>4 · Where the word actually shows up</h2>
+            <p>You'll hear "harness" in several real places, and they're all this same idea at different zoom levels:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Context</th>
+                        <th>What it means</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Coding agents</strong></td>
+                        <td>The CLI/app that drives a model through your repo</td>
+                        <td>Claude Code, OpenAI Codex CLI, Gemini CLI — each <em>is</em> a harness</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SDK harness</strong></td>
+                        <td>The library you use to build your own agent loop</td>
+                        <td>Claude Agent SDK, OpenAI Agents SDK, LangGraph</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Custom harness on a CLI</strong></td>
+                        <td>Outer orchestration that delegates real work to a coding agent</td>
+                        <td>A CI "harness agent" that invokes Claude Code with policy &amp; hooks</td>
+                    </tr>
+                    <tr>
+                        <td><strong>"Dynamic" harness</strong></td>
+                        <td>A harness that writes its own multi-agent orchestration at runtime</td>
+                        <td>Claude Code dynamic workflows (see anatomy, page 2)</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Notice the thread: every sense is <em>the machinery that lets a model act in a controlled way</em>. The
+                product names differ; the skeleton is the same.</p>
+        </section>
+
+        <section class="card">
+            <h2>5 · Why the harness — not the model — is the product</h2>
+            <p>Models converge: the frontier labs are all within striking distance of each other on raw reasoning. But
+                harnesses diverge wildly. Whether an agent can <em>recover from a failed test</em>, whether it will ask
+                before doing something destructive, whether it remembers your preferences next week, whether a junior
+                engineer can safely run it unattended — these are harness properties, and they're where products win or
+                lose.</p>
+            <ul>
+                <li><strong>Safety</strong> lives in the harness: permission prompts, sandboxes, read-only modes.</li>
+                <li><strong>Reliability</strong> lives in the harness: retries, verification loops, stopping rules.</li>
+                <li><strong>Capability</strong> is granted by the harness: which tools exist and how well they're
+                    described.</li>
+                <li><strong>Continuity</strong> comes from the harness: memory files, session logs, context
+                    compaction.</li>
+            </ul>
+            <p>That's why Anthropic talks about "harness design patterns" for balancing intelligence, latency, and cost —
+                and why the best use of an LLM increasingly means choosing and configuring a great harness, not shopping
+                for a slightly smarter model.</p>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="quiet">Definitions and framing synthesised from the following. Vendor docs change — treat the links
+                as authoritative.</p>
+            <div class="sources">
+                <a class="source" href="https://claude.com/blog/harnessing-claudes-intelligence" target="_blank" rel="noopener">Claude · harnessing Claude's intelligence (harness design)</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener">Anthropic · Claude Code overview</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/agents-and-tools/agent-sdk/overview" target="_blank" rel="noopener">Anthropic · Claude Agent SDK</a>
+                <a class="source" href="https://docs.nvidia.com/vss/latest/agent-harnesses.html" target="_blank" rel="noopener">NVIDIA · Agent harnesses</a>
+                <a class="source" href="https://blog.logrocket.com/building-an-agent-harness-with-claude-code/" target="_blank" rel="noopener">LogRocket · building an agent harness with Claude Code</a>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

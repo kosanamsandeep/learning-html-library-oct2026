@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Concept · Memory types in agentic workflows</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <a class="back" href="../index.html">← Portfolio home</a>
+  <h1>Memory types in agentic workflows</h1>
+  <p>What kinds of memory does an agent need, and which library primitive maps to each?</p>
+</header>
+<main>
+
+<h2>📖 Story mode — Maya, the new barista at Café Cortex</h2>
+<div class="callout good">
+<b>The scene.</b> It's Maya's first day at <i>Café Cortex</i>. The shop has been running for years and the owner says:
+<i>“Don't worry, the café itself remembers everything — you just have to know where to look.”</i>
+Maya quickly discovers the café has <b>five different memories</b>, and each one lives in a different place.
+</div>
+
+<ol>
+<li><b>Short-term memory = the cup in Maya's hand.</b><br/>
+A customer says <i>“large latte, oat milk, extra hot.”</i> Maya repeats it under her breath while she walks to the espresso machine.
+The moment the cup is handed over, the words evaporate. → This is the agent's <b>scratchpad / ReAct trace</b> for the current turn.</li>
+
+<li><b>Episodic memory = yesterday's receipts in the till drawer.</b><br/>
+At closing time Maya flips through receipts: <i>“Ah, that grumpy man at 9 a.m. wanted a flat white, not a cappuccino.”</i>
+She can replay specific past events. → This is <b>ConversationBufferMemory</b> / LangGraph <b>MemorySaver</b>: full transcripts of past turns, keyed by thread.</li>
+
+<li><b>Semantic memory = the recipe binder behind the counter.</b><br/>
+The binder has 500 laminated pages: how to pull a ristretto, milk-fat ratios, allergen tables, the WiFi password.
+Maya doesn't <i>remember</i> writing any of it — she just <i>looks it up</i>. → This is your <b>vector database</b>. Your 500 PDF chunks live here.</li>
+
+<li><b>Procedural memory = Maya's hands after week three.</b><br/>
+By day 20, she steams milk without thinking. Her fingers know the rhythm. There's no “lookup” — the skill is baked in.
+→ This is the <b>system prompt + tool definitions</b>: the agent's <i>how to behave</i> wiring.</li>
+
+<li><b>Entity memory = the “Regulars” chalkboard near the till.</b><br/>
+<i>“Tom — oat milk, no sugar. Priya — decaf after 4 pm. Raj — always pays cash.”</i> One row per person, updated as facts change.
+→ This is <b>EntityMemory</b> / a per-user profile table: structured facts about <i>who</i> you're talking to.</li>
+</ol>
+
+<div class="callout warn">
+<b>One-line recall trick:</b> <i>“The cup, the receipts, the binder, the hands, the chalkboard.”</i>
+If you can picture Maya touching each of those five things, you've memorised all five memory types.
+</div>
+
+<div class="mermaid">
+flowchart LR
+    Customer["☕ Customer order"] --> Maya(("👩\u200d🍳 Maya"))
+    Maya --> Cup["🥤 Cup in hand<br/>short-term"]
+    Maya --> Drawer["🧾 Till drawer<br/>episodic"]
+    Maya --> Binder["📒 Recipe binder<br/>semantic / vector DB"]
+    Maya --> Hands["✋ Trained hands<br/>procedural / prompt"]
+    Maya --> Board["🧑\u200d🤝\u200d🧑 Regulars board<br/>entity"]
+</div>
+
+<h2>The big picture</h2>
+<div class="mermaid">
+flowchart LR
+    User -->|turn N| Agent
+    subgraph Memory
+      ST[Short-term<br/>working memory]
+      EP[Episodic<br/>past conversations]
+      SE[Semantic<br/>facts &amp; knowledge]
+      PR[Procedural<br/>skills &amp; prompts]
+      EN[Entity / profile<br/>users, accounts]
+    end
+    Agent <--> ST
+    Agent <--> EP
+    Agent <--> SE
+    Agent <--> PR
+    Agent <--> EN
+</div>
+
+<h2>The 5 memory types you actually use</h2>
+<table>
+<tr><th>Type</th><th>What it stores</th><th>Lifetime</th><th>Typical store</th><th>Example in this portfolio</th></tr>
+<tr><td><b>Short-term / working</b></td><td>Current turn + scratchpad of Thoughts &amp; Observations</td><td>One run</td><td>In-process (Python list, prompt window)</td><td>The <code>agent_scratchpad</code> in every ReAct project</td></tr>
+<tr><td><b>Episodic (chat history)</b></td><td>Prior turns of <i>this</i> user/session</td><td>Hours – days</td><td><code>ConversationBufferMemory</code>, LangGraph <code>MemorySaver</code>, Redis</td><td>ReAct 03 (per session_id) &amp; LangGraph 01/03 (per thread_id)</td></tr>
+<tr><td><b>Semantic (knowledge)</b></td><td>Domain facts the agent can recall by similarity</td><td>Months</td><td>Vector DB (Chroma, Qdrant, Pinecone, pgvector)</td><td>The multimodal-to-vector-DB concept page</td></tr>
+<tr><td><b>Procedural</b></td><td>"How to do X" — prompts, tool definitions, few-shot examples</td><td>Lifetime of the system</td><td>Git-versioned files (<code>data/prompts/*.txt</code>)</td><td>Every project's <code>data/prompts/</code></td></tr>
+<tr><td><b>Entity / profile</b></td><td>Long-term facts about <i>this</i> user (preferences, accounts, prior decisions)</td><td>Months – years</td><td>Key-value store (Redis, SQL) or a "memory" service like Mem0 / Zep</td><td>Not built here — see the example pattern below</td></tr>
+</table>
+
+<h2>Concrete examples (mapped to real libs)</h2>
+<table>
+<tr><th>Memory</th><th>LangChain primitive</th><th>LangGraph primitive</th><th>Production option</th></tr>
+<tr><td>Short-term</td><td><code>agent_scratchpad</code></td><td>State <code>messages</code> list</td><td>In-process</td></tr>
+<tr><td>Episodic</td><td><code>ConversationBufferMemory</code>, <code>ConversationSummaryMemory</code></td><td><code>MemorySaver</code>, <code>SqliteSaver</code>, <code>PostgresSaver</code></td><td>Postgres / Redis</td></tr>
+<tr><td>Semantic</td><td><code>VectorStoreRetriever</code></td><td>Same retriever called from a node</td><td>Pinecone / Qdrant / pgvector</td></tr>
+<tr><td>Procedural</td><td><code>PromptTemplate</code> + hub</td><td>Same templates loaded per node</td><td>Git + a prompt registry (LangSmith)</td></tr>
+<tr><td>Entity</td><td>None built-in</td><td>None built-in</td><td><a style="color:#fbbf24" href="https://github.com/mem0ai/mem0">Mem0</a>, <a style="color:#fbbf24" href="https://github.com/getzep/zep">Zep</a></td></tr>
+</table>
+
+<h2>When each kicks in (sequence)</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant A as Agent
+    participant ST as Short-term
+    participant EP as Episodic
+    participant SE as Semantic
+    participant EN as Entity
+    U->>A: "Same as yesterday's order but vegetarian"
+    A->>EN: load profile (allergies = nuts)
+    A->>EP: load last orders (yesterday = pizza X)
+    A->>SE: retrieve menu items matching "vegetarian"
+    A->>ST: scratchpad: build candidate list
+    A-->>U: "Margherita instead of pepperoni, no nuts"
+</div>
+
+<h2>Common pitfalls</h2>
+<table>
+<tr><th>Pitfall</th><th>Fix</th></tr>
+<tr><td>Stuffing the whole chat history into the prompt</td><td>Use <code>ConversationSummaryBufferMemory</code> or summarise older turns</td></tr>
+<tr><td>Mixing semantic memory with episodic (one big vector store)</td><td>Separate namespaces; episodic is per-user, semantic is global</td></tr>
+<tr><td>Forgetting to TTL entity facts ("Bob hates pizza" — said once 6 months ago)</td><td>Score memories with recency + frequency + relevance (Mem0/Zep do this)</td></tr>
+<tr><td>Storing PII in vector DBs</td><td>Hash or tokenise identifiers; keep raw PII in a controlled SQL store</td></tr>
+</table>
+
+<h2>Scenario: where does a 10-page doc with 500 chunks live?</h2>
+<p>If you ingest a 10-page document (500 chunks → 500 vectors), each chunk lands in <b>semantic memory</b>. Here's how the memory tiers split the work for a single user turn:</p>
+
+<div class="mermaid">
+flowchart LR
+    Doc[10-page doc<br/>500 chunks → 500 vectors] --> SE[(Semantic memory<br/>vector DB)]
+    U[User turn 5:<br/>"summarise section 3"] --> ST[Short-term scratchpad]
+    U --> EP[(Episodic<br/>turns 1-4)]
+    ST --> A[Agent]
+    EP --> A
+    A -->|retrieve top-k=5| SE
+    SE -->|5 chunks back| A
+    A -->|grounded answer| U
+</div>
+
+<table>
+<tr><th>Memory tier</th><th>What it holds for this scenario</th><th>How many "items"</th></tr>
+<tr><td>Short-term</td><td>Current Thought/Action scratchpad</td><td>~1 prompt window</td></tr>
+<tr><td>Episodic</td><td>Turns 1-4 of this user's conversation</td><td>4 messages</td></tr>
+<tr><td><b>Semantic</b></td><td>The 500 chunks of the doc, plus chunks of every other doc indexed</td><td><b>500 vectors</b> per doc</td></tr>
+<tr><td>Procedural</td><td>The prompt template that says "answer using the retrieved chunks"</td><td>1 file in <code>data/prompts/</code></td></tr>
+<tr><td>Entity</td><td>"This user prefers bullet-point answers"</td><td>1 row in a KV store</td></tr>
+</table>
+
+<div class="callout good">
+The document itself becomes 500 rows in semantic memory — never one giant memory "entry". Other memory tiers stay tiny (a handful of items each).
+</div>
+
+</main>
+<footer>concepts · memory_types</footer>
+</body>
+</html>

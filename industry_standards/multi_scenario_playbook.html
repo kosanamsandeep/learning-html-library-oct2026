@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scenario Playbook — six concrete agent use cases</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="anthropic_building_agents.html">Anthropic</a>
+                <a href="openai_agents_sdk.html">OpenAI</a>
+                <a href="github_copilot_best_practices.html">Copilot</a>
+                <a href="anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Scenario playbook</p>
+            <h1>Six concrete scenarios — pick a pattern, pick a framework, ship</h1>
+            <p class="lead">Reading the best-practice posts is one thing. Mapping them to your problem is another. Below
+                are six recurring scenarios with the pattern, the tool design, and the framework choice already worked
+                out.</p>
+        </section>
+
+        <section class="card" id="s1">
+            <h2>Scenario 1 — Customer support bot</h2>
+            <p><strong>Profile:</strong> open-ended conversation, needs to look up orders, issue refunds, escalate hard
+                cases.</p>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Pattern (Anthropic)</th>
+                        <td>Routing + agent. Cheap classifier picks "FAQ", "order lookup", "refund", "escalate".
+                            Refund/escalate routes go to an agent with tools.</td>
+                    </tr>
+                    <tr>
+                        <th>Tool design</th>
+                        <td><code>get_order(query)</code>, <code>create_refund(order_id, amount, reason)</code>,
+                            <code>escalate_to_human(summary)</code>. Each has explicit "use this when" guidance and
+                            example calls.</td>
+                    </tr>
+                    <tr>
+                        <th>Framework</th>
+                        <td>OpenAI Agents SDK with handoffs (FAQ agent ↔ Refunds agent ↔ Human-handoff agent),
+                            guardrails for unsafe inputs, sessions for the conversation.</td>
+                    </tr>
+                    <tr>
+                        <th>Watch out for</th>
+                        <td>Compensating actions on refund failure (saga shape — see <a
+                                href="../system_design_academy/system_design_case_studies/p4_saga_orchestrator/README.html">Case
+                                Study P4</a>), idempotency keys on every refund (see <a
+                                href="../system_design_academy/system_design_fundamentals/p4_idempotent_api/README.html">Fundamentals
+                                P4</a>).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card" id="s2">
+            <h2>Scenario 2 — Code reviewer / bug fixer</h2>
+            <p><strong>Profile:</strong> takes a PR, reviews it, may apply small fixes, flags risks.</p>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Pattern (Anthropic)</th>
+                        <td>Evaluator-optimiser. One agent drafts a review, another critiques. Iterate until the critic
+                            stops finding issues.</td>
+                    </tr>
+                    <tr>
+                        <th>Tool design</th>
+                        <td><code>read_diff(pr_id)</code>, <code>read_file(path)</code>, <code>run_tests()</code>,
+                            <code>post_comment(line, text)</code>. Use <em>absolute paths</em> always (Anthropic's
+                            SWE-bench lesson).</td>
+                    </tr>
+                    <tr>
+                        <th>Framework</th>
+                        <td>OpenAI Agents SDK Sandbox agents with filesystem + shell capability, OR GitHub Copilot's
+                            coding agent on a tagged issue. <a href="claude_code_in_sdlc/README.html">Claude Code with a
+                                review skill</a> if your team is on Claude.</td>
+                    </tr>
+                    <tr>
+                        <th>Watch out for</th>
+                        <td>Don't let the agent push to main. Always open a PR. Run tests inside the sandbox; never on
+                            production data.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card" id="s3">
+            <h2>Scenario 3 — RAG knowledge bot for an internal wiki</h2>
+            <p><strong>Profile:</strong> answers questions grounded in a private corpus, must cite sources.</p>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Pattern (Anthropic)</th>
+                        <td>Augmented LLM (single call) with retrieval. <em>Not</em> an agent unless multi-hop questions
+                            are common.</td>
+                    </tr>
+                    <tr>
+                        <th>Tool design</th>
+                        <td>One <code>search_knowledge_base(query, top_k)</code> tool returning
+                            <code>(doc_id, snippet, score)</code>. The model is instructed to cite <code>[doc_id]</code>
+                            in every claim.</td>
+                    </tr>
+                    <tr>
+                        <th>Framework</th>
+                        <td>Either Responses API directly or the Agents SDK with a single agent + the search tool. Add a
+                            <em>guardrail</em> that refuses out-of-scope categories (medical / legal / investment
+                            advice).</td>
+                    </tr>
+                    <tr>
+                        <th>Watch out for</th>
+                        <td>Faithfulness ≠ correctness — see <a
+                                href="../system_design_academy/ai_engineering/p5_knowledge_qa_system/README.html">AI
+                                P5</a>. Pair faithfulness scoring with a minimum top-1 similarity threshold.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card" id="s4">
+            <h2>Scenario 4 — Data ETL agent that fixes broken pipelines</h2>
+            <p><strong>Profile:</strong> a daily batch fails, the agent diagnoses the failure, applies known
+                remediations, opens a PR for novel cases.</p>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Pattern (Anthropic)</th>
+                        <td>Orchestrator-workers. Orchestrator reads logs, decides which remediation to attempt; workers
+                            (one per category — schema drift, auth, quota) execute the fix.</td>
+                    </tr>
+                    <tr>
+                        <th>Tool design</th>
+                        <td><code>fetch_logs(job_id, since)</code>, <code>describe_schema(table)</code>,
+                            <code>retry_step(step_id, with_param)</code>, <code>open_runbook_pr(title, body)</code>.
+                            Each tool returns a structured result and an <em>explanation</em> the agent can quote.</td>
+                    </tr>
+                    <tr>
+                        <th>Framework</th>
+                        <td>OpenAI Agents SDK with handoffs into specialist worker agents, sessions for incident state,
+                            tracing wired into your alert tool.</td>
+                    </tr>
+                    <tr>
+                        <th>Watch out for</th>
+                        <td>Bound the number of retries. Capture every action in an audit log. Add a kill switch for any
+                            tool that mutates production.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card" id="s5">
+            <h2>Scenario 5 — Multi-agent research crew</h2>
+            <p><strong>Profile:</strong> a deep-dive on a topic — gather sources, summarise each, write a brief,
+                critique.</p>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Pattern (Anthropic)</th>
+                        <td>Manager (agent-as-tool). Researcher → Writer → Critic. The manager owns control flow.</td>
+                    </tr>
+                    <tr>
+                        <th>Tool design</th>
+                        <td><code>web_search(query)</code> for the researcher, <code>read_url(url)</code> for the
+                            reader, <code>save_brief(title, body)</code> for the writer.</td>
+                    </tr>
+                    <tr>
+                        <th>Framework</th>
+                        <td>OpenAI Agents SDK with three agents wired as tools to a manager. <a
+                                href="../system_design_academy/ai_engineering/p2_multi_agent_system/README.html">AI P2
+                                multi-agent</a> shows the same shape from scratch.</td>
+                    </tr>
+                    <tr>
+                        <th>Watch out for</th>
+                        <td>Cap reflection iterations — critic loops can spiral. Two retries is usually enough.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card" id="s6">
+            <h2>Scenario 6 — Voice assistant for an internal app</h2>
+            <p><strong>Profile:</strong> low-latency, push-to-talk, looks up data and reads short answers.</p>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Pattern (Anthropic)</th>
+                        <td>Augmented LLM with tools, kept simple. The latency budget is the design constraint.</td>
+                    </tr>
+                    <tr>
+                        <th>Tool design</th>
+                        <td>Tools must return small, voice-friendly strings — not JSON dumps. Add a tool that says "I
+                            don't know, please open the dashboard" so the agent has a clean fallback.</td>
+                    </tr>
+                    <tr>
+                        <th>Framework</th>
+                        <td>OpenAI Agents SDK Realtime agents with <code>gpt-realtime-2</code> and built-in interruption
+                            handling, OR a voice pipeline (STT → agent → TTS) when the realtime path is overkill.</td>
+                    </tr>
+                    <tr>
+                        <th>Watch out for</th>
+                        <td>Confirm before any write. Voice mishears more than text. Always read back the action ("OK —
+                            refunding $89, confirm yes/no").</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Decision matrix — which framework should I pick?</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>If you need…</th>
+                        <th>Pick</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Tightest possible loop, full control.</td>
+                        <td>OpenAI Responses API or Anthropic Messages API directly.</td>
+                    </tr>
+                    <tr>
+                        <td>A managed agent runtime (loop, tools, handoffs, sessions).</td>
+                        <td>OpenAI Agents SDK.</td>
+                    </tr>
+                    <tr>
+                        <td>Reusable, packaged "skills" Claude can load on demand.</td>
+                        <td>Anthropic Skills + Claude Agent SDK / Claude Code.</td>
+                    </tr>
+                    <tr>
+                        <td>An agent that lives in the editor and writes code with you.</td>
+                        <td>GitHub Copilot (chat, inline) or Claude Code or Codex CLI.</td>
+                    </tr>
+                    <tr>
+                        <td>An agent that lives on a GitHub issue and opens PRs.</td>
+                        <td>GitHub Copilot coding agent.</td>
+                    </tr>
+                    <tr>
+                        <td>Cross-vendor tool integration (your tools, any LLM).</td>
+                        <td>Model Context Protocol (MCP) — supported by both Anthropic and OpenAI Agents SDK.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank"
+                    rel="noopener">Anthropic — Building effective agents</a>
+                <a class="source" href="https://openai.github.io/openai-agents-python/" target="_blank"
+                    rel="noopener">OpenAI Agents SDK</a>
+                <a class="source" href="https://docs.github.com/en/copilot/get-started/best-practices" target="_blank"
+                    rel="noopener">GitHub Copilot — Best practices</a>
+                <a class="source" href="https://modelcontextprotocol.io/" target="_blank" rel="noopener">Model Context
+                    Protocol</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

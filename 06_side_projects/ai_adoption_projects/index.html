@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Adoption — Learning Projects</title>
+  <link rel="stylesheet" href="projects.css">
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="index.html"><span>AI</span>Adoption Projects</a>
+      <div class="top-links">
+        <a href="../../industry_standards/ai-org-adoption-playbook.html">📖 Playbook</a>
+        <a href="../../industry_standards/index.html">Industry Standards</a>
+        <a href="../../README.html">Workspace</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">18 hands-on projects · 3 challenge areas + 2 concept deep-dives</p>
+      <h1>AI Agent Adoption — Learning Projects</h1>
+      <p class="lead">Each project maps to a real-world challenge from the <a href="../../industry_standards/ai-org-adoption-playbook.html">Org Adoption Playbook</a>. Build your expertise in multi-agent infrastructure, supply chain security, and custom eval frameworks — one weekend project at a time.</p>
+    </section>
+
+    <div class="card">
+      <h2>🧩 Project Map</h2>
+      <p>Projects are ordered by suggested learning sequence within each track. Click any card to open its detailed explainer.</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1.5rem;">
+        <div style="border:1px solid var(--line); border-radius:8px; padding:1rem; background:var(--warn-soft);">
+          <h3 style="color:var(--warn); margin:0 0 0.3rem;">🤖 Multi-Agent</h3>
+          <p style="font-size:0.85rem;">Context files, MCP, audit trails, routing</p>
+          <div style="font-size:0.82rem;">Projects 01–04</div>
+        </div>
+        <div style="border:1px solid var(--line); border-radius:8px; padding:1rem; background:var(--green-soft);">
+          <h3 style="color:var(--green); margin:0 0 0.3rem;">🔐 Supply Chain</h3>
+          <p style="font-size:0.85rem;">SBOMs, diffing, signing, SLSA levels</p>
+          <div style="font-size:0.82rem;">Projects 05–08</div>
+        </div>
+        <div style="border:1px solid var(--line); border-radius:8px; padding:1rem; background:var(--gh-soft);">
+          <h3 style="color:var(--gh); margin:0 0 0.3rem;">🧪 Eval Framework</h3>
+          <p style="font-size:0.85rem;">Corpus, anti-patterns, runners, tuning, adversarial</p>
+          <div style="font-size:0.82rem;">Projects 09–14</div>
+        </div>
+        <div style="border:1px solid var(--line); border-radius:8px; padding:1rem; background:var(--bad-soft);">
+          <h3 style="color:var(--bad); margin:0 0 0.3rem;">🧩 Cross-Cutting</h3>
+          <p style="font-size:0.85rem;">Code review assistant, governance dashboard</p>
+          <div style="font-size:0.82rem;">Projects 15–16</div>
+        </div>
+      </div>
+      <p style="margin-top:1rem; font-size:0.85rem; color:var(--muted);">➕ Also: <strong>Project 17</strong> (Power of Loops) and <strong>Project 18</strong> (Power of Hooks) — deep-dives into Claude Code's automation layer.</p>
+    </div>
+
+    <div class="card">
+      <h2>📋 All Projects</h2>
+      <table>
+        <tr><th>#</th><th>Project</th><th>Track</th><th>Difficulty</th></tr>
+        <tr><td>01</td><td><a href="01_context_file_generator/">Context File Generator</a></td><td>Multi-Agent</td><td>Beginner+</td></tr>
+        <tr><td>02</td><td><a href="02_minimal_mcp_server/">Minimal MCP Server</a></td><td>Multi-Agent</td><td>Intermediate</td></tr>
+        <tr><td>03</td><td><a href="03_agent_audit_trail_hook/">Agent Audit Trail Hook</a></td><td>Multi-Agent</td><td>Beginner</td></tr>
+        <tr><td>04</td><td><a href="04_agent_router/">Agent Router</a></td><td>Multi-Agent</td><td>Advanced</td></tr>
+        <tr><td>05</td><td><a href="05_diy_sbom_generator/">DIY SBOM Generator</a></td><td>Supply Chain</td><td>Intermediate</td></tr>
+        <tr><td>06</td><td><a href="06_sbom_diff_checker/">SBOM Diff Checker</a></td><td>Supply Chain</td><td>Intermediate</td></tr>
+        <tr><td>07</td><td><a href="07_container_signing_lab/">Container Signing Lab</a></td><td>Supply Chain</td><td>Intermediate</td></tr>
+        <tr><td>08</td><td><a href="08_slsa_level_walkthrough/">SLSA Level Walkthrough</a></td><td>Supply Chain</td><td>Advanced</td></tr>
+        <tr><td>09</td><td><a href="09_known_bad_corpus_builder/">Known-Bad Corpus Builder</a></td><td>Eval Framework</td><td>Beginner</td></tr>
+        <tr><td>10</td><td><a href="10_seeded_antipattern_inserter/">Seeded Anti-Pattern Inserter</a></td><td>Eval Framework</td><td>Intermediate</td></tr>
+        <tr><td>11</td><td><a href="11_eval_runner_scorecard/">Eval Runner &amp; Scorecard</a></td><td>Eval Framework</td><td>Intermediate+</td></tr>
+        <tr><td>12</td><td><a href="12_prompt_tuning_workbench/">Prompt Tuning Workbench</a></td><td>Eval Framework</td><td>Advanced</td></tr>
+        <tr><td>13</td><td><a href="13_adversarial_eval_loop/">Adversarial Eval Loop</a></td><td>Eval Framework</td><td>Advanced</td></tr>
+        <tr><td>14</td><td><a href="14_benchmark_mapping_tool/">Benchmark Mapping Tool</a></td><td>Eval Framework</td><td>Intermediate</td></tr>
+        <tr><td>15</td><td><a href="15_ai_code_review_assistant/">AI Code Review Assistant</a></td><td>Cross-Cutting</td><td>Capstone</td></tr>
+        <tr><td>16</td><td><a href="16_ai_governance_dashboard/">AI Governance Dashboard</a></td><td>Cross-Cutting</td><td>Advanced</td></tr>
+        <tr><td>17</td><td><a href="17_power_of_loops/">Power of Loops</a></td><td>Claude Code Concepts</td><td>Beginner+</td></tr>
+        <tr><td>18</td><td><a href="18_power_of_hooks/">Power of Hooks</a></td><td>Claude Code Concepts</td><td>Beginner+</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>🗺️ Suggested Path</h2>
+      <p class="quiet">Start with the beginner projects in each track, then tackle the capstone. Each project page includes a mermaid diagram of the architecture, a step-by-step explanation, and starter code.</p>
+    </div>
+  </main>
+</body>
+</html>

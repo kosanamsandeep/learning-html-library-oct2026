@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Vision and Multimodal Roadmap</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">R</span>
+                <span>AI Engineer Interview Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="vision-model-evolution.html">Vision Evolution</a>
+                <a href="multimodal-vision-llms.html">Vision LLMs</a>
+                <a href="image-video-generation.html">Image and Video</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#goal">What to aim for</a>
+            <a href="#stage1">Stage 1: Foundations</a>
+            <a href="#stage2">Stage 2: Classical CV and CNNs</a>
+            <a href="#stage3">Stage 3: Detection and segmentation</a>
+            <a href="#stage4">Stage 4: Vision transformers and foundation models</a>
+            <a href="#stage5">Stage 5: Multimodal and video</a>
+            <a href="#stage6">Stage 6: Production systems</a>
+            <a href="#projects">Project roadmap</a>
+            <a href="#interview">Interview advice</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Learning path</p>
+                    <h1>Roadmap for computer vision, multimodal LLMs, and generative video</h1>
+                    <p>This roadmap is designed for someone who wants to understand how today\'s vision systems work,
+                        how multimodal assistants reason over images and video, and how to move from fundamentals to
+                        production-grade projects.</p>
+                    <p>The correct strategy is not to start with image-to-video generation directly. Start with
+                        representations, tasks, and system design first. Otherwise the field feels magical instead of
+                        understandable.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Roadmap principle</h2>
+                    <p class="formula">Learn in this order: image representation -> supervised CV tasks -> transformers
+                        -> foundation models -> multimodal reasoning -> video -> production</p>
+                </div>
+            </section>
+
+            <section class="section" id="goal">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What competence should look like</h3>
+                        <p>You should be able to explain why a CNN works, when to use ViT or CLIP, how a multimodal
+                            LLM sees an image, when segmentation needs a specialist model, how video summarization is
+                            built, and what makes inference fast enough for product use.</p>
+                    </div>
+                    <div class="card">
+                        <h3>What not to do</h3>
+                        <p>Do not memorize model names without understanding the task families: classification,
+                            detection, segmentation, retrieval, captioning, visual grounding, and temporal reasoning.
+                            The task framing matters more than a benchmark leaderboard snapshot.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="stage1">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Stage 1</p>
+                        <h2>Foundations</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>Learn image representation basics</h3>
+                        <p>Pixels, channels, spatial locality, convolution intuition, receptive field, feature maps,
+                            pooling, augmentation, normalization, and common losses such as cross-entropy.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Learn the core math and training pieces</h3>
+                        <p>Linear algebra, convolution as a local weighted operation, backpropagation, SGD/Adam, and
+                            why regularization and augmentation matter.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Understand evaluation</h3>
+                        <p>Classification accuracy, precision, recall, F1, confusion matrix, IoU, mAP, and why metrics
+                            differ between classification, detection, and segmentation.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="stage2">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Stage 2</p>
+                        <h2>Classical CV to CNNs</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Study order</h3>
+                        <ul class="stack-list">
+                            <li>Handcrafted features: edges, HOG, SIFT, ORB.</li>
+                            <li>LeNet and the CNN idea.</li>
+                            <li>AlexNet, VGG, Inception, ResNet.</li>
+                            <li>Transfer learning and fine-tuning.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>What to build</h3>
+                        <p>Build an image classifier on a small dataset, then fine-tune a pretrained CNN on a domain
+                            dataset such as retail products, waste classification, food images, or plant disease.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="stage3">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Stage 3</p>
+                        <h2>Detection and segmentation</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>What to learn</th>
+                                <th>Typical models</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Object detection</td>
+                                <td>Boxes, anchors, IoU, NMS, one-stage vs two-stage detection.</td>
+                                <td>Faster R-CNN, YOLO family, DETR.</td>
+                            </tr>
+                            <tr>
+                                <td>Semantic segmentation</td>
+                                <td>Per-pixel classification and mask losses.</td>
+                                <td>U-Net, DeepLab.</td>
+                            </tr>
+                            <tr>
+                                <td>Instance / promptable segmentation</td>
+                                <td>Separate object masks and promptable mask generation.</td>
+                                <td>Mask R-CNN, SAM.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="stage4">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Stage 4</p>
+                        <h2>Vision transformers and foundation models</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>Learn patch embeddings and self-attention</h3>
+                        <p>Understand how ViT converts images into patch tokens and why attention helps with global
+                            context.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Study CLIP, DINO, MAE, and SAM</h3>
+                        <p>These models show how vision moved from single-task supervision to reusable foundation
+                            representations.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Learn transfer, prompting, and zero-shot behavior</h3>
+                        <p>Modern systems are valuable because they can generalize far beyond a single labeled dataset.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="stage5">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Stage 5</p>
+                        <h2>Multimodal LLMs and video</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Multimodal path</h3>
+                        <ul class="stack-list">
+                            <li>Vision encoder + projector + LLM architecture.</li>
+                            <li>Visual question answering and captioning.</li>
+                            <li>OCR-plus-reasoning and document understanding.</li>
+                            <li>Tool-augmented vision systems for segmentation and retrieval.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Video path</h3>
+                        <ul class="stack-list">
+                            <li>Frame sampling and clip encoding.</li>
+                            <li>Temporal transformers and memory.</li>
+                            <li>Action recognition and event summarization.</li>
+                            <li>Image-to-video and text-to-video generation basics.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="stage6">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Stage 6</p>
+                        <h2>Production systems</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>Serving and latency</h3>
+                        <p>Model selection, batching, quantization, ONNX/TensorRT, GPU memory planning, and streaming
+                            responses.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Evaluation and monitoring</h3>
+                        <p>Benchmark by task, monitor drift, inspect failure cases, and create human review loops for
+                            high-risk cases.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Pipeline composition</h3>
+                        <p>Use specialist models where needed: detector + OCR + retrieval + LLM summarizer is often
+                            better than one huge model trying to do everything.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="projects">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Project roadmap</p>
+                        <h2>Projects to build in order</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th>Project</th>
+                                <th>What it teaches</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Beginner</td>
+                                <td>Image classifier with transfer learning</td>
+                                <td>Data loading, augmentation, fine-tuning, evaluation.</td>
+                            </tr>
+                            <tr>
+                                <td>Beginner+</td>
+                                <td>Object detection on retail shelf images</td>
+                                <td>Boxes, IoU, detection metrics, deployment tradeoffs.</td>
+                            </tr>
+                            <tr>
+                                <td>Intermediate</td>
+                                <td>Promptable segmentation app</td>
+                                <td>Mask generation, UI interaction, model orchestration.</td>
+                            </tr>
+                            <tr>
+                                <td>Intermediate</td>
+                                <td>Document or invoice understanding pipeline</td>
+                                <td>OCR, layout understanding, multimodal reasoning.</td>
+                            </tr>
+                            <tr>
+                                <td>Advanced</td>
+                                <td>Video summarization assistant</td>
+                                <td>Frame sampling, temporal compression, LLM summarization.</td>
+                            </tr>
+                            <tr>
+                                <td>Advanced</td>
+                                <td>Image-to-video exploration app</td>
+                                <td>Generative conditioning, temporal consistency, GPU serving.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview advice</p>
+                        <h2>How to explain this area in interviews</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>What strong answers sound like</h3>
+                        <ul class="stack-list">
+                            <li>Explain the representation learning story, not only model names.</li>
+                            <li>Distinguish classification, detection, segmentation, retrieval, captioning, and video
+                                reasoning.</li>
+                            <li>Know why multimodal LLMs need vision encoders and often specialist tools.</li>
+                            <li>Know why production systems care about latency, batching, and quantization.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What weak answers sound like</h3>
+                        <ul class="stack-list">
+                            <li>Calling every image task “just a vision transformer.”</li>
+                            <li>Saying video is just images repeated without temporal reasoning issues.</li>
+                            <li>Assuming one multimodal LLM solves segmentation, OCR, and tracking equally well.</li>
+                            <li>Ignoring evaluation and deployment constraints.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Final roadmap summary</h2>
+                    <p>Learn the tasks first, then CNNs, then transformers and foundation models, then multimodal and
+                        video reasoning, and finally production deployment. The field becomes manageable when you see it
+                        as a progression of reusable representations, not a list of disconnected model names.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>This roadmap takes you from vision basics to multimodal and generative video systems in a usable order.
+            </p>
+            <div class="mini-links">
+                <a href="vision-model-evolution.html">Vision Evolution</a>
+                <a href="multimodal-vision-llms.html">Vision LLMs</a>
+                <a href="image-video-generation.html">Image and Video</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

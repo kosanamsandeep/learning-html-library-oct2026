@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""
+╔══════════════════════════════════════════════════════════════════╗
+║  MCP + LangGraph — Code Review Agent Demo                       ║
+║                                                                ║
+║  Run this to see MCP and LangGraph working together:            ║
+║                                                                ║
+║  1. Spawns an MCP server (code-review-tools) as a subprocess    ║
+║  2. Discovers its tools via the MCP protocol                    ║
+║  3. Builds a LangGraph workflow that calls those tools          ║
+║  4. Runs the workflow → reviews a Python file                   ║
+║  5. Shuts everything down cleanly                               ║
+║                                                                ║
+║  Usage:                                                         ║
+║    pip install -r requirements.txt                              ║
+║    python main.py                                               ║
+║    python main.py sample_code/vulnerable_code.py                 ║
+║                                                                ║
+╚══════════════════════════════════════════════════════════════════╝
+"""
+import asyncio
+import sys
+import os
+
+# Add project root to path so imports work
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from agent.mcp_client import MCPClient
+from agent.graph import create_review_graph
+
+
+async def main():
+    # ─── Pick the file to review ───
+    file_path = sys.argv[1] if len(sys.argv) > 1 else \
+        "sample_code/vulnerable_code.py"
+    # Resolve relative to this script's directory
+    if not os.path.isabs(file_path):
+        file_path = os.path.join(os.path.dirname(__file__), file_path)
+
+    print()
+    print("╔══════════════════════════════════════════════════════╗")
+    print("║   MCP + LangGraph — Code Review Agent Demo          ║")
+    print("╚══════════════════════════════════════════════════════╝")
+    print()
+
+    # ═══════════════════════════════════════════════════════
+    #  STEP 1: Start the MCP server and connect
+    # ═══════════════════════════════════════════════════════
+    # The MCPClient spawns `python server/mcp_server.py` as a subprocess
+    # and communicates with it over stdin/stdout using JSON-RPC.
+    #
+    # This is the "M" in MCP — the protocol is language-agnostic.
+    # The server could be written in Python, TypeScript, Go, or anything else.
+    print("🔌 [1/4] Starting MCP server (code-review-tools)...")
+    print("       Protocol: stdio + JSON-RPC")
+    print("       Server:   server/mcp_server.py")
+
+    async with MCPClient("server/mcp_server.py") as mcp:
+        print("       ✅ Connected and session initialized")
+        print()
+
+        # ═══════════════════════════════════════════════════════
+        #  STEP 2: Discover MCP tools
+        # ═══════════════════════════════════════════════════════
+        # The client asks the server "what tools do you have?"
+        # The server responds with name, description, and inputSchema for each.
+        # No hardcoded tool list — the agent discovers them dynamically.
+        #
+        # This is the decoupling: the agent doesn't import the tools.
+        # It just says "show me what you've got."
+        print("🔎 [2/4] Discovering MCP tools...")
+        tools = await mcp.list_tools()
+        print(f"       Found {len(tools)} tools:")
+        for t in tools:
+            print(f"       • {t.name}")
+            print(f"         {t.description.split('.')[0]}.")
+        print()
+
+        # ═══════════════════════════════════════════════════════
+        #  STEP 3: Build the LangGraph workflow
+        # ═══════════════════════════════════════════════════════
+        # LangGraph defines the orchestration logic — what runs when,
+        # what runs in parallel, how state flows between steps.
+        #
+        # The graph nodes call MCP tools, but they don't care HOW the
+        # tools work — they just pass args and get results.
+        print("🧠 [3/4] Building LangGraph workflow...")
+        graph = create_review_graph(mcp)
+        print()
+        print("       Graph topology:")
+        print("       START → read_file → (syntax + deps + style) → gather → report → END")
+        print()
+
+        # ═══════════════════════════════════════════════════════
+        #  STEP 4: Run the review
+        # ═══════════════════════════════════════════════════════
+        print(f"📂 [4/4] Reviewing: {os.path.basename(file_path)}")
+        print("       ─" + "─" * 50)
+
+        # LangGraph's ainvoke() runs the graph asynchronously
+        # It starts at START, follows edges, fans out, fans in, reaches END
+        result = await graph.ainvoke({
+            "file_path": file_path
+        })
+
+        print("       ─" + "─" * 50)
+        print()
+
+        # ═══════════════════════════════════════════════════════
+        #  OUTPUT: The formatted report
+        # ═══════════════════════════════════════════════════════
+        # This was generated by the MCP format_report tool — not by the
+        # LangGraph agent. The server has the formatting logic; the agent
+        # just passes data in and gets formatted output back.
+        print(result.get("report", "⚠️  No report was generated"))
+
+        print()
+        print("─" * 60)
+        print()
+
+        # ═══════════════════════════════════════════════════════
+        #  SUMMARY: What just happened
+        # ═══════════════════════════════════════════════════════
+        print("🧠 RECAP: How MCP + LangGraph Worked Together")
+        print()
+        print("   ┌─────────────────────────────────────────────────────┐")
+        print("   │  LangGraph (orchestration)                          │")
+        print("   │  • Defines the workflow steps & their order         │")
+        print("   │  • Manages state between steps                      │")
+        print("   │  • Fans out to parallel analyzers via Send()        │")
+        print("   │  • Fans in at gather_results (join node)            │")
+        print("   │                                                     │")
+        print("   │  ↓ calls tools via MCP protocol ↓                   │")
+        print("   │                                                     │")
+        print("   │  MCP Server (tool provider)                         │")
+        print("   │  • Exposes tools: read_file, analyze, check, format │")
+        print("   │  • Each tool is self-contained, language-agnostic   │")
+        print("   │  • Same server works with ANY MCP-speaking agent    │")
+        print("   └─────────────────────────────────────────────────────┘")
+        print()
+        print("   Key insight: The LangGraph agent never imported a file-reader,")
+        print("   an AST parser, or a markdown formatter. It asked MCP for them.")
+        print("   The MCP server doesn't know or care about LangGraph — it just")
+        print("   serves tools. They're decoupled by the protocol.")
+        print()
+
+    # MCPClient.__aexit__ shuts down the server subprocess cleanly
+    print("✅ Demo complete. MCP server shut down.")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

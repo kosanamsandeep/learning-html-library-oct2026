@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 — Inference & Serving at Scale</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0b0e14; --surface:#11151d; --surface2:#161b26; --border:#232a38; --text:#e6e8ee; --dim:#8a93a6; --mute:#5c6575; --accent:#4fd1c5; --accent2:#7aa2f7; --amber:#e9b949; --rose:#e06c75; --green:#98c379; --violet:#a78bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .tag{ display:inline-block; font-size:0.65rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:0.25em 0.7em; border-radius:100px; margin-right:0.4em; vertical-align:middle; }
+  .tag-v{ background:rgba(152,219,121,0.12); color:var(--green); border:1px solid rgba(152,219,121,0.25); }
+  .tag-h{ background:rgba(167,139,250,0.12); color:var(--violet); border:1px solid rgba(167,139,250,0.25); }
+  .tag-a{ background:rgba(233,185,73,0.12); color:var(--amber); border:1px solid rgba(233,185,73,0.25); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(79,209,197,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(233,185,73,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; } @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+  pre{ background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:1.1rem; overflow-x:auto; font-family:'JetBrains Mono',monospace; font-size:0.8rem; line-height:1.6; color:var(--dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← AI Industry Radar</a> · Module 04</div>
+  <h1>Inference &amp; Serving <em style="color:var(--amber);font-style:normal;">at Scale</em></h1>
+  <p><span class="tag tag-v">Verified</span> How frontier labs make LLMs fast and cheap — from token-level tricks to the Postgres architecture behind 800M users.</p>
+
+  <h2>16 Techniques for Sub-Second LLM Responses</h2>
+  <p><span class="tag tag-h">High value</span> Every term below is real, correct, and production-proven. The three to study first for your local-inference work (RTX 5060, 8GB VRAM) are <strong>PagedAttention (vLLM's core)</strong>, <strong>speculative decoding</strong>, and <strong>quantized kernels</strong>.</p>
+
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph TB
+    subgraph MEM["Memory / Attention"]
+        A1["KV-Caching"]
+        A2["FlashAttention"]
+        A3["PagedAttention"]
+        A4["Memory Offloading"]
+    end
+    subgraph DEC["Decoding"]
+        B1["Speculative Decoding"]
+        B2["Early Exit Decoding"]
+        B3["Parallel Decoding"]
+        B4["Streaming Generation"]
+    end
+    subgraph COMP["Compute / Precision"]
+        C1["Mixed Precision Inference"]
+        C2["Quantized Kernels"]
+        C3["Graph Optimization<br/>ONNX · TensorRT"]
+    end
+    subgraph SYS["Systems"]
+        D1["Batch Inference"]
+        D2["Dynamic Batching"]
+        D3["Tensor Parallelism"]
+        D4["Pipeline Parallelism"]
+        D5["Sequence Parallelism"]
+    end
+  </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Technique</th><th>What it does</th><th>Priority for you</th></tr></thead>
+    <tbody>
+      <tr><td><strong>KV-Caching</strong></td><td>Reuse attention keys/values from previous tokens instead of recomputing. The foundation of every fast inference engine.</td><td>⭐⭐⭐</td></tr>
+      <tr><td><strong>PagedAttention</strong></td><td>vLLM's core — manages KV-cache memory in paged blocks like virtual memory. Enables high-throughput serving.</td><td>⭐⭐⭐</td></tr>
+      <tr><td><strong>FlashAttention</strong></td><td>IO-aware attention that avoids materialising the full attention matrix; big speed + memory win on GPU.</td><td>⭐⭐⭐</td></tr>
+      <tr><td><strong>Speculative Decoding</strong></td><td>A small "draft" model proposes tokens; the big model verifies in parallel. Several tokens for the cost of one.</td><td>⭐⭐⭐</td></tr>
+      <tr><td><strong>Quantized Kernels</strong></td><td>INT8 / FP8 / 4-bit weights with optimised kernels. Key to fitting big models on small VRAM.</td><td>⭐⭐⭐</td></tr>
+      <tr><td><strong>Dynamic Batching</strong></td><td>Pack concurrent requests into one forward pass. The workhorse of serving engines.</td><td>⭐⭐</td></tr>
+      <tr><td><strong>Early Exit Decoding</strong></td><td>Skip deep layers when the answer is confident early — research stage, less mainstream.</td><td>⭐</td></tr>
+      <tr><td><strong>Tensor / Pipeline / Sequence Parallelism</strong></td><td>Split the model across GPUs in three different dimensions for multi-GPU serving.</td><td>⭐ (single-GPU for now)</td></tr>
+      <tr><td><strong>Graph Optimization (TensorRT/ONNX)</strong></td><td>Compile the compute graph for fused, faster kernels.</td><td>⭐⭐</td></tr>
+      <tr><td><strong>Memory Offloading</strong></td><td>Stream weights/activations between VRAM, RAM, disk as needed.</td><td>⭐⭐ (fits > VRAM)</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><strong>Study the papers, not the tweet:</strong> read the vLLM (PagedAttention) and FlashAttention papers directly. They're the two techniques that made open-source serving viable, and they're exactly what powers the local-inference path you're on.</div>
+
+  <h2>OpenAI's Postgres Architecture — 800M Users <span class="tag tag-v">Verified</span></h2>
+  <p><strong>Verified real</strong> — OpenAI's own engineering blog ("Scaling PostgreSQL to power 800 million ChatGPT users"). The headline numbers people kept sharing are accurate:</p>
+  <div class="card">
+    <ul>
+      <li>Roughly <strong>800M weekly active users</strong> served by <strong>one Azure Postgres primary</strong> + ~50 read replicas.</li>
+      <li><strong>PgBouncer</strong> for connection pooling (many connections multiplexed onto few actual connections).</li>
+      <li><strong>Cache locking</strong> to keep the hot cache coherent across replicas.</li>
+      <li><strong>WAL fan-out</strong> (the log shipping that feeds replicas) is the key scaling constraint.</li>
+      <li>Actively exploring <strong>cascading read replicas</strong> (replicas of replicas) to fan out further.</li>
+    </ul>
+    <div class="callout warn"><strong>The takeaway that surprises people:</strong> they deliberately avoided sharding. One beefy primary + many replicas was the right call at this scale because of <em>read-heavy</em>, <em>single-key</em> workloads. Sharding adds enormous operational complexity; it's only worth it when writes or size genuinely exceed one primary. This is a masterclass in "choose the simplest architecture that meets the requirement."</div>
+  </div>
+
+  <h2>Model Routing &amp; Cost Arbitrage</h2>
+  <p><span class="tag tag-v">Verified</span> Vercel's data on routing economics — plus the model-substitution table doing the rounds. The meta-idea: <strong>routing lets you adjust the model mix and budget in real time as labs compete.</strong></p>
+  <div class="card">
+    <h3>Vercel's two strategies</h3>
+    <ol>
+      <li>Use <strong>DeepSeek's cheap V4 family</strong> for lower-risk, high-volume tasks.</li>
+      <li><strong>Delay model family upgrades until ROI makes sense</strong> — don't chase every release.</li>
+    </ol>
+    <h3 style="margin-top:1.2rem;">Open-model substitution table (treat numbers as directional, re-benchmark yourself)</h3>
+    <table>
+      <thead><tr><th>Frontier</th><th>Open alternative</th><th>Benchmark gap</th><th>Price ratio</th></tr></thead>
+      <tbody>
+        <tr><td>Opus 4.8</td><td>Kimi K2.7</td><td>~8%</td><td>11× cheaper</td></tr>
+        <tr><td>GPT-5.5</td><td>Qwen 3.7 Max</td><td>~18%</td><td>7× cheaper</td></tr>
+        <tr><td>Sonnet 4.7</td><td>GLM 5.2</td><td>~3%</td><td>5× cheaper</td></tr>
+        <tr><td>GPT-5.5 mini</td><td>MiMo V2.5</td><td>~6%</td><td>12× cheaper</td></tr>
+        <tr><td>GPT-Image-2</td><td>Wan 2.5</td><td>~5%</td><td>8× cheaper</td></tr>
+        <tr><td>Sora 2</td><td>Kling 3.0</td><td>≈ equal</td><td>6× cheaper</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn"><strong>Verify, don't trust the screenshot:</strong> the model names are real (Kimi K2.7, GLM-5.2, DeepSeek V4 Flash are all in your own benchmarking), but the exact gap/price numbers are unsourced. You already have the infra — re-run your own cost/quality comparison. The <em>pattern</em> (5–12× cheaper open models within a few % of frontier) is the reliable part.</div>
+  </div>
+
+  <h2>VRAM Tiering for Local Models <span class="tag tag-a">Verify first</span></h2>
+  <p>A practical mental model for what runs where — with the caveat that some model names in the original post are informal shorthand. Check Hugging Face before downloading.</p>
+  <table>
+    <thead><tr><th>Tier</th><th>VRAM</th><th>Suggested model class</th></tr></thead>
+    <tbody>
+      <tr><td>Phone</td><td>~4 GB</td><td>~27B quantised</td></tr>
+      <tr><td>Nano</td><td>~12 GB</td><td>~12B (e.g. Gemma-class)</td></tr>
+      <tr><td>Micro</td><td>~36 GB</td><td>~27B full-ish</td></tr>
+      <tr><td>Small</td><td>~128 GB</td><td>DeepSeek V4 Flash class</td></tr>
+      <tr><td>Medium</td><td>~256 GB</td><td>GLM-5.2 (2-bit)</td></tr>
+      <tr><td>Large</td><td>~512 GB</td><td>GLM-5.2 (NVFP4)</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><strong>Reality check for your 8GB card:</strong> big open models at full precision are genuinely enterprise-hardware territory (Kimi K2.7 full = 8× RTX PRO 6000, ~$160K AUD — or ~530 months of GPT Pro). For local work, the practical path is <strong>quantised / cloud-hosted</strong> — e.g. Cloudflare Workers AI or Moonshot's API at ~$0.95/M input tokens.</div>
+
+  <a class="prev" href="03-rag-verification.html">← Back: Advanced RAG</a>
+  <a class="next" href="05-finetuning-alignment.html">Next: Fine-Tuning &amp; Alignment Landscape →</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#11151d',primaryColor:'#161b26',primaryBorderColor:'#4fd1c5',primaryTextColor:'#e6e8ee',lineColor:'#4fd1c5',secondaryColor:'#0b0e14'}});</script>
+</body>
+</html>

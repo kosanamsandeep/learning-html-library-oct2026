@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>01 · Multimodal models — Latest Stack</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        pre.mermaid {
+            background: #ffffff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>LS</span>Latest Stack</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="slm.html">SLM</a>
+                <a href="voice-bots.html">Voice bots</a>
+                <a href="../industry_standards/index.html">Industry Standards</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Page 1 of 9</p>
+            <h1>Multimodal models — speech, vision, and true any-to-any LLMs</h1>
+            <p class="lead">Multimodal means the model can read, write, see, hear or speak. In production this
+                usually means one of three things: (1) <strong>STT</strong> — audio in, text out; (2)
+                <strong>TTS</strong> — text in, audio out; (3) <strong>image / vision</strong> models — image in
+                and/or image out; or, increasingly, (4) a single <strong>any-to-any LLM</strong> (GPT-4o, Gemini,
+                Claude) that natively accepts and produces multiple modalities.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>1 · The four flavours, mapped</h2>
+            <pre class="mermaid">
+flowchart LR
+  audio[Audio] -->|STT| txt1[Text]
+  txt2[Text] -->|TTS| audio2[Audio]
+  img1[Image] -->|Vision LLM| txt3[Text / answer]
+  txt4[Prompt] -->|Image gen| img2[Image]
+
+  subgraph Any-to-any LLM
+    direction LR
+    aT[Text]:::m
+    aI[Image]:::m
+    aA[Audio]:::m
+    aV[Video]:::m
+    aT <--> aI
+    aI <--> aA
+    aA <--> aV
+    aV <--> aT
+  end
+
+  classDef m fill:#ffedd5,stroke:#d97706,color:#7c2d12
+            </pre>
+        </section>
+
+        <section class="card">
+            <h2>2 · Speech-to-Text (STT)</h2>
+            <p>STT converts a waveform into a transcript. Modern STT models are encoder networks (often Conformer or
+                Whisper-style Transformer encoders) trained on hundreds of thousands of hours of audio. They emit
+                tokens (text + punctuation + sometimes diarisation / speaker tags).</p>
+            <div class="grid">
+                <div class="mini">
+                    <h3>OpenAI Whisper</h3>
+                    <p>Open-weight, multilingual, runs locally (whisper.cpp) or via API. <code>large-v3</code> is the
+                        current strongest checkpoint.</p>
+                </div>
+                <div class="mini">
+                    <h3>Deepgram Nova-3</h3>
+                    <p>Hosted, &lt;300 ms streaming, strong on noisy / call-centre audio. Used by Vapi, Retell, etc.</p>
+                </div>
+                <div class="mini">
+                    <h3>AssemblyAI Universal-2</h3>
+                    <p>Streaming + batch; strong PII redaction and speaker labels.</p>
+                </div>
+                <div class="mini">
+                    <h3>Azure / Google STT</h3>
+                    <p>Enterprise-grade streaming with phrase hints and custom vocabularies.</p>
+                </div>
+            </div>
+            <h3>Streaming vs batch — pick on latency</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mode</th>
+                        <th>Latency</th>
+                        <th>Use for</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Streaming (chunked WebSocket)</td>
+                        <td>100–300 ms partials</td>
+                        <td>Voice agents, live captions</td>
+                    </tr>
+                    <tr>
+                        <td>Batch (whole file)</td>
+                        <td>~real-time × 0.1 of audio</td>
+                        <td>Meeting summaries, podcasts, archives</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>3 · Text-to-Speech (TTS)</h2>
+            <p>TTS turns text into audio. Modern systems are neural (Tacotron 2, FastSpeech 2, VITS, and now diffusion /
+                LM-based engines like ElevenLabs v3 and OpenAI <code>tts-1-hd</code>). The two dimensions that matter
+                in production are <strong>quality / naturalness</strong> and <strong>first-byte latency</strong>.</p>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>ElevenLabs</h3>
+                    <p>Industry-leading naturalness, voice cloning, ~400 ms streaming. Pay-per-character.</p>
+                </div>
+                <div class="mini good">
+                    <h3>OpenAI TTS (gpt-4o-mini-tts)</h3>
+                    <p>Streaming, 6 baked voices, "voice instructions" (whisper, calm, excited). Cheap.</p>
+                </div>
+                <div class="mini">
+                    <h3>Cartesia Sonic</h3>
+                    <p>~75 ms first-byte. Built for voice agents that interrupt.</p>
+                </div>
+                <div class="mini">
+                    <h3>Coqui XTTS / Piper</h3>
+                    <p>Open-weight, runs on a single GPU or even CPU. Use when you can't ship audio off-prem.</p>
+                </div>
+            </div>
+            <div class="callout"><strong>Streaming TTS trick:</strong> stream the LLM tokens into the TTS engine
+                <em>sentence-by-sentence</em>, not whole-paragraph. The user hears the first sentence while the LLM is
+                still generating the second.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Image models — understanding vs generation</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Family</th>
+                        <th>Input → Output</th>
+                        <th>Representative models</th>
+                        <th>What you build</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Vision encoders</td>
+                        <td>image → embedding</td>
+                        <td>CLIP, SigLIP, DINOv2</td>
+                        <td>Image search, dedup, moderation</td>
+                    </tr>
+                    <tr>
+                        <td>Vision-language</td>
+                        <td>image + text → text</td>
+                        <td>GPT-4o, Claude 3.5, Gemini 2, LLaVA, Qwen2-VL</td>
+                        <td>OCR, document understanding, agent screenshots</td>
+                    </tr>
+                    <tr>
+                        <td>Diffusion (image gen)</td>
+                        <td>text → image</td>
+                        <td>SDXL, SD 3, Flux.1, DALL·E 3, Imagen 3</td>
+                        <td>Marketing assets, product mockups</td>
+                    </tr>
+                    <tr>
+                        <td>Image edit / inpaint</td>
+                        <td>image + prompt → image</td>
+                        <td>Flux Fill, GPT-Image-1, Gemini 2 Flash image edit</td>
+                        <td>Background removal, restyle, virtual try-on</td>
+                    </tr>
+                    <tr>
+                        <td>Video gen</td>
+                        <td>text/image → video</td>
+                        <td>Sora, Veo 3, Runway Gen-3</td>
+                        <td>B-roll, product demos</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>5 · Any-to-any multimodal LLMs</h2>
+            <p>The 2024–2026 shift: a single model with one tokeniser that handles text, images, audio (and
+                increasingly video) natively in one forward pass — no glue between separate STT + LLM + TTS.</p>
+            <ul>
+                <li><strong>GPT-4o / GPT-4o-realtime</strong> — text + image + audio in and out, single model.</li>
+                <li><strong>Gemini 2.0 / 2.5</strong> — long-context multimodal (1M+ tokens of mixed video, image,
+                    text).</li>
+                <li><strong>Claude 3.5 / 4</strong> — text + image in, text out (excellent at documents and charts).
+                </li>
+                <li><strong>Llama 3.2 Vision, Qwen2-VL, Pixtral</strong> — open-weight VLMs you can self-host.</li>
+            </ul>
+            <h3>Why this matters</h3>
+            <p>A pipelined system (STT → LLM → TTS) adds ~400–800 ms of latency and loses paralinguistic information
+                (tone, hesitation, laughter). A native any-to-any model preserves all of it and runs in one round trip.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>6 · Real-world use cases</h2>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>Voice agents</h3>
+                    <p>STT + LLM + TTS (or GPT-4o-realtime) for support, scheduling, sales triage.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Document AI</h3>
+                    <p>VLM reads PDFs, invoices, statements — replaces OCR + layout + rules pipelines.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Accessibility</h3>
+                    <p>Real-time captions, alt-text, audio descriptions, sign-language transcription.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Creative / marketing</h3>
+                    <p>Brand-consistent image &amp; short-video generation with ControlNet / LoRA.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Computer-use agents</h3>
+                    <p>VLM looks at a screenshot, decides the next click — Claude's "computer use" or Anthropic
+                        agent SDK.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Medical / industrial vision</h3>
+                    <p>Radiology triage, defect detection, satellite classification.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>7 · A 20-line working example (OpenAI multimodal)</h2>
+            <pre><code># pip install openai
+from openai import OpenAI
+import base64, pathlib
+
+client = OpenAI()
+
+# 1. STT — transcribe an audio file
+with open("call.wav", "rb") as f:
+    transcript = client.audio.transcriptions.create(
+        model="whisper-1", file=f
+    ).text
+
+# 2. Vision — let the LLM read an image alongside text
+img_b64 = base64.b64encode(pathlib.Path("invoice.png").read_bytes()).decode()
+answer = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": [
+        {"type": "text", "text": f"Transcript:\n{transcript}\nExtract invoice total."},
+        {"type": "image_url",
+         "image_url": {"url": f"data:image/png;base64,{img_b64}"}},
+    ]}],
+).choices[0].message.content
+
+# 3. TTS — speak the answer back
+speech = client.audio.speech.create(
+    model="gpt-4o-mini-tts", voice="alloy", input=answer
+)
+speech.stream_to_file("reply.mp3")
+</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://platform.openai.com/docs/guides/speech-to-text" target="_blank"
+                    rel="noopener">OpenAI — Speech-to-Text</a>
+                <a class="source" href="https://platform.openai.com/docs/guides/text-to-speech" target="_blank"
+                    rel="noopener">OpenAI — Text-to-Speech</a>
+                <a class="source" href="https://platform.openai.com/docs/guides/vision" target="_blank"
+                    rel="noopener">OpenAI — Vision</a>
+                <a class="source" href="https://github.com/openai/whisper" target="_blank" rel="noopener">openai/whisper
+                    (paper + code)</a>
+                <a class="source" href="https://developers.deepgram.com/docs/" target="_blank" rel="noopener">Deepgram
+                    docs</a>
+                <a class="source" href="https://elevenlabs.io/docs" target="_blank" rel="noopener">ElevenLabs docs</a>
+                <a class="source" href="https://ai.google.dev/gemini-api/docs" target="_blank" rel="noopener">Gemini API
+                    docs</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/build-with-claude/vision" target="_blank"
+                    rel="noopener">Anthropic — Vision</a>
+                <a class="source" href="https://huggingface.co/docs/transformers/model_doc/llava" target="_blank"
+                    rel="noopener">Hugging Face — LLaVA / VLMs</a>
+                <a class="source" href="https://arxiv.org/abs/2103.00020" target="_blank" rel="noopener">CLIP paper
+                    (Radford et al.)</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

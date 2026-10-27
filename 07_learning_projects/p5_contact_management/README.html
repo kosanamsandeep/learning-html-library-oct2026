@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Project 5: Contact Management - Nested Schemas Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1100px;
+            margin: auto;
+            padding: 30px;
+            line-height: 1.7;
+            color: #333;
+            background: #fafafa
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #e67e22;
+            padding-bottom: 10px
+        }
+
+        h2 {
+            color: #d35400;
+            margin-top: 40px
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05)
+        }
+
+        .concept {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto
+        }
+
+        .mermaid {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left
+        }
+
+        th {
+            background: #e67e22;
+            color: #fff
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 12px;
+            border-bottom: 2px solid #e67e22;
+            z-index: 100
+        }
+
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #d35400;
+            font-weight: bold
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>📇 Project 5: Contact Management</h1>
+    <p><strong>Level:</strong> Intermediate+ | <strong>Focus:</strong> Nested Schemas, Advanced Validation</p>
+
+    <nav>
+        <a href="#concept">Schema = Contract</a>
+        <a href="#nested">Nesting</a>
+        <a href="#validation">Validation</a>
+        <a href="#flow">Data Flow</a>
+    </nav>
+
+    <div id="concept">
+        <h2>📝 Schema = Contract</h2>
+        <div class="concept">
+            <p>A schema defines the EXACT shape of data that your system accepts and returns. Think of it as a legal
+                contract: "You send me data in THIS format, I guarantee responses in THAT format."</p>
+        </div>
+
+        <div class="mermaid">
+            graph LR
+            A[Client sends JSON] -->|Must match schema| B[ContactSchema.validate]
+            B -->|Valid| C[Create Contact]
+            B -->|Invalid| D[Return ALL errors]
+            C --> E[ContactSchema.serialize]
+            E --> F[Return formatted JSON]
+        </div>
+    </div>
+
+    <div id="nested">
+        <h2>🪆 Nested Schema Architecture</h2>
+
+        <div class="mermaid">
+            classDiagram
+            class ContactSchema {
+            +validate_create(data) errors
+            +validate_update(data) errors
+            +serialize(contact) dict
+            }
+
+            class AddressSchema {
+            +validate(data) errors
+            +to_model(data) dict
+            }
+
+            class PhoneSchema {
+            +validate(data) errors
+            }
+
+            class EmailSchema {
+            +validate(data) errors
+            }
+
+            ContactSchema --> AddressSchema : delegates to
+            ContactSchema --> PhoneSchema : delegates to
+            ContactSchema --> EmailSchema : delegates to
+        </div>
+
+        <div class="highlight">
+            <h3>Nested Validation Error Paths</h3>
+            <pre>
+// Input with errors:
+{
+  "first_name": "",              → "first_name is required"
+  "addresses": [
+    { "zip_code": "INVALID" }   → "addresses[0].zip_code: invalid format"
+  ],
+  "phones": [
+    { "number": "" }            → "phones[0].number is required"
+  ]
+}
+
+// All errors returned at once with clear paths!
+</pre>
+        </div>
+    </div>
+
+    <div id="validation">
+        <h2>✅ Validation Layers</h2>
+
+        <div class="mermaid">
+            graph TD
+            A[Raw Input Data] --> B{Top-Level Valid?}
+            B -->|first_name empty| E[Error: first_name required]
+            B -->|OK| C{Nested Valid?}
+            C -->|bad zip_code| F[Error: addresses.0.zip_code invalid]
+            C -->|OK| D{Cross-Field Valid?}
+            D -->|company but no job_title| G[Warning: job_title recommended]
+            D -->|OK| H[✅ All Valid - Create Contact]
+        </div>
+
+        <div class="card">
+            <table>
+                <tr>
+                    <th>Validation Level</th>
+                    <th>What It Checks</th>
+                    <th>Example</th>
+                </tr>
+                <tr>
+                    <td>Field-level</td>
+                    <td>Single field rules</td>
+                    <td>email must contain @</td>
+                </tr>
+                <tr>
+                    <td>Nested-level</td>
+                    <td>Sub-object rules</td>
+                    <td>Each address has valid zip</td>
+                </tr>
+                <tr>
+                    <td>Cross-field</td>
+                    <td>Rules between fields</td>
+                    <td>If company given, need job_title</td>
+                </tr>
+                <tr>
+                    <td>Business-level</td>
+                    <td>Domain rules</td>
+                    <td>Max 5 addresses per contact</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="flow">
+        <h2>📁 Folder Structure</h2>
+        <div class="card" style="font-family:monospace">
+            p5_contact_management/<br>
+            ├── main.py<br>
+            ├── models/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Domain
+            objects with nested composition<br>
+            │ &nbsp;&nbsp;└── contact.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Contact + Address + Phone + Email<br>
+            ├── <strong>schemas/</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 🆕
+            SCHEMA/VALIDATION layer<br>
+            │ &nbsp;&nbsp;└── contact_schema.py ← Nested validation + serialization<br>
+            └── services/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── contact_service.py ← Uses schemas for in/out
+        </div>
+
+        <div class="card" style="background:#eaf2f8">
+            <h3>🎯 Key Takeaways</h3>
+            <ol>
+                <li><strong>Schema = Contract</strong> between your system and the outside world</li>
+                <li><strong>Nested schemas</strong> validate sub-objects independently</li>
+                <li><strong>Error paths</strong> tell exactly WHERE the problem is</li>
+                <li><strong>Serialize/Deserialize</strong> in one place for consistency</li>
+                <li><strong>Next:</strong> Project 6 introduces the Repository Pattern (separating storage from logic)
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

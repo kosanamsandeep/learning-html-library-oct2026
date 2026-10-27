@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 — Production Runtime: Why MCP Isn't Enough</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0b0e14; --surface:#11151d; --surface2:#161b26; --border:#232a38; --text:#e6e8ee; --dim:#8a93a6; --mute:#5c6575; --accent:#4fd1c5; --accent2:#7aa2f7; --amber:#e9b949; --rose:#e06c75; --green:#98c379; --violet:#a78bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .tag{ display:inline-block; font-size:0.65rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:0.25em 0.7em; border-radius:100px; margin-right:0.4em; vertical-align:middle; }
+  .tag-v{ background:rgba(152,219,121,0.12); color:var(--green); border:1px solid rgba(152,219,121,0.25); }
+  .tag-h{ background:rgba(167,139,250,0.12); color:var(--violet); border:1px solid rgba(167,139,250,0.25); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(79,209,197,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(233,185,73,0.06); }
+  .callout.danger{ border-left-color:var(--rose); background:rgba(224,108,117,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; } @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← AI Industry Radar</a> · Module 02</div>
+  <h1>Production Runtime: <em style="color:var(--amber);font-style:normal;">Why MCP Isn't Enough</em></h1>
+  <p><span class="tag tag-h">High value</span> MCP standardises how agents connect to tools. It does <strong>not</strong> give you identity, policy, observability, or control. That's the production control layer — and it's where enterprise agentic AI actually lives.</p>
+
+  <div class="callout">
+    <strong>The analogy that sticks:</strong> "MCP is like a <em>USB-C port</em>; the control layer is the <em>operating system</em>." A port lets you plug things in. The OS decides who is allowed to, what they may do, how it's watched, and what happens when it goes wrong.
+  </div>
+
+  <h2>MCP Layer vs Production Control Layer</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="color:var(--accent2);">🔌 MCP Layer</h3>
+      <p>What MCP actually gives you — and it stops there:</p>
+      <ul>
+        <li>Standardised <strong>tool discovery</strong></li>
+        <li>Standardised <strong>tool invocation</strong></li>
+        <li>Uniform protocol across tools</li>
+      </ul>
+      <p style="font-size:0.85rem;color:var(--mute);">That's it. A connection standard.</p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--amber);">🏭 Production Control Layer</h3>
+      <p>What every real deployment must add <em>around</em> MCP — 12 items:</p>
+      <ol>
+        <li>Agent Identity</li>
+        <li>User-to-Agent Mapping</li>
+        <li>Tool-Level Authorization</li>
+        <li>Policy Enforcement</li>
+        <li>Timeout Budgets</li>
+        <li>Retry Strategy</li>
+        <li>Structured Errors</li>
+        <li>Observability Traces</li>
+        <li>Audit Logs</li>
+        <li>Human Approval</li>
+        <li>Cost Controls</li>
+        <li>Incident Response</li>
+      </ol>
+    </div>
+  </div>
+
+  <h2>Why MCP Alone Fails in Production</h2>
+  <table>
+    <thead><tr><th>Failure</th><th>Example</th><th>Control-layer fix</th></tr></thead>
+    <tbody>
+      <tr><td><strong>No identity</strong></td><td>Agent can't prove <em>who</em> it is to a system</td><td>Agent Identity + User-to-Agent mapping</td></tr>
+      <tr><td><strong>No authorization</strong></td><td>Any tool that connects is callable — including destructive ones</td><td>Tool-Level Authorization + Policy Enforcement</td></tr>
+      <tr><td><strong>No cost bound</strong></td><td>An agentic loop can burn thousands of tokens</td><td>Cost Controls + Timeout Budgets (e.g. Kimi's daily spending limit warning)</td></tr>
+      <tr><td><strong>No audit</strong></td><td>You can't answer "what did this agent do last night?"</td><td>Audit Logs + Observability Traces</td></tr>
+      <tr><td><strong>No failure handling</strong></td><td>An unhandled tool error silently poisons the answer</td><td>Structured Errors + Retry Strategy + Incident Response</td></tr>
+      <tr><td><strong>No human control</strong></td><td>Irrevocable action taken without a checkpoint</td><td>Human Approval gates</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Enterprise Agentic AI = Runtime Architecture</h2>
+  <div class="callout">
+    <strong>Key line (Deepak Bhardwaj):</strong> "Enterprise Agentic AI is not just model deployment. It is <em>runtime architecture</em>."
+  </div>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph TB
+    subgraph RUNTIME["Agent Runtime Pipeline"]
+        I["Intent"] --> C["Context"] --> RP["Reasoning / Planning"] --> T["Tool Use"] --> A["Action"] --> F["Feedback"]
+    end
+    subgraph CAPS["Horizontal Capabilities"]
+        X1["Permissions"]
+        X2["Policy"]
+        X3["Observability"]
+        X4["Memory"]
+        X5["Evaluation"]
+        X6["Human Escalation"]
+        X7["Audit"]
+        X8["Security Boundaries"]
+    end
+    RUNTIME --- CAPS
+    CAPS --- SYS["Enterprise Systems<br/>CRM · ERP · HR · Data · Cloud · DevOps"]
+  </div>
+  </div>
+  <p>The point: when an agent touches real enterprise systems (a ServiceNow ticket, a payment record), the horizontal capabilities — permissions, audit, cost, escalation — are <strong>first-class concerns, not afterthoughts</strong>. This is a design-review checklist for any agent you intend to put in front of production data.</p>
+
+  <h2>The AI Factory Stack — a Communication Tool</h2>
+  <table>
+    <thead><tr><th>Component</th><th>Factory analogy</th></tr></thead>
+    <tbody>
+      <tr><td>LLM</td><td>The <strong>machine</strong></td></tr>
+      <tr><td>RAG</td><td>The <strong>raw material room</strong></td></tr>
+      <tr><td>Vector DB</td><td>The <strong>storage warehouse</strong></td></tr>
+      <tr><td>AI Agent</td><td>The <strong>floor manager</strong></td></tr>
+      <tr><td>MCP</td><td>The <strong>power outlet standard</strong></td></tr>
+      <tr><td>Guardrails</td><td>The <strong>safety system</strong></td></tr>
+      <tr><td>Evals</td><td>The <strong>quality check</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><strong>"Great AI isn't just a powerful model. It's a well-run factory."</strong> Great for onboarding non-technical stakeholders — but note it reinforces the same module's lesson: the factory needs management, not just machines.</div>
+
+  <h2>Applying This to Your Projects</h2>
+  <div class="card">
+    <h3>Checklist for your RAG chatbot</h3>
+    <ul>
+      <li><strong>Tool-level authorization</strong> — before any tool executes, check the user's role against a permission policy (not the LLM's judgment).</li>
+      <li><strong>Cost controls</strong> — per-user rate limits, per-session token budgets, and a circuit breaker so a runaway agentic loop can't burn money.</li>
+      <li><strong>Audit logs</strong> — every tool call recorded with user_id, tool, args, result, timestamp. This is what makes "what did the agent do?" answerable.</li>
+      <li><strong>Structured errors</strong> — tool failures surface as typed errors the orchestrator can handle (retry / degrade / abstain), never silent text.</li>
+      <li><strong>Human approval gates</strong> — for any action with a high blast radius (writes, external calls, refunds).</li>
+    </ul>
+    <div class="callout warn"><strong>Timely note:</strong> You're actively using MCP (Context7, your own integrations). The "MCP is not enough" framing isn't anti-MCP — it's "build the control layer, don't assume MCP is it."</div>
+  </div>
+
+  <a class="prev" href="01-agent-evolution.html">← Back: Agent Evolution</a>
+  <a class="next" href="03-rag-verification.html">Next: Advanced RAG + Verification Loops →</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#11151d',primaryColor:'#161b26',primaryBorderColor:'#4fd1c5',primaryTextColor:'#e6e8ee',lineColor:'#4fd1c5',secondaryColor:'#0b0e14'}});</script>
+</body>
+</html>

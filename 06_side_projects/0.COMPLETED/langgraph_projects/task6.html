@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 6 - Loops & Iterations | LangGraph</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0f0f23;
+            color: #e0e0e0;
+            line-height: 1.8;
+        }
+
+        .nav {
+            background: #1a1a2e;
+            padding: 15px 30px;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav a {
+            color: #818cf8;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .nav a:hover {
+            color: #a5b4fc;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3b1b4b, #4b1b69);
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .header .task-num {
+            color: #e879f9;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #e0e7ff;
+            margin: 10px 0;
+        }
+
+        .header .subtitle {
+            color: #f0abfc;
+            font-size: 1.2em;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #e879f9;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #7e22ce;
+        }
+
+        .section h3 {
+            color: #f0abfc;
+            font-size: 1.2em;
+            margin: 20px 0 10px;
+        }
+
+        .section p {
+            color: #d1d5db;
+            margin-bottom: 12px;
+        }
+
+        .highlight-box {
+            background: #3b0764;
+            border-left: 4px solid #a855f7;
+            padding: 20px 25px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .highlight-box p {
+            color: #e9d5ff;
+            margin: 0;
+        }
+
+        .code-block {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .loop-diagram {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        .loop-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        .loop-node {
+            background: #581c87;
+            color: #f3e8ff;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .loop-arrow {
+            color: #a855f7;
+            font-size: 1.3em;
+        }
+
+        .loop-back {
+            display: block;
+            text-align: center;
+            color: #f59e0b;
+            font-size: 0.9em;
+            margin-top: 10px;
+            padding: 8px;
+            border: 1px dashed #f59e0b;
+            border-radius: 8px;
+        }
+
+        .iteration-trace {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .iter-step {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px;
+            margin: 8px 0;
+            background: #0f0f23;
+            border-radius: 6px;
+            border-left: 3px solid #a855f7;
+        }
+
+        .iter-step.exit-step {
+            border-left-color: #34d399;
+        }
+
+        .iter-num {
+            background: #581c87;
+            color: #f3e8ff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .iter-content {
+            flex: 1;
+        }
+
+        .iter-content strong {
+            color: #e879f9;
+        }
+
+        .iter-content .score {
+            color: #fbbf24;
+        }
+
+        .key-insight {
+            background: linear-gradient(135deg, #064e3b, #065f46);
+            border: 1px solid #059669;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .key-insight h4 {
+            color: #6ee7b7;
+            margin-bottom: 8px;
+        }
+
+        .key-insight p {
+            color: #a7f3d0;
+            margin: 0;
+        }
+
+        .warning-box {
+            background: #451a03;
+            border: 1px solid #92400e;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .warning-box h4 {
+            color: #fbbf24;
+            margin-bottom: 8px;
+        }
+
+        .warning-box p {
+            color: #fde68a;
+            margin: 0;
+        }
+
+        .advantage-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .advantage-list li {
+            padding: 10px 0 10px 30px;
+            position: relative;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .advantage-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #34d399;
+            font-weight: bold;
+        }
+
+        .diff-box {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .diff-box h4 {
+            color: #e879f9;
+            margin-bottom: 10px;
+        }
+
+        .diff-box p {
+            color: #d1d5db;
+        }
+
+        .nav-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #1f2937;
+        }
+
+        .nav-footer a {
+            color: #818cf8;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 1px solid #4338ca;
+            border-radius: 8px;
+        }
+
+        .nav-footer a:hover {
+            background: #312e81;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="nav">
+        <a href="task5.html">← Task 5</a>
+        <a href="index.html">Overview</a>
+        <a href="task7.html">Task 7 →</a>
+    </div>
+
+    <div class="header">
+        <div class="task-num">Task 6</div>
+        <h1>Loops & Iterative Refinement</h1>
+        <div class="subtitle">Keep improving until it's good enough — the agent feedback loop</div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>🧩 What This Task Teaches</h2>
+            <p>This is where LangGraph truly becomes an <strong>agent framework</strong>. A loop means the workflow can
+                <strong>go back to a previous step</strong> and try again. This enables <strong>iterative
+                    refinement</strong> —
+                search, evaluate, and if not good enough, search again with better parameters.
+            </p>
+
+            <div class="highlight-box">
+                <p><strong>Core Concept:</strong> A conditional edge that routes BACK to a previous node creates a loop.
+                    Combined with a quality check and max iteration limit, this gives you self-improving workflows
+                    that refine their output until it meets a threshold.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔄 The Loop Pattern</h2>
+            <div class="loop-diagram">
+                <div class="loop-visual">
+                    <div class="loop-node">🔍 Search</div>
+                    <div class="loop-arrow">→</div>
+                    <div class="loop-node">📊 Evaluate</div>
+                    <div class="loop-arrow">→</div>
+                    <div class="loop-node">🚦 Router</div>
+                    <div class="loop-arrow">→</div>
+                    <div class="loop-node">✨ Summarize</div>
+                </div>
+                <div class="loop-back">
+                    ↩ If quality < 0.8 AND iterations < max → LOOP BACK to Search </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📈 Execution Trace — Watching the Loop</h2>
+                <p>Query: "What is LangGraph?"</p>
+                <div class="iteration-trace">
+                    <div class="iter-step">
+                        <div class="iter-num">1</div>
+                        <div class="iter-content">
+                            <strong>Search</strong> → "Basic results for: What is LangGraph?"<br>
+                            <strong>Evaluate</strong> → <span class="score">Quality: 0.3 (Needs improvement)</span><br>
+                            <strong>Router</strong> → Quality insufficient → <em>LOOP BACK</em>
+                        </div>
+                    </div>
+                    <div class="iter-step">
+                        <div class="iter-num">2</div>
+                        <div class="iter-content">
+                            <strong>Search</strong> → "Detailed results with more context"<br>
+                            <strong>Evaluate</strong> → <span class="score">Quality: 0.6 (Good)</span><br>
+                            <strong>Router</strong> → Quality insufficient → <em>LOOP BACK</em>
+                        </div>
+                    </div>
+                    <div class="iter-step exit-step">
+                        <div class="iter-num">3</div>
+                        <div class="iter-content">
+                            <strong>Search</strong> → "Comprehensive results with citations and examples"<br>
+                            <strong>Evaluate</strong> → <span class="score">Quality: 0.9 (Excellent!)</span><br>
+                            <strong>Router</strong> → Quality sufficient → <em style="color:#34d399">EXIT to Summarize
+                                ✓</em>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>💻 The Loop Code</h2>
+                <div class="code-block">
+                    <span style="color:#6b7280"># The router function — THIS creates the loop</span>
+                    <span style="color:#c084fc">def</span> <span style="color:#60a5fa">should_continue</span>(state) ->
+                    Literal[<span style="color:#34d399">"search"</span>, <span
+                        style="color:#34d399">"summarize"</span>]:
+                    <span style="color:#6b7280"># Safety: prevent infinite loops</span>
+                    <span style="color:#c084fc">if</span> state[<span style="color:#34d399">"iteration"</span>] >=
+                    state[<span style="color:#34d399">"max_iterations"</span>]:
+                    <span style="color:#c084fc">return</span> <span style="color:#34d399">"summarize"</span> <span
+                        style="color:#6b7280"># EXIT the loop</span>
+
+                    <span style="color:#6b7280"># Quality check: exit early if good enough</span>
+                    <span style="color:#c084fc">if</span> state[<span style="color:#34d399">"quality_score"</span>] >=
+                    0.8:
+                    <span style="color:#c084fc">return</span> <span style="color:#34d399">"summarize"</span> <span
+                        style="color:#6b7280"># EXIT the loop</span>
+
+                    <span style="color:#c084fc">return</span> <span style="color:#34d399">"search"</span> <span
+                        style="color:#6b7280"># LOOP BACK to search node</span>
+
+                    <span style="color:#6b7280"># Wire the conditional edge (creates the loop)</span>
+                    workflow.add_conditional_edges(
+                    <span style="color:#34d399">"evaluate"</span>,
+                    should_continue,
+                    {
+                    <span style="color:#34d399">"search"</span>: <span style="color:#34d399">"search"</span>, <span
+                        style="color:#6b7280"># ← BACK to search (LOOP)</span>
+                    <span style="color:#34d399">"summarize"</span>: <span style="color:#34d399">"summarize"</span> <span
+                        style="color:#6b7280"># ← FORWARD to summarize (EXIT)</span>
+                    }
+                    )
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🛡️ Safety Mechanisms</h2>
+                <div class="warning-box">
+                    <h4>⚠️ Always Prevent Infinite Loops!</h4>
+                    <p>Every loop MUST have at least one exit condition. The two standard safeguards are:<br>
+                        1. <strong>max_iterations</strong> — hard limit on how many times you loop<br>
+                        2. <strong>quality_threshold</strong> — exit early when results are good enough</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🔀 How Task 6 Differs from Task 5</h2>
+                <div class="diff-box">
+                    <h4>Task 5 → Task 6 Evolution</h4>
+                    <p><strong>Task 5</strong> introduced conditional routing — different paths FORWARD based on
+                        state.<br>
+                        <strong>Task 6</strong> uses the same mechanism but routes BACKWARD — creating a loop.
+                        This is the difference between a decision tree and a feedback system.
+                        Loops enable self-correction, iterative improvement, and quality control.
+                    </p>
+                </div>
+                <table style="width:100%; border-collapse:collapse; margin:15px 0;">
+                    <tr style="background:#581c87;">
+                        <th style="padding:12px; text-align:left; color:#f3e8ff;">Aspect</th>
+                        <th style="padding:12px; text-align:left; color:#f3e8ff;">Task 5</th>
+                        <th style="padding:12px; text-align:left; color:#f3e8ff;">Task 6</th>
+                    </tr>
+                    <tr style="background:#1a1a2e;">
+                        <td style="padding:12px; border-bottom:1px solid #1f2937;">Routing direction</td>
+                        <td style="padding:12px; border-bottom:1px solid #1f2937;">Forward only (branching)</td>
+                        <td style="padding:12px; border-bottom:1px solid #1f2937;">Forward AND backward (looping)</td>
+                    </tr>
+                    <tr style="background:#1a1a2e;">
+                        <td style="padding:12px; border-bottom:1px solid #1f2937;">Execution count</td>
+                        <td style="padding:12px; border-bottom:1px solid #1f2937;">Each node runs exactly once</td>
+                        <td style="padding:12px; border-bottom:1px solid #1f2937;">Nodes may run multiple times</td>
+                    </tr>
+                    <tr style="background:#1a1a2e;">
+                        <td style="padding:12px; border-bottom:1px solid #1f2937;">Purpose</td>
+                        <td style="padding:12px; border-bottom:1px solid #1f2937;">Choose the right handler</td>
+                        <td style="padding:12px; border-bottom:1px solid #1f2937;">Improve until good enough</td>
+                    </tr>
+                    <tr style="background:#1a1a2e;">
+                        <td style="padding:12px;">AI analogy</td>
+                        <td style="padding:12px;">Classification (pick a label)</td>
+                        <td style="padding:12px;">Training (iterate until convergence)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="section">
+                <h2>✅ Advantages of This Task</h2>
+                <ul class="advantage-list">
+                    <li><strong>Self-improving workflows</strong> — output quality improves with each iteration</li>
+                    <li><strong>Quality control built-in</strong> — never deliver subpar results</li>
+                    <li><strong>Bounded execution</strong> — max_iterations prevents runaway costs</li>
+                    <li><strong>Early exit optimization</strong> — if first try is great, don't waste iterations</li>
+                    <li><strong>Foundation for agents</strong> — real agents loop: think → act → observe → think again
+                    </li>
+                    <li><strong>Uses LLM for summarization</strong> — first task combining loops WITH LLM intelligence
+                    </li>
+                </ul>
+            </div>
+
+            <div class="key-insight">
+                <h4>💡 Key Insight</h4>
+                <p>Loops are what make the "agentic" pattern possible. The classic agent loop is:
+                    <strong>Think → Act → Observe → (repeat until done)</strong>.
+                    Task 6 gives you this pattern. Task 7 adds real-world tools to the "Act" step,
+                    making the agent actually useful.
+                </p>
+            </div>
+
+            <div class="nav-footer">
+                <a href="task5.html">← Task 5: Edges & Routing</a>
+                <a href="task7.html">Next: Task 7 - Tools →</a>
+            </div>
+        </div>
+</body>
+
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Server End to End</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="grpc.html">gRPC</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What MCP is</a>
+            <a href="#evolved">Why it evolved</a>
+            <a href="#flow">End-to-end flow</a>
+            <a href="#solves">Problems it solves</a>
+            <a href="#http-diff">Difference from HTTP calls</a>
+            <a href="#payloads">HTTP vs MCP payloads</a>
+            <a href="#fastapi-mental-model">FastAPI vs MCP mental model</a>
+            <a href="#example">Examples</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Systems track</p>
+                    <h1>MCP server end to end</h1>
+                    <p><strong>MCP</strong> is a standard way for an AI host application to discover and use external
+                        capabilities such as tools, resources, and prompts through a structured protocol instead of a
+                        one-off custom integration.</p>
+                    <p>The simplest mental model is this: MCP gives AI applications a shared tool contract, so hosts and
+                        tool providers do not need a separate bespoke plugin system for every pairing.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core flow</h2>
+                    <p class="formula">Host app -> MCP client -> MCP server -> real system</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What an MCP server exposes</h3>
+                        <p>An MCP server exposes capabilities in a structured way. In practice that usually means tools
+                            the model can call, resources it can inspect, and prompts or templates the host can
+                            retrieve.</p>
+                    </div>
+                    <div class="card">
+                        <h3>What the host gains</h3>
+                        <p>The host can discover capability names, schemas, and invocation rules consistently rather
+                            than reverse-engineering many custom APIs for model-facing use.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="evolved">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Why it evolved</p>
+                        <h2>Why was MCP needed?</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Before MCP</h3>
+                        <ul class="stack-list">
+                            <li>Each AI host often invented its own plugin format and tool schema.</li>
+                            <li>Tool builders had to integrate separately with each host.</li>
+                            <li>Capability discovery and model-safe invocation were inconsistent.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>After MCP</h3>
+                        <ul class="stack-list">
+                            <li>A tool provider can expose capabilities once through a standard protocol.</li>
+                            <li>Multiple hosts can reuse the same capability surface.</li>
+                            <li>Schema-driven discovery reduces integration duplication.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="flow">
+                <div class="diagram-card">
+                    <img src="assets/mcp-server-flow.svg"
+                        alt="Diagram showing host app to MCP client to MCP server to real system flow.">
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Host opens a session</h3>
+                        <p>The host application connects to an MCP server through an MCP client implementation.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Capabilities are discovered</h3>
+                        <p>The host learns what tools, resources, and prompts exist and what schemas they accept.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. The model chooses or is instructed to use a capability</h3>
+                        <p>This may be a file search, a CRM lookup, a database query, or a deployment action, depending
+                            on the connected server.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. The server performs the real work</h3>
+                        <p>The MCP server translates the protocol-level request into an underlying filesystem call, API
+                            request, query, or internal business operation.</p>
+                    </div>
+                    <div class="step">
+                        <h3>5. Structured results return to the host</h3>
+                        <p>The host can then surface those results to the model and user in a controlled way.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="payloads">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Concrete implementation</p>
+                        <h2>Standard HTTP example vs MCP example</h2>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Scenario:</strong> an AI assistant must fetch customer details from a CRM using the
+                        customer id <strong>CUST-1842</strong>.</p>
+                    <p>Both approaches eventually reach the same backend information. The difference is where the
+                        integration burden sits and what the AI host can understand automatically.</p>
+                </div>
+                <div class="code-compare">
+                    <div class="code-card">
+                        <h3>Plain HTTP approach</h3>
+                        <p>The host or plugin author must know the exact endpoint, method, auth header, payload format,
+                            and response mapping.</p>
+                        <pre>POST /api/v1/customers/details HTTP/1.1
+Host: crm.company.internal
+Authorization: Bearer eyJ...
+Content-Type: application/json
+
+{
+    "customer_id": "CUST-1842",
+    "include_tickets": true,
+    "include_notes": false
+}</pre>
+                        <pre>HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+    "id": "CUST-1842",
+    "name": "Acme Retail",
+    "tier": "gold",
+    "open_tickets": 3,
+    "region": "west"
+}</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>MCP approach</h3>
+                        <p>The host first discovers a tool and its schema, then invokes the tool through a standard
+                            protocol. The MCP server hides the raw CRM API details.</p>
+                        <pre>{
+    "method": "tools/list",
+    "params": {}
+}</pre>
+                        <pre>{
+    "tools": [
+        {
+            "name": "get_customer_profile",
+            "description": "Fetch CRM customer details",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "customer_id": { "type": "string" },
+                    "include_tickets": { "type": "boolean" }
+                },
+                "required": ["customer_id"]
+            }
+        }
+    ]
+}</pre>
+                        <pre>{
+    "method": "tools/call",
+    "params": {
+        "name": "get_customer_profile",
+        "arguments": {
+            "customer_id": "CUST-1842",
+            "include_tickets": true
+        }
+    }
+}</pre>
+                        <pre>{
+    "content": [
+        {
+            "type": "text",
+            "text": "Customer Acme Retail is a gold-tier account in west region with 3 open tickets."
+        }
+    ]
+}</pre>
+                    </div>
+                </div>
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Where the advantage appears</p>
+                        <h2>Why MCP helps in this exact example</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>With plain HTTP</h3>
+                        <ul class="advantage-list">
+                            <li>The AI host must already know the CRM endpoint shape or rely on a custom-written
+                                adapter.</li>
+                            <li>If another host wants the same CRM capability, that second host needs another
+                                integration.</li>
+                            <li>The model does not automatically know what arguments are allowed unless the host
+                                separately describes them.</li>
+                            <li>The raw API may expose backend-specific details the model should not care about.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>With MCP</h3>
+                        <ul class="advantage-list">
+                            <li>The host can discover the tool name and input schema through a standard protocol.</li>
+                            <li>The same MCP server can be reused across multiple AI hosts.</li>
+                            <li>The model-facing interface is cleaner: <strong>get_customer_profile</strong> is easier
+                                to reason about than a raw CRM endpoint.</li>
+                            <li>The MCP server becomes the place where backend auth, endpoint mapping, and safety rules
+                                are centralized.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Very clear summary</h2>
+                    <p>HTTP tells you <strong>how to send a request</strong>. MCP tells an AI host <strong>what
+                            capabilities exist, how to call them safely, and how to reuse them across hosts</strong>.
+                        MCP does not replace the backend API. It standardizes the AI-facing integration layer above that
+                        API.</p>
+                </div>
+            </section>
+
+            <section class="section" id="fastapi-mental-model">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Refined mental model</p>
+                        <h2>FastAPI plus Swagger versus MCP</h2>
+                    </div>
+                </div>
+                <div class="note">
+                    <p>Your understanding is mostly right. The correction is this: <strong>MCP does not remove all
+                            client and parsing logic from the world.</strong> It centralizes the AI-facing integration
+                        into a reusable tool layer, while the backend connectivity still lives inside the MCP server or
+                        behind it.</p>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>FastAPI plus Swagger view</h3>
+                        <ul class="stack-list">
+                            <li>You define request and response payloads clearly, and clients must follow that schema.
+                            </li>
+                            <li>If you build an AI application, a developer usually writes explicit connectivity to
+                                those APIs.</li>
+                            <li>The client decides when to call which API.</li>
+                            <li>Swagger or OpenAPI helps document and test the API, but it is not automatically an
+                                AI-native tool protocol.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>MCP view</h3>
+                        <ul class="stack-list">
+                            <li>You register tools and their schemas in a way AI hosts can discover systematically.</li>
+                            <li>The MCP server contains or delegates the backend connectivity needed to reach the
+                                underlying API or system.</li>
+                            <li>The host and model can choose tools based on discovered tool context and task needs.
+                            </li>
+                            <li>The result is an AI-native execution layer above your backend APIs.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Point</th>
+                                <th>FastAPI plus Swagger</th>
+                                <th>MCP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Who usually decides the call?</td>
+                                <td>The client application or developer-written workflow.</td>
+                                <td>The AI host or agent can decide based on discovered tools and current task.</td>
+                            </tr>
+                            <tr>
+                                <td>How is discovery handled?</td>
+                                <td>Usually manual by the developer reading docs, schemas, or SDKs.</td>
+                                <td>Tool discovery is part of the protocol.</td>
+                            </tr>
+                            <tr>
+                                <td>What is the main output?</td>
+                                <td>An API contract and execution endpoint.</td>
+                                <td>An AI-usable capability layer with structured invocation.</td>
+                            </tr>
+                            <tr>
+                                <td>Does backend connectivity still exist?</td>
+                                <td>Yes, directly in the client or service integration code.</td>
+                                <td>Yes, but usually hidden inside the MCP server or tool adapter.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="interview-grid">
+                    <div class="example">
+                        <h2>Simple mental model</h2>
+                        <p>Think of FastAPI plus Swagger as <strong>backend API contract plus docs</strong>. Think of
+                            MCP as an <strong>AI-facing tool layer</strong> that can sit above those APIs and make them
+                            discoverable and callable by agents.</p>
+                    </div>
+                    <div class="example">
+                        <h2>Important correction</h2>
+                        <p>It is too strong to say “no need to write API clients, request builders, or response
+                            parsers.” Someone still writes that logic somewhere. MCP centralizes it so every AI host
+                            does not need to reimplement it separately.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Best-practice architecture:</strong> frontend or chat UI -> LLM host or agent -> MCP
+                        server -> FastAPI or internal services -> database or ML models. FastAPI stays the execution
+                        backend. MCP becomes the AI-native interface layer.</p>
+                </div>
+                <div class="example">
+                    <h2>Multi-tool orchestration scenario</h2>
+                    <p>User asks: <strong>Analyze sales data and give recommendations.</strong></p>
+                    <p>In a plain API world, the developer often hardcodes a workflow such as call sales endpoint, then
+                        call summarization logic, then call recommendation engine. In an MCP-aware agent setup, the host
+                        can discover tools like <strong>get_sales_data</strong>,
+                        <strong>summarize_sales_trends</strong>, and <strong>recommend_actions</strong>, and decide the
+                        sequence dynamically based on the task.
+                    </p>
+                    <p>Your “driverless car” intuition works here, with one important caveat: autonomous orchestration
+                        is only possible because the MCP tool layer was designed and registered carefully beforehand.
+                    </p>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Question from practice</th>
+                                <th>Answer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>I already built a React agent where tool descriptions let the agent choose tools,
+                                    and each tool hits FastAPI. Is that not basically MCP?</td>
+                                <td>It is conceptually similar, but it is usually a custom agent-tool integration inside
+                                    your own stack. MCP becomes valuable when you want that tool interface to be
+                                    standardized, portable, and reusable across multiple hosts instead of being tied to
+                                    one agent framework.</td>
+                            </tr>
+                            <tr>
+                                <td>So what is MCP doing differently?</td>
+                                <td>MCP formalizes discovery, schemas, invocation, and capability exposure as a common
+                                    protocol. Your React agent setup likely had those ideas, but in a framework-specific
+                                    or app-specific way.</td>
+                            </tr>
+                            <tr>
+                                <td>Is MCP always a win?</td>
+                                <td>No. If you have one agent, one product, and a small set of tools, custom integration
+                                    may be enough. MCP wins when you care about interoperability, reuse across hosts,
+                                    cleaner tool governance, and avoiding repeated glue code.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="interview-grid">
+                    <div class="example">
+                        <h2>What stays the same</h2>
+                        <p>In both setups, the agent can choose a tool from descriptions, the tool can call FastAPI, and
+                            the result can come back to the model. So your intuition that they look similar is correct.
+                        </p>
+                    </div>
+                    <div class="example">
+                        <h2>What changes with MCP</h2>
+                        <p>The difference is that MCP turns that pattern into a protocol other hosts can understand.
+                            Instead of “my React agent knows my tool objects,” you get “any MCP-compatible host can
+                            discover and use this server’s tools.”</p>
+                    </div>
+                </div>
+                <div class="warning-card">
+                    <h3>Why MCP may win</h3>
+                    <ul class="stack-list">
+                        <li>You avoid rebuilding the same tool-registration pattern separately in each agent product.
+                        </li>
+                        <li>You get a more standard capability surface for multiple hosts, teams, or vendors.</li>
+                        <li>Tool schemas and invocation become easier to govern consistently.</li>
+                        <li>The MCP server can become a shared integration boundary above many backend APIs.</li>
+                    </ul>
+                </div>
+                <div class="warning-card">
+                    <h3>When MCP may not win much</h3>
+                    <ul class="stack-list">
+                        <li>If your system is small and only one custom agent ever uses the tools, MCP can feel like
+                            extra setup.</li>
+                        <li>If portability across hosts is not a requirement, a custom tool layer may be simpler.</li>
+                        <li>If your team already has a stable in-house tool contract and does not need broader
+                            interoperability, MCP may add less immediate value.</li>
+                    </ul>
+                </div>
+                <div class="checkpoint">
+                    <h2>Clean answer to this interview question</h2>
+                    <p><strong>Your React agent setup and MCP are similar in spirit, but not identical in
+                            scope.</strong> A custom React agent tool system proves the pattern works. MCP standardizes
+                        that pattern so the same tools can be discovered and invoked across compatible AI hosts rather
+                        than remaining locked inside one agent implementation.</p>
+                </div>
+                <div class="checkpoint">
+                    <h2>Brutally honest version</h2>
+                    <p><strong>Swagger is primarily documentation and contract exposure for APIs.</strong> <strong>MCP
+                            is a standardized discovery and execution layer for AI agents.</strong> They complement each
+                        other. MCP does not replace FastAPI, and FastAPI does not replace MCP.</p>
+                </div>
+            </section>
+
+            <section class="section" id="solves">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Problem</th>
+                                <th>Why it hurts without MCP</th>
+                                <th>How MCP helps</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Integration duplication</td>
+                                <td>Every host-tool pair needs custom glue.</td>
+                                <td>A shared protocol reduces repeated integration work.</td>
+                            </tr>
+                            <tr>
+                                <td>Weak portability</td>
+                                <td>A tool built for one host may not work in another.</td>
+                                <td>The same server can be reused by multiple compatible hosts.</td>
+                            </tr>
+                            <tr>
+                                <td>Inconsistent tool schemas</td>
+                                <td>Models cannot reliably infer expected inputs and outputs.</td>
+                                <td>Capability schemas make invocation safer and more predictable.</td>
+                            </tr>
+                            <tr>
+                                <td>Poor agent interoperability</td>
+                                <td>Each agent stack speaks a different tool dialect.</td>
+                                <td>MCP creates a standard AI capability layer.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="http-diff">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Important comparison</p>
+                        <h2>MCP server vs plain HTTP calls</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>What HTTP gives you</h3>
+                        <ul class="stack-list">
+                            <li>A transport mechanism and request-response semantics.</li>
+                            <li>A way to move payloads between a client and server.</li>
+                            <li>No shared AI-tooling standard by itself.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What MCP adds</h3>
+                        <ul class="stack-list">
+                            <li>Standardized capability discovery for tools, resources, and prompts.</li>
+                            <li>A consistent protocol for how AI hosts invoke those capabilities.</li>
+                            <li>A model-facing abstraction layer instead of host-specific endpoint logic.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Key point:</strong> HTTP is a transport style. MCP is an application-level
+                        interoperability protocol for AI capabilities. They solve different layers of the stack.</p>
+                </div>
+            </section>
+
+            <section class="section" id="example">
+                <div class="interview-grid">
+                    <div class="example">
+                        <h2>Example 1: coding assistant</h2>
+                        <p>A coding assistant wants to search files, read code, and run commands. MCP lets the host
+                            discover those capabilities through a standard protocol instead of inventing a custom tool
+                            schema for every editor integration.</p>
+                    </div>
+                    <div class="example">
+                        <h2>Example 2: enterprise CRM access</h2>
+                        <p>An enterprise chatbot needs customer lookup, ticket status, and account notes. An MCP server
+                            can wrap the CRM and expose safe, schema-defined tools that many hosts can reuse.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What main problem is MCP solving?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>MCP standardizes how AI hosts discover and invoke external capabilities, reducing custom
+                                plugin duplication and making tools more portable across hosts.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is MCP not just a fancy REST wrapper?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because the value is not only in calling a backend. The value is standardized capability
+                                discovery, model-friendly schemas, and portability across AI hosts.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You have six AI products and twenty internal tools. What is the MCP argument?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Without a standard, you build many host-tool adapters. MCP lowers integration duplication
+                                by letting tool teams expose one protocol surface that multiple hosts can reuse.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>When is plain HTTP still enough?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>If one application talks to one backend with a custom contract, plain HTTP may be enough.
+                                MCP becomes valuable when AI capability portability and standardized discovery matter.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Next recommended page: gRPC, so you can separate AI interoperability from general service-to-service RPC.
+            </p>
+            <div class="mini-links">
+                <a href="grpc.html">Continue</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

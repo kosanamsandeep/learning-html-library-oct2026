@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Agentic Frameworks Compared</title>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">AI</span>
+                <span>AI Engineer Interview Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="cp-index.html">Cross-Platform AI</a>
+                <a href="lg-index.html">LangGraph Journey</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="cp-container">
+        <div class="cp-hero">
+            <h1>🤖 Agentic Frameworks Compared</h1>
+            <p>ReAct, LangGraph, AutoGen, CrewAI, OpenAI Agents SDK — patterns for building autonomous AI agents</p>
+        </div>
+
+
+        <div class="section">
+            <h2>What Are Agentic Frameworks?</h2>
+            <p>An <strong>agentic framework</strong> provides the architecture for AI that can <strong>decide, act,
+                    observe, and iterate</strong> — not just respond to a single prompt. These frameworks give LLMs the
+                ability to use tools, maintain state, loop until satisfied, and even coordinate with other agents.</p>
+            <div class="highlight">
+                <p><strong>The key difference:</strong> A chatbot answers. An agent ACTS. Agentic frameworks provide the
+                    loop, tool-use, planning, and coordination needed for AI to accomplish complex multi-step tasks
+                    autonomously.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Core Agent Patterns (Theory)</h2>
+
+            <div class="pattern-explain">
+                <h4>🔁 ReAct Pattern (Reasoning + Acting)</h4>
+                <p>The foundational agent pattern. The agent THINKS about
+                    what to do, ACTS (calls a tool), OBSERVES the result, and repeats until done.</p>
+                <div class="pattern-flow">
+                    <span class="pf-step">Thought: "I need to search"</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Action: search("query")</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Observation: "Results..."</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Thought: "Now I can answer"</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Final Answer</span>
+                </div>
+            </div>
+
+            <div class="pattern-explain">
+                <h4>📋 Plan-and-Execute Pattern</h4>
+                <p>First create a PLAN (list of steps), then EXECUTE each
+                    step. Better for complex tasks requiring multiple coordinated actions.</p>
+                <div class="pattern-flow">
+                    <span class="pf-step">Planner: Create step list</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Executor: Run step 1</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Executor: Run step 2</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Re-plan if needed</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Final Result</span>
+                </div>
+            </div>
+
+            <div class="pattern-explain">
+                <h4>👥 Multi-Agent Collaboration Pattern</h4>
+                <p>Multiple specialized agents communicate and collaborate.
+                    Each handles a specific role (researcher, coder, reviewer).</p>
+                <div class="pattern-flow">
+                    <span class="pf-step">Manager Agent</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Researcher Agent</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Writer Agent</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Reviewer Agent</span>
+                    <span class="pf-arrow">→</span>
+                    <span class="pf-step">Final Output</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Major Frameworks</h2>
+
+            <div class="framework-card" style="--fcolor: #818cf8;">
+                <h3>LangGraph</h3>
+                <div class="by">By LangChain • Graph-based agent orchestration</div>
+                <div class="desc">Explicit state machine approach. You define nodes, edges, and routing as a graph.
+                    Maximum control over agent behavior. Production-grade with persistence, streaming, and
+                    human-in-the-loop.</div>
+                <div class="pattern">StateGraph → Nodes (functions) → Conditional Edges → Loops → Compile → Execute
+                </div>
+                <ul class="key-features">
+                    <li>Explicit control flow via graph definition</li>
+                    <li>Stateful with TypedDict state management</li>
+                    <li>Conditional routing and loops built-in</li>
+                    <li>Checkpointing and persistence (resume from any point)</li>
+                    <li>Human-in-the-loop interrupts</li>
+                    <li>Streaming support for real-time updates</li>
+                    <li>LangGraph Platform for deployment</li>
+                </ul>
+                <div class="best-for">💡 Best for: Production agents needing explicit control, complex routing,
+                    persistence, and debuggability</div>
+            </div>
+
+            <div class="framework-card" style="--fcolor: #10b981;">
+                <h3>OpenAI Agents SDK</h3>
+                <div class="by">By OpenAI • Minimalist agent framework</div>
+                <div class="desc">Lightweight SDK for building agents with OpenAI models. Simple primitives: Agent,
+                    Tool, Handoff, Guardrail. Designed for easy multi-agent orchestration with tool-calling models.
+                </div>
+                <div class="pattern">Agent(tools=[...]) → Runner.run(agent, input) → Tool calls → Handoffs between
+                    agents</div>
+                <ul class="key-features">
+                    <li>Extremely simple API (few primitives)</li>
+                    <li>Native handoffs between agents</li>
+                    <li>Built-in guardrails</li>
+                    <li>Tracing and observability built-in</li>
+                    <li>Model-agnostic (works with any OpenAI-compatible API)</li>
+                    <li>Streaming and async support</li>
+                </ul>
+                <div class="best-for">💡 Best for: Simple-to-moderate agents using OpenAI, quick prototyping, when you
+                    don't need graph complexity</div>
+            </div>
+
+            <div class="framework-card" style="--fcolor: #f472b6;">
+                <h3>AutoGen (Microsoft)</h3>
+                <div class="by">By Microsoft Research • Multi-agent conversation framework</div>
+                <div class="desc">Multi-agent conversation framework. Agents talk to each other in structured
+                    conversations. Great for collaborative problem-solving where multiple AI personas contribute
+                    different expertise.</div>
+                <div class="pattern">AssistantAgent ↔ UserProxyAgent ↔ GroupChat → Conversation → Consensus → Result
+                </div>
+                <ul class="key-features">
+                    <li>Multi-agent conversations as first-class concept</li>
+                    <li>GroupChat for coordinating many agents</li>
+                    <li>Code execution built-in (Docker or local)</li>
+                    <li>Human-in-the-loop feedback</li>
+                    <li>Flexible conversation patterns (sequential, round-robin, etc.)</li>
+                    <li>AutoGen Studio (no-code UI for building agents)</li>
+                </ul>
+                <div class="best-for">💡 Best for: Multi-agent collaboration, code generation workflows, research tasks
+                    needing multiple perspectives</div>
+            </div>
+
+            <div class="framework-card" style="--fcolor: #ef4444;">
+                <h3>CrewAI</h3>
+                <div class="by">By CrewAI Inc. • Role-based multi-agent framework</div>
+                <div class="desc">Define agents with roles, goals, and backstories. Organize them into "crews" with
+                    tasks. Very intuitive metaphor: it's like assembling a team with specialists.</div>
+                <div class="pattern">Agent(role="Researcher") + Agent(role="Writer") → Crew(tasks=[...]) →
+                    crew.kickoff()</div>
+                <ul class="key-features">
+                    <li>Intuitive role/goal/backstory agent definition</li>
+                    <li>Task delegation between agents</li>
+                    <li>Sequential and hierarchical process modes</li>
+                    <li>Built-in memory (short-term, long-term, entity)</li>
+                    <li>Tool integration (LangChain tools compatible)</li>
+                    <li>CrewAI+ enterprise platform</li>
+                </ul>
+                <div class="best-for">💡 Best for: Business workflows with clear roles, content creation pipelines, when
+                    you think in terms of "team members"</div>
+            </div>
+
+            <div class="framework-card" style="--fcolor: #2dd4bf;">
+                <h3>Google ADK (Agent Development Kit)</h3>
+                <div class="by">By Google • Full-stack agent development</div>
+                <div class="desc">Google's opinionated framework for building production agents. Integrates with Gemini,
+                    Vertex AI, and Google Cloud. Supports multi-agent systems with built-in tool orchestration.</div>
+                <div class="pattern">Agent(model, tools) → SubAgents → ToolNodes → Orchestration → Deploy to Vertex
+                </div>
+                <ul class="key-features">
+                    <li>Deep Gemini/Vertex AI integration</li>
+                    <li>Multi-agent composition (sub-agents)</li>
+                    <li>Built-in tools (Google Search, Code Exec, etc.)</li>
+                    <li>Session management and memory</li>
+                    <li>Artifact handling (files, data)</li>
+                    <li>One-click deployment to Google Cloud</li>
+                </ul>
+                <div class="best-for">💡 Best for: Google Cloud users, production Gemini-based agents, enterprise with
+                    GCP infrastructure</div>
+            </div>
+
+            <div class="framework-card" style="--fcolor: #fbbf24;">
+                <h3>Semantic Kernel Agents (Microsoft)</h3>
+                <div class="by">By Microsoft • Enterprise .NET/Python agent framework</div>
+                <div class="desc">Microsoft's enterprise framework for building AI agents with .NET and Python. Deep
+                    Azure integration. Plugins, planners, and multi-agent chat patterns.</div>
+                <div class="pattern">Kernel → Plugins → Planner → AgentGroupChat → Execute</div>
+                <ul class="key-features">
+                    <li>.NET and Python support</li>
+                    <li>Azure OpenAI native integration</li>
+                    <li>Plugin architecture (reusable components)</li>
+                    <li>Multiple planner strategies</li>
+                    <li>Enterprise compliance and security</li>
+                    <li>Multi-agent group chat</li>
+                </ul>
+                <div class="best-for">💡 Best for: .NET enterprise, Azure-heavy organizations, Microsoft ecosystem</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Head-to-Head Comparison</h2>
+            <div style="overflow-x:auto;">
+                <table class="comparison-table">
+                    <tr>
+                        <th>Framework</th>
+                        <th>Control Level</th>
+                        <th>Multi-Agent</th>
+                        <th>Learning Curve</th>
+                        <th>Production Ready</th>
+                        <th>Best Pattern</th>
+                    </tr>
+                    <tr>
+                        <td><strong>LangGraph</strong></td>
+                        <td class="good">Maximum (explicit graph)</td>
+                        <td class="good">Yes (sub-graphs)</td>
+                        <td class="mid">Medium-High</td>
+                        <td class="good">Excellent</td>
+                        <td>State machines, complex flows</td>
+                    </tr>
+                    <tr>
+                        <td><strong>OpenAI Agents SDK</strong></td>
+                        <td class="mid">Medium (declarative)</td>
+                        <td class="good">Yes (handoffs)</td>
+                        <td class="good">Low</td>
+                        <td class="good">Good</td>
+                        <td>Simple tool agents, handoffs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AutoGen</strong></td>
+                        <td class="mid">Medium (conversation)</td>
+                        <td class="good">Excellent</td>
+                        <td class="mid">Medium</td>
+                        <td class="mid">Good</td>
+                        <td>Collaborative problem-solving</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CrewAI</strong></td>
+                        <td class="mid">Medium (role-based)</td>
+                        <td class="good">Excellent</td>
+                        <td class="good">Low</td>
+                        <td class="mid">Good</td>
+                        <td>Team-based workflows</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Google ADK</strong></td>
+                        <td class="good">High (structured)</td>
+                        <td class="good">Yes (sub-agents)</td>
+                        <td class="mid">Medium</td>
+                        <td class="good">Excellent (GCP)</td>
+                        <td>Vertex AI production agents</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Semantic Kernel</strong></td>
+                        <td class="good">High (plugins)</td>
+                        <td class="mid">Basic</td>
+                        <td class="mid">Medium</td>
+                        <td class="good">Excellent (Azure)</td>
+                        <td>Enterprise .NET agents</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Decision Framework</h2>
+            <div class="decision-box">
+                <h4>Choose based on your needs:</h4>
+                <p><strong>🎛️ Need maximum control over flow →</strong> LangGraph (explicit graph = predictable
+                    behavior)</p>
+                <p><strong>⚡ Want simplest possible agent →</strong> OpenAI Agents SDK (minimal boilerplate)</p>
+                <p><strong>👥 Multiple agents collaborating →</strong> AutoGen or CrewAI</p>
+                <p><strong>🏢 Enterprise + Google Cloud →</strong> Google ADK</p>
+                <p><strong>🖥️ Enterprise + Azure/.NET →</strong> Semantic Kernel</p>
+                <p><strong>📝 Business roles (researcher, writer) →</strong> CrewAI (intuitive role metaphor)</p>
+                <p><strong>🔬 Research/experimentation →</strong> AutoGen (flexible conversation patterns)</p>
+                <p><strong>🏭 Production with persistence/streaming →</strong> LangGraph (checkpointing, human-in-loop)
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧠 Pro Thinker Analysis</h2>
+            <div class="highlight">
+                <p><strong>The framework war is really a philosophy war.</strong> LangGraph says "I want to see exactly
+                    what my agent does" (explicit control). CrewAI says "I want to describe WHAT to do, not HOW"
+                    (declarative roles). AutoGen says "let agents figure it out through conversation" (emergent
+                    behavior). OpenAI says "keep it simple, we'll handle the complexity in the model." None is
+                    universally best — match the philosophy to your needs. For production with audit requirements, pick
+                    explicit (LangGraph). For rapid prototyping, pick simple (OpenAI SDK). For creative workflows, pick
+                    collaborative (CrewAI/AutoGen).</p>
+            </div>
+        </div>
+
+        <div class="cp-nav-footer">
+            <a href="cp-coding-ai-tools.html">← Coding Tools</a>
+            <a href="cp-orchestration-platforms.html">Next: Orchestration Platforms →</a>
+        </div>
+        </div>
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Part of the AI and ML Interview Starter Guide. Open locally in any browser.</p>
+            <div class="mini-links">
+                <a href="index.html">Home</a>
+                <a href="cp-index.html">Cross-Platform AI</a>
+                <a href="lg-index.html">LangGraph Journey</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

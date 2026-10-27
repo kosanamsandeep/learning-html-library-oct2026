@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>06 · Advanced Cypher + performance</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span class="mark">◆</span>Graph DB Mastery</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="05_cypher_intermediate.html">← Intermediate</a>
+                <a href="07_power_use_cases.html">Next: Power & use cases →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Chapter 06 · Cypher</p>
+            <h1>Advanced Cypher &amp; making it fast</h1>
+            <p class="lead">Shortest paths, indexes &amp; constraints, query planning with
+                <code>EXPLAIN</code>/<code>PROFILE</code>, and the power tools — <strong>APOC</strong> and
+                <strong>Graph Data Science (GDS)</strong>. This is what separates "I can query" from "I run
+                graphs in production."
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>1 · Shortest path</h2>
+            <p>Find the fewest hops between two nodes — the classic graph problem (six degrees of separation,
+                routing, supply chains).</p>
+            <pre><code><span class="c-kw">MATCH</span> (a:<span class="c-node">Person</span> {name:<span class="c-str">'Alice'</span>}), (f:<span class="c-node">Person</span> {name:<span class="c-str">'Frank'</span>})
+<span class="c-kw">MATCH</span> p = shortestPath( (a)-[:<span class="c-rel">FRIENDS_WITH</span>*1..6]-(f) )
+<span class="c-kw">RETURN</span> [n <span class="c-kw">IN</span> nodes(p) | n.name] <span class="c-kw">AS</span> hops, length(p) <span class="c-kw">AS</span> degrees;</code></pre>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+graph LR
+    Alice(["Alice"]) ---|FRIENDS_WITH| Carol(["Carol"])
+    Carol ---|FRIENDS_WITH| Erin(["Erin"])
+    Erin ---|FRIENDS_WITH| Frank(["Frank"])
+    classDef person fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    class Alice,Carol,Erin,Frank person;
+                </pre>
+                <p class="caption">Alice → Carol → Erin → Frank: shortest path of 3 hops. Use
+                    <code>allShortestPaths()</code> for every tied-shortest route.
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>2 · Indexes &amp; constraints — the #1 speed lever</h2>
+            <p>Without an index, finding a node by property scans every node. With one, it's instant. <strong>Always
+                    index the properties you look up by.</strong></p>
+            <pre><code><span class="c-com">// Uniqueness constraint (also creates an index)</span>
+<span class="c-kw">CREATE CONSTRAINT</span> person_name <span class="c-kw">IF NOT EXISTS</span>
+<span class="c-kw">FOR</span> (p:<span class="c-node">Person</span>) <span class="c-kw">REQUIRE</span> p.name <span class="c-kw">IS UNIQUE</span>;
+
+<span class="c-com">// Plain index for fast lookups / range scans</span>
+<span class="c-kw">CREATE INDEX</span> product_category <span class="c-kw">IF NOT EXISTS</span>
+<span class="c-kw">FOR</span> (pr:<span class="c-node">Product</span>) <span class="c-kw">ON</span> (pr.category);
+
+<span class="c-com">// See what exists</span>
+<span class="c-kw">SHOW INDEXES</span>;</code></pre>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tool</th>
+                        <th>Use it for</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UNIQUE</code> constraint</td>
+                        <td>Stop duplicates + speed lookups on a key (id, email)</td>
+                    </tr>
+                    <tr>
+                        <td>Range / B-tree index</td>
+                        <td>Equality &amp; range <code>WHERE</code> on a property</td>
+                    </tr>
+                    <tr>
+                        <td>Full-text index</td>
+                        <td>Searching text inside properties</td>
+                    </tr>
+                    <tr>
+                        <td><code>EXISTS</code> / type constraint</td>
+                        <td>Enforce a property is present / typed</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout good">
+                <strong>Golden rule:</strong> index every property used as a starting point in a
+                <code>MATCH</code> or <code>MERGE</code>. The traversal after that is already fast (index-free
+                adjacency).
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>3 · EXPLAIN &amp; PROFILE — read the query plan</h2>
+            <div class="grid grid-2">
+                <div class="mini info"><strong>EXPLAIN</strong> — shows the plan <em>without</em> running. Free.
+                    Check whether it uses an index (<code>NodeIndexSeek</code>) or scans
+                    (<code>NodeByLabelScan</code> = slow).</div>
+                <div class="mini warn"><strong>PROFILE</strong> — actually runs it and reports
+                    <code>db hits</code> per step. Fewer hits = faster. Use to find the bottleneck.
+                </div>
+            </div>
+            <pre><code><span class="c-kw">PROFILE</span>
+<span class="c-kw">MATCH</span> (p:<span class="c-node">Person</span> {name:<span class="c-str">'Alice'</span>})-[:<span class="c-rel">BOUGHT</span>]->(pr)
+<span class="c-kw">RETURN</span> pr.name;</code></pre>
+            <p class="mini bad">If you see <code>NodeByLabelScan</code> + a big <code>Filter</code> on a property
+                you query often → add an index and re-PROFILE. Db hits should drop sharply.</p>
+        </section>
+
+        <section class="card">
+            <h2>4 · Subqueries &amp; pattern comprehensions</h2>
+            <pre><code><span class="c-com">// CALL subquery: per person, count purchases in an isolated scope</span>
+<span class="c-kw">MATCH</span> (p:<span class="c-node">Person</span>)
+<span class="c-kw">CALL</span> (p) {
+  <span class="c-kw">MATCH</span> (p)-[:<span class="c-rel">BOUGHT</span>]->(pr:<span class="c-node">Product</span>)
+  <span class="c-kw">RETURN</span> count(pr) <span class="c-kw">AS</span> items, sum(pr.price) <span class="c-kw">AS</span> spend
+}
+<span class="c-kw">RETURN</span> p.name, items, spend
+<span class="c-kw">ORDER BY</span> spend <span class="c-kw">DESC</span>;
+
+<span class="c-com">// Pattern comprehension: inline-collect related data</span>
+<span class="c-kw">MATCH</span> (p:<span class="c-node">Person</span> {name:<span class="c-str">'Alice'</span>})
+<span class="c-kw">RETURN</span> p.name,
+       [(p)-[:<span class="c-rel">BOUGHT</span>]->(pr) | pr.name] <span class="c-kw">AS</span> bought;</code></pre>
+            <div class="callout warn">
+                <strong>Version note:</strong> older Neo4j used <code>CALL { WITH p ... }</code>. Newer versions
+                allow <code>CALL (p) { ... }</code>. If one errors, try the other form for your version.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>5 · APOC — the "standard library"</h2>
+            <p><strong>APOC</strong> (Awesome Procedures On Cypher) adds 450+ helpers: data import/export, graph
+                refactoring, text utilities, batching big writes, and more.</p>
+            <pre><code><span class="c-com">// Run a huge update in safe batches</span>
+<span class="c-kw">CALL</span> apoc.periodic.iterate(
+  <span class="c-str">'MATCH (p:Person) RETURN p'</span>,
+  <span class="c-str">'SET p.processed = true'</span>,
+  {batchSize: <span class="c-num">1000</span>}
+);
+
+<span class="c-com">// Convenience helpers</span>
+<span class="c-kw">RETURN</span> apoc.text.capitalize(<span class="c-str">'alice'</span>);</code></pre>
+            <p class="mini info">Install APOC by adding the plugin (Neo4j Desktop: one click; Docker: the
+                <code>NEO4J_PLUGINS=["apoc"]</code> env var). Verify with <code>RETURN apoc.version();</code>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>6 · Graph Data Science (GDS) — algorithms at scale</h2>
+            <p>When you need real graph <em>analytics</em> — not just queries — the GDS library runs PageRank,
+                community detection, centrality, similarity, and pathfinding over a projected in-memory graph.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Algorithm</th>
+                        <th>Answers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>PageRank</td>
+                        <td>Who/what is most influential?</td>
+                    </tr>
+                    <tr>
+                        <td>Louvain / Community detection</td>
+                        <td>What clusters/communities exist?</td>
+                    </tr>
+                    <tr>
+                        <td>Betweenness centrality</td>
+                        <td>Who are the critical "bridge" connectors?</td>
+                    </tr>
+                    <tr>
+                        <td>Node similarity</td>
+                        <td>Which nodes behave alike? (recommendations)</td>
+                    </tr>
+                    <tr>
+                        <td>Dijkstra / A*</td>
+                        <td>Cheapest weighted route</td>
+                    </tr>
+                </tbody>
+            </table>
+            <pre><code><span class="c-com">// Sketch: project a graph, then run PageRank</span>
+<span class="c-kw">CALL</span> gds.graph.project(<span class="c-str">'social'</span>, <span class="c-str">'Person'</span>, <span class="c-str">'FRIENDS_WITH'</span>);
+<span class="c-kw">CALL</span> gds.pageRank.stream(<span class="c-str">'social'</span>)
+<span class="c-kw">YIELD</span> nodeId, score
+<span class="c-kw">RETURN</span> gds.util.asNode(nodeId).name <span class="c-kw">AS</span> person, score
+<span class="c-kw">ORDER BY</span> score <span class="c-kw">DESC</span>;</code></pre>
+            <div class="callout node">
+                <strong>Mental split:</strong> <em>Cypher</em> = "find patterns." <em>GDS</em> = "measure the whole
+                graph's structure." You'll use both in fraud, recommendations, and knowledge graphs.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Performance checklist</h2>
+            <div class="grid grid-2">
+                <div class="mini good">✅ Index/constraint on every <code>MATCH</code>/<code>MERGE</code> start
+                    property</div>
+                <div class="mini good">✅ Bound variable-length paths (<code>*1..3</code>, never bare
+                    <code>*</code>)
+                </div>
+                <div class="mini good">✅ <code>PROFILE</code> slow queries; kill <code>NodeByLabelScan</code></div>
+                <div class="mini good">✅ Filter early; carry only needed columns through <code>WITH</code></div>
+                <div class="mini bad">❌ Returning entire nodes when you only need one property</div>
+                <div class="mini bad">❌ <code>MERGE</code> on a non-indexed / non-unique property</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Try it yourself</h2>
+            <details class="quiz">
+                <summary><span class="level med">medium</span> Add a uniqueness constraint on Product name, then check
+                    indexes.</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">CREATE CONSTRAINT</span> product_name <span class="c-kw">IF NOT EXISTS</span>
+<span class="c-kw">FOR</span> (pr:<span class="c-node">Product</span>) <span class="c-kw">REQUIRE</span> pr.name <span class="c-kw">IS UNIQUE</span>;
+<span class="c-kw">SHOW INDEXES</span>;</code></pre>
+                </div>
+            </details>
+            <details class="quiz">
+                <summary><span class="level hard">hard</span> Find the shortest friendship path between Bob and Erin and
+                    list the names along it.</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">MATCH</span> (b:<span class="c-node">Person</span> {name:<span class="c-str">'Bob'</span>}), (e:<span class="c-node">Person</span> {name:<span class="c-str">'Erin'</span>})
+<span class="c-kw">MATCH</span> p = shortestPath( (b)-[:<span class="c-rel">FRIENDS_WITH</span>*1..6]-(e) )
+<span class="c-kw">RETURN</span> [n <span class="c-kw">IN</span> nodes(p) | n.name];</code></pre>
+                </div>
+            </details>
+            <details class="quiz">
+                <summary><span class="level hard">hard</span> Why is the friend-of-friend query fast in a graph DB even
+                    with millions of users?</summary>
+                <div class="answer">
+                    <strong>Index-free adjacency:</strong> each node stores direct pointers to its relationships,
+                    so traversing a hop is O(1) per neighbor — independent of total DB size. A relational JOIN, by
+                    contrast, searches an index across the whole table for every hop.
+                </div>
+            </details>
+        </section>
+
+        <div class="pager">
+            <a href="05_cypher_intermediate.html">
+                <div class="dir">← Back</div>
+                <div class="ttl">05 · Cypher intermediate</div>
+            </a>
+            <a class="next" href="07_power_use_cases.html">
+                <div class="dir">Next →</div>
+                <div class="ttl">07 · Power &amp; use cases</div>
+            </a>
+        </div>
+    </main>
+
+    <footer><a href="index.html">← Back to Graph DB hub</a></footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true, theme: 'base',
+            themeVariables: { primaryColor: '#d4f3e9', primaryTextColor: '#14241f', primaryBorderColor: '#0f9d77', lineColor: '#0b7a5d', fontFamily: 'Segoe UI, Aptos, system-ui, sans-serif' }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<title>Project C · Hybrid RAG · Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+ :root{--accent:#7cf0ff;--line:#2a345a;--panel:#121a33;--ink:#e8ecf7;--muted:#a8b3d1}
+ body{margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:#070a17;color:var(--ink);line-height:1.55}
+ header{padding:36px 28px;background:radial-gradient(900px 320px at 0 0,#1a2452 0,transparent 60%);border-bottom:1px solid var(--line)}
+ header h1{margin:0;color:#fff;font-size:1.9rem}header .tag{color:var(--accent);font-size:.85rem}
+ main{padding:28px;max-width:1200px;margin:auto}
+ section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px}
+ section h2{margin-top:0;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:8px}
+ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem}
+ th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+ th{background:#1b2549;color:#cfe1ff}tr:hover td{background:#192142}
+ code{background:#0a0f24;padding:1px 6px;border-radius:4px;color:#ffd6a5}
+ .mermaid{background:#0a0f24;border-radius:8px;padding:16px}
+ .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:600}
+ .ok{background:rgba(124,255,178,.12);color:#7CFFB2;border:1px solid rgba(124,255,178,.4)}
+ .warn{background:rgba(255,209,102,.12);color:#ffd166;border:1px solid rgba(255,209,102,.4)}
+ a{color:var(--accent)} .crumbs{margin-bottom:14px;color:var(--muted)}
+</style></head><body>
+<header><div class="crumbs"><a href="../INDEX.html">← Back to Suite Index</a></div>
+<div class="tag">📚 RAG · Hybrid · RRF · Cross-encoder</div>
+<h1>Project C — Hybrid RAG</h1>
+<p style="color:var(--muted);max-width:900px">Combines dense vector search,
+BM25 sparse search and Reciprocal-Rank-Fusion, then re-ranks the fused list
+with a cross-encoder before generation.</p></header>
+<main>
+
+<section><h2>1 · Pipeline</h2>
+<div class="mermaid">
+flowchart LR
+  Q[Query] --> EMB[BGE-Large embedder]
+  EMB --> DEN[Qdrant Dense Search<br/>top-20]
+  Q --> BM[BM25 Sparse Search<br/>top-20]
+  DEN --> RRF[RRF Fusion]
+  BM --> RRF
+  RRF --> RR[BGE-Reranker-v2-m3<br/>cross-encoder]
+  RR --> CTX[top-k context]
+  CTX --> GEN[GPT-5 grounded answer<br/>with citations]
+</div>
+</section>
+
+<section><h2>2 · ERD-style Data Model</h2>
+<div class="mermaid">
+erDiagram
+  DOCUMENT ||--o{ CHUNK : contains
+  CHUNK ||--|| EMBEDDING : has
+  CHUNK ||--|| BM25_TOKENS : has
+  DOCUMENT { string doc_id PK
+             string source_path
+             string title }
+  CHUNK    { string chunk_id PK
+             string doc_id FK
+             text   text
+             string section }
+  EMBEDDING{ string chunk_id PK
+             vector vec_1024 }
+  BM25_TOKENS{ string chunk_id PK
+               list   tokens
+               real   idf }
+</div>
+</section>
+
+<section><h2>3 · Component Table</h2>
+<table><thead><tr><th>Stage</th><th>Module</th><th>Tech (2026)</th></tr></thead><tbody>
+<tr><td>Loading + Chunking</td><td><code>loaders.py</code></td><td>Sentence-boundary semantic chunking</td></tr>
+<tr><td>Dense index</td><td><code>retriever.HybridIndex</code></td><td>Qdrant + BGE-Large (cosine)</td></tr>
+<tr><td>Sparse index</td><td><code>rank-bm25</code></td><td>BM25Okapi</td></tr>
+<tr><td>Fusion</td><td><code>_rrf()</code></td><td>Reciprocal Rank Fusion (k=60)</td></tr>
+<tr><td>Rerank</td><td>CrossEncoder</td><td>BGE-Reranker-v2-m3</td></tr>
+<tr><td>Generation</td><td><code>generator.py</code></td><td>GPT-5 / Gemini-3 with citation prompt</td></tr>
+</tbody></table>
+</section>
+
+<section><h2>4 · 2026 Stack Evaluation</h2>
+<table><thead><tr><th>Layer</th><th>Choice</th><th>Status</th><th>Note</th></tr></thead><tbody>
+<tr><td>Embeddings</td><td>BGE-Large-en-v1.5</td><td><span class="pill warn">Acceptable</span></td><td>Upgrade to NV-Embed-v3 / Voyage-3-large or Matryoshka.</td></tr>
+<tr><td>Vector DB</td><td>Qdrant + HNSW</td><td><span class="pill ok">SOTA</span></td><td>Enable Binary Quantization for 32× memory cut.</td></tr>
+<tr><td>Hybrid</td><td>Dense + BM25 + RRF</td><td><span class="pill ok">SOTA</span></td><td>Standard production recipe.</td></tr>
+<tr><td>Rerank</td><td>BGE-Reranker-v2-m3</td><td><span class="pill ok">SOTA</span></td><td>Alt: Cohere Rerank-3.5, Jina Rerank v2.</td></tr>
+<tr><td>Chunking</td><td>Sentence-greedy</td><td><span class="pill warn">Upgrade</span></td><td>Move to late-chunking (Jina) or proposition chunking.</td></tr>
+<tr><td>Eval</td><td>Missing</td><td><span class="pill warn">Add</span></td><td>Ragas-2 faithfulness + context-precision suite.</td></tr>
+</tbody></table>
+</section>
+
+</main>
+<script>mermaid.initialize({startOnLoad:true,theme:'dark'});</script>
+</body></html>

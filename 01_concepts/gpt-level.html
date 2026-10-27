@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT-Level Transformer Evaluation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="transformer-basics.html">Basics</a>
+                <a href="encoder-decoder.html">Encoder Decoder</a>
+                <a href="activation-functions.html">Activations</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#decoder-only">Decoder-only view</a>
+            <a href="#training">Training objective</a>
+            <a href="#inference">Inference loop</a>
+            <a href="#capabilities">What emerges</a>
+            <a href="#evaluation">How to evaluate</a>
+            <a href="#why-gpt">Why this way</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro">
+                <p class="eyebrow">Step 4</p>
+                <h1>From transformer basics to GPT-level behavior</h1>
+                <p><strong>GPT is a decoder-only transformer.</strong> It uses masked self-attention so each position
+                    can only look backward. The model is trained to predict the next token, and that simple objective
+                    scales into surprisingly broad behavior.</p>
+            </section>
+
+            <section class="section" id="decoder-only">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Architecture</h3>
+                        <p>GPT keeps the same core transformer block: embeddings, positional signal, multi-head
+                            attention, residual paths, normalization, and MLP layers. The critical change is the causal
+                            mask.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Causal mask</h3>
+                        <p>At position t, the model can only attend to positions up to t. This prevents it from cheating
+                            by reading future tokens during training.</p>
+                        <p class="formula">mask(i, j) = 0 if j <= i, else -infinity</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="training">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Objective</p>
+                        <h2>Why next-token prediction is enough</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>Training data</h3>
+                        <p>Large text corpora are tokenized into long sequences.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Target shift</h3>
+                        <p>For every position, the label is the token that comes next.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Loss</h3>
+                        <p>The model is optimized with cross-entropy over the predicted token distribution.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p>The model is never explicitly told grammar rules, facts, or reasoning strategies. Those emerge as
+                        useful internal structures because they help reduce next-token error.</p>
+                </div>
+            </section>
+
+            <section class="section" id="inference">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Generation loop</p>
+                        <h2>What happens during inference</h2>
+                    </div>
+                </div>
+                <div class="example">
+                    <p><strong>Prompt:</strong> "A transformer is useful because"</p>
+                    <p>The prompt tokens enter the model. It predicts a distribution for the next token. One token is
+                        selected. That token is appended to the prompt, and the process repeats. This loop is
+                        autoregression.</p>
+                </div>
+                <div class="note">
+                    <p class="formula">prompt -> logits -> choose next token -> append -> repeat</p>
+                </div>
+            </section>
+
+            <section class="section" id="capabilities">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>In-context learning</h3>
+                        <p>GPT can adapt behavior from examples inside the prompt without parameter updates. The prompt
+                            acts as temporary task conditioning.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Scaling effects</h3>
+                        <p>Larger models with more data and compute usually learn better abstractions, stronger world
+                            knowledge, and more robust few-shot behavior.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="evaluation">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Evaluation lens</th>
+                                <th>What to measure</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Perplexity</td>
+                                <td>How well the model predicts held-out text.</td>
+                                <td>Lower is generally better for language modeling.</td>
+                            </tr>
+                            <tr>
+                                <td>Task accuracy</td>
+                                <td>How well the model performs on benchmark tasks.</td>
+                                <td>Question answering, coding, translation, reasoning.</td>
+                            </tr>
+                            <tr>
+                                <td>Behavioral quality</td>
+                                <td>Consistency, safety, factuality, robustness.</td>
+                                <td>Does the answer stay coherent and grounded?</td>
+                            </tr>
+                            <tr>
+                                <td>Efficiency</td>
+                                <td>Latency, memory use, and context-window behavior.</td>
+                                <td>How expensive is long-context generation?</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="checkpoint">
+                    <h2>Final synthesis</h2>
+                    <p>Basic transformers become GPT-like systems when you combine decoder-only masked attention,
+                        large-scale next-token training, strong positional handling, stable residual pathways, and
+                        expressive MLP blocks with good activations. The architecture is simple in outline, but the
+                        behavior emerges from scale and training dynamics.</p>
+                </div>
+            </section>
+
+            <section class="section" id="why-gpt">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Design logic</p>
+                        <h2>Why does GPT use decoder-only next-token prediction?</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Why this setup scales well</h3>
+                        <ul class="stack-list">
+                            <li>The training target is simple, dense, and available for virtually every token on the
+                                internet: predict the next token.</li>
+                            <li>Decoder-only causal masking matches the inference-time generation process exactly.</li>
+                            <li>The same architecture can absorb broad knowledge and act across many tasks through
+                                prompting.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What other approaches fail at</h3>
+                        <ul class="stack-list">
+                            <li>Task-specific supervised pipelines do not scale to open-domain general intelligence
+                                because they need labeled data for each task.</li>
+                            <li>Encoder-only objectives produce strong understanding features but do not directly train
+                                the model for free-form generation.</li>
+                            <li>Classical n-gram or recurrent language models do not scale as effectively in context
+                                handling and parameter sharing.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why can next-token prediction produce reasoning-like behavior?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because to predict the next token well across massive diverse text, the model benefits
+                                from internalizing syntax, facts, discourse structure, algorithmic patterns, and latent
+                                task formats. Reasoning behavior is an emergent strategy for reducing prediction loss.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why does training objective alignment matter?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>If the architecture or objective differs too much from inference usage, training can
+                                optimize the wrong behavior. GPT’s causal masking makes training and generation
+                                structurally consistent.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You observe low perplexity improvement but weak instruction-following. What distinction
+                            should you explain?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Perplexity measures next-token fit on text, not necessarily alignment with human intent.
+                                A model can be a good language model yet still need instruction tuning, preference
+                                optimization, or better prompting behavior for assistant-style use.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>An interviewer asks when you would not default to GPT. What is a good answer?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>When the task is pure representation learning, low-latency embedding retrieval, or
+                                tightly structured source-to-target conversion with strong source grounding,
+                                encoder-only or encoder-decoder models may be more efficient and more natural.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Use the site from index.html and move through the pages in sequence for the full progression.</p>
+            <div class="mini-links">
+                <a href="index.html">Back to home</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

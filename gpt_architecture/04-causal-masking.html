@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 — Causal Masking & Softmax</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #00cec9; }
+  h3 { font-size: 1.05rem; margin: 1rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #6c5ce7; color: #e1e4f0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .score { color: #fdcb6e; } .attn { color: #55efc4; } .masked { color: #ff6b6b; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  .hl-box { background: rgba(108,92,231,0.08); border-left: 3px solid #6c5ce7; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .matrix-grid { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; margin: 1rem 0; }
+  .matrix-row { display: flex; gap: 0.1rem; align-items: center; }
+  .cell { width: 58px; height: 36px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; border-radius: 5px; font-weight: 500; }
+  .cell-s { background: rgba(253,203,110,0.1); color: #fdcb6e; border: 1px solid rgba(253,203,110,0.12); }
+  .cell-m { background: rgba(255,0,0,0.06); color: #ff6b6b; border: 1px solid rgba(255,0,0,0.12); }
+  .cell-a { background: rgba(85,239,196,0.1); color: #55efc4; border: 1px solid rgba(85,239,196,0.12); }
+  .cell-dim { background: transparent; color: #636e72; width: auto; padding: 0 0.5rem; font-size: 0.7rem; }
+  .arrow-sym { font-size: 1.5rem; color: #636e72; margin: 0.3rem 0; }
+  .label { font-size: 0.85rem; font-weight: 600; margin: 0.3rem 0; text-align: center; }
+  .shape { font-size: 0.7rem; color: #636e72; font-family: 'JetBrains Mono', monospace; text-align: center; margin-top: 0.15rem; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #6c5ce7; }
+  .step-card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .step-num { display: inline-block; background: #55efc4; color: #1a1d2e; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.8rem; border-radius: 100px; margin-bottom: 0.75rem; }
+  .warning-box { background: rgba(255,107,107,0.08); border-left: 3px solid #ff6b6b; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .info-box { background: rgba(85,239,196,0.08); border-left: 3px solid #55efc4; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  @media (max-width:600px) { .compare-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="03-attention-scores.html">← 03: Scores</a>
+  <a href="05-weighted-sum-and-output.html">Next: Weighted Sum →</a>
+</div>
+
+<h1>04 · Causal Masking &amp; Softmax</h1>
+<p>Two critical operations transform raw scores into a usable attention distribution: <strong>causal masking</strong> prevents cheating, and <strong>softmax</strong> turns scores into probabilities.</p>
+
+<h2>🚫 Step 3: Causal Masking</h2>
+
+<div class="step-card">
+<div class="step-num">Step 3</div>
+<h3>Why Mask?</h3>
+<p>In a <strong>decoder-only model</strong> (GPT, Claude, Llama), tokens must predict the <em>next</em> token using only <strong>previous</strong> tokens. A token at position <code>i</code> must not see tokens at positions <code>&gt;i</code> — otherwise it could cheat by looking at the answer.</p>
+
+<div class="warning-box">
+  <strong>⚠️ What happens without masking?</strong> If "sat" can attend to "on" (the next token), the model learns nothing — it just copies the next token's representation. The loss goes to zero trivially, but the model has zero generative ability.
+</div>
+
+<p>We enforce this by setting the <strong>upper triangle</strong> of the score matrix to <strong>-∞</strong> (negative infinity):</p>
+
+<div class="compare-grid">
+<div>
+<div class="label" style="color:#fdcb6e;">Before Masking</div>
+<div class="matrix-grid">
+  <div class="matrix-row">
+    <div class="cell cell-s">0.05</div>
+    <div class="cell cell-s">0.39</div>
+    <div class="cell cell-s">0.28</div>
+    <div class="cell cell-dim">"the"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-s">0.22</div>
+    <div class="cell cell-s">1.35</div>
+    <div class="cell cell-s">0.73</div>
+    <div class="cell cell-dim">"cat"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-s">0.10</div>
+    <div class="cell cell-s">0.78</div>
+    <div class="cell cell-s">0.53</div>
+    <div class="cell cell-dim">"sat"</div>
+  </div>
+  <div class="shape">All positions visible</div>
+</div>
+</div>
+
+<div>
+<div class="label" style="color:#ff6b6b;">After Masking</div>
+<div class="matrix-grid">
+  <div class="matrix-row">
+    <div class="cell cell-s">0.05</div>
+    <div class="cell cell-m">-∞</div>
+    <div class="cell cell-m">-∞</div>
+    <div class="cell cell-dim">"the"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-s">0.22</div>
+    <div class="cell cell-s">1.35</div>
+    <div class="cell cell-m">-∞</div>
+    <div class="cell cell-dim">"cat"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-s">0.10</div>
+    <div class="cell cell-s">0.78</div>
+    <div class="cell cell-s">0.53</div>
+    <div class="cell cell-dim">"sat"</div>
+  </div>
+  <div class="shape">Upper triangle = -∞ (blocked)</div>
+</div>
+</div>
+</div>
+
+<div class="info-box">
+  <strong>📌 The Mask Pattern:</strong> Position i can attend to positions j ≤ i only. Every token sees itself and all previous tokens. Nothing beyond its position.
+</div>
+</div>
+
+<h2>📊 Step 4: Softmax — Scores → Probabilities</h2>
+
+<div class="step-card">
+<div class="step-num">Step 4</div>
+<h3>Softmax Makes Each Row Sum to 1</h3>
+<p>Softmax takes a vector of scores (including -∞ values) and converts them into <strong>probabilities</strong> that sum to 1.0. After this, each row tells us: <em>"given this token's query, what percentage of attention goes to each earlier token?"</em></p>
+
+<div class="math-block">
+softmax(x<sub>i</sub>) = exp(x<sub>i</sub>) / Σ<sub>j</sub> exp(x<sub>j</sub>)
+
+<span class="dim">Where -∞ becomes exp(-∞) = 0 — masked positions get exactly 0% attention.</span>
+</div>
+
+<div class="matrix-grid">
+  <div class="label" style="color:#55efc4;">Attention Weights A (3×3) — each row sums to 1.0</div>
+  <div class="matrix-row">
+    <div class="cell cell-a" style="background:rgba(85,239,196,0.18);border-color:rgba(85,239,196,0.25);">1.00</div>
+    <div class="cell cell-a">0.00</div>
+    <div class="cell cell-a">0.00</div>
+    <div class="cell cell-dim">← "the": 100% to itself</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-a">0.24</div>
+    <div class="cell cell-a" style="background:rgba(85,239,196,0.25);border-color:rgba(85,239,196,0.35);">0.76</div>
+    <div class="cell cell-a">0.00</div>
+    <div class="cell cell-dim">← "cat": 24%→"the", 76%→itself</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-a">0.18</div>
+    <div class="cell cell-a" style="background:rgba(85,239,196,0.3);border-color:rgba(85,239,196,0.4);">0.51</div>
+    <div class="cell cell-a">0.31</div>
+    <div class="cell cell-dim">← "sat": 18%→"the", 51%→"cat", 31%→itself</div>
+  </div>
+</div>
+</div>
+
+<h2>🧐 Interpreting the Attention Distribution</h2>
+
+<div class="step-card">
+<div class="step-num">Analysis</div>
+
+<h3>Row by Row</h3>
+<ul style="color:#c8cbe0;padding-left:1.25rem;line-height:2.2;margin-bottom:1.25rem;">
+  <li><strong>"the" (row 1):</strong> [1.00, 0.00, 0.00] — The first token can only attend to itself. All attention is self-attention.</li>
+  <li><strong>"cat" (row 2):</strong> [0.24, 0.76, 0.00] — "cat" looks mostly at itself (76%), but also gives 24% to "the". The model has learned that determiners carry useful information about their nouns.</li>
+  <li><strong>"sat" (row 3):</strong> [0.18, 0.51, 0.31] — "sat" gives a whopping <strong>51% to "cat"</strong> (the subject) and 18% to "the" (the determiner). Only 31% to itself. This is attention working perfectly: the verb looks to its subject for agreement.</li>
+</ul>
+
+<h3>What This Tells Us About Training</h3>
+<table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+  <thead><tr><th>Pattern</th><th>Meaning</th><th>Desired?</th></tr></thead>
+  <tbody>
+    <tr><td>Uniform (all equal)</td><td>Model hasn't learned which tokens matter — random init</td><td style="color:#ff6b6b;">✗ Early training</td></tr>
+    <tr><td>Mostly self-attention</td><td>Model relies heavily on the token itself, ignoring context</td><td style="color:#fdcb6e;">~ Mid training</td></tr>
+    <tr><td><strong>Sparse, focused</strong></td><td>Sharp weights on semantically relevant tokens</td><td style="color:#55efc4;">✓ Fully trained</td></tr>
+    <tr><td>All weight on one token</td><td>Overconfident — may indicate a "copy" mechanism</td><td style="color:#fdcb6e;">~ Depends</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="hl-box">
+  <strong>🔑 Key takeaway:</strong> Softmax <strong>amplifies differences</strong>. A score of 1.35 vs 0.73 (ratio ~1.85×) becomes probabilities 0.76 vs 0.24 (ratio ~3.2×). This competitive normalization is what makes attention <strong>selective</strong> — tokens must compete for attention, and the most relevant ones win.
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

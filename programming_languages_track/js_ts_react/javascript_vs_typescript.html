@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript vs TypeScript</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>TS</span>Web Track</a>
+            <nav class="top-links">
+                <a href="index.html">Web Hub</a>
+                <a href="why_javascript.html">Why JS</a>
+                <a href="python_vs_javascript.html">Python vs JS</a>
+                <a href="javascript_vs_typescript.html">JS vs TS</a>
+                <a href="the_dom_explained.html">The DOM</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Web Track · 03 of 04</p>
+            <h1>JavaScript vs TypeScript</h1>
+            <p class="lead">TypeScript is not a different language you have to relearn. It <em>is</em> JavaScript — with
+                a type checker bolted on. Every valid JavaScript file is already valid TypeScript. You opt into as much
+                safety as you want.</p>
+        </section>
+
+        <section class="card">
+            <h2>The one-sentence definition</h2>
+            <div class="callout ts">
+                <strong>TypeScript = JavaScript + types, checked before the code runs.</strong> The browser cannot run
+                TypeScript directly — a build step <em>compiles</em> it down to plain JavaScript first. The types exist
+                only to catch your mistakes; they vanish at runtime.
+            </div>
+            <div class="diagram">
+                <pre class="mermaid">
+flowchart LR
+    TS["you.ts<br/>TypeScript + types"] -->|"tsc compiler<br/>checks + strips types"| JS["you.js<br/>plain JavaScript"]
+    JS --> Run["Runs in browser<br/>or Node.js"]
+    TS -.->|"type error?"| Stop["Build fails<br/>before you ship the bug"]
+    style TS fill:#dbeafe,stroke:#3178c6,color:#0f172a
+    style JS fill:#fef9c3,stroke:#a16207,color:#0f172a
+    style Run fill:#e2e8f0,stroke:#1e293b,color:#0f172a
+    style Stop fill:#fee2e2,stroke:#b91c1c,color:#0f172a
+                </pre>
+            </div>
+            <p class="cap">The types are a safety net at build time. What actually ships is ordinary JavaScript.</p>
+        </section>
+
+        <section class="card">
+            <h2>The same code, both ways</h2>
+            <div class="two-col">
+                <div class="col js">
+                    <h4>JavaScript</h4>
+                    <pre><code>function total(items) {
+  return items
+    .map(i => i.price * i.qty)
+    .reduce((a, b) => a + b, 0);
+}
+
+// Nothing stops this bug:
+total("oops");  // crashes at runtime</code></pre>
+                </div>
+                <div class="col ts">
+                    <h4>TypeScript</h4>
+                    <pre><code>type Item = { price: number; qty: number };
+
+function total(items: Item[]): number {
+  return items
+    .map(i => i.price * i.qty)
+    .reduce((a, b) => a + b, 0);
+}
+
+total("oops"); // caught before running</code></pre>
+                </div>
+            </div>
+            <p class="quiet">The logic is identical. TypeScript just adds <code>: Item[]</code> and
+                <code>: number</code> so the editor and compiler catch wrong usage instantly.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Coming from Python type hints</h2>
+            <p>If you have written <code>def total(items: list[Item]) -&gt; float:</code> in Python, TypeScript will
+                feel
+                familiar — just stricter and actually enforced by the build.</p>
+            <div class="two-col">
+                <div class="col py">
+                    <h4>Python hints (optional)</h4>
+                    <pre><code>from dataclasses import dataclass
+
+@dataclass
+class Item:
+    price: float
+    qty: int
+
+def total(items: list[Item]) -&gt; float:
+    return sum(i.price * i.qty for i in items)</code></pre>
+                </div>
+                <div class="col ts">
+                    <h4>TypeScript (enforced)</h4>
+                    <pre><code>interface Item {
+  price: number;
+  qty: number;
+}
+
+function total(items: Item[]): number {
+  return items.reduce(
+    (sum, i) =&gt; sum + i.price * i.qty, 0);
+}</code></pre>
+                </div>
+            </div>
+            <div class="callout ts">
+                <strong>Key difference:</strong> In Python, hints are optional and ignored at runtime unless you run
+                <code>mypy</code>. In TypeScript, the type check is a required build step — bad types stop the build.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>What types buy you</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Benefit</th>
+                        <th>What it means day to day</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Autocomplete</td>
+                        <td>Your editor knows every field and method. You type less and guess nothing.</td>
+                    </tr>
+                    <tr>
+                        <td>Catch bugs early</td>
+                        <td>Typos, wrong arguments, and <code>undefined</code> access are flagged as you type.</td>
+                    </tr>
+                    <tr>
+                        <td>Safe refactoring</td>
+                        <td>Rename a field and the compiler shows every place that must change.</td>
+                    </tr>
+                    <tr>
+                        <td>Living documentation</td>
+                        <td>The types <em>are</em> the contract. New teammates read them instead of guessing.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>What types cost</h2>
+            <ul>
+                <li>A build/compile step (though modern tools make this near-instant).</li>
+                <li>A bit more typing up front — you declare shapes like <code>interface</code>.</li>
+                <li>A small learning curve for advanced types (generics, unions). You do not need these on day one.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>When to reach for TypeScript</h2>
+            <div class="diagram">
+                <pre class="mermaid">
+flowchart TD
+    Q1{"Throwaway script,<br/>tiny demo, learning JS?"}
+    Q1 -->|Yes| JS["Plain JavaScript is fine"]
+    Q1 -->|No| Q2{"More than one person,<br/>or code you'll keep?"}
+    Q2 -->|Yes| TS["Use TypeScript"]
+    Q2 -->|No| Q3{"Complex data shapes<br/>flowing around?"}
+    Q3 -->|Yes| TS
+    Q3 -->|No| Either["Either works"]
+    style JS fill:#fef9c3,stroke:#a16207,color:#0f172a
+    style TS fill:#dbeafe,stroke:#3178c6,color:#0f172a
+    style Either fill:#e2e8f0,stroke:#1e293b,color:#0f172a
+                </pre>
+            </div>
+            <div class="callout ts">
+                <strong>Practical advice:</strong> Learn plain JavaScript first so the language sinks in. Then adopt
+                TypeScript for any real project — nearly every professional React codebase is TypeScript today.
+            </div>
+        </section>
+
+        <section class="card">
+            <p class="quiet">Next up:
+                <a href="the_dom_explained.html">The DOM, explained &rarr;</a>
+            </p>
+        </section>
+    </main>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#dbeafe',
+                primaryTextColor: '#0f172a',
+                primaryBorderColor: '#3178c6',
+                lineColor: '#7c83b8',
+                fontFamily: 'Segoe UI, system-ui, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

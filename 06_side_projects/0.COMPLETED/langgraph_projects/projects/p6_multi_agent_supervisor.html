@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P6 · Multi-Agent Supervisor — LangGraph Projects</title>
+    <link rel="stylesheet" href="projects.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span>LG</span>P6 · Multi-Agent Supervisor</div>
+        <div class="links">
+            <a href="index.html">Projects Hub</a>
+            <a href="p5_agentic_rag.html">← P5</a>
+            <a href="index.html">Finish ✓</a>
+        </div>
+    </div>
+
+    <div class="header">
+        <p class="badge">Project 6 · Advanced</p>
+        <h1>Orchestrate specialists: the supervisor pattern</h1>
+        <p class="subtitle">One giant agent with 30 tools gets confused. The production answer is a team: a
+            <strong>supervisor</strong> that routes each step to the right specialist agent, using
+            <code>Command</code> handoffs and subgraphs. This is how serious systems scale.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>What this project does</h2>
+            <p>A supervisor LLM reads the conversation and decides which worker should act next — say a
+                <em>researcher</em> (web/RAG) or a <em>coder</em> (runs Python). The chosen worker does its job,
+                returns control to the supervisor, which decides again, until the task is finished. Each worker
+                is itself a full agent (often a ReAct agent from P2) wrapped as a node or subgraph.
+            </p>
+            <div class="pill-row">
+                <span class="level advanced">Advanced</span>
+                <span class="tag pink">supervisor</span>
+                <span class="tag">Command(goto=)</span>
+                <span class="tag">handoffs</span>
+                <span class="tag">subgraphs</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The architecture</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    START((START)) --> sup["supervisor<br/>who should act next?"]
+    sup -->|route| research["researcher agent<br/>(ReAct + search/RAG)"]
+    sup -->|route| coder["coder agent<br/>(ReAct + python REPL)"]
+    sup -->|done| END((END))
+    research -->|report back| sup
+    coder -->|report back| sup
+                </pre>
+                <p class="caption">A hub-and-spoke topology. The supervisor is the only node that decides
+                    routing; workers just do work and return.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Why not just one big agent?</h2>
+            <div class="grid-2">
+                <div class="mini">
+                    <h3>❌ Monolith agent</h3>
+                    <ul>
+                        <li>Too many tools → the model picks the wrong one.</li>
+                        <li>One bloated prompt mixing every concern.</li>
+                        <li>Hard to test, trace, or improve one capability.</li>
+                    </ul>
+                </div>
+                <div class="mini">
+                    <h3>✅ Supervised team</h3>
+                    <ul>
+                        <li>Each agent has a focused prompt + few tools.</li>
+                        <li>Specialists are independently testable and swappable.</li>
+                        <li>The supervisor's only job is routing — easy to reason about.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The handoff mechanism — <code>Command</code></h2>
+            <p>A node returns a <code>Command</code> that does two things at once: <strong>update state</strong>
+                and <strong>say where to go next</strong> (<code>goto</code>). That's how the supervisor routes
+                and how a worker returns control.</p>
+            <pre><code><span class="c-kw">from</span> typing <span class="c-kw">import</span> Literal
+<span class="c-kw">from</span> langgraph.types <span class="c-kw">import</span> Command
+<span class="c-kw">from</span> langgraph.graph <span class="c-kw">import</span> StateGraph, MessagesState, START, END
+<span class="c-kw">from</span> pydantic <span class="c-kw">import</span> BaseModel
+
+WORKERS = [<span class="c-str">"researcher"</span>, <span class="c-str">"coder"</span>]
+
+<span class="c-kw">class</span> <span class="c-cls">Route</span>(BaseModel):
+    next: Literal[<span class="c-str">"researcher"</span>, <span class="c-str">"coder"</span>, <span class="c-str">"FINISH"</span>]
+
+router = llm.with_structured_output(Route)
+
+<span class="c-kw">def</span> <span class="c-fn">supervisor</span>(state: MessagesState) -> Command:
+    decision = router.invoke([
+        {<span class="c-str">"role"</span>: <span class="c-str">"system"</span>, <span class="c-str">"content"</span>: <span class="c-str">"Route to the best worker, or FINISH."</span>},
+        *state[<span class="c-str">"messages"</span>],
+    ])
+    <span class="c-kw">if</span> decision.next == <span class="c-str">"FINISH"</span>:
+        <span class="c-kw">return</span> Command(goto=END)
+    <span class="c-kw">return</span> Command(goto=decision.next)     <span class="c-com"># hand off to a worker</span></code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Workers as subgraph agents</h2>
+            <p>Each worker is a self-contained agent (reuse P2's <code>create_react_agent</code>). After it
+                runs, it hands control back to the supervisor with another <code>Command</code>.</p>
+            <pre><code><span class="c-kw">from</span> langgraph.prebuilt <span class="c-kw">import</span> create_react_agent
+
+research_agent = create_react_agent(llm, tools=[web_search, rag_lookup],
+    prompt=<span class="c-str">"You are a research specialist."</span>)
+coder_agent = create_react_agent(llm, tools=[python_repl],
+    prompt=<span class="c-str">"You are a coding specialist."</span>)
+
+<span class="c-kw">def</span> <span class="c-fn">researcher</span>(state: MessagesState) -> Command[Literal[<span class="c-str">"supervisor"</span>]]:
+    result = research_agent.invoke(state)
+    <span class="c-kw">return</span> Command(
+        update={<span class="c-str">"messages"</span>: result[<span class="c-str">"messages"</span>][-<span class="c-cls">1</span>:]},
+        goto=<span class="c-str">"supervisor"</span>,                 <span class="c-com"># return control</span>
+    )
+
+<span class="c-kw">def</span> <span class="c-fn">coder</span>(state: MessagesState) -> Command[Literal[<span class="c-str">"supervisor"</span>]]:
+    result = coder_agent.invoke(state)
+    <span class="c-kw">return</span> Command(update={<span class="c-str">"messages"</span>: result[<span class="c-str">"messages"</span>][-<span class="c-cls">1</span>:]}, goto=<span class="c-str">"supervisor"</span>)</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Assembling the team</h2>
+            <pre><code>builder = StateGraph(MessagesState)
+builder.add_node(<span class="c-str">"supervisor"</span>, supervisor)
+builder.add_node(<span class="c-str">"researcher"</span>, researcher)
+builder.add_node(<span class="c-str">"coder"</span>, coder)
+builder.add_edge(START, <span class="c-str">"supervisor"</span>)
+<span class="c-com"># No manual edges to workers needed — Command(goto=...) handles routing.</span>
+
+graph = builder.compile(checkpointer=InMemorySaver())   <span class="c-com"># memory + diagnostics from P3/P4</span>
+
+graph.invoke({<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>,
+    <span class="c-str">"content"</span>: <span class="c-str">"Research 2024 EV sales, then plot the trend."</span>}]},
+    {<span class="c-str">"configurable"</span>: {<span class="c-str">"thread_id"</span>: <span class="c-str">"team-1"</span>}})</code></pre>
+            <div class="callout pink" style="border-color:#f472b6;background:#2a0f1d">
+                <strong>The flow:</strong> supervisor → researcher (finds sales data) → supervisor → coder
+                (writes the plot) → supervisor → FINISH. Each handoff is a <code>Command</code>; the shared
+                <code>messages</code> state is the team's common memory.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Multi-agent topologies</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>Shape</th>
+                        <th>Use when</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Supervisor</strong></td>
+                        <td>Central router → workers</td>
+                        <td>Clear division of labor, one coordinator (this project)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Swarm</strong></td>
+                        <td>Peers hand off directly to each other</td>
+                        <td>Fluid collaboration, no central boss</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hierarchical</strong></td>
+                        <td>Supervisors of supervisors</td>
+                        <td>Large systems, teams of teams</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Network</strong></td>
+                        <td>Any node → any node</td>
+                        <td>Maximum flexibility, hardest to control</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>LangChain ships <code>langgraph-supervisor</code> and <code>langgraph-swarm</code> as prebuilt
+                libraries for the first two — but knowing the <code>Command</code> mechanism lets you build any
+                of them.</p>
+        </div>
+
+        <div class="section">
+            <h2>Best practices for multi-agent systems</h2>
+            <ul>
+                <li><strong>Keep workers focused.</strong> 2–5 tools each. If a worker needs 15 tools, split
+                    it.</li>
+                <li><strong>Control what's shared.</strong> Return only the final message from a worker
+                    (<code>result["messages"][-1:]</code>) so the supervisor isn't flooded with the worker's
+                    internal scratchpad.</li>
+                <li><strong>Use subgraphs for isolation.</strong> A worker can have its own private state schema
+                    and only expose a clean interface to the parent graph.</li>
+                <li><strong>Cap total steps.</strong> Set <code>recursion_limit</code> — multi-agent loops can
+                    ping-pong.</li>
+                <li><strong>Trace everything (P4).</strong> With many agents, LangSmith is the only sane way to
+                    see who did what and why.</li>
+                <li><strong>Persist (P3).</strong> Long multi-agent tasks should be resumable; a checkpointer
+                    makes a crash recoverable.</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>🎓 You've covered the core of LangGraph</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>State &amp; reducers</h3>
+                    <p>P1 — the data model every graph shares.</p>
+                </div>
+                <div class="mini">
+                    <h3>Tools &amp; the agent loop</h3>
+                    <p>P2 — reason/act/observe with ToolNode.</p>
+                </div>
+                <div class="mini">
+                    <h3>Memory</h3>
+                    <p>P3 — durable short-term + retrievable long-term, kept cheap.</p>
+                </div>
+                <div class="mini">
+                    <h3>Control &amp; diagnostics</h3>
+                    <p>P4 — interrupts, time travel, tracing.</p>
+                </div>
+                <div class="mini">
+                    <h3>Self-correction</h3>
+                    <p>P5 — graphs that judge their own work.</p>
+                </div>
+                <div class="mini">
+                    <h3>Orchestration</h3>
+                    <p>P6 — teams of agents under a supervisor.</p>
+                </div>
+            </div>
+            <div class="callout green">
+                <strong>The throughline:</strong> everything is "nodes reading and writing shared state over
+                edges, with checkpoints making it durable". Master that sentence and you can read any LangGraph
+                codebase.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="p5_agentic_rag.html"><span class="dir">Previous</span>
+                <div class="ttl">← P5 · Agentic RAG</div>
+            </a>
+            <a class="next" href="index.html"><span class="dir">Done</span>
+                <div class="ttl">Back to Projects Hub ✓</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>LangGraph Projects · P6 of 6 · series complete</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

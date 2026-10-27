@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 20 — Prioritization</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 20 — Prioritization</h1>
+  <p>Many things to do, finite time. Score → rank → execute the highest-value work first.</p>
+  <p><span class="tag">Strategy</span><span class="tag">Priority Queue</span><span class="tag">WSJF</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>An agent juggling tasks needs a deterministic ordering rule. Common scoring schemes:</p>
+<ul>
+  <li><strong>Eisenhower</strong> — urgent × important.</li>
+  <li><strong>WSJF</strong> — (business value + time criticality + risk reduction) ÷ job size.</li>
+  <li><strong>Custom</strong> — domain-specific weights (deadline, dependency depth, customer tier).</li>
+</ul>
+<div class="callout tip"><strong>Mental model:</strong> a hospital's triage nurse — chest pain before stitches, regardless of arrival time.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart LR
+  T1[Task A] --> Q[(Priority Queue)]
+  T2[Task B] --> Q
+  T3[Task C] --> Q
+  Q -->|"highest score first"| E[Executor]
+  E --> Done([Done])
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Incident-response copilot</h2>
+<div class="callout scenario">
+A 2026 SRE copilot watches alerts from 60 services. At 3 AM it gets P0 (DB down), P2 (slow log shipper), and P3 (disk usage 78%). Prioritization scores each by impact × revenue × deadline; the agent pages the on-call for P0 first, schedules an automation for P2, files a Jira for P3.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant Pager as Alert
+  participant Q as Priority Queue
+  participant A as Agent
+  participant Op as On-call
+  Pager->>Q: P0 DB down (score 95)
+  Pager->>Q: P2 log shipper slow (40)
+  Pager->>Q: P3 disk 78% (10)
+  A->>Q: pop()
+  Q-->>A: P0
+  A->>Op: page!
+  A->>Q: pop()
+  Q-->>A: P2
+  A->>A: run remediation playbook
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Approach</th><th>How it expresses prioritization</th></tr>
+  <tr><td>LangGraph</td><td>Edge to a "queue" node + scorer.</td></tr>
+  <tr><td>CrewAI</td><td>Manager agent decides task order.</td></tr>
+  <tr><td>Celery / RQ + custom scorer</td><td>Task queue with priority field.</td></tr>
+  <tr><td>Custom</td><td><code>heapq</code> + Strategy (this project).</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Strategy</strong></td><td>Pluggable <code>Scorer</code> (Eisenhower / WSJF / custom).</td></tr>
+  <tr><td><strong>Priority Queue</strong></td><td><code>heapq</code> keeps highest-score task at top.</td></tr>
+  <tr><td><strong>Iterator</strong></td><td>Drain queue until empty or deadline.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── prioritize.py     # Task + Scorer + PriorityQueue
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>How do you avoid starvation of low-priority tasks?</summary><div>Boost a task's score by <em>age</em> (aging factor) so old low-priority items eventually surface; or reserve a small fraction of capacity for them.</div></details>
+<details class="qa"><summary>Static priority vs dynamic?</summary><div>Production systems re-score continuously: an alert that started P3 may climb to P0 if errors per minute spike. Reflect this with a recompute-on-each-pop policy.</div></details>
+</section>
+
+</main>
+<footer>Chapter 20 of 21.</footer>
+</body>
+</html>

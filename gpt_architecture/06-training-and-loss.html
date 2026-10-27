@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06 — Training & Loss Minimization</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #00cec9; }
+  h3 { font-size: 1.05rem; margin: 1rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #6c5ce7; color: #e1e4f0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .q { color: #6c5ce7; } .k { color: #00cec9; } .v { color: #fd79a8; } .score { color: #fdcb6e; } .attn { color: #55efc4; } .loss-c { color: #ff6b6b; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  .hl-box { background: rgba(108,92,231,0.08); border-left: 3px solid #6c5ce7; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .warning-box { background: rgba(255,107,107,0.08); border-left: 3px solid #ff6b6b; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #6c5ce7; }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .step-num { display: inline-block; background: #ff6b6b; color: white; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.8rem; border-radius: 100px; margin-bottom: 0.75rem; }
+  .flow-chain { display: flex; align-items: center; gap: 0.5rem; justify-content: center; flex-wrap: wrap; padding: 1.5rem 0; }
+  .chain-box { background: #232740; border: 1px solid #2d3154; border-radius: 8px; padding: 0.6rem 1rem; text-align: center; font-size: 0.8rem; min-width: 70px; }
+  .chain-arrow { font-size: 1rem; color: #636e72; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #00cec9; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #6c5ce7; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  .compare-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  @media (max-width:600px) { .compare-row { grid-template-columns: 1fr; } }
+  ul, ol { color: #c8cbe0; padding-left: 1.25rem; line-height: 2; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="05-weighted-sum-and-output.html">← 05: Weighted Sum</a>
+  <a href="07-next-token-prediction.html">Next: Prediction →</a>
+</div>
+
+<h1>06 · Training &amp; Loss Minimization</h1>
+<p>How does the model learn to set W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> to useful values? The answer: <strong>backpropagation through the loss function</strong>.</p>
+
+<h2>⛓️ Step 1: The Forward Pass</h2>
+
+<div class="card">
+<p>During training, the model processes a sequence and produces probabilities for the next token at each position. Then it compares its predictions to the <strong>actual next tokens</strong> (from the training data).</p>
+
+<div class="flow-chain">
+  <div class="chain-box" style="border-color:#6c5ce7;">X</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-box" style="border-color:#6c5ce7;">QKV</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-box" style="border-color:#55efc4;">Attn</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-box" style="border-color:#00cec9;">FFN</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-box" style="border-color:#fd79a8;">Logits</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-box" style="border-color:#fdcb6e;">Softmax</div>
+  <div class="chain-arrow">→</div>
+  <div class="chain-box" style="border-color:#ff6b6b;">Loss</div>
+</div>
+
+<h3>The Loss Function: Cross-Entropy</h3>
+<div class="math-block">
+Loss = -Σ<sub>i</sub> log P<sub>model</sub>(token<sub>i+1</sub> | tokens<sub>≤i</sub>)
+
+<span class="dim">// For each position i, the model predicted a probability distribution over the vocabulary.</span>
+<span class="dim">// We take the log of the probability assigned to the ACTUAL next token.</span>
+<span class="dim">// High probability → low loss. Low probability → high loss.</span>
+</div>
+
+<div class="compare-row">
+<div style="background:#232740;border-radius:10px;padding:1.25rem;">
+  <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.5rem;">✅ Good Prediction (low loss)</div>
+  <div style="font-size:0.9rem;">
+    "the cat <strong>?</strong> " → model predicts <code>"sat"</code> at <strong>85%</strong><br>
+    <span style="color:#636e72;">Actual: "sat"</span><br>
+    <span style="color:#55efc4;">Loss = -log(0.85) ≈ 0.16</span>
+  </div>
+</div>
+<div style="background:#232740;border-radius:10px;padding:1.25rem;">
+  <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.5rem;">❌ Bad Prediction (high loss)</div>
+  <div style="font-size:0.9rem;">
+    "the cat <strong>?</strong> " → model predicts <code>"the"</code> at <strong>10%</strong><br>
+    <span style="color:#636e72;">Actual: "sat"</span><br>
+    <span style="color:#ff6b6b;">Loss = -log(0.10) ≈ 2.30</span>
+  </div>
+</div>
+</div>
+</div>
+
+<h2>📉 Step 2: The Loss Signal</h2>
+
+<div class="card">
+<strong style="font-size:1.05rem;">What the loss tells us:</strong>
+<ul>
+  <li><strong style="color:#55efc4;">Low loss</strong> (near 0): The model was confident and correct. No significant update needed.</li>
+  <li><strong style="color:#fdcb6e;">Medium loss</strong> (~0.5–2): The model was somewhat uncertain or wrong. Small updates.</li>
+  <li><strong style="color:#ff6b6b;">High loss</strong> (&gt;2): The model was confidently <em>wrong</em> — big gradient signal. "I was very sure it was 'the', but it was 'sat'! — I need to change my weights significantly."</li>
+</ul>
+
+<table>
+  <thead><tr><th>Training Stage</th><th>Typical Loss</th><th>What's Happening</th></tr></thead>
+  <tbody>
+    <tr><td>Random init</td><td style="color:#ff6b6b;">~2.3</td><td>Predicting uniform random — no knowledge yet</td></tr>
+    <tr><td>Early training</td><td style="color:#fdcb6e;">~1.5–2.0</td><td>Learning word frequencies and common patterns</td></tr>
+    <tr><td>Mid training</td><td style="color:#fdcb6e;">~0.5–1.5</td><td>Syntactic patterns solidifying, attention heads specializing</td></tr>
+    <tr><td>Late training</td><td style="color:#55efc4;">~0.1–0.5</td><td>Fine-grained semantics, rare patterns, long-range dependencies</td></tr>
+    <tr><td>Overfit (memorized)</td><td>~0.0</td><td>Memorized training data — may not generalize</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>⚡ Step 3: Backpropagation — Gradients Flow Back Through QKV</h2>
+
+<div class="card">
+<p>The loss gradient flows <strong>backward</strong> through every operation in the forward pass, computing how much each weight contributed to the error.</p>
+
+<div class="math-block">
+<span class="dim">// Chain rule applied to attention:</span>
+
+∂Loss / ∂W<sub>Q</sub>  &nbsp;= &nbsp;∂Loss / ∂Attn  ·  ∂Attn / ∂Q  ·  ∂Q / ∂W<sub>Q</sub>
+∂Loss / ∂W<sub>K</sub>  &nbsp;= &nbsp;∂Loss / ∂Attn  ·  ∂Attn / ∂K  ·  ∂K / ∂W<sub>K</sub>
+∂Loss / ∂W<sub>V</sub>  &nbsp;= &nbsp;∂Loss / ∂Attn  ·  ∂Attn / ∂V  ·  ∂V / ∂W<sub>V</sub>
+</div>
+
+<p><strong>What each gradient says:</strong></p>
+<table>
+  <thead><tr><th>Weight</th><th>Gradient Means:</th></tr></thead>
+  <tbody>
+    <tr><td><span class="q">W<sub>Q</sub></span></td><td>"Make the query of 'sat' look <strong>more</strong> like the key of 'cat', so attention goes up and the prediction improves"</td></tr>
+    <tr><td><span class="k">W<sub>K</sub></span></td><td>"Make the key of 'cat' <strong>more distinctive</strong> (or more similar to the queries that need it)"</td></tr>
+    <tr><td><span class="v">W<sub>V</sub></span></td><td>"Carry <strong>more useful information</strong> about 'cat' so that when attention blends it into other tokens, the prediction is better"</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>🔄 Step 4: Weight Update</h2>
+
+<div class="card">
+<p>Using an optimizer (AdamW, SGD), the weights are updated in the <strong>opposite direction of the gradient</strong>:</p>
+
+<div class="math-block">
+W<sub>Q</sub><sup>new</sup> = W<sub>Q</sub><sup>old</sup> - η · ∇W<sub>Q</sub>   <span class="dim">// η = learning rate</span>
+W<sub>K</sub><sup>new</sup> = W<sub>K</sub><sup>old</sup> - η · ∇W<sub>K</sub><br>
+W<sub>V</sub><sup>new</sup> = W<sub>V</sub><sup>old</sup> - η · ∇W<sub>V</sub>
+</div>
+
+<p>Over billions of tokens and thousands of gradient steps, the QKV projections gradually specialize:</p>
+
+<table>
+  <thead><tr><th>Iteration</th><th>Q·K Score for (cat→sat)</th><th>Attention to 'cat' from 'sat'</th><th>Prediction for 'the cat ___'</th></tr></thead>
+  <tbody>
+    <tr><td>Step 0</td><td>Random (~0.0)</td><td>~33% (uniform)</td><td>"the" (random guess)</td></tr>
+    <tr><td>Step 100</td><td>~0.3</td><td>~38%</td><td>"was" (common verb)</td></tr>
+    <tr><td>Step 1000</td><td>~0.7</td><td>~45%</td><td>"sat" (40% confidence)</td></tr>
+    <tr><td>Step 10000</td><td>~1.2</td><td>~51%</td><td>"sat" (85% confidence)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="hl-box">
+  <strong>🎯 The critical insight:</strong> The model doesn't "know" about subjects and verbs. It simply discovers that when "sat" attends more to "cat", the loss decreases. The gradients <strong>automatically</strong> shape Q, K, V to produce this behavior. This is why attention is called <strong>learned content-based retrieval</strong> — the content (what to attend to) and the retrieval mechanism (QKV projections) are jointly optimized for one goal: <strong>predict the next token</strong>.
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

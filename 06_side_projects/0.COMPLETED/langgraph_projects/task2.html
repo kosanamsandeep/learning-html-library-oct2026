@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 2 - Sequential vs Stateful | LangGraph</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0f0f23;
+            color: #e0e0e0;
+            line-height: 1.8;
+        }
+
+        .nav {
+            background: #1a1a2e;
+            padding: 15px 30px;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav a {
+            color: #818cf8;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .nav a:hover {
+            color: #a5b4fc;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e1b4b, #312e81);
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .header .task-num {
+            color: #818cf8;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #e0e7ff;
+            margin: 10px 0;
+        }
+
+        .header .subtitle {
+            color: #a5b4fc;
+            font-size: 1.2em;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #a78bfa;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #312e81;
+        }
+
+        .section h3 {
+            color: #c4b5fd;
+            font-size: 1.2em;
+            margin: 20px 0 10px;
+        }
+
+        .section p {
+            color: #d1d5db;
+            margin-bottom: 12px;
+        }
+
+        .highlight-box {
+            background: #1e1b4b;
+            border-left: 4px solid #6366f1;
+            padding: 20px 25px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .highlight-box p {
+            color: #c4b5fd;
+            margin: 0;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: #312e81;
+            color: #e0e7ff;
+            padding: 14px 20px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 12px 20px;
+            border-bottom: 1px solid #1f2937;
+            background: #1a1a2e;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .good {
+            color: #34d399;
+        }
+
+        .bad {
+            color: #f87171;
+        }
+
+        .code-block {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .code-block .comment {
+            color: #6b7280;
+        }
+
+        .code-block .keyword {
+            color: #c084fc;
+        }
+
+        .code-block .string {
+            color: #34d399;
+        }
+
+        .code-block .function {
+            color: #60a5fa;
+        }
+
+        .diagram {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .diagram .flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .diagram .node {
+            background: #312e81;
+            color: #e0e7ff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .diagram .arrow {
+            color: #6366f1;
+            font-size: 1.5em;
+        }
+
+        .diagram .label {
+            color: #9ca3af;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        .key-insight {
+            background: linear-gradient(135deg, #064e3b, #065f46);
+            border: 1px solid #059669;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .key-insight h4 {
+            color: #6ee7b7;
+            margin-bottom: 8px;
+        }
+
+        .key-insight p {
+            color: #a7f3d0;
+            margin: 0;
+        }
+
+        .advantage-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .advantage-list li {
+            padding: 10px 0 10px 30px;
+            position: relative;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .advantage-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #34d399;
+            font-weight: bold;
+        }
+
+        .nav-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #1f2937;
+        }
+
+        .nav-footer a {
+            color: #818cf8;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 1px solid #4338ca;
+            border-radius: 8px;
+        }
+
+        .nav-footer a:hover {
+            background: #312e81;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="nav">
+        <a href="index.html">← Back to Overview</a>
+        <a href="task3.html">Next: Task 3 →</a>
+    </div>
+
+    <div class="header">
+        <div class="task-num">Task 2</div>
+        <h1>Sequential vs Stateful Processing</h1>
+        <div class="subtitle">The fundamental "why" behind LangGraph</div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>🧩 What This Task Teaches</h2>
+            <p>This is the <strong>motivation task</strong>. It shows you the exact problem that LangGraph was created
+                to solve:
+                <strong>traditional LangChain chains have no memory between steps</strong>. Each step is independently
+                executed,
+                like separate conversations with an amnesiac.
+            </p>
+
+            <div class="highlight-box">
+                <p><strong>Core Problem:</strong> In a sequential chain, Step 3 cannot remember what happened in Step 1.
+                    In a stateful graph, ALL steps can access and build upon shared information.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>⚔️ The Comparison</h2>
+
+            <h3>Sequential Chain (LangChain Traditional)</h3>
+            <div class="diagram">
+                <div class="flow">
+                    <div class="node">Step 1: Greet Alice</div>
+                    <div class="arrow">→</div>
+                    <div class="node">Step 2: Say Goodbye</div>
+                    <div class="arrow">→</div>
+                    <div class="node">Step 3: Who was it?</div>
+                </div>
+                <div class="label">Each step is INDEPENDENT — Step 3 doesn't know the name was "Alice" ❌</div>
+            </div>
+
+            <h3>Stateful Graph (LangGraph)</h3>
+            <div class="diagram">
+                <div class="flow">
+                    <div class="node">Greet (saves name)</div>
+                    <div class="arrow">→</div>
+                    <div class="node">Farewell (reads name)</div>
+                    <div class="arrow">→</div>
+                    <div class="node">Memory Test (reads name)</div>
+                </div>
+                <div class="label">All nodes share state — every step can access "Alice" ✅</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Side-by-Side Comparison</h2>
+            <table class="comparison-table">
+                <tr>
+                    <th>Feature</th>
+                    <th>Sequential Chain</th>
+                    <th>Stateful Graph</th>
+                </tr>
+                <tr>
+                    <td><strong>Memory Between Steps</strong></td>
+                    <td class="bad">❌ None — each step starts fresh</td>
+                    <td class="good">✅ Full state preserved</td>
+                </tr>
+                <tr>
+                    <td><strong>Data Sharing</strong></td>
+                    <td class="bad">Manual — must pass explicitly</td>
+                    <td class="good">Automatic — shared state object</td>
+                </tr>
+                <tr>
+                    <td><strong>Flow Control</strong></td>
+                    <td class="bad">Linear only (A → B → C)</td>
+                    <td class="good">Any pattern (loops, branches)</td>
+                </tr>
+                <tr>
+                    <td><strong>Error Recovery</strong></td>
+                    <td class="bad">Restart from beginning</td>
+                    <td class="good">Resume from last state</td>
+                </tr>
+                <tr>
+                    <td><strong>Good For</strong></td>
+                    <td>Simple, one-shot tasks</td>
+                    <td>Complex, multi-step workflows</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>💻 How The Code Works</h2>
+
+            <h3>Sequential (No Memory)</h3>
+            <div class="code-block">
+                <span class="comment"># Each chain is independent — like talking to a new person each time</span>
+                <span class="keyword">prompt1</span> = "Say hello to {name}"
+                <span class="keyword">prompt2</span> = "Say goodbye" <span class="comment"># ← Can't access 'name' —
+                    it's gone!</span>
+                <span class="keyword">prompt3</span> = "What was their name?" <span class="comment"># ← Has NO
+                    idea!</span>
+            </div>
+
+            <h3>Stateful Graph (Full Memory)</h3>
+            <div class="code-block">
+                <span class="comment"># State is shared — like passing a notebook between team members</span>
+                <span class="keyword">class</span> <span class="function">ConversationState</span>(TypedDict):
+                name: str <span class="comment"># ← Available to ALL nodes</span>
+                greeting: str
+                farewell: str
+
+                <span class="keyword">def</span> <span class="function">greet_person</span>(state):
+                <span class="comment"># Reads state['name'] → "Alice"</span>
+                <span class="keyword">return</span> {"greeting": f"Hello {state['name']}!"}
+
+                <span class="keyword">def</span> <span class="function">say_farewell</span>(state):
+                <span class="comment"># ALSO reads state['name'] → still "Alice"!</span>
+                <span class="keyword">return</span> {"farewell": f"Bye {state['name']}!"}
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>✅ Advantages of This Task</h2>
+            <ul class="advantage-list">
+                <li><strong>Motivates LangGraph's existence</strong> — you see exactly WHY stateful processing matters
+                </li>
+                <li><strong>Shows the limitation of basic chains</strong> — chains are fast but dumb (no memory)</li>
+                <li><strong>Introduces TypedDict state</strong> — the structured way to define what your graph remembers
+                </li>
+                <li><strong>First StateGraph construction</strong> — add_node, set_entry_point, add_edge, compile</li>
+            </ul>
+        </div>
+
+        <div class="key-insight">
+            <h4>💡 Key Insight</h4>
+            <p>LangGraph's superpower starts here: <strong>shared state</strong>. Every node reads from and writes to
+                the same state object.
+                This is the foundation that makes everything else (routing, loops, tools, memory) possible.</p>
+        </div>
+
+        <div class="section">
+            <h2>🔗 What This Enables Next</h2>
+            <p>Now that you understand state, Task 3 shows how state doesn't just persist — it
+                <strong>accumulates</strong>.
+                Nodes don't just read state; they add to it, building up information over time.</p>
+        </div>
+
+        <div class="nav-footer">
+            <a href="index.html">← Overview</a>
+            <a href="task3.html">Next: Task 3 - StateGraph →</a>
+        </div>
+    </div>
+</body>
+
+</html>

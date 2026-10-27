@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go P9 — Notification Platform</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Go projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p9_notification_platform/README.html">Python p9</a>
+                <a href="../../rust_projects/p9_notification_platform/README.html">Rust p9</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go · P9</span></p>
+            <h1>Notifications — Factory + Strategy + a goroutine fan-out</h1>
+            <p class="lead">Three notification channels behind one interface. A registry maps name → implementation (the
+                factory). And the broadcast runs all channels in parallel using goroutines + a
+                <code>sync.WaitGroup</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>The fan-out — Go's headline feature in two lines</h2>
+            <pre><code>for _, name := range channels {
+    name, c := name, c            // capture the loop vars
+    go func() {                   // 2KB stack, scheduled by the runtime
+        defer wg.Done()
+        c.Send(to, body)
+    }()
+}
+wg.Wait()</code></pre>
+            <p>Three channels, three goroutines, total time = <em>slowest</em> channel, not the sum. In Python you'd
+                reach for <code>asyncio.gather(...)</code>; here it's the language's primary concurrency primitive.</p>
+        </section>
+
+        <section class="card">
+            <h2>Why the loop-var copy?</h2>
+            <p><code>name, c := name, c</code> creates a fresh copy per iteration. Without it, every goroutine would
+                close over the <em>same</em> shared variable and you'd see only the last value. (Go 1.22+ makes this
+                safer by default but the explicit copy still reads better.)</p>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd go_projects/p9_notification_platform
+go run .</code></pre>
+            <p>Files: <a href="main.go">main.go</a> · <a href="go.mod">go.mod</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

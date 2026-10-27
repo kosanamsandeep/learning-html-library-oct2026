@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>05 — Security, Overhang & the Human Moat</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38; --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575; --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f; --green:#a3e077; --violet:#c09bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .callout.danger{ border-left-color:var(--rose); background:rgba(242,121,127,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; } @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  .prev:hover{ color:var(--accent); }
+  .backhome{ display:block; text-align:right; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← Boris Cherny · Elicitation Era</a> · Module 05</div>
+  <h1>Security, <em style="color:var(--amber);font-style:normal;">Overhang</em> &amp; the Human Moat</h1>
+  <p>Three independent ideas that round out the picture: how injection resistance actually works, how to diagnose your harness, and what part of your job can't be automated.</p>
+
+  <h2>Three-Layer Prompt-Injection Defense</h2>
+  <p>Cherny claims Claude Code is effectively no longer "prompt injectable" — but he attributes that to a <strong>defense architecture</strong>, not just a better model. You can replicate the pattern:</p>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph TB
+    INJ["Prompt injection attempt"] --> L1["Layer 1: well-aligned model<br/>refuses / doesn't follow injected instructions"]
+    L1 -->|"slips past"| L2["Layer 2: dedicated classifier<br/>scans all traffic"]
+    L2 -->|"slips past"| L3["Layer 3: mechanistic interpretability<br/>monitors specific 'neurons' for injection"]
+    L1 -->|"blocked"| STOP["✅ Blocked"]
+    L2 -->|"blocked"| STOP
+    L3 -->|"blocked"| STOP
+  </div>
+  </div>
+  <div class="card">
+    <h3>The three layers</h3>
+    <table>
+      <thead><tr><th>Layer</th><th>What it does</th><th>Can you build it?</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1. Well-aligned base model</strong></td><td>The model itself refuses injection — the first and biggest filter</td><td>⚠️ You choose the model; you can't tune its alignment directly</td></tr>
+        <tr><td><strong>2. Injection classifier</strong></td><td>A dedicated classifier running across all traffic detects injection patterns</td><td>✅ Yes — a secondary model/labeled classifier over inputs &amp; tool outputs</td></tr>
+        <tr><td><strong>3. Mechanistic interpretability</strong></td><td>Monitors specific internal "neurons" associated with injection attempts</td><td>❌ Frontier-lab research — you can't replicate this, but you can design layers 1–2 and assume layer 3 on frontier models</td></tr>
+      </tbody>
+    </table>
+    <div class="callout danger" style="margin-top:1rem;"><strong>Note:</strong> treat "we're no longer prompt injectable" as a strong claim, not a guarantee. Defense-in-depth means no single layer is trusted. For your own agents, the practical takeaway is the <em>classifier layer</em> — and never trusting raw tool output (already in your security model).</div>
+  </div>
+
+  <h2>Overhang vs Underhang — the Diagnostic</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="color:var(--green);">Product Overhang</h3>
+      <p><strong>Model can do more than your product lets it express.</strong></p>
+      <ul>
+        <li>Symptom: results are worse than the raw model in a playground</li>
+        <li>Cause: harness constraints, over-specified scaffolding</li>
+        <li>Fix: <strong>unhobble</strong> — simpler, higher-level access (full terminal, broader tools)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--amber);">Product Underhang</h3>
+      <p><strong>You're forcing a model beyond its current capability.</strong></p>
+      <ul>
+        <li>Symptom: results are poor no matter the prompt</li>
+        <li>Cause: task exceeds model ceiling</li>
+        <li>Fix: <strong>more scaffolding</strong>, domain-specific harness, or a stronger model</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><strong>Diagnose before you change anything:</strong> most teams assume underhang ("the model can't do this") and add scaffolding, when they actually have overhang ("the model can, my harness is blocking it") — and the added scaffolding makes it worse. Run the raw model in a playground on the same task to find out which side you're on.</div>
+
+  <h2>The Human Moat: What Won't Be Automated</h2>
+  <div class="card">
+    <p>When an agentic workflow can rewrite an entire 100K-line codebase in 11 days, the engineering role shifts dramatically. The <strong>non-automatable core</strong>:</p>
+    <ol>
+      <li><strong>Deciding what should exist in the first place</strong> — the product/architecture judgment of what's worth building.</li>
+      <li><strong>Specifying a system well enough that an agent can build it</strong> — the task + guardrails + exit criteria skill (Module 02).</li>
+      <li><strong>Functional systems requirements, design sense, and architecture</strong> — the shape of the system, not its implementation.</li>
+    </ol>
+    <div class="callout warn" style="margin-top:1rem;"><strong>Implication for you:</strong> as a senior AI engineer, double down on design sense and requirements-elicitation. The engineer who can precisely specify <em>what</em> to build — and define verification for it — controls the agents that do the <em>how</em>. That's the moat.</div>
+  </div>
+
+  <h2>The Complete Elicitation-Era Playbook</h2>
+  <div class="card">
+    <ol>
+      <li><strong>Ablate first</strong> — delete prompts/skills/hooks, test raw, re-add only on failure. (Module 01)</li>
+      <li><strong>Define, don't prescribe</strong> — task + guardrails + exit criteria, never a step-by-step manual. (Module 02)</li>
+      <li><strong>Build verification in</strong> — test suites, pixel comparisons, compile gates the agent feeds back on. (Module 02)</li>
+      <li><strong>Scale compute with stakes</strong> — sequence / parallelise / fan-out-and-verify, and spend test-time compute only where it pays. (Module 03)</li>
+      <li><strong>Automate maintenance</strong> — loops locally, routines in the cloud, each with a verification loop. (Module 04)</li>
+      <li><strong>Defend in depth</strong> — alignment + classifier + (on frontier) interpretability; never trust raw tool output. (Module 05)</li>
+      <li><strong>Own the specification</strong> — the human moat is defining what should exist and how it verifies success. (Module 05)</li>
+    </ol>
+  </div>
+
+  <a class="prev" href="04-self-maintaining-infra.html">← Back: Self-Maintaining Infrastructure</a>
+  <a class="backhome" href="index.html">↑ Back to Hub</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#10141c',primaryColor:'#161b26',primaryBorderColor:'#6ee7d8',primaryTextColor:'#e7e9f0',lineColor:'#6ee7d8',secondaryColor:'#0a0c10'}});</script>
+</body>
+</html>

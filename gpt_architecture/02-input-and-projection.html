@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 — Input Embeddings → Q, K, V Projection</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #00cec9; }
+  h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #6c5ce7; color: #e1e4f0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .q { color: #6c5ce7; } .k { color: #00cec9; } .v { color: #fd79a8; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  .hl-box { background: rgba(108,92,231,0.08); border-left: 3px solid #6c5ce7; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .matrix-grid { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; margin: 1rem 0; }
+  .matrix-row { display: flex; gap: 0.1rem; align-items: center; }
+  .cell { width: 58px; height: 36px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; border-radius: 5px; font-weight: 500; }
+  .cell-x { background: rgba(255,255,255,0.05); color: #e1e4f0; border: 1px solid rgba(255,255,255,0.08); }
+  .cell-q { background: rgba(108,92,231,0.12); color: #6c5ce7; border: 1px solid rgba(108,92,231,0.15); }
+  .cell-k { background: rgba(0,206,201,0.12); color: #00cec9; border: 1px solid rgba(0,206,201,0.15); }
+  .cell-v { background: rgba(253,121,168,0.12); color: #fd79a8; border: 1px solid rgba(253,121,168,0.15); }
+  .cell-dim { background: transparent; color: #636e72; width: auto; padding: 0 0.5rem; font-size: 0.7rem; }
+  .arrow-sym { font-size: 1.5rem; color: #636e72; margin: 0.3rem 0; }
+  .label { font-size: 0.85rem; font-weight: 600; margin: 0.3rem 0; text-align: center; }
+  .shape { font-size: 0.7rem; color: #636e72; font-family: 'JetBrains Mono', monospace; text-align: center; margin-top: 0.15rem; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #6c5ce7; }
+  .step-card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .step-num { display: inline-block; background: #6c5ce7; color: white; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.8rem; border-radius: 100px; margin-bottom: 0.75rem; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  @media (max-width:600px) { .grid-2 { grid-template-columns: 1fr; } }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #00cec9; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #6c5ce7; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="01-qkv-overview.html">← 01: Overview</a>
+  <a href="03-attention-scores.html">Next: Attention Scores →</a>
+</div>
+
+<h1>02 · Input Embeddings → Q, K, V Projection</h1>
+<p>How do we go from raw token embeddings to the three separate matrices that power attention? This file walks through the first mathematical transformation.</p>
+
+<h2>📐 Step 0: The Input Matrix X</h2>
+<p>Each token (word or subword) starts as a <strong>dense embedding vector</strong> of size <code>n_embd</code>. For our running example, we use <code>n_embd = 4</code> (in real models it's 768–16000).</p>
+
+<p>With <strong>T = 3 tokens</strong> (<code>"the"</code>, <code>"cat"</code>, <code>"sat"</code>), the input is a <strong>(3 × 4) matrix</strong>:</p>
+
+<div class="step-card">
+<div class="step-num">Step 0</div>
+<div class="math-block">
+X  =  ⎡1.0 &nbsp; 0.0 &nbsp; 2.0 &nbsp; 0.5⎤   &nbsp;<span class="dim">// "the"</span><br>
+     ⎢0.5 &nbsp; 1.5 &nbsp; 0.0 &nbsp; 1.0⎥   &nbsp;<span class="dim">// "cat"</span><br>
+     ⎣2.0 &nbsp; 0.0 &nbsp; 1.0 &nbsp; 0.0⎦   &nbsp;<span class="dim">// "sat"</span><br>
+  <span class="dim">Shape: (T × n_embd) = (3 × 4)</span>
+</div>
+
+<div class="matrix-grid">
+  <div class="label">Visualized</div>
+  <div class="matrix-row">
+    <div class="cell cell-x">1.0</div>
+    <div class="cell cell-x">0.0</div>
+    <div class="cell cell-x">2.0</div>
+    <div class="cell cell-x">0.5</div>
+    <div class="cell cell-dim">← "the"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-x">0.5</div>
+    <div class="cell cell-x">1.5</div>
+    <div class="cell cell-x">0.0</div>
+    <div class="cell cell-x">1.0</div>
+    <div class="cell cell-dim">← "cat"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-x">2.0</div>
+    <div class="cell cell-x">0.0</div>
+    <div class="cell cell-x">1.0</div>
+    <div class="cell cell-x">0.0</div>
+    <div class="cell cell-dim">← "sat"</div>
+  </div>
+  <div class="shape">Shape: (3 × 4) — T=3 tokens, n_embd=4 dimensions</div>
+</div>
+</div>
+
+<h2>🔮 Step 1: Linear Projection → Q, K, V</h2>
+<p>Each of the three roles (<span class="q">Query</span>, <span class="k">Key</span>, <span class="v">Value</span>) is computed by multiplying X by a <strong>learned weight matrix</strong>. These weight matrices — W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> — are the <strong>parameters the model learns during training</strong>.</p>
+
+<p>The projection <strong>reduces dimensionality</strong> from <code>n_embd</code> (4) down to <code>d_k</code> (2) — the "head dimension". This creates an information bottleneck that forces each head to focus on specific features.</p>
+
+<div class="step-card">
+<div class="step-num">Step 1a</div>
+<h3>Matrix Multiplication</h3>
+<div class="math-block">
+<span class="q">Q</span> = X · W<sub>Q</sub>   &nbsp;&nbsp;&nbsp; <span class="dim">X: (3×4), W<sub>Q</sub>: (4×2) → Q: (3×2)</span><br>
+<span class="k">K</span> = X · W<sub>K</sub>   &nbsp;&nbsp;&nbsp; <span class="dim">X: (3×4), W<sub>K</sub>: (4×2) → K: (3×2)</span><br>
+<span class="v">V</span> = X · W<sub>V</sub>   &nbsp;&nbsp;&nbsp; <span class="dim">X: (3×4), W<sub>V</sub>: (4×2) → V: (3×2)</span>
+</div>
+<p style="font-size:0.9rem;">Each <strong>row</strong> of Q, K, V corresponds to one token. Each <strong>column</strong> is a learned feature in the attention subspace.</p>
+</div>
+
+<div class="step-card">
+<div class="step-num">Step 1b</div>
+<h3>The Resulting Q, K, V Matrices</h3>
+
+<div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
+<div>
+<div class="label"><span style="color:#6c5ce7">Q Matrix</span></div>
+<div class="matrix-grid">
+  <div class="matrix-row">
+    <div class="cell cell-q">0.1</div>
+    <div class="cell cell-q">0.5</div>
+    <div class="cell cell-dim">← "the"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-q">1.2</div>
+    <div class="cell cell-q">0.8</div>
+    <div class="cell cell-dim">← "cat"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-q">0.3</div>
+    <div class="cell cell-q">0.9</div>
+    <div class="cell cell-dim">← "sat"</div>
+  </div>
+</div>
+<div class="shape">Shape: (3 × 2)</div>
+</div>
+
+<div style="display:flex;align-items:center;font-size:2rem;color:#636e72;">→</div>
+
+<div>
+<div class="label"><span style="color:#00cec9">K Matrix</span></div>
+<div class="matrix-grid">
+  <div class="matrix-row">
+    <div class="cell cell-k">0.2</div>
+    <div class="cell cell-k">0.1</div>
+    <div class="cell cell-dim">← "the"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-k">1.0</div>
+    <div class="cell cell-k">0.9</div>
+    <div class="cell cell-dim">← "cat"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-k">0.4</div>
+    <div class="cell cell-k">0.7</div>
+    <div class="cell cell-dim">← "sat"</div>
+  </div>
+</div>
+<div class="shape">Shape: (3 × 2)</div>
+</div>
+
+<div style="display:flex;align-items:center;font-size:2rem;color:#636e72;">→</div>
+
+<div>
+<div class="label"><span style="color:#fd79a8">V Matrix</span></div>
+<div class="matrix-grid">
+  <div class="matrix-row">
+    <div class="cell cell-v">10</div>
+    <div class="cell cell-v">20</div>
+    <div class="cell cell-dim">← "the"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-v">30</div>
+    <div class="cell cell-v">40</div>
+    <div class="cell cell-dim">← "cat"</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-v">50</div>
+    <div class="cell cell-v">60</div>
+    <div class="cell cell-dim">← "sat"</div>
+  </div>
+</div>
+<div class="shape">Shape: (3 × 2)</div>
+</div>
+</div>
+
+<p style="margin-top:1rem;font-size:0.9rem;color:var(--text-dim);">Two things to notice:</p>
+<ul style="color:#c8cbe0;padding-left:1.25rem;line-height:2;font-size:0.95rem;">
+  <li>The same X is projected through <strong>three different lenses</strong> — the three W matrices learn different patterns.</li>
+  <li>V contains <strong>larger values</strong> (10–60) compared to Q/K (0.1–1.2). This is realistic: Values carry the full semantic payload, while Q and K are optimized for matching.</li>
+  <li>All three matrices have the same shape (T × d<sub>k</sub>) — this is essential for the attention formula.</li>
+</ul>
+</div>
+
+<h2>⚙️ Why Project to a Smaller Dimension?</h2>
+<table>
+  <thead><tr><th>Reason</th><th>Explanation</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Information bottleneck</strong></td><td>Forces each head to extract only the most important features from the full embedding. Prevents overfitting.</td></tr>
+    <tr><td><strong>Computational efficiency</strong></td><td>Q·K<sup>T</sup> is a (T×d<sub>k</sub>)·(d<sub>k</sub>×T) multiply. Smaller d<sub>k</sub> → much faster attention.</td></tr>
+    <tr><td><strong>Multi-head factorization</strong></td><td>If n_embd = 768 and heads = 12, each head uses d<sub>k</sub> = 64. Each head learns a <em>different</em> projection, capturing different relationship types.</td></tr>
+  </tbody>
+</table>
+
+<div class="hl-box">
+  <strong>🔑 Key takeaway:</strong> Q, K, V are <strong>learned linear projections</strong> of the same input. The magic is that training shapes these projections so that Q·K<sup>T</sup> produces high scores for tokens that should attend to each other, and low scores for irrelevant pairs. V carries what gets blended — trained to contain useful information for downstream layers.
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nearest Neighbor vs ANN in Vector Database Index Search</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">V</span>
+                <span>Vector Search Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="rag.html">RAG</a>
+                <a href="graph-rag-vector-strategies.html">Graph + Vector</a>
+                <a href="vectorization-methods.html">Vectorization</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#simple-story">Simple story</a>
+            <a href="#core-idea">Core idea</a>
+            <a href="#exact-nn">Exact nearest neighbor</a>
+            <a href="#ann">Approximate nearest neighbor</a>
+            <a href="#why-ann">Why ANN exists</a>
+            <a href="#distance">Distance metrics</a>
+            <a href="#index-types">Index types</a>
+            <a href="#hnsw">HNSW example</a>
+            <a href="#ivf">IVF example</a>
+            <a href="#rag-example">RAG example</a>
+            <a href="#tradeoffs">Tradeoffs</a>
+            <a href="#tuning">Tuning knobs</a>
+            <a href="#when-to-use">When to use what</a>
+            <a href="#interview">Interview answers</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Production systems · Vector databases</p>
+                    <h1>Nearest Neighbor vs ANN in vector database index search</h1>
+                    <p>Vector search answers one practical question: <strong>given this query vector, which stored
+                            vectors are most similar?</strong> Exact nearest neighbor search answers perfectly but can
+                        become slow at scale. Approximate nearest neighbor search answers almost perfectly but much
+                        faster, which is why modern vector databases use ANN indexes such as HNSW, IVF, PQ, or hybrid
+                        variations.</p>
+                    <p>This page explains the difference using simple examples, production tradeoffs, and the index
+                        choices you will see in FAISS, Milvus, Qdrant, Weaviate, Pinecone, Chroma, pgvector, Redis,
+                        Elasticsearch, and OpenSearch.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Memory hook</h2>
+                    <p class="formula">Exact NN = check every vector<br>ANN = check the most promising vectors first</p>
+                    <p>Exact is perfect. ANN is fast. Production retrieval usually chooses ANN because latency matters.
+                    </p>
+                </div>
+            </section>
+
+            <section class="section" id="simple-story">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Intuition</p>
+                        <h2>A simple story: finding the closest book in a huge library</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Exact nearest neighbor</h3>
+                        <p>Imagine you ask: "Which book is most similar to this paragraph?" Exact nearest neighbor
+                            compares your paragraph with <strong>every book</strong> in the library, calculates a
+                            similarity score, sorts all books, and returns the top matches.</p>
+                        <p>This is accurate, but if the library has 100 million books, it is too slow for a chat
+                            application that must answer in under one second.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Approximate nearest neighbor</h3>
+                        <p>ANN first organizes the library into neighborhoods. When your paragraph comes in, it does not
+                            inspect every book. It jumps to the most promising shelves, checks nearby books, and returns
+                            highly similar matches quickly.</p>
+                        <p>It may miss the mathematically perfect nearest book, but it usually returns a good enough
+                            book much faster.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="core-idea">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Core idea</p>
+                        <h2>What vector search actually does</h2>
+                    </div>
+                </div>
+                <div class="card">
+                    <p>A vector database stores embeddings. An embedding is a list of numbers that represents meaning.
+                        Similar meaning should land near similar meaning in vector space.</p>
+                    <p class="formula">text/image/audio/code -> embedding model -> vector -> vector database index</p>
+                    <p>At query time:</p>
+                    <ol>
+                        <li>User asks a question: <code>How do I reset my password?</code></li>
+                        <li>The app embeds the query into a vector, for example <code>[0.12, -0.44, 0.87, ...]</code>.
+                        </li>
+                        <li>The vector DB searches for stored vectors close to that query vector.</li>
+                        <li>The top chunks are returned to a RAG pipeline, recommendation system, search UI, or agent.
+                        </li>
+                    </ol>
+                </div>
+                <div class="note">
+                    <p><strong>Important:</strong> vector search is not searching text directly. It searches numeric
+                        positions created by an embedding model. The quality of retrieval depends on both the embedding
+                        model and the index/search strategy.</p>
+                </div>
+            </section>
+
+            <section class="section" id="exact-nn">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Exact search</p>
+                        <h2>Nearest Neighbor search (exact / brute force / flat index)</h2>
+                    </div>
+                </div>
+                <div class="card">
+                    <p>Exact nearest neighbor search compares the query vector against every stored vector.</p>
+                    <pre><code>query = [0.10, 0.20]
+
+stored_vectors = {
+    "doc_a": [0.11, 0.19],
+    "doc_b": [0.90, 0.80],
+    "doc_c": [0.15, 0.22],
+    "doc_d": [-0.30, 0.70],
+}
+
+# Exact search:
+# 1. compute distance(query, doc_a)
+# 2. compute distance(query, doc_b)
+# 3. compute distance(query, doc_c)
+# 4. compute distance(query, doc_d)
+# 5. sort by distance
+# 6. return nearest K</code></pre>
+                    <p>If there are 4 vectors, exact search is trivial. If there are 400 million vectors, exact search
+                        becomes expensive because it must score every candidate.</p>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Exact NN property</th>
+                                <th>Meaning</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Accuracy</td>
+                                <td>Best possible. It returns the true nearest vectors according to the distance metric.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Latency</td>
+                                <td>Can be high because every vector must be compared.</td>
+                            </tr>
+                            <tr>
+                                <td>Index name</td>
+                                <td>Often called <code>flat</code>, <code>brute force</code>, or exact search.</td>
+                            </tr>
+                            <tr>
+                                <td>Best for</td>
+                                <td>Small datasets, offline evaluation, recall benchmarking, or cases where perfect
+                                    accuracy matters more than latency.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="ann">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Approximate search</p>
+                        <h2>ANN search (Approximate Nearest Neighbor)</h2>
+                    </div>
+                </div>
+                <div class="card">
+                    <p>ANN search uses an index structure to avoid checking every vector. The index narrows the search
+                        to likely neighborhoods, then scores only a smaller candidate set.</p>
+                    <p class="formula">query vector -> ANN index -> candidate vectors -> score/rank -> top K</p>
+                    <p>ANN is called approximate because it trades a small amount of recall for a large latency win.
+                        Instead of asking "did I find the exact closest vector?", production systems often ask "did I
+                        find highly relevant results fast enough?"</p>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Exact search question</h3>
+                        <p>"Out of all 100 million vectors, which 10 are mathematically closest?"</p>
+                    </div>
+                    <div class="card">
+                        <h3>ANN search question</h3>
+                        <p>"Can I find 10 very close vectors in 30 ms, with 95-99% recall?"</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="why-ann">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Why it exists</p>
+                        <h2>Why vector databases usually use ANN</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Scale</th>
+                                <th>Exact search problem</th>
+                                <th>ANN benefit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>10K vectors</td>
+                                <td>Exact search is often fine.</td>
+                                <td>ANN may not be necessary.</td>
+                            </tr>
+                            <tr>
+                                <td>1M vectors</td>
+                                <td>Exact search starts hurting latency and CPU.</td>
+                                <td>ANN reduces candidate comparisons dramatically.</td>
+                            </tr>
+                            <tr>
+                                <td>100M vectors</td>
+                                <td>Exact search is usually too slow or too expensive for online requests.</td>
+                                <td>ANN makes low-latency retrieval practical.</td>
+                            </tr>
+                            <tr>
+                                <td>1B+ vectors</td>
+                                <td>Exact search is mostly for evaluation, not serving.</td>
+                                <td>ANN plus sharding, quantization, filtering, and caching become essential.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Production rule:</strong> exact search is the baseline. ANN is the serving strategy once
+                        the baseline is too slow or expensive.</p>
+                </div>
+            </section>
+
+            <section class="section" id="distance">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Similarity math</p>
+                        <h2>Distance metrics: cosine, dot product, Euclidean</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>What it measures</th>
+                                <th>Common use</th>
+                                <th>Plain-English intuition</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Cosine similarity</td>
+                                <td>Angle/direction between vectors.</td>
+                                <td>Text embeddings, semantic search, RAG.</td>
+                                <td>Are these vectors pointing in the same meaning direction?</td>
+                            </tr>
+                            <tr>
+                                <td>Dot product / inner product</td>
+                                <td>Direction plus magnitude.</td>
+                                <td>Recommendation systems, normalized embeddings, high-performance indexes.</td>
+                                <td>Are they aligned, and how strong is the signal?</td>
+                            </tr>
+                            <tr>
+                                <td>Euclidean / L2 distance</td>
+                                <td>Straight-line distance in vector space.</td>
+                                <td>Computer vision, clustering, some FAISS indexes.</td>
+                                <td>How physically far apart are the points?</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <h3>Example</h3>
+                    <p>If embeddings are normalized to length 1, cosine similarity and dot product often rank results
+                        similarly. If embeddings are not normalized, dot product also rewards vector magnitude, which
+                        can change ranking.</p>
+                </div>
+            </section>
+
+            <section class="section" id="index-types">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Index families</p>
+                        <h2>Common vector index types</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Index type</th>
+                                <th>Exact or ANN?</th>
+                                <th>How it thinks</th>
+                                <th>Best for</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Flat</td>
+                                <td>Exact</td>
+                                <td>Compare query against every vector.</td>
+                                <td>Small datasets, ground-truth evaluation, highest recall.</td>
+                            </tr>
+                            <tr>
+                                <td>HNSW</td>
+                                <td>ANN</td>
+                                <td>Build a graph of vectors and navigate from broad to local neighborhoods.</td>
+                                <td>Low-latency online search, high recall, dynamic-ish workloads.</td>
+                            </tr>
+                            <tr>
+                                <td>IVF</td>
+                                <td>ANN</td>
+                                <td>Cluster vectors into buckets; search only the closest buckets.</td>
+                                <td>Large datasets where memory and speed must be controlled.</td>
+                            </tr>
+                            <tr>
+                                <td>PQ / Quantization</td>
+                                <td>ANN compression</td>
+                                <td>Compress vectors so many more fit in memory, with approximate distances.</td>
+                                <td>Very large datasets, memory-sensitive systems.</td>
+                            </tr>
+                            <tr>
+                                <td>DiskANN</td>
+                                <td>ANN</td>
+                                <td>Graph-based search optimized for SSD/disk-backed serving.</td>
+                                <td>Huge collections where RAM is not enough.</td>
+                            </tr>
+                            <tr>
+                                <td>Hybrid lexical + vector</td>
+                                <td>Combination</td>
+                                <td>Combine BM25 keyword results with vector semantic results.</td>
+                                <td>Enterprise search, product search, support docs with exact terms.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="hnsw">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">HNSW</p>
+                        <h2>HNSW example: search by walking a graph</h2>
+                    </div>
+                </div>
+                <div class="card">
+                    <p><strong>HNSW</strong> stands for Hierarchical Navigable Small World. The idea is simple: connect
+                        vectors into a graph where each vector has links to nearby vectors. Search starts at a broad
+                        upper layer, jumps toward the right region, then descends into denser layers for local search.
+                    </p>
+                    <p class="formula">entry point -> coarse graph hops -> closer region -> dense local graph -> top K
+                    </p>
+                    <pre><code># Mental model, not library code
+candidate = graph.entry_point
+while search_can_improve:
+    neighbors = graph.neighbors(candidate)
+    candidate = nearest_neighbor_among(neighbors, query)
+
+return best_candidates_found</code></pre>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>HNSW knob</th>
+                                <th>Meaning</th>
+                                <th>Tradeoff</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>M</code></td>
+                                <td>How many graph connections each node keeps.</td>
+                                <td>Higher M usually improves recall but uses more memory.</td>
+                            </tr>
+                            <tr>
+                                <td><code>efConstruction</code></td>
+                                <td>How much effort is spent building the graph.</td>
+                                <td>Higher value improves index quality but slows indexing.</td>
+                            </tr>
+                            <tr>
+                                <td><code>efSearch</code></td>
+                                <td>How many candidates are explored during search.</td>
+                                <td>Higher value improves recall but increases latency.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Where you see it:</strong> Qdrant, Weaviate, Milvus, Chroma, Redis vector search,
+                        pgvector HNSW, OpenSearch/Elasticsearch kNN, and many FAISS setups.</p>
+                </div>
+            </section>
+
+            <section class="section" id="ivf">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">IVF</p>
+                        <h2>IVF example: search only nearby clusters</h2>
+                    </div>
+                </div>
+                <div class="card">
+                    <p><strong>IVF</strong> means Inverted File index. It first clusters your vectors into groups. At
+                        query time, the DB finds the nearest clusters and searches only those clusters.</p>
+                    <p class="formula">vectors -> train clusters -> assign vectors to clusters -> query searches nprobe
+                        clusters</p>
+                    <pre><code># Mental model
+clusters = train_kmeans(vectors, n_clusters=1024)
+assign_each_vector_to_nearest_cluster(vectors, clusters)
+
+# Query time
+nearest_clusters = find_nearest_clusters(query, nprobe=10)
+candidates = all_vectors_inside(nearest_clusters)
+return top_k_by_distance(query, candidates)</code></pre>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>IVF knob</th>
+                                <th>Meaning</th>
+                                <th>Tradeoff</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>nlist</code></td>
+                                <td>Number of clusters/buckets.</td>
+                                <td>More buckets can speed search but needs good training and enough data per bucket.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><code>nprobe</code></td>
+                                <td>Number of buckets searched at query time.</td>
+                                <td>Higher nprobe improves recall but increases latency.</td>
+                            </tr>
+                            <tr>
+                                <td>PQ compression</td>
+                                <td>Optional vector compression often paired with IVF.</td>
+                                <td>Lower memory, faster scan, less exact distances.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="rag-example">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">RAG example</p>
+                        <h2>Example: exact vs ANN in a RAG support bot</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Setup</h3>
+                        <p>You have 3 million support-document chunks. A user asks:</p>
+                        <p class="formula">"Why is my invoice total different after applying coupon?"</p>
+                        <p>The app embeds the question and searches the vector DB for the top 8 most relevant chunks.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>Exact approach</h3>
+                        <p>Compare the query vector against all 3 million chunks. The top 8 are perfect according to
+                            the metric, but the request may be too slow and too expensive for interactive chat.</p>
+                    </div>
+                    <div class="card">
+                        <h3>ANN approach</h3>
+                        <p>Use HNSW or IVF to inspect only promising candidates. Maybe it checks thousands instead of
+                            millions, returns near-identical top chunks, and finishes quickly enough for the user.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Production improvement</h3>
+                        <p>After ANN returns candidates, add filters and reranking: product area = billing, language =
+                            English, customer region = India, then rerank with a cross-encoder or LLM reranker.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Key lesson:</strong> ANN is usually the first retrieval stage. Reranking often improves
+                        final quality because it spends more expensive scoring on a small candidate set.</p>
+                </div>
+            </section>
+
+            <section class="section" id="tradeoffs">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Tradeoffs</p>
+                        <h2>The real production tradeoff: recall, latency, memory, freshness</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dimension</th>
+                                <th>Exact NN</th>
+                                <th>ANN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Recall</td>
+                                <td>Highest possible.</td>
+                                <td>Usually high, but not guaranteed perfect.</td>
+                            </tr>
+                            <tr>
+                                <td>Latency</td>
+                                <td>Grows with number of vectors.</td>
+                                <td>Much lower at large scale.</td>
+                            </tr>
+                            <tr>
+                                <td>Memory</td>
+                                <td>Flat vectors only, but scanning them is costly.</td>
+                                <td>Index metadata can use extra memory; quantization can reduce memory.</td>
+                            </tr>
+                            <tr>
+                                <td>Index build time</td>
+                                <td>Minimal.</td>
+                                <td>Can be significant, especially HNSW or IVF training.</td>
+                            </tr>
+                            <tr>
+                                <td>Updates</td>
+                                <td>Easy to append and search.</td>
+                                <td>Depends on index. Some indexes handle inserts better than others.</td>
+                            </tr>
+                            <tr>
+                                <td>Filtering</td>
+                                <td>Simple but slow at scale.</td>
+                                <td>Can be tricky. Pre-filter vs post-filter changes quality and latency.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="tuning">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Tuning</p>
+                        <h2>How to tune an ANN index</h2>
+                    </div>
+                </div>
+                <div class="card">
+                    <p>Do not tune ANN by guessing. Measure recall and latency against an exact-search baseline.</p>
+                    <ol>
+                        <li>Create a representative evaluation set of queries.</li>
+                        <li>Run exact flat search to get ground-truth top K results.</li>
+                        <li>Run ANN with different settings.</li>
+                        <li>Measure <strong>recall@K</strong>: how many exact top-K results did ANN recover?</li>
+                        <li>Measure p50, p95, p99 latency and memory usage.</li>
+                        <li>Pick the cheapest setting that meets product quality and latency targets.</li>
+                    </ol>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Goal</th>
+                                <th>What to increase</th>
+                                <th>What it costs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Better recall in HNSW</td>
+                                <td><code>efSearch</code>, sometimes <code>M</code></td>
+                                <td>More latency and memory.</td>
+                            </tr>
+                            <tr>
+                                <td>Better recall in IVF</td>
+                                <td><code>nprobe</code></td>
+                                <td>More candidate scans and latency.</td>
+                            </tr>
+                            <tr>
+                                <td>Lower memory</td>
+                                <td>Quantization / PQ</td>
+                                <td>Less precise distances, possible recall drop.</td>
+                            </tr>
+                            <tr>
+                                <td>Faster indexing</td>
+                                <td>Lower construction effort</td>
+                                <td>Potentially lower search quality.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="when-to-use">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Decision guide</p>
+                        <h2>When to use nearest neighbor vs ANN</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Use exact nearest neighbor when</h3>
+                        <ul>
+                            <li>The dataset is small enough that latency is acceptable.</li>
+                            <li>You need a ground-truth baseline to evaluate ANN recall.</li>
+                            <li>You are doing offline batch analysis, not online serving.</li>
+                            <li>Perfect recall matters more than speed.</li>
+                            <li>You are debugging whether the embedding model itself is good.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Use ANN when</h3>
+                        <ul>
+                            <li>You have millions or billions of vectors.</li>
+                            <li>Users expect low-latency search or chat responses.</li>
+                            <li>You can tolerate a tiny recall loss for a large speedup.</li>
+                            <li>You will rerank candidates after retrieval.</li>
+                            <li>You need production-scale RAG, recommendations, semantic search, or image search.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Easy memory aid:</strong> exact NN is a microscope; ANN is a map. Use the microscope to
+                        verify truth. Use the map to move fast through a huge space.</p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview</p>
+                        <h2>Interview-ready answers</h2>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>What is the difference between nearest neighbor and ANN?</h3>
+                    <p>Nearest neighbor search usually means exact search: compare the query vector with every stored
+                        vector and return the mathematically closest results. ANN means approximate nearest neighbor:
+                        use an index like HNSW or IVF to search only likely candidates, trading a small amount of recall
+                        for much lower latency and cost.</p>
+                </div>
+                <div class="card">
+                    <h3>Why do vector databases use ANN indexes?</h3>
+                    <p>Because exact search scales poorly for online workloads. If a RAG app has millions of chunks, a
+                        flat scan for every query is too slow. ANN indexes organize vectors so the database can inspect
+                        a small candidate set while still returning highly relevant results.</p>
+                </div>
+                <div class="card">
+                    <h3>How would you tune ANN quality?</h3>
+                    <p>I would build an exact flat-search baseline on representative queries, then tune ANN parameters
+                        like HNSW <code>efSearch</code> or IVF <code>nprobe</code>. I would measure recall@K, p95/p99
+                        latency, memory, and update cost. The production setting is the cheapest one that meets both
+                        relevance and latency targets.</p>
+                </div>
+                <div class="card">
+                    <h3>Where does reranking fit?</h3>
+                    <p>ANN is usually a first-stage retriever. It quickly returns maybe top 50 or top 100 candidates.
+                        A reranker then scores those candidates more carefully and returns the final top 5 or top 10 to
+                        the LLM or user. This gives a good balance of speed and quality.</p>
+                </div>
+            </section>
+
+            <section class="section" id="next-steps">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Next steps</p>
+                        <h2>Where this fits in your learning path</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <a class="card" href="rag.html">
+                        <span class="tag warm">RAG</span>
+                        <h3>RAG End to End</h3>
+                        <p>See how this index search step fits inside the full RAG pipeline.</p>
+                    </a>
+                    <a class="card" href="graph-rag-vector-strategies.html">
+                        <span class="tag warm">Retrieval</span>
+                        <h3>Graph Databases and Vector Retrieval Strategies</h3>
+                        <p>Compare flat, HNSW, IVF, BM25, hybrid retrieval, and GraphRAG patterns.</p>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+</body>
+
+</html>

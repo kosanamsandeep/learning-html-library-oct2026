@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 08 — Memory Management</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 08 — Memory Management</h1>
+  <p>Short-term context window + long-term persistent memory. Agents need both.</p>
+  <p><span class="tag">Repository</span><span class="tag">Memento</span><span class="tag">Vector DB</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Two kinds of memory:</p>
+<ul>
+  <li><strong>Short-term</strong> — last N turns / tool results held in the LLM's context window. Volatile.</li>
+  <li><strong>Long-term</strong> — facts / preferences / past episodes persisted in a vector store, key-value store, or graph DB. Retrieved on demand.</li>
+</ul>
+<div class="callout tip"><strong>Mental model:</strong> RAM (context) vs SSD (vector DB). You compress RAM into SSD when it overflows; you load relevant SSD chunks back into RAM when the topic resurfaces.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart LR
+  U([User msg]) --> ST[Short-term buffer]
+  ST -->|"&gt; threshold"| SUM[Summarizer]
+  SUM --> LT[(Long-term vector store)]
+  U --> R[Retriever]
+  R -->|"top-k"| ST
+  ST --> L[LLM]
+  L --> O([Reply])
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Wellness coach app</h2>
+<div class="callout scenario">
+A 2026 wellness app remembers across months that the user is lactose-intolerant, prefers Tamil-language meal plans, and has a knee injury. Today's chat (short-term) is one week of meals; long-term memory holds those <em>preferences</em> and <em>past episodes</em>. Without long-term memory, the app would re-ask "are you vegetarian?" every Monday.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant A as Coach
+  participant ST as Short-term
+  participant LT as Vector store
+  U->>A: "Plan tomorrow's dinner"
+  A->>LT: search "user preferences"
+  LT-->>A: "lactose-intolerant; Tamil cuisine; knee injury → low impact"
+  A->>ST: append turn
+  A-->>U: ragi adai with sambar (no dairy)
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>Memory primitive</th></tr>
+  <tr><td>LangChain</td><td><code>ConversationBufferMemory</code>, <code>VectorStoreRetrieverMemory</code>, <code>SummaryMemory</code>.</td></tr>
+  <tr><td>LangGraph</td><td><code>Checkpointer</code> (short-term) + <code>MemoryStore</code> (long-term).</td></tr>
+  <tr><td>Mem0 / Zep / Letta</td><td>Purpose-built agentic memory layers.</td></tr>
+  <tr><td>CrewAI</td><td><code>memory=True</code> — short, long, entity memory.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Repository</strong></td><td><code>MemoryStore</code> hides storage details.</td></tr>
+  <tr><td><strong>Memento</strong></td><td>Snapshots of conversation state for replay / rollback.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td>Swap in-memory ↔ vector ↔ graph backend.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── memory.py        # ShortTermBuffer + VectorStore (Repository)
+├── coach.py         # CoachAgent that uses both
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>How do you summarize without losing facts?</summary><div>Hybrid: keep raw recent turns + a rolling summary + key-value extraction (entities, preferences). Vector store the summaries; raw key-values stay in a structured store for exact lookup.</div></details>
+<details class="qa"><summary>How do you handle memory privacy?</summary><div>Per-user namespace, encrypted at rest, TTL on entries, explicit "forget" command, and don't log raw memory in traces.</div></details>
+</section>
+
+</main>
+<footer>Chapter 08 of 21.</footer>
+</body>
+</html>

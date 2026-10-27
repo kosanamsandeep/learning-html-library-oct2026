@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P10: GenAI RAG Platform - Capstone Project</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.7;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #58a6ff;
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid #21262d;
+            padding-bottom: 1rem;
+        }
+
+        h2 {
+            color: #79c0ff;
+            font-size: 1.6rem;
+            margin: 2rem 0 1rem;
+        }
+
+        h3 {
+            color: #a5d6ff;
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.5rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #8b949e;
+        }
+
+        .highlight {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .pattern-box {
+            background: #1c2128;
+            border-left: 4px solid #f0883e;
+            padding: 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .pattern-box h3 {
+            color: #f0883e;
+            margin-top: 0;
+        }
+
+        .capstone-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f0883e, #da3633);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        code {
+            background: #21262d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            color: #f0883e;
+        }
+
+        pre {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.2rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: #c9d1d9;
+        }
+
+        .mermaid {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .folder-tree {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-family: monospace;
+            white-space: pre;
+            color: #8b949e;
+        }
+
+        .folder-tree .folder {
+            color: #79c0ff;
+        }
+
+        .folder-tree .file {
+            color: #c9d1d9;
+        }
+
+        .folder-tree .comment {
+            color: #484f58;
+            font-style: italic;
+        }
+
+        .principle {
+            display: inline-block;
+            background: #21262d;
+            border: 1px solid #58a6ff;
+            border-radius: 20px;
+            padding: 4px 12px;
+            margin: 4px;
+            font-size: 0.85rem;
+            color: #58a6ff;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 0.5rem 0;
+            padding: 0.8rem;
+            background: #161b22;
+            border-radius: 8px;
+        }
+
+        .flow-step .number {
+            background: #58a6ff;
+            color: #0d1117;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #30363d;
+            padding: 0.7rem;
+            text-align: left;
+        }
+
+        th {
+            background: #21262d;
+            color: #79c0ff;
+        }
+
+        td {
+            color: #8b949e;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .grid-card {
+            background: #1c2128;
+            border: 1px solid #30363d;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .grid-card h4 {
+            color: #3fb950;
+            margin-bottom: 0.5rem;
+        }
+
+        .rag-flow {
+            background: #161b22;
+            border: 2px solid #58a6ff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .rag-flow h3 {
+            color: #58a6ff;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <span class="capstone-badge">★ CAPSTONE PROJECT</span>
+        <h1>🤖 Project 10: GenAI RAG Platform</h1>
+        <p>
+            <span class="principle">ALL SOLID Principles</span>
+            <span class="principle">Factory Pattern</span>
+            <span class="principle">Strategy Pattern</span>
+            <span class="principle">Repository Pattern</span>
+            <span class="principle">Dependency Injection</span>
+            <span class="principle">Layered Architecture</span>
+            <span class="principle">Composition</span>
+            <span class="principle">Inheritance</span>
+        </p>
+        <p style="color: #c9d1d9; font-size: 1.1rem; margin-top: 1rem;">
+            This capstone project combines every pattern from Projects 1-9 into a production-grade RAG
+            (Retrieval-Augmented Generation) system.
+        </p>
+
+        <!-- ====================================================== -->
+        <h2>📁 Project Structure</h2>
+        <!-- ====================================================== -->
+        <div class="folder-tree">
+            <span class="folder">p10_genai_rag_platform/</span>
+            ├── <span class="folder">models/</span> <span class="comment">← Domain entities (P1: Classes, P4:
+                DTOs)</span>
+            │ ├── <span class="file">__init__.py</span>
+            │ └── <span class="file">document.py</span> <span class="comment">← Document, DocumentChunk, QueryResult,
+                EmbeddingVector</span>
+            ├── <span class="folder">interfaces/</span> <span class="comment">← Abstract contracts (P8: Interfaces,
+                DI)</span>
+            │ ├── <span class="file">__init__.py</span>
+            │ ├── <span class="file">embedding_provider.py</span> <span class="comment">← ABC for text→vector
+                conversion</span>
+            │ ├── <span class="file">llm_provider.py</span> <span class="comment">← ABC for LLM generation</span>
+            │ └── <span class="file">vector_store.py</span> <span class="comment">← ABC for vector storage (P6:
+                Repository)</span>
+            ├── <span class="folder">providers/</span> <span class="comment">← Concrete implementations
+                (swappable)</span>
+            │ ├── <span class="file">__init__.py</span>
+            │ ├── <span class="file">local_embedding_provider.py</span> <span class="comment">← Hash-based embedding
+                (demo)</span>
+            │ ├── <span class="file">mock_llm_provider.py</span> <span class="comment">← Simulated LLM</span>
+            │ └── <span class="file">memory_vector_store.py</span> <span class="comment">← In-memory vector DB</span>
+            ├── <span class="folder">services/</span> <span class="comment">← Business logic (P7: Layered
+                Architecture)</span>
+            │ ├── <span class="file">__init__.py</span>
+            │ ├── <span class="file">chunking_service.py</span> <span class="comment">← Document splitting</span>
+            │ ├── <span class="file">ingestion_service.py</span> <span class="comment">← Ingest pipeline
+                orchestration</span>
+            │ ├── <span class="file">retrieval_service.py</span> <span class="comment">← Vector similarity search</span>
+            │ └── <span class="file">rag_service.py</span> <span class="comment">← Full RAG orchestration</span>
+            ├── <span class="file">main.py</span> <span class="comment">← Demo with 5 scenarios</span>
+            └── <span class="file">README.html</span> <span class="comment">← This documentation</span>
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🧠 What is RAG?</h2>
+        <!-- ====================================================== -->
+
+        <div class="rag-flow">
+            <h3>Retrieval-Augmented Generation</h3>
+            <p style="text-align: center; color: #c9d1d9;">LLMs hallucinate. RAG grounds them in YOUR data.</p>
+        </div>
+
+        <div class="grid-2">
+            <div class="grid-card">
+                <h4>Without RAG</h4>
+                <p>User asks → LLM guesses from training data → May hallucinate → No citations</p>
+            </div>
+            <div class="grid-card">
+                <h4>With RAG</h4>
+                <p>User asks → Find relevant docs → Add to prompt → LLM answers from YOUR data → Cites sources</p>
+            </div>
+        </div>
+
+        <div class="highlight">
+            <h3>RAG = Three Steps</h3>
+            <div class="flow-step">
+                <div class="number">R</div>
+                <div><strong>RETRIEVE</strong> - Find relevant document chunks via embedding similarity search</div>
+            </div>
+            <div class="flow-step">
+                <div class="number">A</div>
+                <div><strong>AUGMENT</strong> - Add retrieved chunks as context to the LLM prompt</div>
+            </div>
+            <div class="flow-step">
+                <div class="number">G</div>
+                <div><strong>GENERATE</strong> - LLM produces an answer grounded in the retrieved context</div>
+            </div>
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🔄 The Two Pipelines</h2>
+        <!-- ====================================================== -->
+
+        <h3>Pipeline 1: Ingestion (Loading the Knowledge Base)</h3>
+        <div class="mermaid">
+            graph LR
+            A[📄 Document] --> B[✂️ Chunking<br />Split into pieces]
+            B --> C[🧮 Embedding<br />Text → Vector]
+            C --> D[🗄️ Vector Store<br />Store for search]
+
+            style A fill:#f0883e,color:#fff
+            style B fill:#58a6ff,color:#fff
+            style C fill:#3fb950,color:#fff
+            style D fill:#a371f7,color:#fff
+        </div>
+
+        <h3>Pipeline 2: Query (Answering Questions)</h3>
+        <div class="mermaid">
+            graph LR
+            A[❓ User Query] --> B[🧮 Embed Query<br />Same model!]
+            B --> C[🔍 Search<br />Find similar chunks]
+            C --> D[📝 Build Prompt<br />Context + Question]
+            D --> E[🤖 LLM<br />Generate answer]
+            E --> F[💡 Answer<br />+ Sources]
+
+            style A fill:#f0883e,color:#fff
+            style B fill:#3fb950,color:#fff
+            style C fill:#58a6ff,color:#fff
+            style D fill:#a371f7,color:#fff
+            style E fill:#da3633,color:#fff
+            style F fill:#3fb950,color:#fff
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🏗️ Full Architecture Diagram</h2>
+        <!-- ====================================================== -->
+
+        <div class="mermaid">
+            graph TB
+            subgraph "Client Layer"
+            CLI[main.py - Demo Client]
+            end
+
+            subgraph "Service Layer (Orchestration)"
+            RAG[RAGService<br />Full pipeline]
+            ING[IngestionService<br />Document processing]
+            RET[RetrievalService<br />Similarity search]
+            CHK[ChunkingService<br />Text splitting]
+            end
+
+            subgraph "Interface Layer (Abstractions)"
+            EP[EmbeddingProvider ABC]
+            LP[LLMProvider ABC]
+            VS[VectorStore ABC]
+            end
+
+            subgraph "Provider Layer (Implementations)"
+            LEP[LocalEmbeddingProvider]
+            MLP[MockLLMProvider]
+            MVS[MemoryVectorStore]
+            end
+
+            subgraph "Model Layer (Data)"
+            DOC[Document]
+            CHUNK[DocumentChunk]
+            QR[QueryResult]
+            EV[EmbeddingVector]
+            end
+
+            CLI --> RAG
+            CLI --> ING
+            RAG --> RET
+            RAG --> LP
+            ING --> CHK
+            ING --> EP
+            ING --> VS
+            RET --> EP
+            RET --> VS
+
+            EP -.-> LEP
+            LP -.-> MLP
+            VS -.-> MVS
+
+            CHK --> CHUNK
+            LEP --> EV
+            MVS --> CHUNK
+            RAG --> QR
+            ING --> DOC
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🧩 Pattern Mapping: P1-P9 → P10</h2>
+        <!-- ====================================================== -->
+
+        <div class="highlight">
+            <table>
+                <tr>
+                    <th>Project</th>
+                    <th>Pattern Learned</th>
+                    <th>Applied in P10</th>
+                    <th>Specific Example</th>
+                </tr>
+                <tr>
+                    <td>P1</td>
+                    <td>Classes & Objects</td>
+                    <td>✅ Domain models</td>
+                    <td><code>Document</code>, <code>DocumentChunk</code>, <code>QueryResult</code></td>
+                </tr>
+                <tr>
+                    <td>P2</td>
+                    <td>Inheritance</td>
+                    <td>✅ ABC hierarchies</td>
+                    <td>All providers inherit from abstract interfaces</td>
+                </tr>
+                <tr>
+                    <td>P3</td>
+                    <td>Composition</td>
+                    <td>✅ Service composition</td>
+                    <td><code>RAGService</code> composes <code>RetrievalService</code> + <code>LLMProvider</code></td>
+                </tr>
+                <tr>
+                    <td>P4</td>
+                    <td>DTOs / Dataclasses</td>
+                    <td>✅ Data containers</td>
+                    <td>All models use <code>@dataclass</code> for pure data</td>
+                </tr>
+                <tr>
+                    <td>P5</td>
+                    <td>Nested Schemas</td>
+                    <td>✅ Nested metadata</td>
+                    <td><code>Document.chunks[].metadata</code> nesting</td>
+                </tr>
+                <tr>
+                    <td>P6</td>
+                    <td>Repository Pattern</td>
+                    <td>✅ Vector storage</td>
+                    <td><code>VectorStore</code> ABC with <code>MemoryVectorStore</code></td>
+                </tr>
+                <tr>
+                    <td>P7</td>
+                    <td>Layered Architecture</td>
+                    <td>✅ 4-layer system</td>
+                    <td>Client → Service → Interface → Provider</td>
+                </tr>
+                <tr>
+                    <td>P8</td>
+                    <td>Interfaces & DI</td>
+                    <td>✅ All providers</td>
+                    <td><code>EmbeddingProvider</code>, <code>LLMProvider</code>, <code>VectorStore</code> ABCs</td>
+                </tr>
+                <tr>
+                    <td>P9</td>
+                    <td>Strategy & Factory</td>
+                    <td>✅ Swappable providers</td>
+                    <td>Embedding model = strategy; Services = factory-like coordination</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🔑 Key Technical Concepts</h2>
+        <!-- ====================================================== -->
+
+        <div class="pattern-box">
+            <h3>Embeddings & Vector Similarity</h3>
+            <p>An <strong>embedding</strong> converts text into a list of numbers (vector) that captures meaning.
+                Similar texts have similar vectors.</p>
+            <pre><code># "Python programming" → [0.12, -0.34, 0.56, ...]  (128 dimensions)
+# "Java coding"         → [0.11, -0.32, 0.54, ...]  (similar! both programming)
+# "Cooking recipe"      → [-0.45, 0.78, -0.12, ...] (different! unrelated topic)
+
+# Cosine similarity:
+# "Python programming" vs "Java coding" → 0.92 (very similar)
+# "Python programming" vs "Cooking"     → 0.15 (not similar)</code></pre>
+        </div>
+
+        <div class="pattern-box">
+            <h3>Chunking Strategy</h3>
+            <p><strong>Chunking</strong> splits large documents into searchable pieces. Too large = noisy retrieval. Too
+                small = lost context.</p>
+            <pre><code># A 10-page document with chunk_size=400, overlap=50:
+#
+# Chunk 1: [paragraph 1 + paragraph 2]     ← 380 chars
+# Chunk 2: [last 50 of chunk 1 + para 3]   ← overlap ensures continuity
+# Chunk 3: [last 50 of chunk 2 + para 4]   ← no sentence is "lost"
+#
+# Each chunk gets its own embedding → independently searchable</code></pre>
+        </div>
+
+        <div class="pattern-box">
+            <h3>Cosine Similarity Formula</h3>
+            <pre><code># cos(A, B) = (A · B) / (||A|| × ||B||)
+#
+# Where:
+#   A · B    = dot product = Σ(ai × bi)
+#   ||A||    = magnitude = √(Σ(ai²))
+#
+# Result range: -1 to 1
+#   1.0  = identical direction (same meaning)
+#   0.0  = perpendicular (unrelated)
+#  -1.0  = opposite direction (opposite meaning)</code></pre>
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>💉 Dependency Injection Visualization</h2>
+        <!-- ====================================================== -->
+
+        <div class="mermaid">
+            classDiagram
+            class EmbeddingProvider {
+            &lt;&lt;abstract&gt;&gt;
+            +embed_text(text)* EmbeddingVector
+            +embed_batch(texts)* list~EmbeddingVector~
+            +get_model_name()* str
+            +get_dimensions()* int
+            }
+            class LLMProvider {
+            &lt;&lt;abstract&gt;&gt;
+            +generate(prompt, max_tokens)* LLMResponse
+            +get_model_name()* str
+            +get_max_context_length()* int
+            }
+            class VectorStore {
+            &lt;&lt;abstract&gt;&gt;
+            +store(chunk)* bool
+            +search(embedding, top_k)* list
+            +delete(chunk_id)* bool
+            +count()* int
+            }
+            class LocalEmbeddingProvider {
+            +embed_text(text) EmbeddingVector
+            +embed_batch(texts) list
+            -_generate_embedding(text) list~float~
+            }
+            class MockLLMProvider {
+            +generate(prompt) LLMResponse
+            -_parse_prompt(prompt) tuple
+            -_generate_answer(context, question) str
+            }
+            class MemoryVectorStore {
+            -_store: dict
+            +store(chunk) bool
+            +search(embedding, top_k) list
+            -_cosine_similarity(a, b) float
+            }
+
+            EmbeddingProvider <|.. LocalEmbeddingProvider LLMProvider <|.. MockLLMProvider VectorStore <|..
+                MemoryVectorStore class RAGService { -_retrieval: RetrievalService -_llm: LLMProvider +query(question)
+                QueryResult } class IngestionService { -_embedding: EmbeddingProvider -_vector_store: VectorStore
+                +ingest(document) dict } RAGService --> LLMProvider : uses (injected)
+                IngestionService --> EmbeddingProvider : uses (injected)
+                IngestionService --> VectorStore : uses (injected)
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>📊 Complete RAG Flow (Sequence)</h2>
+        <!-- ====================================================== -->
+
+        <div class="mermaid">
+            sequenceDiagram
+            participant User
+            participant RAG as RAGService
+            participant Ret as RetrievalService
+            participant Emb as EmbeddingProvider
+            participant VS as VectorStore
+            participant LLM as LLMProvider
+
+            Note over User,LLM: Query Phase
+
+            User->>RAG: query("What is DI?")
+            RAG->>Ret: retrieve("What is DI?", top_k=3)
+            Ret->>Emb: embed_text("What is DI?")
+            Emb-->>Ret: EmbeddingVector [0.12, -0.34, ...]
+            Ret->>VS: search(vector, top_k=3)
+            VS-->>Ret: [(chunk1, 0.89), (chunk2, 0.72), (chunk3, 0.65)]
+            Ret-->>RAG: retrieved chunks + context string
+            RAG->>RAG: _build_prompt(question, context)
+            RAG->>LLM: generate(augmented_prompt)
+            LLM-->>RAG: LLMResponse(text="DI is...")
+            RAG-->>User: QueryResult(answer, sources, confidence)
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🔄 Ingestion Flow (Sequence)</h2>
+        <!-- ====================================================== -->
+
+        <div class="mermaid">
+            sequenceDiagram
+            participant Sys as System
+            participant Ing as IngestionService
+            participant Chk as ChunkingService
+            participant Emb as EmbeddingProvider
+            participant VS as VectorStore
+
+            Note over Sys,VS: Ingestion Phase
+
+            Sys->>Ing: ingest(document)
+            Ing->>Chk: chunk_document(document)
+            Chk-->>Ing: [chunk1, chunk2, chunk3, ...]
+            Ing->>Emb: embed_batch([text1, text2, text3, ...])
+            Emb-->>Ing: [vector1, vector2, vector3, ...]
+            Note over Ing: Attach vectors to chunks
+            Ing->>VS: store_batch(chunks_with_embeddings)
+            VS-->>Ing: stored_count=N
+            Ing-->>Sys: {status: "success", chunks: N}
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🎯 SOLID Principles in This Project</h2>
+        <!-- ====================================================== -->
+
+        <div class="highlight">
+            <table>
+                <tr>
+                    <th>Principle</th>
+                    <th>Application</th>
+                </tr>
+                <tr>
+                    <td><strong>S</strong> - Single Responsibility</td>
+                    <td>ChunkingService ONLY chunks. EmbeddingProvider ONLY embeds. VectorStore ONLY stores. Each class
+                        has ONE job.</td>
+                </tr>
+                <tr>
+                    <td><strong>O</strong> - Open/Closed</td>
+                    <td>Add new embedding models (OpenAI, Cohere) without changing services. Just create a new provider
+                        class.</td>
+                </tr>
+                <tr>
+                    <td><strong>L</strong> - Liskov Substitution</td>
+                    <td>Any <code>EmbeddingProvider</code> works wherever the interface is expected.
+                        <code>LocalEmbedding</code> or <code>OpenAIEmbedding</code> — both valid.</td>
+                </tr>
+                <tr>
+                    <td><strong>I</strong> - Interface Segregation</td>
+                    <td>Three focused interfaces: <code>EmbeddingProvider</code>, <code>LLMProvider</code>,
+                        <code>VectorStore</code>. Not one giant <code>AIProvider</code>.</td>
+                </tr>
+                <tr>
+                    <td><strong>D</strong> - Dependency Inversion</td>
+                    <td>Services depend on <code>EmbeddingProvider</code> (abstract), never on
+                        <code>LocalEmbeddingProvider</code> (concrete).</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🚀 Extending to Production</h2>
+        <!-- ====================================================== -->
+
+        <div class="highlight">
+            <h3>To make this production-ready, swap providers:</h3>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Demo (This Project)</th>
+                    <th>Production</th>
+                </tr>
+                <tr>
+                    <td>Embedding</td>
+                    <td><code>LocalEmbeddingProvider</code> (hash-based)</td>
+                    <td>OpenAI text-embedding-3-large / Cohere embed-v3</td>
+                </tr>
+                <tr>
+                    <td>LLM</td>
+                    <td><code>MockLLMProvider</code> (template-based)</td>
+                    <td>OpenAI GPT-4 / Anthropic Claude / Local Llama</td>
+                </tr>
+                <tr>
+                    <td>Vector Store</td>
+                    <td><code>MemoryVectorStore</code> (dict + cosine)</td>
+                    <td>Pinecone / Qdrant / ChromaDB / pgvector</td>
+                </tr>
+                <tr>
+                    <td>Chunking</td>
+                    <td>Paragraph-based with overlap</td>
+                    <td>Semantic chunking / Recursive text splitter</td>
+                </tr>
+            </table>
+            <p style="color: #3fb950; margin-top: 1rem;">✅ ZERO changes to RAGService, RetrievalService, or
+                IngestionService — just swap providers!</p>
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🏃 How to Run</h2>
+        <!-- ====================================================== -->
+
+        <div class="highlight">
+            <pre><code># Navigate to project directory
+cd projects/p10_genai_rag_platform
+
+# Run the full demo
+python main.py
+
+# You'll see 5 demos:
+# 1. System Initialization (DI wiring)
+# 2. Document Ingestion (chunk → embed → store)
+# 3. RAG Queries (retrieve → augment → generate)
+# 4. Retrieval Deep Dive (similarity scores)
+# 5. System Analytics (metrics & history)</code></pre>
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🎓 Complete Learning Path Summary</h2>
+        <!-- ====================================================== -->
+
+        <div class="mermaid">
+            graph LR
+            P1[P1<br />Classes] --> P2[P2<br />Inheritance]
+            P2 --> P3[P3<br />Composition]
+            P3 --> P4[P4<br />DTOs]
+            P4 --> P5[P5<br />Schemas]
+            P5 --> P6[P6<br />Repository]
+            P6 --> P7[P7<br />Layered]
+            P7 --> P8[P8<br />Interfaces]
+            P8 --> P9[P9<br />Strategy+Factory]
+            P9 --> P10[P10<br />★ CAPSTONE]
+
+            style P10 fill:#f0883e,color:#fff,stroke:#da3633,stroke-width:3px
+        </div>
+
+        <div class="highlight">
+            <p style="color: #c9d1d9; font-size: 1.1rem; text-align: center;">
+                🎉 <strong>Congratulations!</strong> You've progressed from basic classes to production-grade enterprise
+                architecture.
+                <br />Every pattern you learned feeds into this capstone — and into real-world software engineering.
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+
+</html>

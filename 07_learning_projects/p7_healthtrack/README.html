@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Project 7: HealthTrack - Layered Architecture Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1100px;
+            margin: auto;
+            padding: 30px;
+            line-height: 1.7;
+            color: #333;
+            background: #fafafa
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #16a085;
+            padding-bottom: 10px
+        }
+
+        h2 {
+            color: #1abc9c;
+            margin-top: 40px
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05)
+        }
+
+        .concept {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto
+        }
+
+        .mermaid {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left
+        }
+
+        th {
+            background: #16a085;
+            color: #fff
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 12px;
+            border-bottom: 2px solid #16a085;
+            z-index: 100
+        }
+
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #16a085;
+            font-weight: bold
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🏥 Project 7: HealthTrack</h1>
+    <p><strong>Level:</strong> Advanced | <strong>Focus:</strong> Full Layered Architecture (API + DTO + Service +
+        Repository)</p>
+
+    <nav>
+        <a href="#overview">Overview</a>
+        <a href="#layers">Layers</a>
+        <a href="#flow">Request Flow</a>
+        <a href="#folder">Structure</a>
+    </nav>
+
+    <div id="overview">
+        <h2>🎯 The Big Picture</h2>
+        <div class="concept">
+            <p>This project COMBINES everything from Projects 1-6 into a complete layered system:</p>
+            <ul>
+                <li><strong>P1-3:</strong> OOP fundamentals (models)</li>
+                <li><strong>P4:</strong> DTOs (data transfer)</li>
+                <li><strong>P5:</strong> Schema validation</li>
+                <li><strong>P6:</strong> Repository pattern</li>
+                <li><strong>P7:</strong> All layers connected with an API on top!</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="layers">
+        <h2>📚 The Four Layers</h2>
+
+        <div class="mermaid">
+            graph TD
+            subgraph "Layer 1: API (Top)"
+            A[HealthAPI<br>Handles requests/responses<br>HTTP status codes]
+            end
+
+            subgraph "Layer 2: DTO"
+            B[CreateHealthRecordDTO<br>AddVitalsDTO<br>HealthRecordResponseDTO<br>Validation + Transformation]
+            end
+
+            subgraph "Layer 3: Service"
+            C[HealthService<br>Business logic<br>Orchestrates DTOs + Repository]
+            end
+
+            subgraph "Layer 4: Repository (Bottom)"
+            D[BaseHealthRepository<br>MemoryHealthRepository<br>Data persistence]
+            end
+
+            subgraph "Domain Model (Shared)"
+            E[HealthRecord<br>VitalSigns<br>Business rules + behavior]
+            end
+
+            A -->|creates| B
+            A -->|calls| C
+            C -->|uses| B
+            C -->|calls| D
+            C -->|creates/reads| E
+            D -->|stores/retrieves| E
+
+            style A fill:#e74c3c,color:#fff
+            style B fill:#f39c12,color:#fff
+            style C fill:#3498db,color:#fff
+            style D fill:#27ae60,color:#fff
+            style E fill:#9b59b6,color:#fff
+        </div>
+
+        <div class="card">
+            <table>
+                <tr>
+                    <th>Layer</th>
+                    <th>Responsibility</th>
+                    <th>Knows About</th>
+                    <th>Doesn't Know About</th>
+                </tr>
+                <tr>
+                    <td>API</td>
+                    <td>HTTP handling, routing</td>
+                    <td>DTOs, Service</td>
+                    <td>Repository, Database</td>
+                </tr>
+                <tr>
+                    <td>DTO</td>
+                    <td>Validation, transformation</td>
+                    <td>Its own rules</td>
+                    <td>Everything else</td>
+                </tr>
+                <tr>
+                    <td>Service</td>
+                    <td>Business logic</td>
+                    <td>Models, DTOs, Repository interface</td>
+                    <td>HTTP, concrete storage</td>
+                </tr>
+                <tr>
+                    <td>Repository</td>
+                    <td>Data persistence</td>
+                    <td>Models, storage mechanism</td>
+                    <td>DTOs, API, business rules</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="flow">
+        <h2>🔄 Complete Request Flow</h2>
+
+        <div class="mermaid">
+            sequenceDiagram
+            participant Client
+            participant API as API Layer
+            participant DTO as DTO Layer
+            participant Service as Service Layer
+            participant Repo as Repository
+            participant Model as Domain Model
+
+            Client->>API: POST /health-records {json}
+            API->>DTO: Create CreateHealthRecordDTO
+            DTO->>DTO: validate() → check rules
+            API->>Service: create_record(dto)
+            Service->>Model: Create HealthRecord
+            Service->>Repo: save(record)
+            Repo->>Repo: Store in memory/file/db
+            Repo-->>Service: Return saved record
+            Service->>DTO: HealthRecordResponseDTO.from_model(record)
+            DTO-->>Service: Return response DTO
+            Service-->>API: Return DTO
+            API-->>Client: {status: 201, data: {...}}
+        </div>
+
+        <div class="highlight">
+            <h3>🔑 The Key Rule: Each layer only talks to its immediate neighbor!</h3>
+            <p>API → Service → Repository. Never API → Repository directly!</p>
+        </div>
+    </div>
+
+    <div id="folder">
+        <h2>📁 Folder Structure</h2>
+        <div class="card" style="font-family:monospace">
+            p7_healthtrack/<br>
+            ├── main.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Wires all layers
+            together (DI)<br>
+            ├── <strong>api/</strong>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 🆕 API
+            Layer (top)<br>
+            │ &nbsp;&nbsp;└── health_api.py &nbsp;&nbsp;&nbsp;← Request handling, error codes<br>
+            ├── <strong>dtos/</strong>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← DTO Layer<br>
+            │ &nbsp;&nbsp;└── health_dtos.py &nbsp;&nbsp;← Input/Output DTOs + validation<br>
+            ├── <strong>services/</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Service
+            Layer<br>
+            │ &nbsp;&nbsp;└── health_service.py ← Business logic orchestration<br>
+            ├── <strong>repositories/</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Repository Layer (bottom)<br>
+            │ &nbsp;&nbsp;└── health_repository.py ← Abstract + Memory implementation<br>
+            └── <strong>models/</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;←
+            Domain Model (shared across layers)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── health_record.py ← Core entities + business rules
+        </div>
+
+        <div class="card" style="background:#eaf2f8">
+            <h3>🎯 Key Takeaways</h3>
+            <ol>
+                <li><strong>Layers communicate through defined interfaces</strong> - not direct access</li>
+                <li><strong>Data flows DOWN</strong> (request) and <strong>UP</strong> (response)</li>
+                <li><strong>Each layer has ONE job</strong> - change one without affecting others</li>
+                <li><strong>Dependency Injection</strong> wires the layers together in main.py</li>
+                <li><strong>Next:</strong> Project 8 explores Abstract Classes and Dependency Inversion more deeply</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

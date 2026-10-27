@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Side Projects — Beginner to Production</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">SP</span>
+                <span>Side Projects · FastAPI Track</span>
+            </a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="00_fastapi_vs_flask.html">FastAPI vs Flask</a>
+                <a href="01_async_explained.html">Async</a>
+                <a href="02_httpx_pattern.html">httpx</a>
+                <a href="03_best_practices.html">Best practices</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">6 hands-on projects · Beginner → Production</p>
+                <h1>FastAPI, learned by building things that get progressively harder</h1>
+                <p>This track teaches FastAPI the same way <code>../langgraph_projects/</code>
+                    folder teaches LangGraph: one project per concept, each project's <code>README.html</code>
+                    explains <em>what problem we're solving</em>, <em>how FastAPI solves it</em>, and
+                    <em>what goes wrong if you don't use these patterns</em>.
+                </p>
+                <p>Along the way you'll learn: <strong>FastAPI vs Flask</strong>, <strong>async/await</strong>,
+                    <strong>Pydantic validation</strong>, <strong>dependency injection</strong>,
+                    <strong>Swagger / OpenAPI</strong>, <strong>httpx</strong> for upstream calls,
+                    <strong>JWT auth</strong>, and the operational patterns you need before going to production.
+                </p>
+            </section>
+
+            <section class="card">
+                <h2>Read these first <span class="badge">Concepts</span></h2>
+                <div class="tile-grid">
+                    <a class="tile" href="00_fastapi_vs_flask.html">
+                        <span class="tag">CONCEPT · 00</span>
+                        <h4>FastAPI vs Flask</h4>
+                        <p>Side-by-side comparison. Why FastAPI won the modern Python API space and when Flask
+                            is still the right call.</p>
+                    </a>
+                    <a class="tile" href="01_async_explained.html">
+                        <span class="tag">CONCEPT · 01</span>
+                        <h4>Async / await — explained simply</h4>
+                        <p>What async actually is, the coffee-shop analogy, when it helps you, and the 3 ways
+                            it can silently destroy your throughput.</p>
+                    </a>
+                    <a class="tile" href="02_httpx_pattern.html">
+                        <span class="tag">CONCEPT · 02</span>
+                        <h4>FastAPI + httpx — the modern stack</h4>
+                        <p>Why every modern Python service uses httpx, the AsyncClient lifecycle, retries,
+                            timeouts, and connection pooling.</p>
+                    </a>
+                    <a class="tile" href="03_best_practices.html">
+                        <span class="tag">CONCEPT · 03</span>
+                        <h4>FastAPI best practices</h4>
+                        <p>Project layout, settings, dependency injection, error handling, Swagger
+                            customization, testing, observability.</p>
+                    </a>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>The 6 projects <span class="badge warm">Build these in order</span></h2>
+                <div class="tile-grid">
+                    <a class="tile" href="p1_hello_fastapi/README.html">
+                        <span class="tag">P1 · BEGINNER</span>
+                        <h4>Hello FastAPI</h4>
+                        <p>3-route app. See auto-generated Swagger. Compare line-by-line with the same Flask
+                            app. The "wow" moment.</p>
+                    </a>
+                    <a class="tile" href="p2_todo_crud/README.html">
+                        <span class="tag">P2 · BEGINNER</span>
+                        <h4>Todo CRUD with Pydantic + DI</h4>
+                        <p>Full REST CRUD. Pydantic models for validation. Dependency injection to swap
+                            storage backends without touching routes.</p>
+                    </a>
+                    <a class="tile" href="p3_async_database/README.html">
+                        <span class="tag">P3 · INTERMEDIATE</span>
+                        <h4>Async DB with SQLAlchemy</h4>
+                        <p>Move from in-memory to a real database using async SQLAlchemy. See why blocking
+                            calls in an async route ruin throughput.</p>
+                    </a>
+                    <a class="tile" href="p4_httpx_aggregator/README.html">
+                        <span class="tag">P4 · INTERMEDIATE</span>
+                        <h4>FastAPI + httpx aggregator</h4>
+                        <p>Call 3 upstream APIs concurrently and merge the results. Demonstrates async's real
+                            superpower vs the sequential / threaded version.</p>
+                    </a>
+                    <a class="tile" href="p5_jwt_auth/README.html">
+                        <span class="tag">P5 · ADVANCED</span>
+                        <h4>JWT auth + protected routes</h4>
+                        <p>OAuth2 password flow, bcrypt password hashing, JWT issue + verify, role-based
+                            access via dependencies.</p>
+                    </a>
+                    <a class="tile" href="p6_production_app/README.html">
+                        <span class="tag">P6 · PRODUCTION</span>
+                        <h4>Production-grade service</h4>
+                        <p>Settings via pydantic-settings, structured logging, request IDs, global error
+                            handlers, lifespan, background tasks, health checks, tests.</p>
+                    </a>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>How to run any project</h2>
+                <pre><code>cd 06_side_projects/fastapi_projects/p1_hello_fastapi    # or any other project
+python -m venv .venv
+.venv\Scripts\activate               # Windows
+pip install -r requirements.txt
+uvicorn main:app --reload
+
+# Open the interactive Swagger UI
+# http://127.0.0.1:8000/docs
+# Open the alternative ReDoc UI
+# http://127.0.0.1:8000/redoc</code></pre>
+                <p>Every project uses <code>uvicorn</code> as the ASGI server and ships a
+                    <code>requirements.txt</code>. You only need Python 3.11+ — no Docker, no DB server for
+                    projects 1, 2, 4, 5 (project 3 uses SQLite, project 6 uses SQLite by default).
+                </p>
+            </section>
+
+            <section class="card">
+                <h2>Suggested 2-week plan</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Do</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Read concept pages 00 (vs Flask) + 01 (async).</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Build &amp; run P1. Open Swagger, hit every endpoint.</td>
+                        </tr>
+                        <tr>
+                            <td>3-4</td>
+                            <td>Build P2. Extend it: add filtering, pagination.</td>
+                        </tr>
+                        <tr>
+                            <td>5-6</td>
+                            <td>Build P3. Try removing <code>await</code> from one query and watch
+                                throughput drop under <code>ab</code> or <code>wrk</code>.</td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td>Read concept page 02 (httpx).</td>
+                        </tr>
+                        <tr>
+                            <td>8-9</td>
+                            <td>Build P4. Compare with <code>requests</code> sequential version
+                                — measure the difference.</td>
+                        </tr>
+                        <tr>
+                            <td>10-11</td>
+                            <td>Build P5. Try expired tokens, wrong passwords, missing scopes.</td>
+                        </tr>
+                        <tr>
+                            <td>12</td>
+                            <td>Read concept page 03 (best practices).</td>
+                        </tr>
+                        <tr>
+                            <td>13-14</td>
+                            <td>Build P6. Write the tests. Add one more endpoint to consolidate
+                                everything you learned.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+
+    <footer>Side projects · FastAPI track · part of your <code>poc_iq</code> learning lab.</footer>
+</body>
+
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 — Dynamic Workflows & Massive Orchestration</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38; --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575; --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f; --green:#a3e077; --violet:#c09bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← Boris Cherny · Elicitation Era</a> · Module 03</div>
+  <h1>Dynamic Workflows &amp; <em style="color:var(--violet);font-style:normal;">Massive Orchestration</em></h1>
+  <p>Through <strong>Dynamic Workflows</strong>, Opus 5 can orchestrate <strong>thousands — even tens of thousands — of agents</strong> inside a sandbox. The reference example: rewriting a 100,000-line codebase from Zig to Rust in 11 days.</p>
+
+  <h2>The Orchestration Shape</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph TB
+    P["Orchestrator (1)"] --> W1["Worker agents<br/>do the work (many)"]
+    P --> W2["Worker agents<br/>do the work (many)"]
+    P --> W3["Worker agents<br/>do the work (many)"]
+    W1 --> V["Verifier agents<br/>(small batch)"]
+    W2 --> V
+    W3 --> V
+    V -->|"fail → redo"| P
+    V -->|"pass"| NEXT["Next stage<br/>fan-out again"]
+  </div>
+  </div>
+
+  <h2>The "Agentic Algebra"</h2>
+  <div class="card">
+    <p>Cherny's framing for composing agents at scale — three operations:</p>
+    <table>
+      <thead><tr><th>Operation</th><th>What it does</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Sequence</strong></td><td>Stage A must finish before stage B</td><td>Plan → implement → review → ship</td></tr>
+        <tr><td><strong>Parallelise</strong></td><td>Independent work runs concurrently</td><td>100 workers each rewrite 1,000 lines</td></tr>
+        <tr><td><strong>Fan-out / verify</strong></td><td>A large batch executes; a small batch verifies/summarises</td><td>10 verifiers check 1,000 workers' output</td></tr>
+      </tbody>
+    </table>
+    <div class="callout" style="margin-top:1rem;"><strong>Why the verify batch is small:</strong> verification is expensive (it reads all the work). Cherny's team uses <em>one set of agents to perform</em>, <em>a second set to verify/summarise</em>, and <em>a third set to fan out the next stage</em>. The algebra composes.</div>
+  </div>
+
+  <h2>Test-Time Compute — Spend Scale With Stakes</h2>
+  <div class="card">
+    <p>Dynamic Workflows are a form of <strong>test-time compute</strong>: the ability to ramp up the number of tokens and agents used for a task based on how hard it is. "Hard" tasks that previous models couldn't handle now get huge compute budgets at inference time.</p>
+    <table>
+      <thead><tr><th>Task</th><th>Compute budget</th></tr></thead>
+      <tbody>
+        <tr><td>Trivial reply</td><td>Single call, no orchestration</td></tr>
+        <tr><td>Moderate code change</td><td>Few agents + test loop</td></tr>
+        <tr><td>High-stakes rewrite</td><td>Thousands of agents + verify batches + iteration</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn"><strong>Economics:</strong> scaling test-time compute costs real money — Cherny's long-running experiments burn "practically unlimited" token budgets, sometimes tens of thousands of dollars. Design your workflows to <em>scale compute with stakes</em>, not always to max.</div>
+  </div>
+
+  <h2>Key Skills to Build</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Sandbox design</strong> — dynamic workflows run agents inside a sandbox (e.g. a Bun runtime); the sandbox provides the environment the model needs to "cook".</li>
+      <li><strong>Idempotent work units</strong> — each worker's task must be independently verifiable, so failures can be isolated and re-run without restarting the whole workflow.</li>
+      <li><strong>Merge / integration strategy</strong> — how 1,000 parallel workers' outputs integrate without conflicts (the Zig→Rust rewrite had to merge per-module).</li>
+      <li><strong>Progress metrics</strong> — you need to know a 100K-line migration is 40% done, not just "running".</li>
+    </ul>
+  </div>
+
+  <a class="prev" href="02-verification-loops.html">← Back: Verification Loops</a>
+  <a class="next" href="04-self-maintaining-infra.html">Next: Self-Maintaining Infrastructure →</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#10141c',primaryColor:'#161b26',primaryBorderColor:'#6ee7d8',primaryTextColor:'#e7e9f0',lineColor:'#6ee7d8',secondaryColor:'#0a0c10'}});</script>
+</body>
+</html>

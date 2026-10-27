@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>02 · Think in Redis</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span class="mark">◆</span>Redis Mastery</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="01_setup_redis.html">← Install</a>
+                <a href="03_data_types.html">Next: Data types →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Chapter 02 · Mental model</p>
+            <h1>Think in Redis — keys, structures, and RAM</h1>
+            <p class="lead">Redis isn't "a faster SQL". It's a different shape of database: a single, giant
+                <strong>dictionary in memory</strong> where each <strong>key</strong> points to a
+                <strong>data structure</strong>. Internalize four ideas and the rest is easy.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>The four ideas</h2>
+            <div class="grid-2">
+                <div class="mini info">
+                    <h3>1 · It lives in RAM</h3>
+                    <p class="quiet">Data is held in memory, not on spinning disk per request. That's why reads
+                        and writes are <strong>microseconds</strong>. Disk is used only for optional persistence
+                        (snapshots / logs).</p>
+                </div>
+                <div class="mini note">
+                    <h3>2 · Everything has a key</h3>
+                    <p class="quiet">Redis is one flat keyspace: <code>user:42</code>, <code>cart:42</code>,
+                        <code>rate:ip:1.2.3.4</code>. You design key <em>names</em> the way you'd design tables.
+                    </p>
+                </div>
+                <div class="mini good">
+                    <h3>3 · Values are data structures</h3>
+                    <p class="quiet">A value isn't just text — it can be a hash, list, set, sorted set, stream…
+                        Pick the structure that matches the operation you need.</p>
+                </div>
+                <div class="mini warn">
+                    <h3>4 · One command at a time</h3>
+                    <p class="quiet">Redis runs commands <strong>single-threaded</strong>, so each command is
+                        <strong>atomic</strong> — no half-updates, no locks needed for a single operation.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Anatomy of a key → value</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+graph LR
+    K["Key: user:42"] --> V["Value: HASH"]
+    V --> F1["name → 'Alice'"]
+    V --> F2["email → 'a@x.io'"]
+    V --> F3["age → 30"]
+    K -. "TTL: 3600s" .-> X["⏳ auto-expires"]
+    classDef key fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef val fill:#fde8e6,stroke:#dc382d,color:#7f1d1d;
+    classDef field fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+    class K key;
+    class V,X val;
+    class F1,F2,F3 field;
+                </pre>
+                <p class="caption">A key (<code>user:42</code>) points to a value (here a hash with fields). Keys
+                    can carry a <strong>TTL</strong> so Redis deletes them automatically — perfect for caches,
+                    sessions, and tokens.</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Why single-threaded is a feature, not a bug</h2>
+            <p>Because Redis processes one command at a time, operations like "increment this counter" or "pop
+                from this queue" are <strong>atomic by default</strong> — no race conditions, no locks. And since
+                everything is in RAM, even single-threaded it handles <strong>100k+ operations per second</strong>
+                on a laptop.</p>
+            <div class="callout key">
+                <strong>Atomic example:</strong> 1,000 web servers all running <code>INCR pageviews</code> at once
+                will never lose a count or collide — Redis serializes them. Doing the same safely in a relational
+                DB needs transactions or row locks.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The same need, four databases</h2>
+            <p>"Store a user and look them up by id." Each model shapes it differently:</p>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+graph TB
+    subgraph Relational["Relational (SQL)"]
+        T["users table: rows & columns<br/>SELECT * WHERE id=42"]
+    end
+    subgraph Document["Document (Mongo)"]
+        D["{ _id: 42, name, email }<br/>find by _id"]
+    end
+    subgraph Graph["Graph (Neo4j)"]
+        G["(User {id:42}) -[:FRIEND]-> (...)"]
+    end
+    subgraph Redis["Redis (key → structure)"]
+        R["HGETALL user:42<br/>(direct, in RAM)"]
+    end
+    classDef sql fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef doc fill:#d1fae5,stroke:#047857,color:#064e3b;
+    classDef gr fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+    classDef rd fill:#fde8e6,stroke:#dc382d,color:#7f1d1d;
+    class T sql;
+    class D doc;
+    class G gr;
+    class R rd;
+                </pre>
+                <p class="caption">Redis trades rich querying for raw speed and simplicity: you fetch by key, and
+                    you get the answer in microseconds. There's no query planner — you decide the access path when
+                    you choose the key and structure.</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Redis vs other databases at a glance</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Stores data as</th>
+                        <th>Best at</th>
+                        <th>Weak at</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Redis</strong> (in-memory KV)</td>
+                        <td>Key → data structure, in RAM</td>
+                        <td>Speed, caching, counters, queues, TTLs</td>
+                        <td>Ad-hoc queries, data &gt; RAM, durability nuance</td>
+                    </tr>
+                    <tr>
+                        <td>Relational (Postgres)</td>
+                        <td>Tables with rows & columns</td>
+                        <td>JOINs, transactions, ad-hoc SQL</td>
+                        <td>Raw per-key latency, simple scaling</td>
+                    </tr>
+                    <tr>
+                        <td>Document (MongoDB)</td>
+                        <td>JSON-like documents</td>
+                        <td>Flexible schema, nested data</td>
+                        <td>Multi-document transactions, JOINs</td>
+                    </tr>
+                    <tr>
+                        <td>Graph (Neo4j)</td>
+                        <td>Nodes + relationships</td>
+                        <td>Deep relationship traversal</td>
+                        <td>Simple key lookups, bulk aggregation</td>
+                    </tr>
+                    <tr>
+                        <td>Wide-column (Cassandra)</td>
+                        <td>Partitioned column families</td>
+                        <td>Massive write volume, scale-out</td>
+                        <td>Low-latency single-key vs Redis, JOINs</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout">
+                <strong>The big idea:</strong> Redis is usually a <em>complement</em>, not a replacement. A typical
+                stack is <strong>Postgres as the source of truth + Redis as the speed layer</strong> in front of
+                it (cache, sessions, counters, queues).
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Remember it (the whiteboard test)</h2>
+            <div class="grid">
+                <div class="mini good"><strong>Key = a label.</strong> Use <code>colon:namespaces</code> like
+                    <code>user:42:cart</code> so the keyspace reads like folders.
+                </div>
+                <div class="mini info"><strong>Value = pick the structure</strong> by the operation: need
+                    ranking? sorted set. Need fields? hash. Need a queue? list.</div>
+                <div class="mini warn"><strong>RAM = the budget.</strong> Set TTLs and an eviction policy so the
+                    dataset stays within memory.</div>
+                <div class="mini note"><strong>Atomic by default.</strong> One command = one safe step. Need
+                    several together? Use transactions or Lua (ch. 06).</div>
+            </div>
+        </section>
+
+        <div class="pager">
+            <a href="01_setup_redis.html">
+                <div class="dir">← Back</div>
+                <div class="ttl">01 · Install Redis</div>
+            </a>
+            <a class="next" href="03_data_types.html">
+                <div class="dir">Next →</div>
+                <div class="ttl">03 · Data types</div>
+            </a>
+        </div>
+    </main>
+
+    <footer><a href="index.html">← Back to Redis hub</a></footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true, theme: 'base',
+            themeVariables: { primaryColor: '#fde8e6', primaryTextColor: '#241616', primaryBorderColor: '#dc382d', lineColor: '#a02218', fontFamily: 'Segoe UI, Aptos, system-ui, sans-serif' }
+        });
+    </script>
+</body>
+
+</html>

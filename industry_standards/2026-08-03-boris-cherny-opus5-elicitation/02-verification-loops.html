@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 — Verification Loops & Goal-Oriented Prompting</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38; --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575; --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f; --green:#a3e077; --violet:#c09bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .callout.danger{ border-left-color:var(--rose); background:rgba(242,121,127,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; } @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← Boris Cherny · Elicitation Era</a> · Module 02</div>
+  <h1>Verification Loops &amp; <em style="color:var(--amber);font-style:normal;">Goal-Oriented</em> Prompting</h1>
+  <p>"The single most important thing developers get wrong is not making it possible for the AI to <strong>verify its own work</strong>."</p>
+
+  <div class="callout"><strong>The shift:</strong> stop over-specifying the <em>how</em>. Define the <strong>task</strong>, the <strong>guardrails</strong>, and the <strong>exit criteria</strong> (when it should stop). Then hand the model the tools to verify itself.</div>
+
+  <h2>Why Prescriptive Prompting Backfires</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="color:var(--rose);">Prescriptive (old)</h3>
+      <ul>
+        <li>Step-by-step "do A, then B, then C"</li>
+        <li>Detailed implementation instructions</li>
+        <li>Assumes the model can't figure it out</li>
+        <li>Constrains a capable model — "hobbles" it</li>
+        <li>Fragile when the task drifts from the script</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--green);">Goal-oriented (new)</h3>
+      <ul>
+        <li>Define the outcome ("what")</li>
+        <li>Define the guardrails (what it may NOT do)</li>
+        <li>Define exit criteria (when it's done)</li>
+        <li>Let the model choose the path</li>
+        <li>Robust to unexpected states</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout warn"><strong>The "ignorant" advantage:</strong> sometimes non-coders get better results because they simply ask for the <em>what</em> without getting stuck in implementation details. If you're a senior engineer, your architecture background can actively work against you — you're prone to over-prescribing the how.</div>
+
+  <h2>The Verification Loop</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph TB
+    G["Define task + guardrails +<br/>exit criteria"] --> AG["Agent works<br/>(may run days/weeks)"]
+    AG --> DR["Drift risk<br/>small deviations compound"]
+    DR --> V["Self-verification<br/>tangible feedback mechanism"]
+    V -->|"test suite passes"| DONE["✅ Done"]
+    V -->|"fails / diverges"| AG
+  </div>
+  </div>
+  <div class="card">
+    <h3>Why verification is critical for long-running agents</h3>
+    <p>Long-running agents (days or weeks) are prone to <strong>drift</strong> — small deviations compound over time until the work is far from the original intent. The antidote is a <strong>tangible feedback mechanism</strong> the agent feeds back into its own loop:</p>
+    <ul>
+      <li><strong>Solid test suites</strong> — the agent runs tests and iterates until green.</li>
+      <li><strong>Pixel-perfect comparison</strong> — rewrite an app, screenshot original vs rewrite, compare until they match.</li>
+      <li><strong>Compile/type-check gates</strong> — for language migrations (e.g. Zig→Rust), each chunk must compile before moving on.</li>
+      <li><strong>Rubric checks</strong> — the agent evaluates its own output against a stated rubric.</li>
+    </ul>
+    <div class="callout" style="margin-top:1rem;"><strong>Rule:</strong> verification is not an afterthought — it's the single highest-leverage design decision. If you can't define how the agent will know it succeeded, it can't be trusted to run long.</div>
+  </div>
+
+  <h2>The Recipe</h2>
+  <div class="card">
+    <h3>Give the model three things, not a manual</h3>
+    <table>
+      <thead><tr><th>Element</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Task</strong></td><td>"Rewrite this app's UI in the new design system, preserving all current functionality."</td></tr>
+        <tr><td><strong>Guardrails</strong></td><td>"Do not touch the API layer. No external dependencies. Don't rename public exports."</td></tr>
+        <tr><td><strong>Exit criteria</strong></td><td>"Done when all 400 tests pass, visual diff &lt; 1% across 50 reference screenshots, and bundle size ≤ current."</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn" style="margin-top:1rem;"><strong>Note:</strong> this is the difference between "context engineering" (curating what the model sees) and <strong>task elicitation</strong> (finding the right ask to reveal latent ability). Elicitation sets the frame; the model fills the path.</div>
+  </div>
+
+  <a class="prev" href="01-press-delete-ablations.html">← Back: Ablation Mindset</a>
+  <a class="next" href="03-dynamic-workflows.html">Next: Dynamic Workflows &amp; Massive Orchestration →</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#10141c',primaryColor:'#161b26',primaryBorderColor:'#6ee7d8',primaryTextColor:'#e7e9f0',lineColor:'#6ee7d8',secondaryColor:'#0a0c10'}});</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Project A · Medical Prescription Digitizer · Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+ :root{--bg:#0b1020;--panel:#121a33;--ink:#e8ecf7;--muted:#a8b3d1;--accent:#7cf0ff;--line:#2a345a}
+ *{box-sizing:border-box}body{margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:#070a17;color:var(--ink);line-height:1.55}
+ header{padding:36px 28px;background:radial-gradient(900px 320px at 0 0,#1a2452 0,transparent 60%);border-bottom:1px solid var(--line)}
+ header h1{margin:0;color:#fff;font-size:1.9rem}header .tag{color:var(--accent);font-size:.85rem}
+ main{padding:28px;max-width:1200px;margin:auto}
+ section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px}
+ section h2{margin-top:0;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:8px}
+ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem}
+ th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+ th{background:#1b2549;color:#cfe1ff}
+ tr:hover td{background:#192142}
+ code{background:#0a0f24;padding:1px 6px;border-radius:4px;color:#ffd6a5}
+ .mermaid{background:#0a0f24;border-radius:8px;padding:16px}
+ .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:600}
+ .ok{background:rgba(124,255,178,.12);color:#7CFFB2;border:1px solid rgba(124,255,178,.4)}
+ .warn{background:rgba(255,209,102,.12);color:#ffd166;border:1px solid rgba(255,209,102,.4)}
+ a{color:var(--accent)}
+ .crumbs{margin-bottom:14px;color:var(--muted)}
+</style></head>
+<body>
+<header>
+  <div class="crumbs"><a href="../INDEX.html">← Back to Suite Index</a></div>
+  <div class="tag">📸 OCR · Vision-LLM · Structured Output</div>
+  <h1>Project A — Medical Prescription Digitizer</h1>
+  <p style="color:var(--muted);max-width:900px">Turns a photo of a prescription
+  into a validated <code>Prescription</code> JSON, cross-checks every drug
+  against RxNorm, and stores it in a normalized SQLite schema.</p>
+</header>
+<main>
+
+<section>
+<h2>1 · End-to-End Architecture</h2>
+<div class="mermaid">
+flowchart LR
+  IMG[📷 Prescription Image] --> EXT[PrescriptionExtractor<br/>GPT-5-Vision]
+  EXT -->|response_format=Pydantic| RX[Prescription dataclass]
+  RX --> VAL[RxNormValidator<br/>RxNav REST]
+  VAL -->|rxnorm_cui| RX2[Validated Prescription]
+  RX2 --> PERS[SQLite Persister]
+  PERS --> DB[(prescriptions.db)]
+  RX2 --> API[(JSON output)]
+</div>
+</section>
+
+<section>
+<h2>2 · Component Table</h2>
+<table>
+<thead><tr><th>Component</th><th>File</th><th>Responsibility</th></tr></thead>
+<tbody>
+<tr><td><code>schemas.py</code></td><td>src/schemas.py</td><td>Pydantic models &amp; enums (Frequency, Route)</td></tr>
+<tr><td><code>extractor.py</code></td><td>src/extractor.py</td><td>Vision-LLM call with structured output</td></tr>
+<tr><td><code>rxnorm.py</code></td><td>src/rxnorm.py</td><td>Approximate-term lookup against RxNav</td></tr>
+<tr><td><code>pipeline.py</code></td><td>src/pipeline.py</td><td>Glue: extract → validate → persist</td></tr>
+</tbody></table>
+</section>
+
+<section>
+<h2>3 · ERD (SQLite)</h2>
+<div class="mermaid">
+erDiagram
+  PRESCRIPTION ||--o{ MEDICATION : has
+  PRESCRIPTION {
+    int id PK
+    text issued_on
+    text patient_name
+    text prescriber_name
+    text diagnosis
+    real confidence
+    text raw_json
+  }
+  MEDICATION {
+    int  id PK
+    int  prescription_id FK
+    text name
+    text rxnorm_cui
+    text strength
+    text dose
+    text frequency
+    text route
+    int  duration_days
+  }
+</div>
+</section>
+
+<section>
+<h2>4 · Technology Stack — 2026 Evaluation</h2>
+<table>
+<thead><tr><th>Layer</th><th>Choice</th><th>2026 Status</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Vision OCR</td><td>GPT-5-Vision (or Gemini-3-Pro / Mistral Large 3)</td>
+    <td><span class="pill ok">SOTA</span></td>
+    <td>VLM beats Tesseract on hand-writing &gt; 30 ppt accuracy.</td></tr>
+<tr><td>Structured output</td><td>Native <code>response_format=Pydantic</code></td>
+    <td><span class="pill ok">SOTA</span></td>
+    <td>Replaces Instructor / regex JSON repair.</td></tr>
+<tr><td>Drug validation</td><td>RxNav approximateTerm</td>
+    <td><span class="pill ok">Standard</span></td>
+    <td>Production: mirror RxNorm to local SQLite weekly.</td></tr>
+<tr><td>Storage</td><td>SQLite (demo) / Postgres + pgvector (prod)</td>
+    <td><span class="pill warn">Demo</span></td>
+    <td>Add pgvector for similarity search across prescriptions.</td></tr>
+<tr><td>Guardrails</td><td><i>not yet wired</i></td>
+    <td><span class="pill warn">Add</span></td>
+    <td>Output verifier: reject if confidence &lt; 0.6 or any drug fails RxNorm.</td></tr>
+</tbody></table>
+</section>
+
+<section>
+<h2>5 · Run</h2>
+<pre><code>pip install -r requirements.txt
+cp .env.example .env
+python -m src.pipeline samples/rx1.png</code></pre>
+</section>
+
+</main>
+<script>mermaid.initialize({startOnLoad:true,theme:'dark'});</script>
+</body></html>

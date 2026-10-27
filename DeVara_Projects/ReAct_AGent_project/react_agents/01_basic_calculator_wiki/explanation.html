@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>01 · Calculator + Wikipedia (ReAct, async FastAPI)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../../assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <a class="back" href="../../index.html">← Portfolio home</a>
+  <h1><span class="pill">Basic</span> 01 · Calculator + Wikipedia (ReAct)</h1>
+  <p>The classic two-tool ReAct loop, packaged as a production-shaped Python project served via async FastAPI.</p>
+</header>
+<main>
+
+<h2>📖 Story mode — the Helper Friend with two pockets</h2>
+<div class="callout good">
+<b>The scene.</b> You walk up to a friend who has exactly <b>two things in his pockets</b>:
+a little <b>calculator</b> in the left pocket and a tiny <b>Wikipedia book</b> in the right pocket.
+You ask him anything. He <i>thinks out loud</i>, decides which pocket to reach into, and gives you the answer.
+That “think out loud, pick a pocket, repeat” is the entire <b>ReAct</b> idea.
+</div>
+
+<h3>What happens when you press “Ask”</h3>
+<ol>
+<li><b>You type:</b> <code>“Who wrote Hamlet, and what is 17 * 23?”</code> in a browser → <code>POST /ask</code>.</li>
+<li><b>FastAPI</b> wakes up the already-warmed <code>ReactCalcWikiAgent</code> (warmed at startup so the first user doesn’t wait).</li>
+<li><b>The LLM thinks:</b> <i>“This has two parts. Part 1 is a fact → wiki pocket. Part 2 is math → calculator pocket.”</i></li>
+<li><b>Action 1:</b> calls <code>wiki_summary("Hamlet")</code> → <code>asyncio.to_thread</code> runs the blocking <code>wikipedia</code> lib without freezing the server.</li>
+<li><b>Observation:</b> <i>“Hamlet is a tragedy written by William Shakespeare…”</i></li>
+<li><b>Action 2:</b> calls <code>calculate("17 * 23")</code> → numexpr runs safely (no <code>eval</code>) → <i>391</i>.</li>
+<li><b>Final answer:</b> <i>“Shakespeare wrote Hamlet, and 17 × 23 = 391.”</i> → JSON sent back to your browser.</li>
+</ol>
+
+<div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor U as 🙋 You
+    participant API as ⚡ FastAPI /ask
+    participant A as 🧠 ReAct Agent (LLM)
+    participant W as 📖 wiki_skill
+    participant C as 🧮 calc_skill
+    U->>API: "Who wrote Hamlet, and 17*23?"
+    API->>A: run(question)
+    A->>A: Thought: needs fact + math
+    A->>W: wiki_summary("Hamlet")
+    W-->>A: "Tragedy by Shakespeare..."
+    A->>C: calculate("17*23")
+    C-->>A: 391
+    A-->>API: Final answer string
+    API-->>U: {"answer": "Shakespeare ... 391"}
+</div>
+
+<div class="callout warn">
+<b>One-line recall trick:</b> <i>“Two pockets, thinks out loud, picks one, answers.”</i>
+That’s ReAct. The whole 01 project is just this loop wrapped in FastAPI.
+</div>
+
+<h2>Folder structure (canonical agent layout)</h2>
+<pre>
+01_basic_calculator_wiki/
+├── agents/
+│   ├── __init__.py
+│   ├── base_agent.py            # async ABC: run(prompt) -> str
+│   ├── react_agent.py           # ReactCalcWikiAgent
+│   └── skills/
+│       ├── calculator_skill.py  # async numexpr
+│       └── wiki_skill.py        # async wikipedia lookup
+├── core/
+│   ├── config.py                # pydantic-settings, .env aware
+│   ├── logger.py                # structured logger
+│   └── utils.py
+├── data/
+│   └── prompts/
+│       └── react_system.txt     # ReAct prompt template
+├── models/
+│   └── model_client.py          # ChatOpenAI factory
+├── workflows/
+│   └── qa_workflow.py           # singleton agent + answer_question()
+├── tests/
+│   └── test_agents.py
+├── main.py                      # async FastAPI app (POST /ask)
+├── requirements.txt
+├── .env.example
+└── explanation.html
+</pre>
+
+<h2>Why this structure?</h2>
+<table>
+<tr><th>Folder</th><th>Responsibility</th><th>Why isolated</th></tr>
+<tr><td><code>agents/</code></td><td>The agent classes themselves</td><td>Easy to add a second agent without touching transport.</td></tr>
+<tr><td><code>agents/skills/</code></td><td>Reusable async tool functions</td><td>A skill can be reused across agents and projects.</td></tr>
+<tr><td><code>core/</code></td><td>Cross-cutting (config, logging)</td><td>Single source of truth for env/model/limits.</td></tr>
+<tr><td><code>models/</code></td><td>LLM provider wrappers</td><td>Swap OpenAI → Azure / Ollama in one file.</td></tr>
+<tr><td><code>workflows/</code></td><td>Orchestration glue</td><td>FastAPI calls workflows, never agents directly — clean boundary.</td></tr>
+<tr><td><code>data/prompts/</code></td><td>Prompt templates</td><td>Prompts evolve faster than code — keep them as text.</td></tr>
+<tr><td><code>tests/</code></td><td>Unit tests</td><td>CI-friendly; skills are mocked, network tests skipped by default.</td></tr>
+</table>
+
+<h2>Architecture</h2>
+<div class="mermaid">
+flowchart LR
+    Client[HTTP Client] -->|POST /ask| FastAPI[main.py<br/>FastAPI async]
+    FastAPI --> WF[workflows.qa_workflow]
+    WF --> Agent[agents.ReactCalcWikiAgent]
+    Agent --> LLM[(ChatOpenAI)]
+    Agent -->|tool call| Calc[skills.calculate<br/>numexpr]
+    Agent -->|tool call| Wiki[skills.wiki_summary<br/>wikipedia api]
+    Config[core.config] -.-> Agent
+    Config -.-> LLM
+</div>
+
+<h2>The ReAct loop (sequence)</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant API as FastAPI /ask
+    participant A as ReAct Agent
+    participant W as wiki skill
+    participant C as calc skill
+    U->>API: {"question": "Eiffel year × 2 ?"}
+    API->>A: await run(prompt)
+    A->>W: wikipedia("Eiffel Tower")
+    W-->>A: "...completed in 1889..."
+    A->>C: calculator("1889*2")
+    C-->>A: 3778
+    A-->>API: "3778"
+    API-->>U: {"answer": "3778"}
+</div>
+
+<h2>Run it</h2>
+<pre>cd react_agents/01_basic_calculator_wiki
+pip install -r requirements.txt
+copy .env.example .env       # set OPENAI_API_KEY
+python main.py
+# server up at http://127.0.0.1:8001
+# try:  curl -X POST http://127.0.0.1:8001/ask -H "Content-Type: application/json" -d "{\"question\":\"23*45+1\"}"</pre>
+
+<h2>Why async FastAPI here?</h2>
+<table>
+<tr><th>Benefit</th><th>How this project uses it</th></tr>
+<tr><td>Non-blocking I/O</td><td>LLM call &amp; wiki HTTP run on the loop; CPU-bound numexpr offloaded with <code>asyncio.to_thread</code>.</td></tr>
+<tr><td>Concurrency</td><td>One process serves many simultaneous <code>/ask</code> requests.</td></tr>
+<tr><td>Lifespan hook</td><td><code>lifespan</code> warms the agent so the first request is fast.</td></tr>
+<tr><td>Validation</td><td>Pydantic <code>AskRequest</code> rejects empty / oversized prompts at the boundary.</td></tr>
+</table>
+
+<div class="callout good">
+<b>Take-away:</b> the same ReAct logic is now a real service — testable, configurable, and ready for Docker / k8s.
+</div>
+
+</main>
+<footer>react_agents · 01_basic_calculator_wiki</footer>
+</body>
+</html>

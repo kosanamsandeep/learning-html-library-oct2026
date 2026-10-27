@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go P5 — Contact Management</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Go projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p5_contact_management/README.html">Python p5</a>
+                <a href="../../rust_projects/p5_contact_management/README.html">Rust p5</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go · P5</span></p>
+            <h1>Contact Management — nested structs + hand-rolled validation</h1>
+            <p class="lead">Python reaches for pydantic. Go's static type system already enforces "shape" at compile
+                time, so you only need a small <code>Validate()</code> method for cross-field rules — exactly one
+                primary email, phone numbers long enough, kind in a known set.</p>
+        </section>
+
+        <section class="card">
+            <h2>Why this is a good fit for Go</h2>
+            <ul>
+                <li><strong>The struct is the schema.</strong> No "is this field a string?" check at runtime — the
+                    compiler already proved it.</li>
+                <li><strong>Validation collects all errors.</strong> Don't fail-fast on the first issue; show every
+                    problem at once. Friendlier API.</li>
+                <li><strong>Regex is in the standard library.</strong> <code>regexp.MustCompile</code> at package level
+                    for a prebuilt, thread-safe matcher.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Patterns to lift back into Python</h2>
+            <p>Even if you stay in Python, two patterns from this version travel well:</p>
+            <ol>
+                <li>Always return <em>all</em> validation errors, not just the first.</li>
+                <li>Pre-compile your regexes at module load — not on every call.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd go_projects/p5_contact_management
+go run .</code></pre>
+            <p>Files: <a href="main.go">main.go</a> · <a href="go.mod">go.mod</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

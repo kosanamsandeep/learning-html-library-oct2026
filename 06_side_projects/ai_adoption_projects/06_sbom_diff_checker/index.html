@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SBOM Diff Checker</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="../"><span>AI</span>Adoption Projects</a>
+      <div class="top-links">
+        <a href="../">Hub</a>
+        <a href="../05_diy_sbom_generator/">Prev: DIY SBOM Generator</a>
+        <a href="../07_container_signing_lab/">Next: Container Signing Lab</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Project 06 &mdash; Supply Chain Security</p>
+      <h1>SBOM Diff Checker</h1>
+      <p class="lead">A tool that compares two Software Bills of Materials (before and after a PR) and flags new, removed, or changed dependencies &mdash; making dependency review a first-class part of code review.</p>
+    </div>
+
+    <div class="card">
+      <h2>Architecture &amp; Data Flow</h2>
+      <p>The diff checker takes two CycloneDX or SPDX documents, normalizes them to a common key space, and produces a structured diff report suitable for posting as a CI comment.</p>
+      <div class="mermaid">
+<pre class="mermaid">
+flowchart LR
+    PR["🔄 Pull Request"] --> BEFORE["📦 SBOM Before<br/>(main branch)"]
+    PR --> AFTER["📦 SBOM After<br/>(feature branch)"]
+
+    BEFORE --> DIFF["🔍 Diff Engine"]
+    AFTER --> DIFF
+
+    DIFF --> NEW["🟢 New Dependencies"]
+    DIFF --> REMOVED["🔴 Removed Dependencies"]
+    DIFF --> CHANGED["🟡 Changed Versions"]
+
+    NEW --> REPORT["📋 Review Comment"]
+    REMOVED --> REPORT
+    CHANGED --> REPORT
+
+    REPORT --> MERGE{"✅ Approve?"}
+
+    style PR fill:#e0e7ff,stroke:#4338ca
+    style BEFORE fill:#d1fae5,stroke:#047857
+    style AFTER fill:#fef3c7,stroke:#b45309
+    style DIFF fill:#ccfbf1,stroke:#0f766e
+    style NEW fill:#d1fae5,stroke:#047857
+    style REMOVED fill:#fee2e2,stroke:#b91c1c
+    style CHANGED fill:#fef3c7,stroke:#b45309
+    style REPORT fill:#e0e7ff,stroke:#4338ca
+    style MERGE fill:#ccfbf1,stroke:#0f766e
+</pre>
+      </div>
+      <ol>
+        <li><strong>Generate SBOMs</strong> &mdash; Before the merge, generate an SBOM from the target branch. The PR branch generates its own SBOM after changes.</li>
+        <li><strong>Normalize records</strong> &mdash; Convert both SBOMs into a flat map keyed by Package URL (PURL), preserving version, license, and dependency information.</li>
+        <li><strong>Compute set differences</strong> &mdash; Identify components in AFTER but not BEFORE (added), BEFORE but not AFTER (removed), and those present in both with different versions (changed).</li>
+        <li><strong>Classify change severity</strong> &mdash; Apply semantic versioning rules to determine if a version change is breaking (major), additive (minor), or safe (patch).</li>
+        <li><strong>Post results</strong> &mdash; Output a structured report or GitHub PR comment summarizing the diff with color-coded severity indicators.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Breaking vs. Non-Breaking Changes</h2>
+      <p>Not all dependency changes are equal. The diff checker classifies each version change by applying semantic versioning (semver) rules to determine risk level.</p>
+
+      <table>
+        <tr>
+          <th>Change Type</th>
+          <th>Semver Rule</th>
+          <th>Example</th>
+          <th>Risk</th>
+          <th>Action</th>
+        </tr>
+        <tr>
+          <td>Major version bump</td>
+          <td><code>X.y.z → X+1.y.z</code></td>
+          <td><code>2.1.0 → 3.0.0</code></td>
+          <td class="tag" style="background:#fee2e2;color:#b91c1c;">High</td>
+          <td>Requires manual review; API-breaking changes expected</td>
+        </tr>
+        <tr>
+          <td>Minor version bump</td>
+          <td><code>x.Y.z → x.Y+1.z</code></td>
+          <td><code>1.2.0 → 1.3.0</code></td>
+          <td class="tag" style="background:#fef3c7;color:#b45309;">Medium</td>
+          <td>New functionality, backward-compatible; review release notes</td>
+        </tr>
+        <tr>
+          <td>Patch version bump</td>
+          <td><code>x.y.Z → x.y.Z+1</code></td>
+          <td><code>1.2.3 → 1.2.4</code></td>
+          <td class="tag" style="background:#d1fae5;color:#047857;">Low</td>
+          <td>Bug fixes; safe to auto-approve</td>
+        </tr>
+        <tr>
+          <td>New dependency</td>
+          <td>Not in BEFORE SBOM</td>
+          <td><code>pkg:pypi/new-pkg@1.0.0</code></td>
+          <td class="tag" style="background:#fef3c7;color:#b45309;">Medium</td>
+          <td>Review why new dependency was added; vet the package</td>
+        </tr>
+        <tr>
+          <td>Removed dependency</td>
+          <td>Not in AFTER SBOM</td>
+          <td><code>pkg:pypi/old-pkg@1.0.0</code></td>
+          <td class="tag" style="background:#d1fae5;color:#047857;">Low</td>
+          <td>Usually safe, but verify nothing depended on it transitively</td>
+        </tr>
+        <tr>
+          <td>Downgrade</td>
+          <td>Version decreased</td>
+          <td><code>2.0.0 → 1.9.0</code></td>
+          <td class="tag" style="background:#fee2e2;color:#b91c1c;">High</td>
+          <td>Flag immediately; could indicate rollback or conflict</td>
+        </tr>
+      </table>
+
+      <div class="callout">
+        <strong>Real-world impact:</strong> In 2021, a researcher added a malicious dependency to the <code>ua-parser-js</code> npm package via a compromised maintainer account. The package was pulled within hours, but teams without SBOM diffing had no automated way to detect they'd acquired a new transitive dependency. An SBOM diff checker would have flagged the new package as <code>added</code> with a medium-severity alert immediately.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Starter Code: Python SBOM Diff Checker</h2>
+      <pre><code>#!/usr/bin/env python3
+"""sbom_diff.py — Compare two CycloneDX SBOM files and report changes."""
+
+import json
+import sys
+from collections import defaultdict
+
+
+def load_sbom(path):
+    """Load a CycloneDX JSON SBOM and return components indexed by PURL."""
+    with open(path) as f:
+        data = json.load(f)
+
+    components = {}
+    for comp in data.get("components", []):
+        purl = comp.get("purl") or comp.get("bom-ref", comp["name"])
+        components[purl] = {
+            "name": comp["name"],
+            "version": comp["version"],
+            "purl": purl,
+        }
+    return components
+
+
+def parse_semver(version):
+    """Return (major, minor, patch) tuple, defaulting to (0,0,0) on failure."""
+    parts = version.split(".")
+    try:
+        return (int(parts[0]), int(parts[1]) if len(parts) > 1 else 0,
+                int(parts[2]) if len(parts) > 2 else 0)
+    except (ValueError, IndexError):
+        return (0, 0, 0)
+
+
+def classify_change(old_ver, new_ver):
+    """Classify a version change by semver risk level."""
+    old = parse_semver(old_ver)
+    new = parse_semver(new_ver)
+
+    if new < old:
+        return "downgrade", "high"
+    if new[0] > old[0]:
+        return "major", "high"
+    if new[1] > old[1]:
+        return "minor", "medium"
+    if new[2] > old[2]:
+        return "patch", "low"
+    return "unchanged", "none"
+
+
+def diff_sboms(before_path, after_path):
+    """Compare two SBOMs and return categorized differences."""
+    before = load_sbom(before_path)
+    after = load_sbom(after_path)
+
+    before_keys = set(before.keys())
+    after_keys = set(after.keys())
+
+    added = after_keys - before_keys
+    removed = before_keys - after_keys
+    common = before_keys & after_keys
+
+    results = {
+        "added": [],
+        "removed": [],
+        "changed": [],
+        "summary": {
+            "total_before": len(before),
+            "total_after": len(after),
+            "added_count": len(added),
+            "removed_count": len(removed),
+        },
+    }
+
+    for purl in sorted(added):
+        comp = after[purl]
+        results["added"].append({
+            "name": comp["name"],
+            "version": comp["version"],
+            "purl": purl,
+            "severity": "medium",
+        })
+
+    for purl in sorted(removed):
+        comp = before[purl]
+        results["removed"].append({
+            "name": comp["name"],
+            "version": comp["version"],
+            "purl": purl,
+            "severity": "low",
+        })
+
+    for purl in sorted(common):
+        b = before[purl]
+        a = after[purl]
+        if b["version"] != a["version"]:
+            change_type, severity = classify_change(b["version"], a["version"])
+            results["changed"].append({
+                "name": a["name"],
+                "old_version": b["version"],
+                "new_version": a["version"],
+                "purl": purl,
+                "change_type": change_type,
+                "severity": severity,
+            })
+
+    return results
+
+
+def print_report(diff):
+    """Print a human-readable diff report."""
+    def fmt_sev(s):
+        icons = {"high": "🔴", "medium": "🟡", "low": "🟢", "none": "⚪"}
+        return f"{icons.get(s, '⚪')} {s.upper()}"
+
+    print(f"\n{'='*60}")
+    print(f"SBOM Diff Report")
+    print(f"{'='*60}")
+    print(f"Before: {diff['summary']['total_before']} components")
+    print(f"After:  {diff['summary']['total_after']} components")
+
+    if diff["added"]:
+        print(f"\n{'─'*60}")
+        print(f"🟢 NEW DEPENDENCIES ({len(diff['added'])})")
+        for d in diff["added"]:
+            print(f"  + {d['name']}@{d['version']}  [{d['purl']}]")
+
+    if diff["removed"]:
+        print(f"\n{'─'*60}")
+        print(f"🔴 REMOVED DEPENDENCIES ({len(diff['removed'])})")
+        for d in diff["removed"]:
+            print(f"  - {d['name']}@{d['version']}  [{d['purl']}]")
+
+    if diff["changed"]:
+        print(f"\n{'─'*60}")
+        print(f"🟡 CHANGED VERSIONS ({len(diff['changed'])})")
+        for d in diff["changed"]:
+            print(f"  ~ {d['name']}: {d['old_version']} → {d['new_version']}  [{fmt_sev(d['severity'])}]")
+
+    print(f"\n{'='*60}")
+
+
+def main():
+    if len(sys.argv) != 3:
+        print("Usage: sbom_diff.py &lt;sbom-before.json&gt; &lt;sbom-after.json&gt;", file=sys.stderr)
+        sys.exit(1)
+
+    diff = diff_sboms(sys.argv[1], sys.argv[2])
+    print_report(diff)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+    </div>
+
+    <div class="card">
+      <h2>CI Integration &amp; Automation</h2>
+      <p>The real power of SBOM diffing emerges when it runs automatically on every pull request. Here is an example GitHub Actions workflow that generates and compares SBOMs:</p>
+
+      <pre><code># .github/workflows/sbom-diff.yml
+name: SBOM Diff Check
+on:
+  pull_request:
+    paths:
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'Pipfile.lock'
+
+jobs:
+  sbom-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed to check out base branch
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate base SBOM
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }}
+          python -m venv /tmp/venv-base
+          source /tmp/venv-base/bin/activate
+          pip install -r requirements.txt
+          python sbom_gen.py --output /tmp/sbom-before.json
+
+      - name: Generate PR SBOM
+        run: |
+          git checkout ${{ github.sha }}
+          python -m venv /tmp/venv-pr
+          source /tmp/venv-pr/bin/activate
+          pip install -r requirements.txt
+          python sbom_gen.py --output /tmp/sbom-after.json
+
+      - name: Run diff
+        run: |
+          python sbom_diff.py /tmp/sbom-before.json /tmp/sbom-after.json
+
+      - name: Post PR Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('/tmp/diff-report.txt', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## SBOM Diff Report\n\`\`\`\n${report}\n\`\`\``
+            });
+</code></pre>
+
+      <div class="callout">
+        <strong>Best practice:</strong> Make SBOM diffing a <em>required</em> status check on your base branch. This ensures no dependency change enters production without review &mdash; reducing the risk of supply chain attacks like <code>event-stream</code> or <code>colors-faker</code> incidents.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Running &amp; Extending</h2>
+      <p><strong>Quick start:</strong></p>
+      <pre><code># Generate two SBOMs to compare
+pip install requests==2.28.0
+python sbom_gen.py --output sbom-before.json
+
+pip install requests==2.31.0
+python sbom_gen.py --output sbom-after.json
+
+# Run the diff
+python sbom_diff.py sbom-before.json sbom-after.json</code></pre>
+
+      <p><strong>Ideas for extension:</strong></p>
+      <ul>
+        <li><strong>GitHub PR integration:</strong> Post diff results as a PR review with inline annotations for each changed component.</li>
+        <li><strong>Vulnerability cross-reference:</strong> After computing the diff, query the OSV or GitHub Advisory API for CVEs affecting changed components.</li>
+        <li><strong>Policy engine:</strong> Add a rules file that defines allowed/unallowed packages or version ranges. Fail the CI check if policy is violated (e.g., "no GPL-licensed packages").</li>
+        <li><strong>Web UI:</strong> Build a simple dashboard showing dependency health over time by archiving SBOMs and diffs per build.</li>
+        <li><strong>Multiple formats:</strong> Support SPDX documents alongside CycloneDX for broader tool compatibility.</li>
+      </ul>
+
+      <p class="quiet">Project source: <a href="https://cyclonedx.org/">CycloneDX</a> &bull; <a href="https://semver.org/">Semantic Versioning</a> &bull; <a href="https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain">GitHub Supply Chain Security</a></p>
+    </div>
+  </main>
+</body>
+</html>

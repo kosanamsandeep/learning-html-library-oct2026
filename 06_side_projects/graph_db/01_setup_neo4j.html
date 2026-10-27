@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>01 · Install Neo4j locally for free</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span class="mark">◆</span>Graph DB Mastery</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="index.html">← Overview</a>
+                <a href="02_graph_thinking.html">Next: Think in graphs →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Chapter 01 · Setup</p>
+            <h1>Install a free graph database on your machine</h1>
+            <p class="lead">We'll use <strong>Neo4j</strong> — the most popular graph database, with the best
+                free tooling and the <code>Cypher</code> query language you'll master here. Pick <em>one</em> of
+                three free options below. Beginners: choose <strong>Option A (Neo4j Desktop)</strong>.</p>
+        </section>
+
+        <section class="card">
+            <h2>Which free option should I pick?</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Option</th>
+                        <th>Best for</th>
+                        <th>Cost</th>
+                        <th>Effort</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>A · Neo4j Desktop</strong></td>
+                        <td>Beginners on Windows/Mac — GUI, one-click DBs, bundled Browser</td>
+                        <td>Free</td>
+                        <td>🟢 Easiest</td>
+                    </tr>
+                    <tr>
+                        <td><strong>B · Docker (Community)</strong></td>
+                        <td>Devs who like containers / reproducible setups</td>
+                        <td>Free (Community Edition)</td>
+                        <td>🟡 One command</td>
+                    </tr>
+                    <tr>
+                        <td><strong>C · Neo4j Aura Free</strong></td>
+                        <td>No install at all — a small cloud DB in the browser</td>
+                        <td>Free tier</td>
+                        <td>🟢 Sign-up only</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout">
+                <strong>Recommendation:</strong> Option A or B run fully on your machine (the request was "free
+                in my local machine"). Aura is the zero-install fallback. All three give you the same
+                <strong>Neo4j Browser</strong> and Cypher — the rest of this track works identically.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Option A · Neo4j Desktop (recommended for beginners)</h2>
+            <div class="steps">
+                <div class="step">
+                    <h3>Download Neo4j Desktop</h3>
+                    <p>Go to <a href="https://neo4j.com/download/">neo4j.com/download</a>, download
+                        <strong>Neo4j Desktop</strong> for your OS, and run the installer. On first launch it
+                        gives you a free activation key — paste the one shown on the site.
+                    </p>
+                </div>
+                <div class="step">
+                    <h3>Create a project + local DBMS</h3>
+                    <p>Click <span class="kbd">New</span> → <span class="kbd">Create project</span>. Inside the
+                        project click <span class="kbd">Add</span> → <span class="kbd">Local DBMS</span>. Give it
+                        a name (e.g. <em>learning</em>), set a password you'll remember (e.g.
+                        <code>test1234</code>), and pick the latest version.
+                    </p>
+                </div>
+                <div class="step">
+                    <h3>Start the database</h3>
+                    <p>Hover the DBMS and press <span class="kbd">Start</span>. When the dot turns green, it's
+                        running locally on <code>bolt://localhost:7687</code>.</p>
+                </div>
+                <div class="step">
+                    <h3>Open Neo4j Browser</h3>
+                    <p>Click <span class="kbd">Open</span> (it launches Neo4j Browser). This is your query
+                        console — you'll type Cypher here for the rest of the track.</p>
+                </div>
+                <div class="step">
+                    <h3>Run your first query</h3>
+                    <p>Paste this and press <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span>:</p>
+                    <pre><code><span class="c-kw">RETURN</span> <span class="c-str">'Hello, Graph!'</span> <span class="c-kw">AS</span> greeting;</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Option B · Docker (Neo4j Community Edition, free)</h2>
+            <p>If you have Docker Desktop, one command gives you a clean, isolated Neo4j with the Browser on
+                port 7474.</p>
+            <pre><code><span class="c-com"># Run Neo4j Community Edition (free). APOC plugin enabled for later chapters.</span>
+docker run <span class="c-kw">--name</span> neo4j-learning <span class="c-kw">-d</span> \
+  <span class="c-kw">-p</span> 7474:7474 <span class="c-kw">-p</span> 7687:7687 \
+  <span class="c-kw">-e</span> NEO4J_AUTH=neo4j/test1234 \
+  <span class="c-kw">-e</span> NEO4J_PLUGINS='["apoc"]' \
+  neo4j:latest</code></pre>
+            <pre><code><span class="c-com"># Windows PowerShell (single line, ^ is for cmd; use backtick or one line in PS)</span>
+docker run --name neo4j-learning -d -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/test1234 -e NEO4J_PLUGINS=[\"apoc\"] neo4j:latest</code></pre>
+            <div class="steps">
+                <div class="step">
+                    <h3>Open the Browser</h3>
+                    <p>Visit <a href="http://localhost:7474">http://localhost:7474</a> in your browser.</p>
+                </div>
+                <div class="step">
+                    <h3>Connect</h3>
+                    <p>Connection URL <code>bolt://localhost:7687</code>, user <code>neo4j</code>, password
+                        <code>test1234</code>.
+                    </p>
+                </div>
+                <div class="step">
+                    <h3>Stop / start later</h3>
+                    <pre><code>docker stop neo4j-learning
+docker start neo4j-learning</code></pre>
+                </div>
+            </div>
+            <div class="callout warn">
+                <strong>Data persistence:</strong> the container above keeps data inside itself. To survive a
+                container delete, add a volume: <code>-v $HOME/neo4j/data:/data</code> (use an absolute Windows
+                path like <code>-v C:\neo4j\data:/data</code>).
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Option C · Neo4j Aura Free (zero install)</h2>
+            <div class="steps">
+                <div class="step">
+                    <h3>Sign up</h3>
+                    <p>Go to <a href="https://neo4j.com/cloud/aura-free/">neo4j.com/cloud/aura-free</a> and create
+                        a free account.</p>
+                </div>
+                <div class="step">
+                    <h3>Create a free instance</h3>
+                    <p>Choose the <strong>AuraDB Free</strong> tier. <strong>Important:</strong> it shows the
+                        generated password <em>once</em> — save it.</p>
+                </div>
+                <div class="step">
+                    <h3>Open Query / Browser</h3>
+                    <p>Use the built-in <strong>Query</strong> editor in the Aura console — same Cypher, nothing
+                        to install.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Optional: connect from Python</h2>
+            <p>You'll mostly use the Browser, but here's how apps talk to Neo4j — handy later.</p>
+            <pre><code><span class="c-com"># pip install neo4j</span>
+<span class="c-kw">from</span> neo4j <span class="c-kw">import</span> GraphDatabase
+
+driver = GraphDatabase.driver(<span class="c-str">"bolt://localhost:7687"</span>,
+                              auth=(<span class="c-str">"neo4j"</span>, <span class="c-str">"test1234"</span>))
+
+<span class="c-kw">with</span> driver.session() <span class="c-kw">as</span> session:
+    result = session.run(<span class="c-str">"RETURN 'Hello, Graph!' AS greeting"</span>)
+    <span class="c-kw">for</span> record <span class="c-kw">in</span> result:
+        <span class="c-fn">print</span>(record[<span class="c-str">"greeting"</span>])
+
+driver.close()</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Sanity checklist before moving on</h2>
+            <ul>
+                <li>✅ Neo4j is running (green dot / container up / Aura instance ready).</li>
+                <li>✅ You opened <strong>Neo4j Browser</strong> (or Aura Query).</li>
+                <li>✅ <code>RETURN 'Hello, Graph!'</code> returned a result.</li>
+                <li>✅ You remember your password.</li>
+            </ul>
+            <div class="callout good">
+                <strong>Pro tip:</strong> in Neo4j Browser type <code>:help</code> for commands, and
+                <code>:play start</code> for the built-in guide. Commands starting with <code>:</code> are
+                Browser commands, not Cypher.
+            </div>
+        </section>
+
+        <div class="pager">
+            <a href="index.html">
+                <div class="dir">← Back</div>
+                <div class="ttl">Hub</div>
+            </a>
+            <a class="next" href="02_graph_thinking.html">
+                <div class="dir">Next →</div>
+                <div class="ttl">02 · Think in graphs</div>
+            </a>
+        </div>
+    </main>
+
+    <footer><a href="index.html">← Back to Graph DB hub</a></footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true, theme: 'base',
+            themeVariables: { primaryColor: '#d4f3e9', primaryTextColor: '#14241f', primaryBorderColor: '#0f9d77', lineColor: '#0b7a5d', fontFamily: 'Segoe UI, Aptos, system-ui, sans-serif' }
+        });
+    </script>
+</body>
+
+</html>

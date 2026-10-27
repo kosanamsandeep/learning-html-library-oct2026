@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw — Best Practices Extracted</title>
+    <link rel="stylesheet" href="openclaw.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+    <nav class="navbar">
+        <a class="brand" href="index.html"><span>OC</span>OpenClaw</a>
+        <div class="nav-links">
+            <a href="index.html">Overview</a>
+            <a href="architecture.html">Architecture</a>
+            <a href="best-practices.html">Best Practices</a>
+        </div>
+    </nav>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Engineering patterns from a 382K-star project</p>
+            <h1>Best Practices Extracted from OpenClaw</h1>
+            <p class="subtitle">OpenClaw's codebase, architecture, and contribution guidelines encode dozens of engineering best practices — from security-first agent design to monorepo management, from multi-agent routing patterns to sandboxed tool execution. This page extracts the most valuable ones for your own projects.</p>
+        </section>
+
+        <!-- ── SECURITY ── -->
+        <div class="card">
+            <h2>🔐 Security Best Practices</h2>
+            <p>OpenClaw treats security as a first-class architectural concern, not an afterthought. It's one of the most security-conscious open-source AI projects in 2026.</p>
+
+            <h3>1. Treat inbound messages as untrusted input</h3>
+            <p>OpenClaw's security guidance explicitly states: "inbound DMs as untrusted input." Every message from every channel is processed through the same security pipeline regardless of source.</p>
+
+            <h3>2. DM pairing by default</h3>
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TD
+    Unknown["👤 Unknown sender<br/>sends DM"] --> Pairing["🔐 DM Policy: Pairing<br/>(default)"]
+    Pairing --> Code["Send pairing code<br/>to sender"]
+    Code --> Approve["You approve via:<br/>openclaw pairing approve &lt;channel&gt; &lt;code&gt;"]
+    Approve --> Allowlist["Add sender to<br/>local allowlist"]
+    Allowlist --> Process["🤖 Process messages"]
+    Unknown -->|"dmPolicy='open'"| Open["⚠️ Explicit opt-in required<br/>dmPolicy='open' + '*' in allowlist"]
+    Open --> Process
+
+    style Pairing fill:#ccfbf1,stroke:#0f766e
+    style Open fill:#fee2e2,stroke:#dc2626
+</pre>
+                <div class="caption">DM pairing flow — the default is locked down. Opening to the public requires explicit, intentional configuration.</div>
+            </div>
+
+            <h3>3. Multi-layer security model</h3>
+            <table>
+                <tr><th>Layer</th><th>What it protects</th></tr>
+                <tr><td>Gateway auth</td><td>Token/password, device tokens with scopes, rate limiting, origin checking</td></tr>
+                <tr><td>Channel allowlists</td><td>Per-channel <code>allowFrom</code> sender filtering</td></tr>
+                <tr><td>Command authorization</td><td>Owner-only checks for sensitive commands</td></tr>
+                <tr><td>Tool policy</td><td>Per-tool allow/deny/ask with full policy pipeline</td></tr>
+                <tr><td>SSRF protection</td><td>Blocks private IPs, link-local, cloud metadata; covers RFC special-use ranges and IPv6</td></tr>
+                <tr><td>Content security</td><td>External content wrapping with boundary markers, prompt injection detection</td></tr>
+                <tr><td>Secret handling</td><td>Timing-safe comparison (<code>crypto.timingSafeEqual</code>), log redaction, permission-hardened storage</td></tr>
+                <tr><td>Exec hardening</td><td>Obfuscated command detection, safe-bin trusted directory, shell env sanitization</td></tr>
+                <tr><td>Sandbox isolation</td><td>Docker containers with dropped capabilities, no-new-privileges, path validation</td></tr>
+            </table>
+
+            <div class="callout">
+                <strong>Takeaway for your projects:</strong> Every AI agent platform should have a <em>minimum</em> of these layers: tool-level allow/deny/ask, prompt injection detection, and sandboxed execution. The rest depends on your attack surface.
+            </div>
+        </div>
+
+        <!-- ── AGENT DESIGN ── -->
+        <div class="card">
+            <h2>🧠 Agent Design Patterns</h2>
+
+            <h3>4. Multi-agent routing with tiered binding</h3>
+            <p>OpenClaw routes messages through a <strong>tiered binding match</strong>: peer → guild+roles → channel → default. This means you can have one agent for your DMs, a different agent for a specific Discord channel, and a fallback agent for everything else.</p>
+            <pre><code>Pattern: Bind the most specific agent first, fall back to defaults
+  Direct message from Alice  → Agent: "personal-assistant"
+  Message in #dev channel    → Agent: "dev-assistant"
+  Everything else            → Agent: "default"</code></pre>
+
+            <h3>5. System prompt composition</h3>
+            <p>Instead of one monolithic system prompt, OpenClaw composes it from multiple sources:</p>
+            <table>
+                <tr><th>Source</th><th>Example file</th><th>What it contributes</th></tr>
+                <tr><td>Identity</td><td><code>SOUL.md</code></td><td>Personality, tone, and character</td></tr>
+                <tr><td>Behavior rules</td><td><code>AGENTS.md</code></td><td>Hard rules, constraints, workflow patterns</td></tr>
+                <tr><td>Skills</td><td><code>SKILL.md</code></td><td>Reusable capabilities the agent can use</td></tr>
+                <tr><td>Tools</td><td><code>TOOLS.md</code></td><td>Available tools and when to use them</td></tr>
+                <tr><td>Memory</td><td><code>MEMORY.md</code></td><td>Long-term knowledge, past learnings</td></tr>
+                <tr><td>Workspace</td><td>Directory context</td><td>Available files, project structure</td></tr>
+            </table>
+            <p><strong>Best practice:</strong> Separate concerns in your system prompts. Don't mix identity, rules, tools, and memory in one file. Composition makes each part independently maintainable and testable.</p>
+
+            <h3>6. Session as a first-class primitive</h3>
+            <p>Agents can inspect and interact with other sessions programmatically via tools: <code>sessions_list</code>, <code>sessions_history</code>, <code>sessions_send</code>, <code>sessions_spawn</code>. This enables cross-session coordination — one agent can hand off to another, check what happened in a different conversation, or spawn a sub-session for a focused task.</p>
+        </div>
+
+        <!-- ── ENGINEERING ── -->
+        <div class="card">
+            <h2>🛠️ Engineering & Codebase Practices</h2>
+
+            <h3>7. Monorepo with strict module boundaries</h3>
+            <p>OpenClaw uses a pnpm workspace with separate <code>tsconfig</code> files for core, extensions, UI, scripts, and plugin SDK. Import boundary checks are enforced via CI scripts that validate no extension imports directly from another extension.</p>
+            <pre><code># Import boundary enforcement scripts:
+node scripts/check-src-extension-import-boundary.mjs --json
+node scripts/check-sdk-package-extension-import-boundary.mjs --json
+node scripts/check-test-helper-extension-import-boundary.mjs --json</code></pre>
+
+            <h3>8. Security scanning in CI</h3>
+            <p>The project runs <strong>Semgrep</strong> security scanning (<code>.semgrepignore</code>), <strong>oxlint</strong> linting (<code>.oxlintrc.json</code>), and <strong>pre-commit hooks</strong> (<code>.pre-commit-config.yaml</code>) in CI. Every PR is automatically scanned for security patterns before it's reviewed.</p>
+
+            <h3>9. Plugin SDK pattern for extensibility</h3>
+            <p>Rather than accepting all feature PRs into the core repo, OpenClaw maintains a clear boundary: <strong>"Most features are not accepted and should be third party plugins instead."</strong> The plugin SDK (<code>tsconfig.plugin-sdk.dts.json</code>) and ClawHub marketplace enable community contributions without bloating the core.</p>
+
+            <div class="callout">
+                <strong>Takeaway:</strong> Build your plugin SDK <em>before</em> you need it. The SDK boundary forces API stability and lets the community innovate independently of the core team's velocity.
+            </div>
+
+            <h3>10. PR standards that scale</h3>
+            <p>OpenClaw's contribution guidelines encode several practices for large-scale open source:</p>
+            <ul>
+                <li><strong>One thing per PR</strong> — "do not mix unrelated concerns." Keeps reviews focused.</li>
+                <li><strong>PRs must link to an issue</strong> — "Visible <code>Closes #&lt;issue&gt;</code> or <code>Related: #&lt;issue&gt;</code>". No drive-by PRs.</li>
+                <li><strong>Max 20 open PRs per author</strong> — automated enforcement via <code>r: too-many-prs</code> label.</li>
+                <li><strong>Evidence section required</strong> — "Focused tests, CI results, screenshots, recordings, terminal output, redacted logs, and artifact links all count."</li>
+                <li><strong>Author owns bot review conversations</strong> — "Resolve the conversation yourself once the code or explanation fully addresses the bot's concern. Do not leave 'fixed' bot review conversations for maintainers to clean up."</li>
+                <li><strong>AI-assisted PRs welcome with transparency</strong> — must mark as AI-assisted, include Evidence, and confirm the author understands the code.</li>
+            </ul>
+        </div>
+
+        <!-- ── DEPLOYMENT ── -->
+        <div class="card">
+            <h2>🚀 Deployment & Operations Practices</h2>
+
+            <h3>11. Three release channels</h3>
+            <table>
+                <tr><th>Channel</th><th>Source</th><th>When to use</th></tr>
+                <tr><td><strong>stable</strong></td><td>Tagged releases</td><td>Production — you want reliability</td></tr>
+                <tr><td><strong>beta</strong></td><td>Prerelease tags</td><td>Testing — you want to preview features</td></tr>
+                <tr><td><strong>dev</strong></td><td>Moving head of <code>main</code></td><td>Development — you want the latest commits</td></tr>
+            </table>
+            <p>Switch between channels with <code>openclaw update --channel &lt;name&gt;</code>.</p>
+
+            <h3>12. Health probes for container orchestration</h3>
+            <p>The gateway exposes four health endpoints: <code>/health</code>, <code>/healthz</code>, <code>/ready</code>, <code>/readyz</code> — making it deployment-ready for Kubernetes and Docker Compose out of the box.</p>
+
+            <h3>13. Onboarding wizard</h3>
+            <p>The <code>openclaw onboard</code> command is the recommended CLI setup path — it interactively configures the gateway, workspace, channels, and skills. This reduces the "blank slate" problem that kills adoption of self-hosted tools.</p>
+
+            <h3>14. Config hot-reload</h3>
+            <p>OpenClaw watches config files with <strong>chokidar</strong> and broadcasts changes to connected clients in real-time. No restart needed after config changes. This is critical for a daemon process that should stay running.</p>
+        </div>
+
+        <!-- ── FOR YOUR PROJECTS ── -->
+        <div class="card">
+            <h2>✅ Checklist — Apply These to Your Project</h2>
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    subgraph Security["🔐 Security"]
+        S1["DM pairing default"]
+        S2["Tool allow/deny/ask"]
+        S3["Sandboxed execution"]
+        S4["SSRF protection"]
+        S5["Secret redaction"]
+    end
+    subgraph Agent["🧠 Agent Design"]
+        A1["Multi-agent routing"]
+        A2["Composable system prompts"]
+        A3["Session as primitive"]
+        A4["Tool policy pipeline"]
+    end
+    subgraph Engineering["🛠️ Engineering"]
+        E1["Plugin SDK first"]
+        E2["Import boundary checks"]
+        E3["Semgrep in CI"]
+        E4["One thing per PR"]
+    end
+    subgraph Ops["🚀 Operations"]
+        O1["Health probes"]
+        O2["Release channels"]
+        O3["Config hot-reload"]
+        O4["Onboarding wizard"]
+    end
+
+    Security --> Agent --> Engineering --> Ops
+</pre>
+                <div class="caption">The four practice areas — pick what applies to your project and adopt progressively.</div>
+            </div>
+
+            <h3>Start small</h3>
+            <p>You don't need all of these at once. The highest-leverage practices to start with:</p>
+            <ol>
+                <li><strong>Tool allow/deny/ask policy</strong> — gate what the agent can do</li>
+                <li><strong>Composable system prompts</strong> — separate identity from rules from tools</li>
+                <li><strong>Plugin SDK pattern</strong> — define your extension boundary early</li>
+                <li><strong>Config hot-reload</strong> — essential for daemon uptime</li>
+                <li><strong>Secret redaction in logs</strong> — first security practice to implement</li>
+            </ol>
+        </div>
+
+        <div class="pager">
+            <a href="architecture.html" class="prev">
+                <div class="dir">Previous</div>
+                <div class="ttl">Architecture Deep Dive</div>
+            </a>
+            <a href="index.html" class="next">
+                <div class="dir">Up</div>
+                <div class="ttl">Overview</div>
+            </a>
+        </div>
+    </main>
+</body>
+</html>

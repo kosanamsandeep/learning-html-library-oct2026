@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P5 · Nearby Drivers</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>Case Studies</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p4_saga_orchestrator/README.html">Prev: P4</a><a
+                    href="../../ai_engineering/index.html">Next track</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">Case Studies · Project 5</p>
+            <h1>Nearby drivers — geohash bucketing for Uber-style dispatch</h1>
+            <p class="lead">When the rider taps "ride", you need a list of drivers within 2 km in under 50 ms. A full
+                scan is impossible at city scale. Geohashes bucket the world so you only scan the cells you care about.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Bengaluru has thousands of active drivers. Scanning all of them every time someone opens the app is
+                wasteful. A geohash turns (lat, lng) into a short string like <code>tdr1y</code>. Two locations close to
+                each other share a long prefix — so bucketing drivers by their geohash gives near-constant-time lookup
+                of "everyone in this cell".</p>
+        </section>
+
+        <section class="card">
+            <h2>Geohash precision vs cell size</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Length</th>
+                        <th>Approx cell size</th>
+                        <th>Use case</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>4 chars</td>
+                        <td>~ 20 × 20 km</td>
+                        <td>City-wide buckets.</td>
+                    </tr>
+                    <tr>
+                        <td>5 chars</td>
+                        <td>~ 4.9 × 4.9 km</td>
+                        <td>Ride dispatch within a neighbourhood (this demo).</td>
+                    </tr>
+                    <tr>
+                        <td>6 chars</td>
+                        <td>~ 1.2 × 0.6 km</td>
+                        <td>Walking distance proximity.</td>
+                    </tr>
+                    <tr>
+                        <td>7 chars</td>
+                        <td>~ 150 m</td>
+                        <td>Pinpoint / IoT.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Mental model</h2>
+            <div class="flow">
+                <div class="step">driver pings position</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">geohash(lat,lng,5)</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">map[bucket] = list of drivers</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">rider query → scan center bucket + 8 neighbours</div>
+            </div>
+            <p>The "+ 8 neighbours" trick handles riders standing right on the edge of a cell.</p>
+        </section>
+
+        <section class="card">
+            <h2>Production notes</h2>
+            <ul>
+                <li>Drivers move; you must re-bucket on each location ping (every 5–10s).</li>
+                <li>Use Redis GEO commands (GEOADD / GEOSEARCH) — they use geohashes under the hood.</li>
+                <li>Use the haversine formula (great-circle distance) for the final precise filter — geohash gives "in
+                    the right cell", haversine gives "actually within R km".</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/system_design_case_studies/p5_geo_nearby_drivers
+python main.py</code></pre>
+            <p>The demo seeds 50 drivers around Bengaluru and queries from MG Road and Indiranagar.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"For 'find nearby X' I bucket entities by geohash prefix. Length 5 gives ~5 km cells
+                which suit ride dispatch. On a query I scan the rider's cell plus the 8 neighbours, then filter with
+                haversine for precise radius. In production this is a Redis GEO key or a quadtree backed by an in-memory
+                index per service node."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

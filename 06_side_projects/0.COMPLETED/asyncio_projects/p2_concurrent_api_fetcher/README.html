@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2 · Concurrent API Fetcher</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>A</span>Asyncio Projects</a>
+            <nav class="top-links"><a href="../index.html">Hub</a><a href="../p1_async_basics/README.html">Prev:
+                    P1</a><a href="../p3_queue_worker_pipeline/README.html">Next: P3</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 2 · Beginner Plus</p>
+            <h1>Concurrent API fetcher — call many slow services at once</h1>
+            <p class="lead">The most common real use for asyncio is fan-out I/O: call users, orders, payments,
+                inventory, and pricing services without waiting for each one sequentially.</p>
+        </section>
+        <section class="card">
+            <h2>The story</h2>
+            <p>Your dashboard needs data from four services. If each service takes around one second and you call them
+                one by one, your page is slow. If you call them concurrently, the page waits roughly for the slowest
+                service, not the sum of all services.</p>
+        </section>
+        <section class="card">
+            <h2>Files</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Simulates remote API calls, sequential fetch, concurrent fetch, completion-order processing,
+                            and timeouts.</td>
+                    </tr>
+                    <tr>
+                        <td><code>requirements.txt</code></td>
+                        <td>No external dependencies.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="card">
+            <h2>Patterns taught</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>When to use it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>gather</code></td>
+                        <td>You want all results and usually want them in input order.</td>
+                    </tr>
+                    <tr>
+                        <td><code>as_completed</code></td>
+                        <td>You want to process the fastest responses first.</td>
+                    </tr>
+                    <tr>
+                        <td><code>wait_for</code></td>
+                        <td>You want to stop waiting after a deadline.</td>
+                    </tr>
+                    <tr>
+                        <td><code>create_task</code></td>
+                        <td>You want to schedule work now and manage it later.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="card">
+            <h2>Core code</h2>
+            <pre><code>async def fetch_concurrent(endpoints):
+    calls = [fake_api_call(name, latency) for name, latency in endpoints]
+    return await asyncio.gather(*calls)
+
+async def fetch_with_timeout(name, latency, timeout):
+    try:
+        await asyncio.wait_for(fake_api_call(name, latency), timeout=timeout)
+        return f"{name}: success"
+    except asyncio.TimeoutError:
+        return f"{name}: timed out"</code></pre>
+        </section>
+        <section class="card">
+            <h2>Completion order vs input order</h2>
+            <p><code>asyncio.gather</code> returns results in the same order you passed calls.
+                <code>asyncio.as_completed</code> yields tasks as they finish. In a UI, completion order can let you
+                show partial results sooner.</p>
+        </section>
+        <section class="card">
+            <h2>How to run</h2>
+            <pre><code>cd 06_side_projects/asyncio_projects/p2_concurrent_api_fetcher
+python main.py</code></pre>
+        </section>
+        <section class="card">
+            <h2>What to remember</h2>
+            <ul>
+                <li>Use concurrent calls when requests are independent.</li>
+                <li>Add timeouts so one slow service does not freeze the whole workflow.</li>
+                <li>Use <code>as_completed</code> when early partial results matter.</li>
+                <li>Async code still needs error handling; concurrency makes failures arrive from many places.</li>
+            </ul>
+            <div class="callout"><strong>Interview answer:</strong> asyncio helps API fan-out because independent I/O
+                calls can wait at the same time. The event loop switches between tasks at await points, so total latency
+                approaches the slowest call instead of the sum of all calls.</div>
+        </section>
+    </main>
+</body>
+
+</html>

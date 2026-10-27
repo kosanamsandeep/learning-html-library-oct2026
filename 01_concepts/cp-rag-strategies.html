@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>RAG Strategies Compared</title>
+</head>
+
+<body>
+<header class="site-header">
+    <div class="shell">
+        <a class="brand" href="index.html">
+            <span class="brand-mark">AI</span>
+            <span>AI Engineer Interview Guide</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </nav>
+    </div>
+</header>
+
+    <main class="cp-container">
+    <div class="cp-hero"><h1>📚 RAG Strategies Compared</h1>
+        <p>From naive retrieval to agentic RAG — every strategy, its tradeoffs, and when to use it</p></div>
+
+    
+        <div class="section">
+            <h2>What is RAG & Why It Matters</h2>
+            <p><strong>Retrieval-Augmented Generation (RAG)</strong> gives your LLM access to external knowledge without
+                expensive fine-tuning. Instead of stuffing everything into the model's weights, you RETRIEVE relevant
+                context at query time and AUGMENT the prompt with it.</p>
+            <div class="highlight">
+                <p><strong>The Core Problem RAG Solves:</strong> LLMs have a knowledge cutoff date and can hallucinate.
+                    RAG grounds the LLM's response in real, retrievable facts from YOUR data — documents, databases,
+                    APIs.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The RAG Evolution</h2>
+            <div class="evolution-diagram">
+                <div class="evo-step">
+                    <div class="evo-num">1</div>
+                    <div class="evo-content"><strong>Naive RAG</strong> — <span>Basic retrieve + generate. Simple but
+                            has quality issues.</span></div>
+                </div>
+                <div class="evo-arrow">↓</div>
+                <div class="evo-step">
+                    <div class="evo-num">2</div>
+                    <div class="evo-content"><strong>Advanced RAG</strong> — <span>Pre-retrieval + post-retrieval
+                            optimizations. Better quality.</span></div>
+                </div>
+                <div class="evo-arrow">↓</div>
+                <div class="evo-step">
+                    <div class="evo-num">3</div>
+                    <div class="evo-content"><strong>Modular RAG</strong> — <span>Plug-and-play components. Mix
+                            strategies per use case.</span></div>
+                </div>
+                <div class="evo-arrow">↓</div>
+                <div class="evo-step">
+                    <div class="evo-num">4</div>
+                    <div class="evo-content"><strong>Graph RAG</strong> — <span>Knowledge graphs + retrieval. Handles
+                            complex relationships.</span></div>
+                </div>
+                <div class="evo-arrow">↓</div>
+                <div class="evo-step">
+                    <div class="evo-num">5</div>
+                    <div class="evo-content"><strong>Agentic RAG</strong> — <span>Agent decides WHEN and HOW to
+                            retrieve. Self-correcting.</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Each Strategy in Detail</h2>
+
+            <div class="rag-card">
+                <span class="badge badge-basic">Foundational</span>
+                <h3>1. Naive RAG</h3>
+                <p class="description">The simplest implementation: chunk documents, embed them, retrieve top-K similar
+                    chunks, stuff into prompt.</p>
+                <div class="flow">User Query → Embed Query → Vector Search (top-K) → Stuff into Prompt → LLM Generates
+                    Answer</div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Strengths</h5>
+                        <ul>
+                            <li>Simple to implement (few hours)</li>
+                            <li>Works for straightforward Q&A</li>
+                            <li>Low infrastructure cost</li>
+                            <li>Good starting point</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Weaknesses</h5>
+                        <ul>
+                            <li>Retrieves irrelevant chunks</li>
+                            <li>Misses context across chunks</li>
+                            <li>No query understanding</li>
+                            <li>Chunk boundaries break meaning</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="use-case">💡 Use when: Simple FAQ bot, small document sets, proof-of-concept</div>
+            </div>
+
+            <div class="rag-card">
+                <span class="badge badge-advanced">Production</span>
+                <h3>2. Advanced RAG</h3>
+                <p class="description">Adds pre-retrieval (query rewriting, HyDE) and post-retrieval (re-ranking,
+                    compression) stages to improve quality.</p>
+                <div class="flow">Query → Query Rewrite/Expand → Hybrid Search (vector + keyword) → Re-rank Results →
+                    Compress/Filter → LLM Answer</div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Strengths</h5>
+                        <ul>
+                            <li>Much better retrieval precision</li>
+                            <li>Handles ambiguous queries</li>
+                            <li>Re-ranking removes noise</li>
+                            <li>Hybrid search covers more cases</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Weaknesses</h5>
+                        <ul>
+                            <li>More complex pipeline</li>
+                            <li>Higher latency (more steps)</li>
+                            <li>Re-ranker adds cost</li>
+                            <li>Still linear, no self-correction</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="use-case">💡 Use when: Production systems, customer support, document search where quality
+                    matters</div>
+            </div>
+
+            <div class="rag-card">
+                <span class="badge badge-advanced">Flexible</span>
+                <h3>3. Modular RAG</h3>
+                <p class="description">Treats RAG as composable modules: routing, retrieval, re-ranking, generation —
+                    mix and match per query.</p>
+                <div class="flow">Query → Router (pick strategy) → [Module A | Module B | Module C] → Merge → Generate
+                </div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Strengths</h5>
+                        <ul>
+                            <li>Different strategies for different queries</li>
+                            <li>Reusable components</li>
+                            <li>Easy to A/B test modules</li>
+                            <li>Scales to complex needs</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Weaknesses</h5>
+                        <ul>
+                            <li>Architecture complexity</li>
+                            <li>Need to build routing logic</li>
+                            <li>More testing/monitoring needed</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="use-case">💡 Use when: Enterprise with multiple data sources, varying query types needing
+                    different strategies</div>
+            </div>
+
+            <div class="rag-card">
+                <span class="badge badge-cutting">Cutting Edge</span>
+                <h3>4. Graph RAG (Microsoft)</h3>
+                <p class="description">Builds a knowledge graph from documents, then uses graph traversal + community
+                    detection for retrieval. Excels at questions requiring synthesis across many documents.</p>
+                <div class="flow">Documents → Extract Entities/Relations → Build Knowledge Graph → Community Detection →
+                    Graph-Guided Retrieval → LLM Synthesis</div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Strengths</h5>
+                        <ul>
+                            <li>Answers "big picture" questions brilliantly</li>
+                            <li>Handles relationships between concepts</li>
+                            <li>Summarizes across entire corpus</li>
+                            <li>Better for "what themes exist" queries</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Weaknesses</h5>
+                        <ul>
+                            <li>Expensive indexing (many LLM calls to build graph)</li>
+                            <li>Complex setup</li>
+                            <li>Overkill for simple Q&A</li>
+                            <li>Graph can become stale</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="use-case">💡 Use when: Large corpora, questions about themes/relationships, legal/research
+                    document analysis</div>
+            </div>
+
+            <div class="rag-card">
+                <span class="badge badge-cutting">State of Art</span>
+                <h3>5. Agentic RAG</h3>
+                <p class="description">An AI agent DECIDES when to retrieve, what to retrieve, evaluates results, and
+                    loops if unsatisfied. Uses LangGraph-style loops.</p>
+                <div class="flow">Query → Agent Decides (retrieve? calculate? search web?) → Retrieve → Evaluate Quality
+                    → [If bad: rephrase & retry] → Generate Final Answer</div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Strengths</h5>
+                        <ul>
+                            <li>Self-correcting (retries with better queries)</li>
+                            <li>Multi-source (can search web, DB, vector store)</li>
+                            <li>Handles complex multi-step questions</li>
+                            <li>Knows when NOT to retrieve</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Weaknesses</h5>
+                        <ul>
+                            <li>Higher latency (multiple LLM calls)</li>
+                            <li>More expensive per query</li>
+                            <li>Harder to predict/debug</li>
+                            <li>Requires good agent orchestration (LangGraph)</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="use-case">💡 Use when: Research assistants, complex multi-hop questions, when quality >
+                    speed</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Side-by-Side Comparison</h2>
+            <div style="overflow-x:auto;">
+                <table class="comparison-table">
+                    <tr>
+                        <th>Strategy</th>
+                        <th>Complexity</th>
+                        <th>Quality</th>
+                        <th>Latency</th>
+                        <th>Cost</th>
+                        <th>Self-Corrects?</th>
+                        <th>Best For</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Naive RAG</strong></td>
+                        <td style="color:#34d399;">Low</td>
+                        <td style="color:#f87171;">Basic</td>
+                        <td style="color:#34d399;">Fast</td>
+                        <td style="color:#34d399;">Low</td>
+                        <td style="color:#f87171;">No</td>
+                        <td>Simple FAQ, POC</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Advanced RAG</strong></td>
+                        <td style="color:#fbbf24;">Medium</td>
+                        <td style="color:#34d399;">Good</td>
+                        <td style="color:#fbbf24;">Moderate</td>
+                        <td style="color:#fbbf24;">Medium</td>
+                        <td style="color:#f87171;">No</td>
+                        <td>Production systems</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Modular RAG</strong></td>
+                        <td style="color:#f87171;">High</td>
+                        <td style="color:#34d399;">High</td>
+                        <td style="color:#fbbf24;">Varies</td>
+                        <td style="color:#fbbf24;">Medium</td>
+                        <td style="color:#fbbf24;">Partial</td>
+                        <td>Multi-source enterprise</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Graph RAG</strong></td>
+                        <td style="color:#f87171;">Very High</td>
+                        <td style="color:#34d399;">Excellent (synthesis)</td>
+                        <td style="color:#fbbf24;">Moderate</td>
+                        <td style="color:#f87171;">High (indexing)</td>
+                        <td style="color:#f87171;">No</td>
+                        <td>Analytics, research</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Agentic RAG</strong></td>
+                        <td style="color:#f87171;">Very High</td>
+                        <td style="color:#34d399;">Best</td>
+                        <td style="color:#f87171;">Slow</td>
+                        <td style="color:#f87171;">High</td>
+                        <td style="color:#34d399;">Yes!</td>
+                        <td>Research, complex Q&A</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Decision Framework</h2>
+            <div class="decision-box">
+                <h4>Choose your RAG strategy based on:</h4>
+                <p><strong>📋 Simple docs + simple questions →</strong> Naive RAG (just ship it)</p>
+                <p><strong>🏢 Production quality needed →</strong> Advanced RAG (re-ranking + hybrid search)</p>
+                <p><strong>📊 Multiple data sources →</strong> Modular RAG (route queries to right source)</p>
+                <p><strong>🔗 Need to synthesize across docs →</strong> Graph RAG (knowledge graph)</p>
+                <p><strong>🤖 Complex, multi-step questions →</strong> Agentic RAG (LangGraph + self-correction)</p>
+                <p><strong>💰 Budget is tiny →</strong> Start Naive, add re-ranking, iterate</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧠 Pro Thinker Analysis</h2>
+            <div class="highlight">
+                <p><strong>RAG isn't one thing — it's a spectrum.</strong> The industry mistake is treating RAG as
+                    "vector DB + prompt stuffing." The best systems combine multiple strategies: use semantic search for
+                    factual lookup, graph traversal for relationship questions, and agentic loops for complex research.
+                    Your RAG pipeline should be as sophisticated as your questions require — and no more.
+                    Over-engineering RAG for simple FAQ is as wasteful as under-engineering it for complex research.</p>
+            </div>
+        </div>
+
+        <div class="cp-nav-footer">
+            <a href="cp-llm-providers.html">← LLM Providers</a>
+            <a href="cp-coding-ai-tools.html">Next: Coding AI Tools →</a>
+        </div>
+    </div>
+
+    </main>
+
+<footer class="site-footer">
+    <div class="shell">
+        <p>Part of the AI and ML Interview Starter Guide. Open locally in any browser.</p>
+        <div class="mini-links">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </div>
+    </div>
+</footer>
+</body>
+
+</html>

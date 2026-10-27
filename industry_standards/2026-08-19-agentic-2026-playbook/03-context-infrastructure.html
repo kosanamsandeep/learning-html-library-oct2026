@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 — The 80% Problem & Context Infrastructure</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38; --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575; --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f; --green:#a3e077; --violet:#c09bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← Agentic Engineering Playbook</a> · Module 03</div>
+  <h1>The 80% Problem &amp; <em style="color:var(--violet);font-style:normal;">Context Infrastructure</em></h1>
+  <p>A dominant theme in 2026 large-codebase practice: agents reliably complete the <strong>visible 80%</strong> of a task and miss the <strong>invisible 20%</strong> — auth middleware, API DTOs, audit logs, sibling-repo integration tests, frontend guards, migration scripts. Teams that frame this as a <em>context infrastructure</em> problem (not a model limitation) are the ones getting reliable value.</p>
+
+  <h2>The shape of the problem</h2>
+  <div class="callout"><strong>Why it's not a model problem:</strong> the agent can't fix what it never sees. The missed 20% lives <em>outside</em> the window of files it opened for the task — cross-cutting concerns and sibling repos. One study found <strong>84% of large enterprise accounts saw increased lines of code after AI rollout</strong>, and developers responded by searching <em>more</em>. The lever isn't a better prompt; it's <em>equipping the agent with more context</em> and <em>auditing what it skipped</em>.</div>
+
+  <h2>The six-step workflow that works</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph LR
+    A["1 · Senior scopes<br/>local vs cross-cutting"] --> B["2 · Equip context<br/>search · docs · tickets · conventions"]
+    B --> C["3 · Run the loop<br/>plan → edit → test → refine"]
+    C --> D["4 · Review the diff<br/>like a human PR"]
+    D --> E["5 · Gate on CI<br/>no commit without human checks"]
+    E --> F["6 · Audit afterward<br/>what did the agent touch · skip?"]
+  </div>
+  </div>
+  <div class="card">
+    <ol>
+      <li><strong>Senior engineers scope the task</strong> — decide explicitly whether this is a local change or a cross-cutting one, and tell the agent which.</li>
+      <li><strong>Equip the agent with context</strong> — codebase search, internal docs, tickets, architecture conventions. Don't make it reconstruct the map from zero.</li>
+      <li><strong>Run the loop</strong> — plan / edit / test / refine, staying inside the scoped boundaries.</li>
+      <li><strong>Review the diff like a human PR</strong> — look for the invisible 20%, not just "did it compile."</li>
+      <li><strong>Gate on CI</strong> — no agent commit lands without passing the same human-commit checks.</li>
+      <li><strong>Audit afterward</strong> — track what each agent touched, by prompt and by change, so you can find and fix misses systematically.</li>
+    </ol>
+  </div>
+
+  <h2>The "symbol-usage search" tell</h2>
+  <div class="callout"><strong>The single most practical move in this module:</strong> when an agent claims it's done, <em>search the codebase for other usages of the symbols it touched</em>. If something turns up that it never opened, the task isn't done. The invisible 20% is almost always <em>a caller of the thing you changed</em> that lives in a file the agent never looked at.</div>
+
+  <h2>Scoping: local vs cross-cutting</h2>
+  <table>
+    <thead><tr><th>Task type</th><th>Agent handle</th><th>You must own</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Local</strong> (one module, no shared contracts)</td><td>Run autonomously inside tight bounds</td><td>Spec of the change + CI gate</td></tr>
+      <tr><td><strong>Cross-cutting</strong> (auth, DTOs, config, multi-repo)</td><td>Slow, partial, needs guided context</td><td>Map of all touchpoints, ordering, rollback plan</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Enabling autonomy only where it's safe</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Full-auto modes</strong> (YOLO / Allow-All) belong in isolated environments — GitHub Codespaces, dev containers — <em>never</em> where production credentials live.</li>
+      <li>Check workspace mounts, environment secrets, and network exposure (forwarded ports).</li>
+      <li>Have agents work on <strong>temporary branches or worktrees</strong>; make every change rollback-able.</li>
+      <li>Use fine-grained <strong>allowlists/denylists</strong> — allow <code>git commit</code>, deny <code>git push</code>.</li>
+      <li>Git branches are the "AI safety net": commit working code, experiment on a branch, merge only when it works.</li>
+    </ul>
+  </div>
+
+  <h2>The new developer role — "brute squad"</h2>
+  <div class="card">
+    <p>Steve Yegge's framing captures the 2026 developer job: less typing, more <strong>steering and verifying concurrent runs</strong>. You're the lead of a very fast but occasionally overconfident team. Concrete hygiene:</p>
+    <ul>
+      <li><strong>Rule Zero — you own the code.</strong> Agents have invented case studies and statistics when boundaries weren't made clear.</li>
+      <li><strong>Watch for context overload</strong> — hallucinations, loops, drifting answers signal it's time to summarize state and start fresh.</li>
+      <li><strong>Keep agent skills focused and limited.</strong> Google, for instance, designs Android skills only where models have clear knowledge gaps, and retires them via evals as models improve.</li>
+      <li><strong>AGENTS.md is a job description + red-line list</strong>, not a long manual. The 2026 recommended hierarchy: role &amp; responsibilities → project context → technical constraints → quality gates → security/perf red lines → collaboration protocol. "The more precisely you write constraints, the smarter the agent gets."</li>
+    </ul>
+  </div>
+
+  <div class="callout warn"><strong>⚠️ The trap:</strong> equipping context ≠ dumping the whole repo into the prompt. Too much irrelevant context degrades judgment and burns budget. Equip deliberately — map, conventions, the specific contracts the task touches — then let the agent read the rest on demand.</div>
+
+  <div class="card">
+    <h3>Sources</h3>
+    <p style="font-size:0.85rem;color:var(--mute);">
+      · <a href="https://sourcegraph.com/blog/agentic-coding">Sourcegraph · Agentic Coding in 2026: A Practical Guide for Big Code</a> (primary)<br>
+      · <a href="https://labs.sogeti.com/spec-driven-development-taming-ais-brilliant-intern-problem-part-1/">Sogeti Labs · the brilliant intern &amp; constraint systems</a><br>
+      · <a href="https://cloud.tencent.cn/developer/article/2726721">Tencent Cloud · AGENTS constraints &amp; pipeline practice (front-end field report)</a>
+    </p>
+  </div>
+
+  <a class="prev" href="02-spec-driven-development.html">← Back: Spec-Driven Development</a>
+  <a class="next" href="04-verification-funnel.html">Next: The Verification Funnel →</a>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>03 · Data Analyst (ReAct, async FastAPI)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../../assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <a class="back" href="../../index.html">← Portfolio home</a>
+  <h1><span class="pill adv">Advanced</span> 03 · Data Analyst (ReAct)</h1>
+  <p>Six async skills, conversational memory keyed by <code>session_id</code>, served as a real FastAPI service.</p>
+</header>
+<main>
+
+<h2>📖 Story mode — the finance office on the 8th floor</h2>
+<div class="callout good">
+<b>The scene.</b> The boss walks into a small finance office and slides a CSV across the desk: <i>“Why did Q3 sales drop in the South? Draw me a chart by tomorrow.”</i>
+The office has <b>three people</b>: an <b>Analyst</b> (knows SQL), a <b>Data Scientist</b> (knows pandas/matplotlib), and a <b>Senior Partner</b> (the critic who never lets bad work leave the office).
+The Analyst remembers <i>your</i> previous questions in a notebook with your name on it (per-session memory) so follow-ups don’t start from zero.
+</div>
+
+<h3>What happens when you press “Ask”</h3>
+<ol>
+<li><b>App boots:</b> <code>core/bootstrap.py</code> creates a demo <code>sales.csv</code> if missing, then loads it into a fresh SQLite file. The office has data <i>before</i> the boss arrives.</li>
+<li><b>You type:</b> <code>POST /ask { "question": "…", "session_id": "raj" }</code>.</li>
+<li><b>Session lookup:</b> the agent finds (or creates) <i>Raj’s</i> personal <code>AgentExecutor</code> with its own <code>ConversationBufferMemory</code>.</li>
+<li><b>Thought 1:</b> <i>“I need to see what tables exist.”</i> → <code>list_tables()</code> → <i>[sales]</i>.</li>
+<li><b>Thought 2:</b> <i>“What columns?”</i> → <code>describe_table("sales")</code> → region, qty, revenue, date.</li>
+<li><b>Thought 3:</b> <i>“Run SQL.”</i> → <code>run_sql("SELECT region, SUM(revenue) ... WHERE quarter=3 GROUP BY region")</code> → a small table.</li>
+<li><b>Thought 4:</b> <i>“I want a bar chart.”</i> → <code>chart_skill</code> → matplotlib (Agg backend) writes a PNG, returns the file path.</li>
+<li><b>Thought 5 (the Senior Partner):</b> <code>self_critique(answer)</code> — LLM checks <i>“did we answer the question? any units missing? is the chart labelled?”</i> If not, the agent loops back.</li>
+<li><b>Answer:</b> JSON with the narrative + path to the PNG. Next time Raj asks <i>“now break it down by month”</i>, the buffer memory remembers the SQL and the chart that came before.</li>
+</ol>
+
+<div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor U as 🙋 Boss (session=raj)
+    participant API as ⚡ FastAPI /ask
+    participant A as 🧠 Data Analyst Agent
+    participant DB as 🗄️ SQLite (sales)
+    participant P as 🐍 python_skill
+    participant CH as 📊 chart_skill
+    participant K as 🧐 critique_skill
+    U->>API: question + session_id
+    API->>A: route to raj's executor (own memory)
+    A->>DB: list_tables / describe_table
+    DB-->>A: schema
+    A->>DB: run_sql("SELECT ...")
+    DB-->>A: rows
+    A->>P: pandas summary on rows
+    P-->>A: dataframe stats
+    A->>CH: bar_chart(df) → PNG
+    CH-->>A: file path
+    A->>K: self_critique(draft answer)
+    K-->>A: ok / revise
+    A-->>API: {answer, chart_path}
+    API-->>U: JSON
+</div>
+
+<div class="callout warn">
+<b>One-line recall trick:</b> <i>“Schema → SQL → pandas → chart → critic, with a notebook per visitor.”</i>
+That’s the entire 03 project. Memory is <b>per session</b>, not global.
+</div>
+
+<h2>Folder structure</h2>
+<pre>
+03_data_analyst/
+├── agents/
+│   ├── base_agent.py
+│   ├── analyst_agent.py            # per-session memory + executor cache
+│   └── skills/
+│       ├── sql_skill.py            # list_tables, describe_table, run_sql
+│       ├── python_skill.py         # run_python (pandas)
+│       ├── chart_skill.py          # make_chart (matplotlib png)
+│       └── critique_skill.py       # self_critique (LLM)
+├── core/
+│   ├── config.py                   # paths, model, .env
+│   ├── logger.py
+│   └── bootstrap.py                # CSV → SQLite + demo data
+├── data/
+│   ├── prompts/react_analyst.txt
+│   ├── sales.csv                   # auto-created
+│   ├── _db/analyst.db              # auto-created
+│   └── charts/                     # PNGs
+├── models/model_client.py
+├── workflows/analyst_workflow.py
+├── tests/test_agents.py
+├── main.py                         # FastAPI: POST /ask {question, session_id}
+├── requirements.txt
+└── .env.example
+</pre>
+
+<h2>Why six skills?</h2>
+<table>
+<tr><th>Skill</th><th>Why separate</th></tr>
+<tr><td><code>list_tables</code> / <code>describe_table</code></td><td>Forces grounding before the LLM writes SQL — kills column hallucinations.</td></tr>
+<tr><td><code>run_sql</code></td><td>Right tool for joins / aggregations.</td></tr>
+<tr><td><code>run_python</code></td><td>Right tool for rolling windows, ML, anything SQL is awkward at.</td></tr>
+<tr><td><code>make_chart</code></td><td>A picture beats a number for trends.</td></tr>
+<tr><td><code>self_critique</code></td><td>Quality gate — agent rejects its own bad drafts before answering.</td></tr>
+</table>
+
+<h2>Architecture</h2>
+<div class="mermaid">
+flowchart LR
+    Client -->|POST /ask| API[FastAPI async]
+    API --> WF[workflows.analyst_workflow]
+    WF --> Agent[DataAnalystAgent]
+    Agent --> Mem[(per-session<br/>ConversationBufferMemory)]
+    Agent --> SQL[skills.run_sql]
+    Agent --> Py[skills.run_python]
+    Agent --> Ch[skills.make_chart]
+    Agent --> Cr[skills.self_critique]
+    SQL --> DB[(SQLite)]
+    Py --> CSV[(pandas df)]
+    Ch --> Img[(charts/*.png)]
+    Boot[core.bootstrap] -.->|on startup| DB
+    Boot -.->|on startup| CSV
+</div>
+
+<h2>Multi-turn flow with memory</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant U as Client
+    participant API as /ask
+    participant A as Agent
+    participant M as Memory[sid=u1]
+    participant DB as SQLite
+    participant Ch as Chart
+    U->>API: {"question":"top region by revenue", "session_id":"u1"}
+    API->>A: run("top region...", "u1")
+    A->>DB: SELECT region, SUM(revenue)...
+    DB-->>A: rows
+    A->>M: append (Q1, A1)
+    A-->>API: "North, $1.2k"
+    U->>API: {"question":"plot it monthly", "session_id":"u1"}
+    API->>A: run("plot it monthly", "u1")
+    A->>M: load chat_history (knows 'it' = revenue by region)
+    A->>Ch: make_chart('line|month|revenue|region')
+    Ch-->>A: data/charts/chart_142315.png
+    A-->>API: chart path + commentary
+</div>
+
+<h2>Run</h2>
+<pre>cd react_agents/03_data_analyst
+pip install -r requirements.txt
+copy .env.example .env
+python main.py
+# server at http://127.0.0.1:8003
+# POST /ask  body: {"question":"top region by revenue", "session_id":"alice"}</pre>
+
+<h2>Why this is "advanced"</h2>
+<table>
+<tr><th>Capability</th><th>Where</th></tr>
+<tr><td>Per-user memory</td><td>Executor cache keyed by <code>session_id</code> in <code>DataAnalystAgent</code></td></tr>
+<tr><td>Multi-tool reasoning</td><td>LLM picks SQL vs pandas vs chart per question</td></tr>
+<tr><td>Self-critique loop</td><td><code>self_critique</code> skill</td></tr>
+<tr><td>Lifespan bootstrap</td><td>CSV→SQLite happens once on app start, not per request</td></tr>
+<tr><td>Async I/O everywhere</td><td>SQLite, pandas, matplotlib all run via <code>asyncio.to_thread</code></td></tr>
+</table>
+
+<div class="callout warn">
+<b>Security:</b> <code>run_python</code> uses <code>exec</code>. For production, sandbox via
+RestrictedPython, e2b, or a separate worker container.
+</div>
+
+</main>
+<footer>react_agents · 03_data_analyst</footer>
+</body>
+</html>

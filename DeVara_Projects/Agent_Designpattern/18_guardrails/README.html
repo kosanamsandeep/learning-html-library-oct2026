@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 18 — Guardrails / Safety</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 18 — Guardrails / Safety Patterns</h1>
+  <p>Filter the input, constrain the prompt, scrub the output. Refuse, redact, or escalate when needed.</p>
+  <p><span class="tag">Decorator</span><span class="tag">Chain of Responsibility</span><span class="tag">Safety</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Guardrails sit on three sides of the LLM:</p>
+<ul>
+  <li><strong>Input</strong> — sanitization, prompt-injection defense, PII redaction.</li>
+  <li><strong>Behavioral</strong> — system prompt, tool allow-list, max steps, scope rules.</li>
+  <li><strong>Output</strong> — toxicity, hallucination, schema validation, secret leakage.</li>
+</ul>
+<div class="callout tip"><strong>Mental model:</strong> bouncers at the door + rules inside + final pat-down on the way out.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart LR
+  U([User input]) --> IF[Input filters]
+  IF -->|"clean"| LLM[LLM with system prompt + tool allow-list]
+  IF -->|"blocked"| BX[Reject + log]
+  LLM --> OF[Output filters]
+  OF -->|"clean"| O([Reply])
+  OF -->|"blocked"| BX2[Sanitize / refuse]
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Healthcare triage chatbot</h2>
+<div class="callout scenario">
+A 2026 hospital chatbot must <em>never</em> diagnose, prescribe, or expose other patients' data. Input filters strip PII before sending to the LLM, the system prompt forbids medical advice, output filters catch any attempt to give a dosage and replace with "please consult your doctor."
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as Patient
+  participant G as Guardrails
+  participant L as LLM
+  U->>G: "What dose of paracetamol for my 8 yr old?"
+  G->>G: input scan: medical advice request
+  G-->>U: refuse + suggest doctor
+  Note over G: never reaches LLM
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework / library</th><th>Guardrail features</th></tr>
+  <tr><td>NeMo Guardrails</td><td>Colang DSL for input/output rails.</td></tr>
+  <tr><td>Guardrails AI</td><td>Validators (regex, ML, LLM-as-judge) on inputs &amp; outputs.</td></tr>
+  <tr><td>Llama Guard / Prompt Guard</td><td>Open-weight classifiers for jailbreak / harmful content.</td></tr>
+  <tr><td>OpenAI Moderation API</td><td>Hosted classifier for unsafe content.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Decorator</strong></td><td>Wrap LLM call with input/output filters.</td></tr>
+  <tr><td><strong>Chain of Responsibility</strong></td><td>Multiple filters; first match decides.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td>Swap regex / ML / LLM-judge filters.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── filters.py      # Filter base + concrete filters (CoR)
+├── guarded_llm.py  # GuardedLLM decorator
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>How do you defend against prompt injection?</summary><div>Treat retrieved content as untrusted; enforce structured outputs; isolate tool privileges; use Llama Guard or a dedicated classifier; never give the LLM raw access to credentials.</div></details>
+<details class="qa"><summary>Is moderation enough?</summary><div>No — moderation catches unsafe text but not policy violations specific to your domain (e.g., "no investment advice"). Layer general moderation + domain-specific rails.</div></details>
+</section>
+
+</main>
+<footer>Chapter 18 of 21.</footer>
+</body>
+</html>

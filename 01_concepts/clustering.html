@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clustering Algorithms Explained</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>AI and ML Interview Starter Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="classification.html">Classification</a>
+                <a href="evaluation-metrics.html">Metrics</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What clustering is</a>
+            <a href="#kmeans">K-Means</a>
+            <a href="#dbscan">DBSCAN</a>
+            <a href="#hierarchical">Hierarchical clustering</a>
+            <a href="#gmm">Gaussian mixture models</a>
+            <a href="#evaluation">How to evaluate clusters</a>
+            <a href="#choosing">How to choose</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Unsupervised ML</p>
+                    <h1>Clustering algorithms explained</h1>
+                    <p>Clustering groups data into meaningful segments without predefined labels. It is one of the core
+                        unsupervised learning techniques. Interviews test whether you understand the algorithm
+                        mechanics, what each one assumes about the data, and how to evaluate clusters without ground
+                        truth.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core idea</h2>
+                    <p class="formula">Given unlabeled data X, find groups where points within a group are more similar
+                        than points across groups</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Why clustering matters</h3>
+                        <p>Customer segmentation, anomaly detection, topic discovery, document grouping, and data
+                            exploration all rely on clustering. It is everywhere in applied data science.</p>
+                    </div>
+                    <div class="card">
+                        <h3>The hard part</h3>
+                        <p>There is no label to optimize directly. You must define what "similar" means, choose the
+                            right algorithm, and evaluate quality with indirect metrics.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="kmeans">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 1</p>
+                        <h2>K-Means</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How it works</h3>
+                        <ol class="stack-list">
+                            <li>Choose K initial cluster centers randomly or with K-Means++.</li>
+                            <li>Assign each point to the nearest center.</li>
+                            <li>Recompute centers as the mean of assigned points.</li>
+                            <li>Repeat steps 2 and 3 until convergence.</li>
+                        </ol>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Key properties</h3>
+                        <ul class="stack-list">
+                            <li>Simple, fast, and scales well.</li>
+                            <li>Assumes clusters are roughly spherical and equal-sized.</li>
+                            <li>You must specify K in advance.</li>
+                            <li>Sensitive to initialization and outliers.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>How to pick K:</strong> use the elbow method (plot inertia vs K and look for the bend) or
+                        the silhouette score. Neither is perfect, but together they give a reasonable starting point.
+                    </p>
+                </div>
+            </section>
+
+            <section class="section" id="dbscan">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 2</p>
+                        <h2>DBSCAN</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works</h3>
+                        <p>DBSCAN groups points that are closely packed together based on a distance threshold (epsilon)
+                            and a minimum number of neighbors (minPts). Points that cannot be reached are labeled as
+                            noise.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Key properties</h3>
+                        <ul class="stack-list">
+                            <li>Finds arbitrarily shaped clusters, not just spheres.</li>
+                            <li>Identifies outliers naturally as noise points.</li>
+                            <li>Does not require specifying number of clusters in advance.</li>
+                            <li>Sensitive to epsilon and minPts. Struggles with varying density.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="hierarchical">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 3</p>
+                        <h2>Hierarchical clustering</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How it works</h3>
+                        <p>Agglomerative clustering starts with each point as its own cluster and repeatedly merges the
+                            two closest clusters. The result is a tree called a dendrogram. You cut the tree at a chosen
+                            level to get K clusters.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Key properties</h3>
+                        <ul class="stack-list">
+                            <li>Produces a full hierarchy of cluster relationships.</li>
+                            <li>No need to specify K upfront; you choose where to cut.</li>
+                            <li>Different linkage methods give different results: single, complete, average, Ward.</li>
+                            <li>Does not scale well to very large datasets.</li>
+                            <li>Can be sensitive to outliers because unusual points distort merge distances.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="flow" style="margin-top: 18px;">
+                    <div class="step">
+                        <h3>1. Start with every point as its own cluster</h3>
+                        <p>If you have 100 points, you begin with 100 tiny clusters. At this stage, nothing has been
+                            grouped yet.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Merge the two closest clusters</h3>
+                        <p>The algorithm repeatedly finds the nearest pair of current clusters and merges them. The
+                            definition of "nearest" depends on the linkage rule you choose.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Record every merge in a tree</h3>
+                        <p>This merge history becomes the dendrogram. Unlike K-Means, hierarchical clustering gives you
+                            not just one final answer, but the full history of how clusters formed.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Cut the tree where you want the final granularity</h3>
+                        <p>You draw a horizontal line across the dendrogram. That line is the chosen level. Where the
+                            line cuts branches determines the final clusters.</p>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>Dendrogram intuition</h3>
+                    <pre>distance ↑
+|
+|            ┌───── A
+|        ┌───┤
+|        |   └───── B
+|    ┌───┤
+|    |   └────────── C
+|────┤
+|    └────────────── D
+|
++------------------------------> data points
+
+Each merge happens at a certain height.
+That height represents how far apart the clusters were when merged.</pre>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>What does “chosen level” really mean?</h3>
+                        <p>The chosen level is the height at which you cut the dendrogram. That height is a distance
+                            threshold. Below that line, clusters are similar enough to stay merged. Above that line,
+                            they are considered too different and stay separate.</p>
+                    </div>
+                    <div class="card">
+                        <h3>How this differs from K-Means</h3>
+                        <p>K-Means asks you to choose K upfront. Hierarchical clustering first builds the whole tree,
+                            then lets you decide the final number of clusters by choosing the cut height afterward.</p>
+                    </div>
+                </div>
+                <div class="comparison-table" style="margin-top: 18px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cut height</th>
+                                <th>What happens</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Low cut</td>
+                                <td>You stop merging early</td>
+                                <td>Many small clusters</td>
+                            </tr>
+                            <tr>
+                                <td>Middle cut</td>
+                                <td>You allow moderate merging</td>
+                                <td>Moderate number of clusters</td>
+                            </tr>
+                            <tr>
+                                <td>High cut</td>
+                                <td>You allow large-distance merges</td>
+                                <td>Few large clusters, eventually one cluster</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>One-line definition:</strong> the chosen level is the distance or height at which you cut
+                        the dendrogram to decide the final number of clusters.</p>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="warning-card">
+                        <h3>How people choose this level in practice</h3>
+                        <ul class="stack-list">
+                            <li>Look for a large vertical jump in the dendrogram and cut before that jump.</li>
+                            <li>Use a business rule, such as a maximum acceptable dissimilarity.</li>
+                            <li>Choose the granularity you want: macro segments or micro segments.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why outliers are a problem</h3>
+                        <p>An outlier often stays alone until very late and only merges at a large distance. That can
+                            stretch the dendrogram scale and make the cut harder to interpret. Depending on linkage,
+                            unusual points can also distort which clusters appear close to each other.</p>
+                        <p>Single linkage is especially sensitive because it can create chaining effects. Complete,
+                            average, or Ward linkage are often more stable, but you should still inspect outliers before
+                            trusting the hierarchy.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="gmm">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Algorithm 4</p>
+                        <h2>Gaussian mixture models</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works</h3>
+                        <p>GMM assumes data is generated from a mixture of K Gaussian distributions. It uses the EM
+                            algorithm to estimate the mean, covariance, and mixing weight of each component.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Key properties</h3>
+                        <ul class="stack-list">
+                            <li>Produces soft assignments with probabilities per cluster.</li>
+                            <li>Handles elliptical cluster shapes better than K-Means.</li>
+                            <li>More flexible but needs more data and is slower.</li>
+                            <li>Model selection: use BIC or AIC to choose the number of components.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="evaluation">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Quality measurement</p>
+                        <h2>How to evaluate clusters</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>What it measures</th>
+                                <th>When to use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Silhouette score</td>
+                                <td>How similar a point is to its own cluster vs the nearest other cluster.</td>
+                                <td>General-purpose cluster quality without labels. Range -1 to 1.</td>
+                            </tr>
+                            <tr>
+                                <td>Inertia (within-cluster sum of squares)</td>
+                                <td>Total squared distance from each point to its cluster center.</td>
+                                <td>Elbow method for K-Means. Lower is tighter.</td>
+                            </tr>
+                            <tr>
+                                <td>Davies-Bouldin index</td>
+                                <td>Average similarity ratio of each cluster with the most similar cluster.</td>
+                                <td>Lower is better. Alternative to silhouette for large data.</td>
+                            </tr>
+                            <tr>
+                                <td>Adjusted Rand Index (ARI)</td>
+                                <td>Agreement between predicted clusters and true labels, adjusted for chance.</td>
+                                <td>Only usable when ground-truth labels exist. Range -1 to 1.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="choosing">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Situation</th>
+                                <th>Good first choice</th>
+                                <th>Why</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Roughly spherical, equal-sized clusters</td>
+                                <td>K-Means</td>
+                                <td>Fast and simple. Most common baseline.</td>
+                            </tr>
+                            <tr>
+                                <td>Arbitrary shapes, outliers present</td>
+                                <td>DBSCAN</td>
+                                <td>Handles noise and non-spherical clusters.</td>
+                            </tr>
+                            <tr>
+                                <td>Want a hierarchy of groupings</td>
+                                <td>Agglomerative clustering</td>
+                                <td>Dendrogram gives structure at multiple levels.</td>
+                            </tr>
+                            <tr>
+                                <td>Want soft probabilistic assignments</td>
+                                <td>GMM</td>
+                                <td>Points can belong to multiple clusters with probabilities.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>How does K-Means differ from DBSCAN?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>K-Means needs K specified upfront, assumes spherical clusters, and assigns every point.
+                                DBSCAN finds clusters of arbitrary shape, detects noise, and does not require K. K-Means
+                                is simpler and faster; DBSCAN handles messier real-world data better.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What is the silhouette score?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>It measures how similar a point is to its own cluster compared to the nearest other
+                                cluster. A score near 1 means good cluster fit, near 0 means the point is on the
+                                boundary, and negative means it may be in the wrong cluster.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What does it mean to cut a dendrogram at a chosen level?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>It means choosing a height or distance threshold on the dendrogram. Wherever that
+                                horizontal cut intersects the tree determines the final clusters. Lower cuts give more
+                                clusters, higher cuts give fewer.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You are segmenting customers but some customers do not fit any clear group. Which algorithm
+                            handles this better?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>DBSCAN, because it naturally labels outlier points as noise instead of forcing them into
+                                a cluster. K-Means would force every customer into a group.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your dendrogram has one point merging only at a very large height. What should you suspect?
+                        </h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>I would suspect an outlier or very unusual observation. That point is far from the rest,
+                                so it stays alone until late in the merge process. I would inspect it before trusting
+                                the final cut level.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your K-Means clustering keeps giving different results every run. What is happening?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>K-Means is sensitive to random initialization. I would use K-Means++ initialization, run
+                                multiple times with different seeds, or increase n_init to pick the best result
+                                automatically.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Clustering interviews test whether you can pick the right algorithm, justify your choice, and evaluate
+                quality without ground-truth labels.</p>
+            <div class="mini-links">
+                <a href="classification.html">Classification</a>
+                <a href="evaluation-metrics.html">Evaluation Metrics</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

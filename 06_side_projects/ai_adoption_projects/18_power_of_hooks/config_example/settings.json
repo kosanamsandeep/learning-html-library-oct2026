@@ -1,0 +1,8 @@
+{
+  "hooks": {
+    "afterWrite": ".claude/hooks/01_format_on_write.sh '{file}'",
+    "beforeCommand": ".claude/hooks/03_block_dangerous.sh '{command}'",
+    "afterCommand": ".claude/hooks/02_audit_trail.sh '{command}' {exit_code}",
+    "preExit": ".claude/hooks/04_wip_safety.sh"
+  }
+}

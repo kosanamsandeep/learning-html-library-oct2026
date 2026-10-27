@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P9: Notification Platform - Factory + Strategy Patterns</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.7;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #58a6ff;
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid #21262d;
+            padding-bottom: 1rem;
+        }
+
+        h2 {
+            color: #79c0ff;
+            font-size: 1.6rem;
+            margin: 2rem 0 1rem;
+        }
+
+        h3 {
+            color: #a5d6ff;
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.5rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #8b949e;
+        }
+
+        .highlight {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .pattern-box {
+            background: #1c2128;
+            border-left: 4px solid #f0883e;
+            padding: 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .pattern-box h3 {
+            color: #f0883e;
+            margin-top: 0;
+        }
+
+        .vs-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .vs-left {
+            background: #1c2128;
+            border: 1px solid #da3633;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .vs-right {
+            background: #1c2128;
+            border: 1px solid #3fb950;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .vs-left h4 {
+            color: #da3633;
+        }
+
+        .vs-right h4 {
+            color: #3fb950;
+        }
+
+        code {
+            background: #21262d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            color: #f0883e;
+        }
+
+        pre {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.2rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: #c9d1d9;
+        }
+
+        .mermaid {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .folder-tree {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-family: monospace;
+            white-space: pre;
+            color: #8b949e;
+        }
+
+        .folder-tree .folder {
+            color: #79c0ff;
+        }
+
+        .folder-tree .file {
+            color: #c9d1d9;
+        }
+
+        .principle {
+            display: inline-block;
+            background: #21262d;
+            border: 1px solid #58a6ff;
+            border-radius: 20px;
+            padding: 4px 12px;
+            margin: 4px;
+            font-size: 0.85rem;
+            color: #58a6ff;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 0.5rem 0;
+            padding: 0.8rem;
+            background: #161b22;
+            border-radius: 8px;
+        }
+
+        .flow-step .number {
+            background: #58a6ff;
+            color: #0d1117;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #30363d;
+            padding: 0.7rem;
+            text-align: left;
+        }
+
+        th {
+            background: #21262d;
+            color: #79c0ff;
+        }
+
+        td {
+            color: #8b949e;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔔 Project 9: Notification Platform</h1>
+        <p>
+            <span class="principle">Factory Pattern</span>
+            <span class="principle">Strategy Pattern</span>
+            <span class="principle">Open/Closed Principle</span>
+            <span class="principle">Dependency Inversion</span>
+            <span class="principle">Single Responsibility</span>
+        </p>
+
+        <!-- ====================================================== -->
+        <h2>📁 Project Structure</h2>
+        <!-- ====================================================== -->
+        <div class="folder-tree">
+            <span class="folder">p9_notification_platform/</span>
+            ├── <span class="folder">strategies/</span> ← STRATEGY PATTERN (HOW to send)
+            │ ├── <span class="file">__init__.py</span>
+            │ ├── <span class="file">notification_strategy.py</span> ← Abstract base (interface)
+            │ ├── <span class="file">email_strategy.py</span> ← Email sending algorithm
+            │ └── <span class="file">channel_strategies.py</span> ← SMS, Push, Slack algorithms
+            ├── <span class="folder">factories/</span> ← FACTORY PATTERN (WHAT to create)
+            │ ├── <span class="file">__init__.py</span>
+            │ └── <span class="file">notification_factory.py</span> ← Creates notification objects
+            ├── <span class="folder">services/</span> ← ORCHESTRATION (combines both)
+            │ ├── <span class="file">__init__.py</span>
+            │ └── <span class="file">notification_service.py</span> ← Coordinates Factory + Strategy
+            ├── <span class="file">main.py</span> ← Demo with 6 scenarios
+            └── <span class="file">README.html</span> ← This documentation
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🏭 Factory Pattern Explained</h2>
+        <!-- ====================================================== -->
+
+        <div class="pattern-box">
+            <h3>What is Factory Pattern?</h3>
+            <p>Factory Pattern centralizes object creation. Instead of scattering <code>Notification(...)</code> calls
+                everywhere in your code, you delegate creation to a Factory class that knows how to properly construct
+                objects.</p>
+        </div>
+
+        <div class="vs-box">
+            <div class="vs-left">
+                <h4>❌ Without Factory</h4>
+                <pre><code># Scattered across codebase
+n1 = Notification(
+    notification_id=str(uuid4()),
+    recipient="x@y.com",
+    subject="...",
+    body="...",
+    channel="EMAIL",
+    priority="NORMAL",
+    metadata={}
+)
+# Repeated everywhere, inconsistent</code></pre>
+            </div>
+            <div class="vs-right">
+                <h4>✅ With Factory</h4>
+                <pre><code># Clean, consistent, validated
+n1 = NotificationFactory.create_email(
+    "x@y.com",
+    "Subject",
+    "Body"
+)
+# Factory handles ID, defaults, validation</code></pre>
+            </div>
+        </div>
+
+        <div class="mermaid">
+            classDiagram
+            class NotificationFactory {
+            +create_email(recipient, subject, body) Notification
+            +create_sms(phone, message) Notification
+            +create_push(token, title, body) Notification
+            +create_slack(channel, message) Notification
+            +create_from_template(channel, ...) Notification
+            -_generate_id() str
+            }
+            class Notification {
+            +notification_id: str
+            +recipient: str
+            +subject: str
+            +body: str
+            +channel: str
+            +priority: str
+            +metadata: dict
+            }
+            NotificationFactory ..> Notification : creates
+        </div>
+
+        <!-- ====================================================== -->
+        <h2>🎯 Strategy Pattern Explained</h2>
+        <!-- ====================================================== -->
+
+        <div class="pattern-box">
+            <h3>What is Strategy Pattern?</h3>
+            <p>Strategy Pattern defines a family of algorithms (email sending, SMS sending, etc.), encapsulates each one
+                in its own class, and makes them interchangeable. The client code doesn't need to know which algorithm
+                is being used.</p>
+        </div>
+
+        <div class="vs-box">
+            <div class="vs-left">
+                <h4>❌ Without Strategy</h4>
+                <pre><code># Giant if/elif chain
+def send(notification):
+    if notification.channel == "EMAIL":
+        # 50 lines of email logic
+    elif notification.channel == "SMS":
+        # 50 lines of SMS logic
+    elif notification.channel == "PUSH":
+        # 50 lines of push logic
+    # Adding new channel = modify this function!</code></pre>
+            </div>
+            <div class="vs-right">
+                <h4>✅ With Strategy</h4>
+                <pre><code># Each channel is its own class
+strategy = strategies[notification.channel]
+result = strategy.send(notification)
+
+# Adding new channel = new class file
+# ZERO changes to existing code!</code></pre>
+            </div>
+        </div>
+
+        <div class="mermaid">
+            classDiagram
+            class NotificationStrategy {
+            &lt;&lt;abstract&gt;&gt;
+            +send(notification)* NotificationResult
+            }
+            class EmailStrategy {
+            +send(notification) NotificationResult
+            -_validate_email(email) bool
+            -_simulate_smtp(notification) bool
+            }
+            class SMSStrategy {
+            +send(notification) NotificationResult
+            -_validate_phone(phone) bool
+            }
+            class PushStrategy {
+            +send(notification) NotificationResult
+            -_validate_token(token) bool
+            }
+            class SlackStrategy {
+            +send(notification) NotificationResult
+            -_validate_channel(channel) bool
+            }
+            NotificationStrategy <|-- EmailStrategy NotificationStrategy <|-- SMSStrategy NotificationStrategy <|--
+                PushStrategy NotificationStrategy <|-- SlackStrategy </div>
+
+                <!-- ====================================================== -->
+                <h2>🤝 Factory + Strategy: How They Work Together</h2>
+                <!-- ====================================================== -->
+
+                <div class="highlight">
+                    <div class="flow-step">
+                        <div class="number">1</div>
+                        <div><strong>Client</strong> calls
+                            <code>service.send_email("to@x.com", "Subject", "Body")</code></div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="number">2</div>
+                        <div><strong>Factory</strong> creates a properly configured <code>Notification</code> object
+                            with generated ID, defaults, and validation</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="number">3</div>
+                        <div><strong>Service</strong> looks up the registered Strategy for channel "EMAIL" from the
+                            strategy registry</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="number">4</div>
+                        <div><strong>Strategy</strong> (<code>EmailStrategy.send()</code>) executes the channel-specific
+                            sending logic</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="number">5</div>
+                        <div><strong>Result</strong> is returned and logged in history for analytics/retry</div>
+                    </div>
+                </div>
+
+                <div class="mermaid">
+                    sequenceDiagram
+                    participant Client
+                    participant Service as NotificationService
+                    participant Factory as NotificationFactory
+                    participant Registry as Strategy Registry
+                    participant Strategy as EmailStrategy
+
+                    Client->>Service: send_email("to@x.com", "Sub", "Body")
+                    Service->>Factory: create_email("to@x.com", "Sub", "Body")
+                    Factory-->>Service: Notification object (with ID, defaults)
+                    Service->>Registry: get strategy for "EMAIL"
+                    Registry-->>Service: EmailStrategy instance
+                    Service->>Strategy: send(notification)
+                    Strategy-->>Service: NotificationResult(success=True)
+                    Service-->>Client: NotificationResult
+                </div>
+
+                <!-- ====================================================== -->
+                <h2>🔓 Open/Closed Principle in Action</h2>
+                <!-- ====================================================== -->
+
+                <div class="highlight">
+                    <h3>Adding a new channel (e.g., WhatsApp) requires:</h3>
+                    <table>
+                        <tr>
+                            <th>Step</th>
+                            <th>Action</th>
+                            <th>Files Modified</th>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>Create <code>WhatsAppStrategy</code> class that extends
+                                <code>NotificationStrategy</code></td>
+                            <td>NEW file only</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Register: <code>service.register_strategy("WHATSAPP", WhatsAppStrategy())</code></td>
+                            <td>Configuration only</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Use: <code>service.send(...)</code> with channel="WHATSAPP"</td>
+                            <td>None</td>
+                        </tr>
+                    </table>
+                    <p style="color: #3fb950; margin-top: 1rem;">✅ ZERO modifications to NotificationService,
+                        NotificationFactory, or any existing Strategy!</p>
+                </div>
+
+                <!-- ====================================================== -->
+                <h2>📊 Architecture Overview</h2>
+                <!-- ====================================================== -->
+
+                <div class="mermaid">
+                    graph TB
+                    subgraph "Client Layer"
+                    A[main.py - Demo Client]
+                    end
+
+                    subgraph "Service Layer (Orchestration)"
+                    B[NotificationService]
+                    B1[Strategy Registry]
+                    B2[Send History]
+                    end
+
+                    subgraph "Factory Layer (Creation)"
+                    C[NotificationFactory]
+                    C1[create_email]
+                    C2[create_sms]
+                    C3[create_push]
+                    C4[create_slack]
+                    C5[create_from_template]
+                    end
+
+                    subgraph "Strategy Layer (Execution)"
+                    D[NotificationStrategy ABC]
+                    D1[EmailStrategy]
+                    D2[SMSStrategy]
+                    D3[PushStrategy]
+                    D4[SlackStrategy]
+                    D5[??? Future Strategy]
+                    end
+
+                    subgraph "Data Models"
+                    E[Notification dataclass]
+                    F[NotificationResult dataclass]
+                    end
+
+                    A --> B
+                    B --> C
+                    B --> B1
+                    B --> B2
+                    C --> C1
+                    C --> C2
+                    C --> C3
+                    C --> C4
+                    C --> C5
+                    C1 --> E
+                    C2 --> E
+                    C3 --> E
+                    C4 --> E
+                    C5 --> E
+                    B1 --> D
+                    D --> D1
+                    D --> D2
+                    D --> D3
+                    D --> D4
+                    D --> D5
+                    D1 --> F
+                    D2 --> F
+                    D3 --> F
+                    D4 --> F
+
+                    style D5 stroke-dasharray: 5 5
+                </div>
+
+                <!-- ====================================================== -->
+                <h2>🧠 Key Concepts & Takeaways</h2>
+                <!-- ====================================================== -->
+
+                <div class="highlight">
+                    <table>
+                        <tr>
+                            <th>Concept</th>
+                            <th>Implementation</th>
+                            <th>Benefit</th>
+                        </tr>
+                        <tr>
+                            <td>Factory Pattern</td>
+                            <td><code>NotificationFactory.create_*()</code></td>
+                            <td>Consistent creation, hidden complexity</td>
+                        </tr>
+                        <tr>
+                            <td>Strategy Pattern</td>
+                            <td><code>NotificationStrategy</code> ABC + concrete implementations</td>
+                            <td>Swappable algorithms, no if/elif chains</td>
+                        </tr>
+                        <tr>
+                            <td>Strategy Registry</td>
+                            <td><code>_strategies: dict[str, Strategy]</code></td>
+                            <td>Dynamic channel selection at runtime</td>
+                        </tr>
+                        <tr>
+                            <td>Open/Closed</td>
+                            <td><code>register_strategy()</code></td>
+                            <td>Add channels without modifying existing code</td>
+                        </tr>
+                        <tr>
+                            <td>Single Responsibility</td>
+                            <td>Each class has ONE job</td>
+                            <td>Easy to test, maintain, and understand</td>
+                        </tr>
+                        <tr>
+                            <td>Dependency Inversion</td>
+                            <td>Service depends on <code>NotificationStrategy</code> ABC</td>
+                            <td>Decoupled from concrete implementations</td>
+                        </tr>
+                        <tr>
+                            <td>Template Pattern</td>
+                            <td><code>create_from_template()</code></td>
+                            <td>Reusable notification templates</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- ====================================================== -->
+                <h2>🆚 Factory vs Strategy Comparison</h2>
+                <!-- ====================================================== -->
+
+                <div class="highlight">
+                    <table>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>Factory Pattern</th>
+                            <th>Strategy Pattern</th>
+                        </tr>
+                        <tr>
+                            <td>Purpose</td>
+                            <td>Creates objects</td>
+                            <td>Defines behavior</td>
+                        </tr>
+                        <tr>
+                            <td>Question it answers</td>
+                            <td>WHAT to create?</td>
+                            <td>HOW to execute?</td>
+                        </tr>
+                        <tr>
+                            <td>When used</td>
+                            <td>Object construction time</td>
+                            <td>Algorithm execution time</td>
+                        </tr>
+                        <tr>
+                            <td>Output</td>
+                            <td>A new object</td>
+                            <td>A result/side-effect</td>
+                        </tr>
+                        <tr>
+                            <td>In this project</td>
+                            <td>NotificationFactory</td>
+                            <td>EmailStrategy, SMSStrategy, etc.</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- ====================================================== -->
+                <h2>🏃 How to Run</h2>
+                <!-- ====================================================== -->
+
+                <div class="highlight">
+                    <pre><code># Navigate to project directory
+cd projects/p9_notification_platform
+
+# Run the demo
+python main.py
+
+# You'll see 6 demos:
+# 1. Factory Pattern - Object creation
+# 2. Strategy Pattern - Sending via channels
+# 3. Open/Closed - Adding new channels
+# 4. Broadcast - Multi-channel sending
+# 5. Templates - Template-based notifications
+# 6. Analytics - History and stats</code></pre>
+                </div>
+
+                <!-- ====================================================== -->
+                <h2>📈 Progression from Previous Projects</h2>
+                <!-- ====================================================== -->
+
+                <div class="highlight">
+                    <table>
+                        <tr>
+                            <th>Project</th>
+                            <th>Pattern Learned</th>
+                            <th>Used Here</th>
+                        </tr>
+                        <tr>
+                            <td>P1</td>
+                            <td>Classes & Objects</td>
+                            <td>✅ Notification, NotificationResult dataclasses</td>
+                        </tr>
+                        <tr>
+                            <td>P2</td>
+                            <td>Inheritance</td>
+                            <td>✅ Strategies inherit from NotificationStrategy</td>
+                        </tr>
+                        <tr>
+                            <td>P3</td>
+                            <td>Composition</td>
+                            <td>✅ Service COMPOSES Factory + Strategy</td>
+                        </tr>
+                        <tr>
+                            <td>P4</td>
+                            <td>DTOs</td>
+                            <td>✅ Notification is essentially a DTO</td>
+                        </tr>
+                        <tr>
+                            <td>P6</td>
+                            <td>Repository</td>
+                            <td>✅ History tracking similar to repository</td>
+                        </tr>
+                        <tr>
+                            <td>P7</td>
+                            <td>Layered Architecture</td>
+                            <td>✅ Service → Factory → Strategy layers</td>
+                        </tr>
+                        <tr>
+                            <td>P8</td>
+                            <td>Interfaces & DI</td>
+                            <td>✅ Strategy ABC + register_strategy() DI</td>
+                        </tr>
+                    </table>
+                </div>
+
+        </div>
+
+        <script>
+            mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        </script>
+</body>
+
+</html>

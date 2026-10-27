@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P4 · Idempotent API</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>Fundamentals</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a href="../p3_bloom_filter/README.html">Prev:
+                    P3</a><a href="../p5_url_shortener/README.html">Next: P5</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">Fundamentals · Project 4</p>
+            <h1>Idempotent API — make retries safe with one header</h1>
+            <p class="lead">Networks drop responses. Clients retry. Without an idempotency key the customer is charged
+                twice. The fix is small: keep a (key → response) store and replay the first answer.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Your payments API succeeds, but the response is lost in transit. The mobile app retries. Without
+                idempotency, you have just charged the customer twice. With an idempotency key, the server recognises "I
+                already did this work" and replays the original response.</p>
+        </section>
+
+        <section class="card">
+            <h2>The contract (Stripe-style)</h2>
+            <div class="flow">
+                <div class="step">Client picks a UUID</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Sends as Idempotency-Key header</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Server: seen this key?</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Yes: replay. No: do the work, store result.</div>
+            </div>
+            <p>The client uses the <em>same key</em> for every retry of the same logical request, and a <em>new key</em>
+                for a genuinely new request.</p>
+        </section>
+
+        <section class="card">
+            <h2>What can go wrong without it</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Without idempotency</th>
+                        <th>With idempotency</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Server processed, response dropped</td>
+                        <td>Client retries → second charge.</td>
+                        <td>Server replays original response; no new charge.</td>
+                    </tr>
+                    <tr>
+                        <td>Client times out, retries</td>
+                        <td>Risk of duplicate work.</td>
+                        <td>Server returns the original result quickly.</td>
+                    </tr>
+                    <tr>
+                        <td>Same key but different body</td>
+                        <td>Hard to detect.</td>
+                        <td>Reject with 409 Conflict — body must match.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/system_design_fundamentals/p4_idempotent_api
+python main.py</code></pre>
+            <p>Three "attempts" with the same key produce only one real charge. The second and third attempts return the
+                cached response marked <code>replayed: True</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>Production notes</h2>
+            <ul>
+                <li>Store the key + response in Redis or a dedicated table with a TTL (24h is common).</li>
+                <li>Hash the request body and compare on replay — refuse if a different body uses the same key.</li>
+                <li>Lock the key while the first request is in flight, otherwise two parallel retries can both do the
+                    work.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"For any non-GET endpoint that touches money or state, I require an Idempotency-Key.
+                The server stores (key → response) with a 24-hour TTL and replays the original response on retries. I
+                lock the key during the first request and hash the body so the same key with a different payload is
+                rejected — that catches client bugs early."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

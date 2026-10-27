@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asyncio Projects — Python concurrency from beginner to advanced</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>A</span>Asyncio Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Side projects</a>
+                <a href="../fastapi_projects/index.html">FastAPI</a>
+                <a href="../testing_projects/index.html">Testing</a>
+                <a href="../../README.html">Workspace</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Side Projects · Asyncio track</p>
+            <h1>Asyncio from beginner to advanced — five projects that make concurrency feel practical</h1>
+            <p class="lead">Asyncio is Python's built-in way to run many waiting tasks without using one thread per
+                task. It shines when your program spends time waiting for network, disk, queues, timers, APIs, or
+                sockets. These projects start with <code>async</code>/<code>await</code> and end with a real TCP chat
+                server.</p>
+        </section>
+
+        <section class="card">
+            <h2>What asyncio is</h2>
+            <p>Asyncio is cooperative concurrency. A task runs until it reaches an <code>await</code>. At that point it
+                politely gives control back to the event loop, and the event loop lets another task run. This is
+                different from preemptive threading, where the operating system interrupts threads whenever it wants.
+            </p>
+            <div class="flow">
+                <div class="step">Task starts</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Hits await</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Event loop runs another task</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">First task resumes later</div>
+            </div>
+            <div class="callout"><strong>Memory aid:</strong> asyncio does not make waiting faster. It makes waiting
+                useful by letting other tasks run while one task is paused.</div>
+        </section>
+
+        <section class="card">
+            <h2>When asyncio helps and when it does not</h2>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>Great fit</h3>
+                    <ul>
+                        <li>Calling many APIs at the same time.</li>
+                        <li>WebSocket or chat servers with many idle clients.</li>
+                        <li>Background workers reading from queues.</li>
+                        <li>Polling, timers, retries, cancellation, timeouts.</li>
+                        <li>FastAPI endpoints that call async databases or HTTP clients.</li>
+                    </ul>
+                </div>
+                <div class="mini warn">
+                    <h3>Not the right tool by itself</h3>
+                    <ul>
+                        <li>Heavy CPU work such as image processing or model training.</li>
+                        <li>Blocking libraries that do not provide async APIs.</li>
+                        <li>Code that never reaches <code>await</code>.</li>
+                        <li>Simple scripts where sequential code is easier and fast enough.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The five projects</h2>
+            <a class="project" href="p1_async_basics/README.html"><strong>P1 · BEGINNER</strong>Async basics — learn
+                event loop, coroutine, task, <code>await</code>, and <code>gather</code>.</a>
+            <a class="project" href="p2_concurrent_api_fetcher/README.html"><strong>P2 · BEGINNER
+                    PLUS</strong>Concurrent API fetcher — simulate slow APIs, compare sequential vs concurrent, add
+                timeouts.</a>
+            <a class="project" href="p3_queue_worker_pipeline/README.html"><strong>P3 · INTERMEDIATE</strong>Queue
+                worker pipeline — producer/consumer, backpressure, worker pools, graceful shutdown.</a>
+            <a class="project" href="p4_resilient_orchestrator/README.html"><strong>P4 · ADVANCED</strong>Resilient
+                orchestrator — semaphores, retries, cancellation, <code>TaskGroup</code>, and structured
+                concurrency.</a>
+            <a class="project" href="p5_async_chat_server/README.html"><strong>P5 · ADVANCED</strong>Async TCP chat
+                server — streams, many clients, broadcast, and server shutdown.</a>
+        </section>
+
+        <section class="card">
+            <h2>Core vocabulary</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Word</th>
+                        <th>Meaning</th>
+                        <th>Simple example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Coroutine</td>
+                        <td>An async function call that can be paused and resumed.</td>
+                        <td><code>fetch_order(10)</code></td>
+                    </tr>
+                    <tr>
+                        <td>Event loop</td>
+                        <td>The scheduler that decides which coroutine resumes next.</td>
+                        <td><code>asyncio.run(main())</code></td>
+                    </tr>
+                    <tr>
+                        <td>Task</td>
+                        <td>A scheduled coroutine running under the event loop.</td>
+                        <td><code>asyncio.create_task(fetch())</code></td>
+                    </tr>
+                    <tr>
+                        <td>Await</td>
+                        <td>Pause here until the awaited thing is ready.</td>
+                        <td><code>await asyncio.sleep(1)</code></td>
+                    </tr>
+                    <tr>
+                        <td>Gather</td>
+                        <td>Run many awaitables concurrently and collect results.</td>
+                        <td><code>await asyncio.gather(a(), b())</code></td>
+                    </tr>
+                    <tr>
+                        <td>Queue</td>
+                        <td>Async handoff point between producers and workers.</td>
+                        <td><code>await queue.put(job)</code></td>
+                    </tr>
+                    <tr>
+                        <td>Semaphore</td>
+                        <td>Limit how many tasks may enter a section at once.</td>
+                        <td><code>async with semaphore:</code></td>
+                    </tr>
+                    <tr>
+                        <td>Cancellation</td>
+                        <td>Ask a task to stop because it is no longer needed.</td>
+                        <td><code>task.cancel()</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How to run any project</h2>
+            <pre><code>cd 06_side_projects/asyncio_projects/p1_async_basics
+python main.py</code></pre>
+            <p>All five projects use only the Python standard library. Python 3.11+ is recommended because P4 uses
+                <code>asyncio.TaskGroup</code>.</p>
+        </section>
+    </main>
+</body>
+
+</html>

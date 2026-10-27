@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2 · A Request's Lifecycle · Personify-Service</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <div class="shell">
+        <nav class="nav">
+            <a class="brand" href="index.html">
+                <span class="mark">P</span> Personify-Service · Reading Guide
+            </a>
+            <span class="spacer"></span>
+            <a class="link" href="01_architecture.html">Architecture</a>
+            <a class="link" href="03_design_patterns.html">Patterns</a>
+            <a class="link" href="05_learnings_checklist.html">Self-Check</a>
+            <a class="link" href="06_scenarios.html">Practice</a>
+            <a class="link" href="../index.html">↩ Side Projects</a>
+        </nav>
+
+        <header class="hero">
+            <span class="eyebrow">Chapter 2 · Follow the Request</span>
+            <h1>A Request's Lifecycle</h1>
+            <p class="lead">
+                The fastest way to truly understand a layered service is to chase a single request through
+                every layer. We'll trace two real endpoints — <code>POST /signup</code> (a write that hits
+                Postgres) and <code>POST /contact</code> (an authenticated write that hits Mongo) — line by
+                line.
+            </p>
+        </header>
+
+        <div class="toc">
+            <div class="tt">In this chapter</div>
+            <ol>
+                <li><a href="#anatomy">Anatomy of every request</a></li>
+                <li><a href="#signup">Trace A — sign up a new user</a></li>
+                <li><a href="#contact">Trace B — create a contact (authenticated)</a></li>
+                <li><a href="#errors">What happens when things fail</a></li>
+                <li><a href="#quiz">Check yourself</a></li>
+            </ol>
+        </div>
+
+        <h2 id="anatomy">1 · Anatomy of every request</h2>
+        <p>
+            Tornado calls a handler's lifecycle methods in a fixed order. The base handlers hook into
+            <code>initialize()</code> and <code>prepare()</code> so that by the time your <code>post()</code>
+            runs, the request is already authenticated and validated.
+        </p>
+        <ol class="steps">
+            <li>
+                <strong><code>initialize(...)</code> — dependency injection</strong>
+                <p>Tornado passes the args from the route table (logger, <code>schema_method_validators</code>,
+                    <code>service_factory</code>). The handler builds its service for this request's scope.
+                </p>
+            </li>
+            <li>
+                <strong><code>prepare()</code> — the gate</strong>
+                <p>Runs before the verb method. It sets the log context, authenticates the JWT (for user
+                    handlers), and parses + validates the JSON body into a typed <code>payload</code>.</p>
+            </li>
+            <li>
+                <strong><code>get()</code> / <code>post()</code> — the use-case</strong>
+                <p>Now the body is trusted. The method simply calls a <em>service</em> and maps the result to an
+                    HTTP status + JSON response.</p>
+            </li>
+            <li>
+                <strong><code>on_finish()</code> / <code>write_error()</code> — cleanup &amp; errors</strong>
+                <p>Logs the outcome; converts exceptions into structured error JSON via the error schemas.</p>
+            </li>
+        </ol>
+
+        <div class="callout tip">
+            <div class="ct">Why this matters</div>
+            <p>Because validation and auth live in <code>prepare()</code>, the <code>post()</code> body stays
+                tiny and readable — it never re-checks the token or the schema. Separation of concerns in action.</p>
+        </div>
+
+        <h2 id="signup">2 · Trace A — <code>POST /api/v1/signup</code></h2>
+        <p>A brand-new user posts <code>{ "username": "...", "password": "..." }</code>. Here's the journey:</p>
+
+        <div class="diagram">
+            <div class="mermaid">
+                sequenceDiagram
+                autonumber
+                participant C as Client
+                participant H as UserSignUpHandler<br />(interfaces)
+                participant Sc as SignUpSchema<br />(marshmallow)
+                participant Sv as UserService<br />(app)
+                participant U as PostgresUnitOfWork<br />(infra)
+                participant R as PostgresRepository
+                participant DB as PostgreSQL
+
+                C->>H: POST /signup + JSON body
+                H->>H: prepare(): set log context
+                H->>Sc: validate(body)
+                Sc-->>H: payload (UserModel) or errors
+                H->>Sv: createUser(payload)
+                Sv->>Sv: hash password (pbkdf2)
+                Sv->>U: with unit_of_work as uow
+                U->>R: repository.add(user)
+                R->>DB: INSERT + commit
+                DB-->>R: new user id
+                U-->>Sv: id (commit on exit)
+                Sv-->>H: UUID
+                H-->>C: 201 Created + X-User-Id header
+            </div>
+            <div class="cap">Each arrow crosses exactly one layer boundary. No layer reaches past its neighbour.</div>
+        </div>
+
+        <h3>The handler stays thin</h3>
+        <pre><code><span class="c-com"># interfaces/http/tornado/handlers/v1/signup_handler.py</span>
+<span class="c-kw">async def</span> <span class="c-fn">post</span>(<span class="c-self">self</span>):
+    _status = HTTPStatus.BAD_REQUEST
+    _data = <span class="c-kw">None</span>
+    _result = <span class="c-self">self</span>._user_service.<span class="c-fn">createUser</span>(data=<span class="c-self">self</span>.payload)
+    <span class="c-kw">if</span> _result <span class="c-kw">is not</span> <span class="c-kw">None</span>:
+        _status = HTTPStatus.CREATED
+        <span class="c-self">self</span>.<span class="c-fn">set_header</span>(GenericConstants.HEADER_USER_ID, <span class="c-bi">str</span>(_result))
+    <span class="c-kw">else</span>:
+        _data = <span class="c-cls">BadRequestSchema</span>().<span class="c-fn">load</span>(...)   <span class="c-com"># username already exists</span>
+    <span class="c-kw">return</span> <span class="c-self">self</span>.<span class="c-fn">build_response</span>(status=_status, data=_data)</code></pre>
+        <p>Notice: <strong>no SQL, no hashing, no JSON parsing</strong> here. The handler only decides the
+            HTTP shape of the answer. All the work is in the service.</p>
+
+        <h3>The service owns the rule</h3>
+        <pre><code><span class="c-com"># app/user_service.py</span>
+<span class="c-kw">def</span> <span class="c-fn">createUser</span>(<span class="c-self">self</span>, data: <span class="c-cls">UserModel</span>) -> <span class="c-cls">Union</span>[<span class="c-kw">None</span>, <span class="c-cls">UUID</span>]:
+    <span class="c-kw">try</span>:
+        data.password = <span class="c-cls">HashGenerator</span>.<span class="c-fn">create</span>(value=data.password)  <span class="c-com"># never store plaintext</span>
+        user_id = <span class="c-self">self</span>._add(data=data)                          <span class="c-com"># inherited from BaseGenericService</span>
+    <span class="c-kw">except</span> <span class="c-cls">IntegrityError</span> <span class="c-kw">as</span> e:        <span class="c-com"># unique username violated</span>
+        <span class="c-self">self</span>._logger.<span class="c-fn">warning</span>(msg=<span class="c-bi">f</span><span class="c-str">'{e}'</span>)
+        user_id = <span class="c-kw">None</span>
+    <span class="c-kw">return</span> user_id</code></pre>
+
+        <h3>The base service wraps the transaction</h3>
+        <pre><code><span class="c-com"># app/base_generic_service.py  (the _add helper)</span>
+<span class="c-kw">def</span> <span class="c-fn">_add</span>(<span class="c-self">self</span>, data):
+    <span class="c-kw">with</span> <span class="c-self">self</span>.unit_of_work <span class="c-kw">as</span> _uow:   <span class="c-com"># __enter__ opens, __exit__ commits / rolls back</span>
+        <span class="c-kw">return</span> _uow.repository.<span class="c-fn">add</span>(data=data)</code></pre>
+        <div class="callout tip">
+            <div class="ct">The key insight</div>
+            <p>The <code>with</code> block <em>is</em> the transaction boundary. If the body raises, the
+                Unit of Work's <code>__exit__</code> rolls back automatically. If it succeeds, it commits.
+                You never call <code>commit()</code> by hand — that's the whole point of the pattern.</p>
+        </div>
+
+        <h2 id="contact">3 · Trace B — <code>POST /api/v1/contact</code> (authenticated)</h2>
+        <p>
+            Creating a contact is the same shape, with two extra moving parts: a <strong>JWT auth check</strong>
+            and a different store (<strong>MongoDB</strong>). Because the handler extends
+            <code>BaseUserRequestHandler</code>, the token is verified in <code>prepare()</code> and the
+            <code>user_id</code> is available before <code>post()</code> runs.
+        </p>
+
+        <div class="diagram">
+            <div class="mermaid">
+                sequenceDiagram
+                autonumber
+                participant C as Client
+                participant H as ContactHandler<br />(interfaces)
+                participant T as TokenGenerator (JWT)
+                participant Sv as ContactService<br />(app)
+                participant U as MongoUnitOfWork
+                participant R as MongoRepository
+                participant A as PyMongoAdapter
+                participant DB as MongoDB
+
+                C->>H: POST /contact + Bearer token + JSON
+                H->>T: decode(token)
+                T-->>H: user_id (or 401 Unauthorized)
+                H->>H: validate body -> payload
+                H->>Sv: addUserContact(user_id, payload)
+                Sv->>Sv: stamp created_at / updated_at
+                Sv->>U: with unit_of_work as uow
+                U->>R: repository.add(contact)
+                R->>A: insert_one(db, collection, dumped)
+                A->>DB: write document
+                DB-->>A: inserted id
+                A-->>H: contact id
+                H-->>C: 201 Created + Location + X-Contact-Id
+            </div>
+            <div class="cap">Same skeleton as sign-up — only the auth step and the concrete store differ. That
+                repeatability is a sign of good design.</div>
+        </div>
+
+        <h3>Auth happens once, in the base class</h3>
+        <pre><code><span class="c-com"># interfaces/http/tornado/handlers/base_user_handler.py</span>
+<span class="c-kw">def</span> <span class="c-fn">_set_authentication_context</span>(<span class="c-self">self</span>):
+    _encoded = <span class="c-self">self</span>.<span class="c-fn">_fetch_encoded_bearer_token</span>()      <span class="c-com"># "Authorization: Bearer ..."</span>
+    <span class="c-kw">try</span>:
+        decoded = <span class="c-cls">TokenGenerator</span>.<span class="c-fn">decode</span>(value=_encoded)
+        <span class="c-self">self</span>.user_id = <span class="c-cls">UUID</span>(decoded[FieldNameConstants.USER_ID])
+    <span class="c-kw">except</span> jwt.exceptions.<span class="c-cls">DecodeError</span>:
+        <span class="c-kw">return</span> <span class="c-self">self</span>.<span class="c-fn">_raise_unauthorized_request</span>()        <span class="c-com"># 401</span></code></pre>
+        <p>Every authenticated handler inherits this. No endpoint re-implements token handling — it is
+            written once and reused. That's the <strong>Template Method</strong> pattern (more in
+            <a href="03_design_patterns.html">Chapter 3</a>).
+        </p>
+
+        <h3>The service swaps only the store</h3>
+        <pre><code><span class="c-com"># app/contact_service.py</span>
+<span class="c-kw">def</span> <span class="c-fn">addUserContact</span>(<span class="c-self">self</span>, user_id, data):
+    data[FieldNameConstants.USER_ID]    = user_id
+    data[FieldNameConstants.CREATED_AT] = datetime.<span class="c-fn">utcnow</span>()
+    data[FieldNameConstants.UPDATED_AT] = datetime.<span class="c-fn">utcnow</span>()
+    <span class="c-kw">return</span> <span class="c-self">self</span>._add(data=data)   <span class="c-com"># identical helper, different UoW behind it</span></code></pre>
+        <div class="callout">
+            <div class="ct acc">The same <code>_add</code>, two databases</div>
+            <p>Both <code>UserService</code> and <code>ContactService</code> call the inherited
+                <code>_add</code>. The only difference is which Unit of Work was injected at construction time —
+                Postgres for users, Mongo for contacts. The service code is genuinely store-agnostic.
+            </p>
+        </div>
+
+        <h2 id="errors">4 · What happens when things fail</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Failure</th>
+                        <th>Where it's caught</th>
+                        <th>Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Malformed / empty JSON</td>
+                        <td><code>prepare()</code> → schema validate</td>
+                        <td><code>400</code> + <code>BadRequestSchema</code></td>
+                    </tr>
+                    <tr>
+                        <td>Missing / bad JWT</td>
+                        <td><code>_set_authentication_context()</code></td>
+                        <td><code>401</code> Unauthorized</td>
+                    </tr>
+                    <tr>
+                        <td>Duplicate username</td>
+                        <td><code>UserService</code> catches <code>IntegrityError</code></td>
+                        <td><code>400</code> "account exists"</td>
+                    </tr>
+                    <tr>
+                        <td>Bad query args (offset/limit)</td>
+                        <td>query-argument validator</td>
+                        <td><code>400</code> invalid query</td>
+                    </tr>
+                    <tr>
+                        <td>Unexpected exception inside <code>with</code></td>
+                        <td>UoW <code>__exit__</code> rolls back, then bubbles</td>
+                        <td><code>500</code> + <code>ServerErrorSchema</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>Errors are never bare stack traces to the client — they're shaped by dedicated marshmallow error
+            schemas (<code>BadRequestSchema</code>, <code>NotFoundSchema</code>, <code>ServerErrorSchema</code>),
+            keeping the API contract consistent.</p>
+
+        <h2 id="quiz">Check yourself</h2>
+        <details class="quiz">
+            <summary>By the time <code>post()</code> runs, what has already happened?</summary>
+            <div class="ans">The log context is set, the JWT (if required) is verified into <code>self.user_id</code>,
+                and the JSON body is validated and loaded into <code>self.payload</code>. <code>post()</code> can
+                trust all of it.</div>
+        </details>
+        <details class="quiz">
+            <summary>Who actually commits the database transaction?</summary>
+            <div class="ans">Nobody calls <code>commit()</code> explicitly in the service. The Unit of Work's
+                <code>__exit__</code> commits on success and rolls back on exception — triggered by leaving the
+                <code>with</code> block.
+            </div>
+        </details>
+        <details class="quiz">
+            <summary>Why do <code>createUser</code> and <code>addUserContact</code> look so similar despite using
+                different databases?</summary>
+            <div class="ans">Both delegate to the inherited <code>_add</code>, which talks to a generic
+                <code>repository</code> behind a generic <code>unit_of_work</code>. The store-specific behaviour
+                is injected, not hard-coded — so the service code is identical in shape.
+            </div>
+        </details>
+        <details class="quiz">
+            <summary>Where would you add a "password too weak" rule?</summary>
+            <div class="ans">In the schema (format validation) and/or the service (business rule) — never in the
+                handler or repository. Handlers shape HTTP; repositories shape storage.</div>
+        </details>
+
+        <div class="pager">
+            <a href="01_architecture.html">
+                <span class="dir">← Back</span>
+                <span class="ttl">1 · The Architecture</span>
+            </a>
+            <a class="next" href="03_design_patterns.html">
+                <span class="dir">Next →</span>
+                <span class="ttl">3 · The Design Patterns</span>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p><strong>Personify-Service · Code Reading Guide</strong> — Chapter 2 of 5.</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#e0e7ff',
+                primaryTextColor: '#312e81',
+                primaryBorderColor: '#4338ca',
+                lineColor: '#7c83b8',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>02 · AuthN &amp; AuthZ — Cyber Security Designs</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="sec">🛡</span>Cyber Security Designs</div>
+        <div class="links">
+            <a href="index.html">Hub</a>
+            <a href="01_input_validation_injection.html">← Injection</a>
+            <a href="03_secrets_transport_data.html">Secrets →</a>
+        </div>
+    </div>
+
+    <div class="header sec">
+        <p class="badge">02 · Core discipline · Identity &amp; access</p>
+        <h1>🔐 Authentication &amp; authorization</h1>
+        <p class="subtitle">Two questions you must answer on every protected request: <strong>"Who are
+                you?"</strong> (authentication) and <strong>"Are you allowed to do this, to <em>this</em>
+                object?"</strong> (authorization). Getting the second one wrong is the #1 API vulnerability today.</p>
+    </div>
+
+    <div class="container">
+        <div class="section sec">
+            <h2>AuthN vs AuthZ — don't conflate them</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+sequenceDiagram
+    participant C as Client
+    participant A as FastAPI
+    participant DB as DB
+    C->>A: POST /login (email, password)
+    A->>DB: fetch user by email
+    A->>A: verify password hash (constant-time)
+    A-->>C: short-lived access token (+ refresh)
+    C->>A: GET /orders/42 (Bearer token)
+    A->>A: AuthN: verify token signature &amp; expiry
+    A->>DB: load order 42
+    A->>A: AuthZ: does order.owner == token.user?
+    A-->>C: 200 only if owner, else 404/403
+                </pre>
+                <p class="caption">Authentication proves identity once; authorization must be re-checked on
+                    every request <em>and</em> every object.</p>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Password storage — the non-negotiables</h2>
+            <p>If you store passwords, store only a <strong>slow, salted hash</strong> — never plaintext, never
+                fast hashes like MD5/SHA-256 alone. Use a memory-hard algorithm (Argon2id) or bcrypt.</p>
+            <p class="bad-label">❌ Vulnerable — fast/unsalted hash</p>
+            <pre><code><span class="c-kw">import</span> hashlib
+digest = hashlib.sha256(password.encode()).hexdigest()  <span class="c-com"># crackable at billions/sec</span>
+</code></pre>
+            <p class="good-label">✅ Hardened — Argon2id (or bcrypt) via passlib</p>
+            <pre><code><span class="c-kw">from</span> passlib.context <span class="c-kw">import</span> CryptContext
+
+pwd = CryptContext(schemes=[<span class="c-str">"argon2"</span>], deprecated=<span class="c-str">"auto"</span>)
+
+<span class="c-kw">def</span> <span class="c-fn">hash_password</span>(raw: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-kw">return</span> pwd.hash(raw)            <span class="c-com"># salt + cost baked into the output</span>
+
+<span class="c-kw">def</span> <span class="c-fn">verify_password</span>(raw: <span class="c-cls">str</span>, stored: <span class="c-cls">str</span>) -> <span class="c-cls">bool</span>:
+    <span class="c-kw">return</span> pwd.verify(raw, stored)  <span class="c-com"># constant-time comparison</span>
+</code></pre>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Do</th>
+                        <th>Don't</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Argon2id / bcrypt / scrypt</td>
+                        <td>MD5, SHA-1, plain SHA-256</td>
+                    </tr>
+                    <tr>
+                        <td>Per-password random salt (automatic)</td>
+                        <td>Shared/global salt or none</td>
+                    </tr>
+                    <tr>
+                        <td>Constant-time verify</td>
+                        <td><code>==</code> string compare</td>
+                    </tr>
+                    <tr>
+                        <td>Enforce length, check against breach lists</td>
+                        <td>Complexity rules that push reuse</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section sec">
+            <h2>Tokens &amp; sessions — JWT done safely</h2>
+            <p>FastAPI commonly uses OAuth2 password/bearer flow with JWTs. The pitfalls are subtle:</p>
+            <pre><code><span class="c-kw">from</span> datetime <span class="c-kw">import</span> datetime, timedelta, timezone
+<span class="c-kw">import</span> jwt   <span class="c-com"># PyJWT</span>
+
+ALGO = <span class="c-str">"HS256"</span>             <span class="c-com"># pin the algorithm explicitly</span>
+
+<span class="c-kw">def</span> <span class="c-fn">make_token</span>(user_id: <span class="c-cls">str</span>, secret: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    now = datetime.now(timezone.utc)
+    payload = {
+        <span class="c-str">"sub"</span>: user_id,
+        <span class="c-str">"iat"</span>: now,
+        <span class="c-str">"exp"</span>: now + timedelta(minutes=<span class="c-str">15</span>),   <span class="c-com"># SHORT-lived</span>
+        <span class="c-str">"iss"</span>: <span class="c-str">"my-api"</span>,
+    }
+    <span class="c-kw">return</span> jwt.encode(payload, secret, algorithm=ALGO)
+
+<span class="c-kw">def</span> <span class="c-fn">read_token</span>(token: <span class="c-cls">str</span>, secret: <span class="c-cls">str</span>) -> <span class="c-cls">dict</span>:
+    <span class="c-com"># PIN algorithms — never trust the token's own "alg" header (alg=none attack).</span>
+    <span class="c-kw">return</span> jwt.decode(token, secret, algorithms=[ALGO], issuer=<span class="c-str">"my-api"</span>,
+                      options={<span class="c-str">"require"</span>: [<span class="c-str">"exp"</span>, <span class="c-str">"iat"</span>, <span class="c-str">"sub"</span>]})
+</code></pre>
+            <div class="callout rose">
+                <strong>Classic JWT attacks &amp; the fix:</strong>
+                <ul>
+                    <li><strong>alg=none / alg confusion</strong> → always pass an explicit
+                        <code>algorithms=[...]</code> allow-list to <code>decode</code>.
+                    </li>
+                    <li><strong>Long-lived tokens</strong> → keep access tokens short (5–15 min); use a
+                        revocable refresh token for longevity.</li>
+                    <li><strong>No revocation</strong> → maintain a server-side denylist / token version, so
+                        logout and "ban user" actually work.</li>
+                    <li><strong>Storing JWT in localStorage</strong> → exposed to XSS. Prefer
+                        <code>HttpOnly</code>, <code>Secure</code>, <code>SameSite</code> cookies for browser
+                        apps.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>FastAPI dependency for the current user</h2>
+            <pre><code><span class="c-kw">from</span> fastapi <span class="c-kw">import</span> Depends, HTTPException, status
+<span class="c-kw">from</span> fastapi.security <span class="c-kw">import</span> OAuth2PasswordBearer
+
+oauth2 = OAuth2PasswordBearer(tokenUrl=<span class="c-str">"login"</span>)
+
+<span class="c-kw">async def</span> <span class="c-fn">current_user</span>(token: <span class="c-cls">str</span> = Depends(oauth2)) -> User:
+    <span class="c-kw">try</span>:
+        claims = read_token(token, settings.jwt_secret)
+    <span class="c-kw">except</span> jwt.PyJWTError:
+        <span class="c-kw">raise</span> HTTPException(status.HTTP_401_UNAUTHORIZED, <span class="c-str">"invalid token"</span>)
+    user = <span class="c-kw">await</span> users.get(claims[<span class="c-str">"sub"</span>])
+    <span class="c-kw">if</span> user <span class="c-kw">is</span> <span class="c-cls">None</span> <span class="c-kw">or</span> <span class="c-kw">not</span> user.active:
+        <span class="c-kw">raise</span> HTTPException(status.HTTP_401_UNAUTHORIZED, <span class="c-str">"invalid token"</span>)
+    <span class="c-kw">return</span> user
+</code></pre>
+        </div>
+
+        <div class="section sec">
+            <h2>The #1 API risk: Broken Object-Level Authorization (IDOR/BOLA)</h2>
+            <p>You authenticated the user — but did you check they own <em>the specific object</em> they asked
+                for? If <code>GET /orders/42</code> returns order 42 to <em>any</em> logged-in user, attackers
+                simply increment the ID and harvest everyone's data. This is <strong>IDOR</strong> (a.k.a.
+                <strong>BOLA</strong>).
+            </p>
+            <p class="bad-label">❌ Vulnerable — authenticated but not authorized</p>
+            <pre><code><span class="c-fn">@app.get</span>(<span class="c-str">"/orders/{order_id}"</span>)
+<span class="c-kw">async def</span> <span class="c-fn">get_order</span>(order_id: <span class="c-cls">int</span>, user: User = Depends(current_user)):
+    <span class="c-kw">return</span> <span class="c-kw">await</span> orders.get(order_id)   <span class="c-com"># any user can read any order!</span>
+</code></pre>
+            <p class="good-label">✅ Hardened — scope every query to the owner</p>
+            <pre><code><span class="c-fn">@app.get</span>(<span class="c-str">"/orders/{order_id}"</span>)
+<span class="c-kw">async def</span> <span class="c-fn">get_order</span>(order_id: <span class="c-cls">int</span>, user: User = Depends(current_user)):
+    order = <span class="c-kw">await</span> orders.get_for_owner(order_id, owner_id=user.id)
+    <span class="c-kw">if</span> order <span class="c-kw">is</span> <span class="c-cls">None</span>:
+        <span class="c-com"># 404 (not 403) avoids leaking that the object exists.</span>
+        <span class="c-kw">raise</span> HTTPException(status.HTTP_404_NOT_FOUND)
+    <span class="c-kw">return</span> order
+</code></pre>
+            <div class="callout amber">
+                <strong>Strategy:</strong> bake the owner filter into the data layer
+                (<code>WHERE owner_id = :me</code>), not the route. Use unguessable IDs (UUIDs) as a defence in
+                depth, but never <em>rely</em> on them — always enforce ownership in the query.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Authorization models — pick one and centralize it</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Idea</th>
+                        <th>Good for</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>RBAC</strong></td>
+                        <td>Roles → permissions (admin, editor, viewer)</td>
+                        <td>Most apps; simple, auditable</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ABAC</strong></td>
+                        <td>Rules over attributes (dept, region, time)</td>
+                        <td>Fine-grained, contextual access</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ReBAC</strong></td>
+                        <td>Relationships (owner, member-of)</td>
+                        <td>Sharing, multi-tenant graphs</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Whatever you choose, put the decision in <strong>one place</strong> (a dependency or policy
+                function), so it's testable and can't be forgotten on a new endpoint.</p>
+        </div>
+
+        <div class="section sec">
+            <h2>Login-flow hardening</h2>
+            <ul>
+                <li><strong>Generic errors:</strong> "invalid email or password" — never reveal which was
+                    wrong (prevents user enumeration).</li>
+                <li><strong>Rate-limit + lockout/backoff</strong> on login to blunt credential stuffing &amp;
+                    brute force (see <a href="04_api_hardening_abuse.html">04</a>).</li>
+                <li><strong>MFA</strong> for sensitive accounts; <strong>verify email</strong> before granting
+                    access.</li>
+                <li><strong>Rotate &amp; invalidate</strong> sessions on password change and logout.</li>
+                <li><strong>CSRF protection</strong> for cookie-based auth (SameSite + anti-CSRF token).</li>
+            </ul>
+        </div>
+
+        <div class="section sec">
+            <h2>Auth checklist</h2>
+            <ul class="check">
+                <li>Passwords stored with Argon2id/bcrypt; verify is constant-time.</li>
+                <li>Access tokens short-lived; refresh tokens revocable.</li>
+                <li><code>jwt.decode</code> always pins <code>algorithms=[...]</code> and validates exp/iss.</li>
+                <li>Every object read/write filters by the caller's identity (no IDOR).</li>
+                <li>Authorization logic lives in one central, tested place.</li>
+                <li>Login uses generic errors + rate limiting; MFA on sensitive roles.</li>
+                <li>Cookie auth uses HttpOnly + Secure + SameSite and CSRF protection.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="01_input_validation_injection.html"><span class="dir">Back</span>
+                <div class="ttl">01 · Injection</div>
+            </a>
+            <a class="next" href="03_secrets_transport_data.html"><span class="dir">Next</span>
+                <div class="ttl">03 · Secrets, transport &amp; data →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Cyber Security Designs · 02 · Authentication &amp; authorization</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

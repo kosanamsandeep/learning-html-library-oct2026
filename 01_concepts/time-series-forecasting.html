@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Series Forecasting Explained</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>AI and ML Interview Starter Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="regression.html">Regression</a>
+                <a href="evaluation-metrics.html">Metrics</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What time series forecasting is</a>
+            <a href="#components">Trend, seasonality, noise</a>
+            <a href="#workflow">Forecasting workflow</a>
+            <a href="#arima">ARIMA</a>
+            <a href="#sarima">SARIMA</a>
+            <a href="#holt-winters">Holt-Winters</a>
+            <a href="#other-classical">Other classical approaches</a>
+            <a href="#deep-learning">Deep learning approaches</a>
+            <a href="#metrics">Evaluation metrics</a>
+            <a href="#history-size">Low vs large history</a>
+            <a href="#transformations">Important transformations</a>
+            <a href="#validation">Validation rules</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Forecasting and sequence data</p>
+                    <h1>Time series forecasting: ARIMA, SARIMA, Holt-Winters, and deep learning</h1>
+                    <p>Time series forecasting predicts future values using observations ordered in time. The key point
+                        is that <strong>time order matters</strong>. Yesterday influences today, seasonality repeats,
+                        trends drift, shocks happen, and mistakes in validation can easily leak future information into
+                        the model.</p>
+                    <p>Interviews usually test whether you understand when to use classical models like ARIMA or
+                        Holt-Winters, when deep learning is justified, what metrics actually make sense, and what to do
+                        when the history is short, noisy, or irregular.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core forecasting idea</h2>
+                    <p class="formula">future value = trend + seasonality + autoregressive memory + shocks + noise</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What makes time series different</h3>
+                        <p>Rows are not exchangeable. In ordinary regression, you can often shuffle data safely. In time
+                            series, shuffling breaks the problem because past and future are fundamentally different.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>Common business examples</h3>
+                        <p>Daily sales, weekly traffic, hourly demand, energy load, call center volume, inventory
+                            consumption, stock movement, and sensor measurements are all time series problems.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="components">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Building blocks</p>
+                        <h2>Trend, seasonality, cycles, and noise</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Meaning</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Trend</td>
+                                <td>Long-term increase or decrease</td>
+                                <td>Sales slowly rising month over month</td>
+                            </tr>
+                            <tr>
+                                <td>Seasonality</td>
+                                <td>Pattern repeating at fixed intervals</td>
+                                <td>Weekend spikes, holiday dips, yearly festival demand</td>
+                            </tr>
+                            <tr>
+                                <td>Cycles</td>
+                                <td>Longer repeating movement, not perfectly regular</td>
+                                <td>Economic expansion and slowdown</td>
+                            </tr>
+                            <tr>
+                                <td>Noise</td>
+                                <td>Unexplained random variation</td>
+                                <td>Weather shock, one-off outage, unexpected promotion effect</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Additive vs multiplicative:</strong> if seasonal swings stay about the same size over
+                        time,
+                        think additive. If seasonal swings grow as the series level grows, think multiplicative. This is
+                        a practical clue for transformations and Holt-Winters settings.</p>
+                </div>
+            </section>
+
+            <section class="section" id="workflow">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Practical flow</p>
+                        <h2>How forecasting projects are usually done</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Inspect the series</h3>
+                        <p>Check frequency, missing timestamps, outliers, trend, seasonality, regime changes, and
+                            whether
+                            the business process has special events like promotions or holidays.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Make it model-ready</h3>
+                        <p>Resample, impute missing timestamps, create calendar features, consider log transforms,
+                            differencing, or deseasonalization depending on the model family.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Choose a baseline first</h3>
+                        <p>Always compare against naive baselines like last value, seasonal naive, or simple moving
+                            average. Many fancy models look good only because the baseline was weak.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Validate chronologically</h3>
+                        <p>Use train-then-validate on future periods, or rolling-origin backtesting. Never randomly
+                            shuffle time series data for evaluation.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="arima">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Classical model 1</p>
+                        <h2>ARIMA</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>What ARIMA means</h3>
+                        <p>ARIMA stands for AutoRegressive Integrated Moving Average. It combines three ideas:</p>
+                        <ul class="stack-list">
+                            <li><strong>AR(p):</strong> use previous values to predict the next value.</li>
+                            <li><strong>I(d):</strong> difference the series to make it more stationary.</li>
+                            <li><strong>MA(q):</strong> use previous forecast errors to improve the next forecast.</li>
+                        </ul>
+                        <p class="formula">ARIMA(p, d, q)</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>When it works well</h3>
+                        <ul class="stack-list">
+                            <li>Univariate series with clear autocorrelation structure.</li>
+                            <li>History is not too short.</li>
+                            <li>Series is reasonably stable after differencing.</li>
+                            <li>You want an interpretable classical baseline.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Stationarity matters:</strong> ARIMA prefers a stable statistical structure. If the mean,
+                        variance, or autocorrelation changes wildly over time, raw ARIMA often struggles unless you
+                        transform the series first.</p>
+                </div>
+            </section>
+
+            <section class="section" id="sarima">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Classical model 2</p>
+                        <h2>SARIMA</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What SARIMA adds</h3>
+                        <p>SARIMA extends ARIMA by adding seasonal autoregressive, seasonal differencing, and seasonal
+                            moving average terms.</p>
+                        <p class="formula">SARIMA(p, d, q)(P, D, Q, s)</p>
+                    </div>
+                    <div class="card">
+                        <h3>When to use it</h3>
+                        <p>Use SARIMA when you have repeating patterns at fixed intervals, such as day-of-week, month,
+                            quarter, or year. If a series has strong seasonality, SARIMA is often a much better baseline
+                            than plain ARIMA.</p>
+                    </div>
+                </div>
+                <div class="warning-card" style="margin-top: 18px;">
+                    <h3>Important limitation</h3>
+                    <p>SARIMA still assumes a fairly regular repeating seasonal pattern. If seasonality changes because
+                        of promotions, holidays, or sudden operational changes, you may need exogenous variables or a
+                        more
+                        flexible model.</p>
+                </div>
+            </section>
+
+            <section class="section" id="holt-winters">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Classical model 3</p>
+                        <h2>Holt-Winters exponential smoothing</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>What it models</h3>
+                        <p>Holt-Winters explicitly models level, trend, and seasonality using exponentially weighted
+                            updates. Recent observations matter more than distant ones.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why people use it</h3>
+                        <ul class="stack-list">
+                            <li>Very strong baseline for business time series.</li>
+                            <li>Works well when trend and seasonality are stable.</li>
+                            <li>Simpler and often faster to set up than ARIMA-family tuning.</li>
+                            <li>Useful when you want an interpretable decomposition.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Version</th>
+                                <th>Use when</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Simple exponential smoothing</td>
+                                <td>No trend, no seasonality</td>
+                            </tr>
+                            <tr>
+                                <td>Holt</td>
+                                <td>Trend but no seasonality</td>
+                            </tr>
+                            <tr>
+                                <td>Holt-Winters additive</td>
+                                <td>Seasonality is roughly constant in size</td>
+                            </tr>
+                            <tr>
+                                <td>Holt-Winters multiplicative</td>
+                                <td>Seasonality scales with the series level</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="other-classical">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Other useful baselines</p>
+                        <h2>Other classical forecasting approaches</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Seasonal naive and moving average</h3>
+                        <p>These simple baselines are essential. Seasonal naive says “next Monday looks like last
+                            Monday.”
+                            If your fancy model cannot beat seasonal naive, it is not production-ready.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Prophet and regression-style models</h3>
+                        <p>Prophet-like approaches explicitly model trend, seasonality, holidays, and changepoints.
+                            Regression models with lag features, rolling means, and calendar features are also common
+                            and
+                            often strong in business forecasting pipelines.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="deep-learning">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Modern approaches</p>
+                        <h2>Deep learning frameworks and model families</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Model family</th>
+                                <th>When it is used</th>
+                                <th>Main tradeoff</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>LSTM / GRU</td>
+                                <td>Sequential forecasting with moderate history and nonlinear temporal effects</td>
+                                <td>Can work well, but may be harder to tune and slower than simpler baselines</td>
+                            </tr>
+                            <tr>
+                                <td>Temporal CNN / TCN</td>
+                                <td>Longer memory with convolutional sequence modeling</td>
+                                <td>Often more stable than RNNs, but still data-hungry</td>
+                            </tr>
+                            <tr>
+                                <td>Transformer-style forecasting</td>
+                                <td>Large multivariate forecasting, long context, many related series</td>
+                                <td>Powerful but expensive and needs good scale</td>
+                            </tr>
+                            <tr>
+                                <td>N-BEATS / N-HiTS / TFT</td>
+                                <td>Advanced forecasting benchmarks and large business forecasting problems</td>
+                                <td>Strong performance, but more engineering and tuning complexity</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="warning-card">
+                        <h3>When deep learning is justified</h3>
+                        <ul class="stack-list">
+                            <li>You have many related time series, not just one series.</li>
+                            <li>You have long history and enough data volume.</li>
+                            <li>You need to combine time signals with exogenous features, holidays, prices, promotions,
+                                or static metadata.</li>
+                            <li>You care about complex nonlinear interactions and have the engineering capacity to
+                                support them.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>When deep learning is overkill</h3>
+                        <ul class="stack-list">
+                            <li>History is short.</li>
+                            <li>The pattern is mostly trend plus seasonality.</li>
+                            <li>You only have one or a few series.</li>
+                            <li>A seasonal naive, Holt-Winters, or SARIMA baseline already performs strongly.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Practical tooling:</strong> teams commonly use statsmodels for ARIMA-family models,
+                        Prophet for decomposable trend-seasonality forecasting, and PyTorch Forecasting, Darts,
+                        GluonTS, NeuralForecast, or custom PyTorch or TensorFlow code for deep learning workflows.</p>
+                </div>
+            </section>
+
+            <section class="section" id="metrics">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Evaluation</p>
+                        <h2>Which forecasting metrics matter?</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>What it measures</th>
+                                <th>Important caveat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>MAE</td>
+                                <td>Average absolute forecast error</td>
+                                <td>Easy to explain, but scale-dependent</td>
+                            </tr>
+                            <tr>
+                                <td>RMSE</td>
+                                <td>Squares errors before averaging</td>
+                                <td>Punishes large misses more heavily than MAE</td>
+                            </tr>
+                            <tr>
+                                <td>MAPE</td>
+                                <td>Average percentage error</td>
+                                <td>Can explode or become meaningless when actual values are zero or near zero</td>
+                            </tr>
+                            <tr>
+                                <td>sMAPE</td>
+                                <td>Symmetric percentage-style error</td>
+                                <td>More stable than MAPE, but still not perfect</td>
+                            </tr>
+                            <tr>
+                                <td>WAPE</td>
+                                <td>Total absolute error divided by total actual value</td>
+                                <td>Useful for portfolio-level business reporting</td>
+                            </tr>
+                            <tr>
+                                <td>MASE</td>
+                                <td>Error scaled by naive forecast error</td>
+                                <td>Very useful because it compares your model against a naive baseline</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>Do we use MAPE?</h3>
+                        <p>Yes, many business teams ask for MAPE because percentage error is intuitive. But you should
+                            not use it blindly. If actual values can be zero, very small, or highly intermittent, MAPE
+                            becomes unstable and can mislead stakeholders.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Better metric choices by situation</h3>
+                        <p>Use MAE or RMSE when scale matters, MASE when you want to compare against a naive baseline,
+                            and WAPE for aggregate business reporting. If stockouts, sparse demand, or zeros are common,
+                            prefer MASE, WAPE, or MAE over raw MAPE.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="history-size">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Data volume matters</p>
+                        <h2>Low history vs large history datasets</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Situation</th>
+                                <th>What usually works better</th>
+                                <th>Main concern</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Low history, one series</td>
+                                <td>Naive, Holt-Winters, simple ARIMA, regression with calendar features</td>
+                                <td>Overfitting and false confidence</td>
+                            </tr>
+                            <tr>
+                                <td>Moderate history, clear seasonality</td>
+                                <td>SARIMA, Holt-Winters, feature-based gradient boosting</td>
+                                <td>Modeling seasonality and validation correctly</td>
+                            </tr>
+                            <tr>
+                                <td>Large history, many related series</td>
+                                <td>Global models, boosted feature pipelines, deep learning models</td>
+                                <td>Scalability, feature engineering, and distribution shift</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="warning-card">
+                        <h3>Low history datasets</h3>
+                        <ul class="stack-list">
+                            <li>Prefer simpler models with stronger inductive bias.</li>
+                            <li>Do not expect deep learning to rescue tiny datasets.</li>
+                            <li>Use domain features like holidays, promotions, and calendar effects.</li>
+                            <li>Check whether a seasonal naive baseline is already hard to beat.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Large history datasets</h3>
+                        <ul class="stack-list">
+                            <li>Global models can learn across many related series.</li>
+                            <li>Deep models become more justifiable.</li>
+                            <li>Feature pipelines and multivariate inputs often help more than univariate-only models.
+                            </li>
+                            <li>Computation, retraining strategy, and drift monitoring become important.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="transformations">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Data preparation</p>
+                        <h2>Important transformations and preprocessing steps</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>Resampling and frequency alignment</h3>
+                        <p>Make sure the time index is regular: hourly means hourly, daily means daily. Irregular
+                            timestamps often break assumptions and confuse models.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Missing timestamp handling</h3>
+                        <p>Distinguish between truly missing observations and real zero demand. Treating these as the
+                            same
+                            thing can destroy metric interpretation and model quality.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Log transform or Box-Cox</h3>
+                        <p>Useful when variance grows with the level of the series. These transforms stabilize variance
+                            and make multiplicative behavior easier to model.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Differencing</h3>
+                        <p>Subtract the previous value or previous seasonal value to remove trend or seasonality. This
+                            is
+                            central to ARIMA-family modeling.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Lag and rolling-window features</h3>
+                        <p>Create features like previous day, previous week, rolling mean, rolling std, and moving max.
+                            These are powerful in gradient-boosted or regression-based forecasting pipelines.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Calendar and event features</h3>
+                        <p>Day of week, month, quarter, holiday flags, promotions, stockouts, and price changes often
+                            matter more than the raw model choice.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Outlier treatment</h3>
+                        <p>Forecasting models are very sensitive to shocks. Keep meaningful business spikes if they are
+                            real, but flag data errors separately. Blindly smoothing everything can remove real demand
+                            signals.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="validation">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Critical rule</p>
+                        <h2>Validation rules you must not break</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Use walk-forward or rolling-origin validation</h3>
+                        <p>Train on the past, validate on the future, then roll the window forward. This mirrors real
+                            forecasting use and prevents future leakage.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Never randomly shuffle time series rows</h3>
+                        <p>Random train-test splitting leaks future information into training. A model may look amazing
+                            offline and fail immediately in production if you validate incorrectly.</p>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Interview-ready summary</h2>
+                    <p>Start with naive and seasonal baselines, inspect trend and seasonality, use ARIMA-family or
+                        Holt-Winters for structured classical patterns, move to deep learning only when history and
+                        scale
+                        justify it, and choose metrics carefully because MAPE can be misleading on zero-heavy data.</p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What is the difference between ARIMA and SARIMA?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>ARIMA models non-seasonal autoregressive, differencing, and moving-average behavior.
+                                SARIMA adds seasonal autoregressive, seasonal differencing, and seasonal moving-average
+                                terms for repeating patterns like weekly or yearly seasonality.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Should we use MAPE for forecasting?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>You can use MAPE when actual values are safely away from zero and percentage error is
+                                important to the business. But if zeros or near-zeros are common, MAPE becomes unstable,
+                                so I would prefer MASE, WAPE, MAE, or RMSE depending on the business objective.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>When is deep learning justified for forecasting?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Usually when you have large history, many related series, rich exogenous signals, and a
+                                business need that simpler baselines cannot meet. For a small single-series problem,
+                                classical methods are often more appropriate.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You have only 18 months of monthly sales history with clear seasonality. What would you try
+                            first?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>I would start with seasonal naive, Holt-Winters, and possibly SARIMA if the seasonal
+                                structure is stable. Deep learning would be hard to justify with such limited history.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You forecast thousands of related SKUs with promotions, holidays, and price changes. What
+                            changes?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Now global models become attractive. I would consider feature-based gradient boosting or
+                                deep forecasting models that can learn across many series while using exogenous
+                                variables.
+                                I would still keep strong seasonal naive and classical baselines for comparison.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your forecast looks excellent offline, but fails in production immediately. What is the
+                            first thing you suspect?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>I would first suspect leakage from incorrect validation, especially random train-test
+                                split
+                                on time-ordered data. The second suspicion would be a regime change or exogenous factor
+                                mismatch between training and production.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Forecasting interviews test whether you know when to use classical time series models, when deep models
+                are justified, and how to evaluate without leaking the future.</p>
+            <div class="mini-links">
+                <a href="regression.html">Regression</a>
+                <a href="classification.html">Classification</a>
+                <a href="evaluation-metrics.html">Metrics</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

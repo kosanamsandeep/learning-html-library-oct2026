@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>05 — Other PEFT Methods</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 2rem 0 0.75rem; color: #feca57; }
+  h3 { font-size: 1.05rem; margin: 1rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #ff6b6b; color: #e1e4f0; }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .card-sm { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 10px; padding: 1.25rem; }
+  .hl-box { background: rgba(255,107,107,0.08); border-left: 3px solid #ff6b6b; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .hl-yellow { background: rgba(254,202,87,0.08); border-left: 3px solid #feca57; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #ff6b6b; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #feca57; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #ff6b6b; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  ul, ol { color: #c8cbe0; padding-left: 1.25rem; line-height: 2; }
+  .flow-row { display: flex; align-items: center; gap: 0.75rem; justify-content: center; flex-wrap: wrap; padding: 0.75rem 0; }
+  .flow-box { background: #232740; border-radius: 8px; padding: 0.6rem 1rem; text-align: center; font-size: 0.85rem; min-width: 70px; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="04-qlora.html">← 04: QLoRA</a>
+  <a href="06-prompt-vs-finetune-vs-rag.html">Next: Prompt vs FT vs RAG →</a>
+</div>
+
+<h1>05 · Other PEFT Methods</h1>
+<p>LoRA is the most popular, but it's not the only parameter-efficient fine-tuning method. Here's a tour of the landscape.</p>
+
+<h2>🧩 The PEFT Taxonomy</h2>
+
+<div class="card">
+<p>All PEFT methods fall into one of three categories:</p>
+<ul>
+  <li><strong>Additive</strong> — Add new trainable parameters (Adapter layers, LoRA, Prefix Tuning)</li>
+  <li><strong>Selective</strong> — Select a subset of existing parameters to update (bitfit, attention-only)</li>
+  <li><strong>Reparametrization</strong> — Reparameterize existing weights with a low-rank decomposition (LoRA — which is both additive and reparameterization)</li>
+</ul>
+</div>
+
+<h2>1️⃣ Prefix Tuning (Li &amp; Liang, 2021)</h2>
+
+<div class="card">
+<h3>How It Works</h3>
+<p>Instead of modifying weights, Prefix Tuning prepends a set of <strong>learnable "virtual tokens"</strong> to the key and value matrices in every attention layer. These virtual tokens don't correspond to real words — they're continuous vectors that the model learns to use as attention biases.</p>
+
+<div class="math-block">
+<span class="dim">// Normal attention: Attn(XW<sub>Q</sub>, XW<sub>K</sub>, XW<sub>V</sub>)</span>
+<span class="dim">// Prefix Tuning: Attn(XW<sub>Q</sub>, [P<sub>k</sub>; XW<sub>K</sub>], [P<sub>v</sub>; XW<sub>V</sub>])</span>
+<span class="dim">// P<sub>k</sub> and P<sub>v</sub> are learned prefix vectors of length L</span>
+
+<span class="dim">// The prefix shifts the attention distribution — no weight changes needed.</span>
+</div>
+
+<table>
+  <thead><tr><th></th><th>Prefix Tuning</th><th>LoRA</th></tr></thead>
+  <tbody>
+    <tr><td>Parameters trained</td><td>~0.01–0.1%</td><td>~0.01–0.1%</td></tr>
+    <tr><td>Inference latency</td><td><strong>+L tokens</strong> of compute (shorter context)</td><td>None (merged) / Tiny (unmerged)</td></tr>
+    <tr><td>Performance</td><td>Good for generation tasks</td><td>Better overall, especially for classification</td></tr>
+    <tr><td>Sequence length</td><td>Reduced by prefix length</td><td>Unaffected</td></tr>
+  </tbody>
+</table>
+
+<div class="hl-yellow">
+  <strong>📌 Prefix Tuning is less popular than LoRA</strong> because the prefixes consume sequence length — the longer the prefix, the shorter your usable context. It also can't be merged into weights, so inference always has overhead.
+</div>
+</div>
+
+<h2>2️⃣ P-Tuning (Liu et al., 2022)</h2>
+
+<div class="card">
+<h3>How It Works</h3>
+<p>Similar to Prefix Tuning, but instead of modifying attention keys/values, P-Tuning injects learnable "prompt embeddings" <strong>into the input embedding layer</strong>. A small LSTM or MLP generates the embeddings to capture dependencies between virtual tokens.</p>
+
+<div class="math-block">
+<span class="dim">// P-Tuning: replaces discrete prompt tokens with learned continuous embeddings</span>
+<span class="dim">// Input embedding: [e<sub>prompt_1</sub>, e<sub>prompt_2</sub>, ..., e<sub>prompt_L</sub>, e<sub>word_1</sub>, ...]</span>
+<span class="dim">// The e<sub>prompt</sub> are learned (optionally via a prompt encoder network)</span>
+</div>
+
+<div class="hl-box">
+  <strong>🧪 P-Tuning v2 showed that deeper prompt tuning (applied to all layers, not just the input) matches fine-tuning quality on many tasks.</strong> But PoRA (LoRA) still gets more adoption because it's simpler and doesn't reduce sequence length.
+</div>
+</div>
+
+<h2>3️⃣ Adapter Layers (Houlsby et al., 2019)</h2>
+
+<div class="card">
+<h3>How It Works</h3>
+<p>Insert small <strong>bottleneck MLP layers</strong> after each Transformer sublayer (attention + FFN). The adapter is a down-projection → activation → up-projection, with a residual connection:</p>
+
+<div class="math-block">
+<span class="dim">// Adapter inserted after attention or FFN:</span>
+h' = LayerNorm(h + Adapter(h))
+
+Adapter(h) = W<sub>up</sub> · σ(W<sub>down</sub> · h)  <span class="dim">// bottleneck: d → d<sub>bottleneck</sub> → d</span>
+
+<span class="dim">// d<sub>bottleneck</sub> is typically 64–256 for a 768-dim model.</span>
+</div>
+
+<table>
+  <thead><tr><th></th><th>Adapter</th><th>LoRA</th></tr></thead>
+  <tbody>
+    <tr><td>Parameters trained</td><td>~3–5% (more than LoRA)</td><td>~0.01–0.1%</td></tr>
+    <tr><td>Inference latency</td><td><strong>+10–30%</strong> (extra layers in the graph)</td><td>None (merged)</td></tr>
+    <tr><td>Added layers</td><td>Yes — modifies the architecture</td><td>No — only weight updates</td></tr>
+    <tr><td>Parallel computation</td><td>Sequential (added after main layer)</td><td>Parallel (BA runs alongside W)</td></tr>
+  </tbody>
+</table>
+
+<div class="hl-yellow">
+  <strong>📌 Adapters were the first major PEFT method</strong> and work well, but their inference overhead and higher parameter count have made LoRA the preferred choice in most modern applications.
+</div>
+</div>
+
+<h2>4️⃣ IA³ (Infused Adapter by Inhibiting and Amplifying Inner Activations)</h2>
+
+<div class="card">
+<h3>How It Works</h3>
+<p><strong>IA³</strong> (Liu et al., 2022) is the simplest PEFT method: it learns a single <strong>scaling vector</strong> per layer that element-wise multiplies the keys, values, and FFN activations:</p>
+
+<div class="math-block">
+<span class="dim">// IA³: learn three vectors l<sub>K</sub>, l<sub>V</sub>, l<sub>FF</sub> per layer</span>
+K' = K ⊙ l<sub>K</sub>  <span class="dim">// element-wise scaling of keys</span>
+V' = V ⊙ l<sub>V</sub>   <span class="dim">// element-wise scaling of values</span>
+FF' = FF ⊙ l<sub>FF</sub> <span class="dim">// element-wise scaling of FFN output</span>
+
+<span class="dim">// l vectors have dimension d_k — that's it!</span>
+</div>
+
+<p><strong>Total parameters added:</strong> For a model with L layers and d<sub>model</sub> = 4096: L × 3 × 4096 = ~1.5M for a 40-layer model. That's <strong>0.003%</strong> of 7B parameters.</p>
+
+<div class="hl-box">
+  <strong>⚡ IA³ is the most parameter-efficient method.</strong> It adds the fewest parameters and has the lowest memory overhead. It works surprisingly well for classification and summarization tasks, though LoRA tends to edge it out on complex reasoning.
+</div>
+</div>
+
+<h2>5️⃣ DoRA — Weight-Decomposed Low-Rank Adaptation</h2>
+
+<div class="card">
+<h3>How It Works</h3>
+<p><strong>DoRA</strong> (Liu et al., 2024) decomposes the pretrained weight into <strong>magnitude</strong> and <strong>direction</strong> components and applies LoRA only to the direction:</p>
+
+<div class="math-block">
+<span class="dim">// DoRA: W' = m · (W + BA) / ||W + BA||</span>
+<span class="dim">// m = learnable magnitude vector (one per output dimension)</span>
+<span class="dim">// (W + BA) normalized by direction, then scaled by m</span>
+</div>
+
+<p>This mirrors how fine-tuning naturally behaves — magnitude changes are often global, while direction changes capture task-specific adaptation. DoRA consistently <strong>outperforms LoRA with the same rank</strong> across benchmarks.</p>
+
+<div class="hl-yellow">
+  <strong>📊 DoRA is a drop-in replacement for LoRA</strong> with ~1% more parameters (the magnitude vector). It's available in Hugging Face PEFT and is a strong default choice in 2025.
+</div>
+</div>
+
+<h2>📋 Full Comparison Table</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Method</th><th>Year</th><th>Params Added</th><th>Inference Overhead</th><th>Best For</th></tr></thead>
+  <tbody>
+    <tr><td><strong>LoRA</strong></td><td>2021</td><td>~0.01–0.1%</td><td>None (merged)</td><td>General purpose — the default</td></tr>
+    <tr><td><strong>DoRA</strong></td><td>2024</td><td>~0.01–0.1% + tiny</td><td>None (merged)</td><td>Higher quality than LoRA, same cost</td></tr>
+    <tr><td><strong>QLoRA</strong></td><td>2023</td><td>~0.01–0.1%</td><td>None (merged)</td><td>Low-memory fine-tuning (4-bit base)</td></tr>
+    <tr><td><strong>Prefix Tuning</strong></td><td>2021</td><td>~0.01–0.1%</td><td>+ prefix tokens</td><td>Generation tasks where context len isn't tight</td></tr>
+    <tr><td><strong>P-Tuning</strong></td><td>2022</td><td>~0.01–0.1%</td><td>+ prefix tokens</td><td>NLU tasks, small models</td></tr>
+    <tr><td><strong>Adapter</strong></td><td>2019</td><td>~3–5%</td><td>+10–30%</td><td>Legacy; rarely used for LLMs today</td></tr>
+    <tr><td><strong>IA³</strong></td><td>2022</td><td>~0.001–0.01%</td><td>Minimal (scaling)</td><td>Maximum parameter efficiency</td></tr>
+    <tr><td><strong>BitFit</strong></td><td>2022</td><td>~0.1%</td><td>None</td><td>Only trains bias terms — useful for probing</td></tr>
+  </tbody>
+</table>
+
+<div class="hl-box" style="margin-top:1rem;">
+  <strong>🎯 The bottom line:</strong> For 95% of practical fine-tuning in 2025, use <strong>LoRA</strong> (or <strong>DoRA</strong> if you want the latest improvement). Use <strong>QLoRA</strong> when memory-constrained. The other methods are valuable to know about but rarely the best first choice.
+</div>
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

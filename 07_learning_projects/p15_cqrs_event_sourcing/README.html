@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P15 - CQRS & Event Sourcing</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 40px auto;
+            max-width: 950px;
+            line-height: 1.7;
+            color: #1a1a2e;
+            background: #f8f9fa;
+        }
+
+        h1 {
+            color: #198754;
+            border-bottom: 3px solid #198754;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #146c43;
+            margin-top: 35px;
+        }
+
+        h3 {
+            color: #198754;
+        }
+
+        .mermaid {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        code {
+            background: #d1e7dd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .concept-box {
+            background: white;
+            border-left: 4px solid #198754;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .pattern-tag {
+            display: inline-block;
+            background: #198754;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin: 2px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px 14px;
+            text-align: left;
+        }
+
+        th {
+            background: #198754;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f0fff4;
+        }
+
+        .insight {
+            background: #d1e7dd;
+            border-left: 4px solid #198754;
+            padding: 12px 18px;
+            margin: 12px 0;
+            border-radius: 0 6px 6px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Project 15: CQRS & Event Sourcing - Banking Ledger</h1>
+
+    <p>
+        <span class="pattern-tag">Event Sourcing</span>
+        <span class="pattern-tag">CQRS</span>
+        <span class="pattern-tag">Aggregate Root</span>
+        <span class="pattern-tag">Projections</span>
+        <span class="pattern-tag">Domain Events</span>
+    </p>
+
+    <div class="concept-box">
+        <strong>Story:</strong> You're building a banking system where every cent must be traceable.
+        Instead of storing "balance = $1,450", you store every event that led to that balance.
+        The complete audit trail is built into the architecture itself.
+    </div>
+
+    <h2>Architecture: CQRS + Event Sourcing</h2>
+
+    <div class="mermaid">
+        graph TB
+        subgraph "WRITE Side (Commands)"
+        CMD[Command] --> CH[CommandHandler]
+        CH --> AGG[Aggregate]
+        AGG -->|validate| BR[Business Rules]
+        AGG -->|emit| ES[Event Store]
+        end
+
+        subgraph "Event Store (Source of Truth)"
+        ES --> EL[Append-Only Log]
+        EL --> E1[AccountOpened]
+        EL --> E2[MoneyDeposited]
+        EL --> E3[MoneyWithdrawn]
+        EL --> E4[TransferCompleted]
+        end
+
+        subgraph "READ Side (Queries)"
+        ES -->|subscribe| P1[Balance Projection]
+        ES -->|subscribe| P2[History Projection]
+        ES -->|subscribe| P3[Daily Summary]
+        P1 --> QH[QueryHandler]
+        P2 --> QH
+        P3 --> QH
+        QH --> RESP[Response]
+        end
+
+        CLIENT[Client] -->|write| CMD
+        CLIENT -->|read| QH
+    </div>
+
+    <h2>Event Sourcing: How State is Derived</h2>
+
+    <div class="mermaid">
+        sequenceDiagram
+        participant Client
+        participant CmdHandler as CommandHandler
+        participant Aggregate
+        participant Store as EventStore
+        participant Projection
+
+        Client->>CmdHandler: DepositCommand($500)
+        CmdHandler->>Store: get_stream("ACC-001")
+        Store-->>CmdHandler: [event1, event2, ...]
+        CmdHandler->>Aggregate: replay(events)
+        Note over Aggregate: balance = $1000 (rebuilt)
+        CmdHandler->>Aggregate: validate(deposit $500)
+        Aggregate-->>CmdHandler: OK (balance >= 0)
+        CmdHandler->>Store: append(MoneyDeposited)
+        Store->>Projection: notify(MoneyDeposited)
+        Projection->>Projection: update read model
+        CmdHandler-->>Client: "OK: Deposited $500"
+    </div>
+
+    <h2>CQRS: Why Separate Read and Write?</h2>
+
+    <table>
+        <tr>
+            <th>Aspect</th>
+            <th>Write Side (Commands)</th>
+            <th>Read Side (Queries)</th>
+        </tr>
+        <tr>
+            <td>Model</td>
+            <td>Event stream + Aggregate</td>
+            <td>Denormalized projections</td>
+        </tr>
+        <tr>
+            <td>Optimized for</td>
+            <td>Consistency, validation</td>
+            <td>Fast queries, multiple views</td>
+        </tr>
+        <tr>
+            <td>Data shape</td>
+            <td>Normalized (events)</td>
+            <td>Denormalized (pre-computed)</td>
+        </tr>
+        <tr>
+            <td>Scaling</td>
+            <td>Scale writes independently</td>
+            <td>Scale reads independently</td>
+        </tr>
+        <tr>
+            <td>Schema changes</td>
+            <td>Events are immutable</td>
+            <td>Rebuild projections anytime</td>
+        </tr>
+        <tr>
+            <td>Consistency</td>
+            <td>Strongly consistent</td>
+            <td>Eventually consistent</td>
+        </tr>
+    </table>
+
+    <h2>Projection Rebuild (Time Travel)</h2>
+
+    <div class="mermaid">
+        graph LR
+        subgraph "Event Stream (Immutable)"
+        E1[AccountOpened<br />$1000] --> E2[Deposit<br />+$500]
+        E2 --> E3[Withdraw<br />-$200]
+        E3 --> E4[Deposit<br />+$300]
+        E4 --> E5[Withdraw<br />-$150]
+        end
+
+        subgraph "Replay at Any Point"
+        E1 -.->|"$1000"| S1[State 1]
+        E2 -.->|"$1500"| S2[State 2]
+        E3 -.->|"$1300"| S3[State 3]
+        E4 -.->|"$1600"| S4[State 4]
+        E5 -.->|"$1450"| S5[Current]
+        end
+    </div>
+
+    <div class="insight">
+        <strong>Key Insight:</strong> Since events are immutable and ordered, you can rebuild ANY projection
+        at ANY time by replaying events. This means you can add new read models, fix bugs in projections,
+        or migrate schemas without any data loss. It's like <code>git log</code> for your data!
+    </div>
+
+    <h2>Class Diagram</h2>
+
+    <div class="mermaid">
+        classDiagram
+        class EventStore {
+        -global_log: list
+        -streams: dict
+        -subscribers: list
+        +append(event)
+        +get_stream(id): list
+        +subscribe(subscriber)
+        +replay_to(subscriber)
+        }
+
+        class DomainEvent {
+        <<frozen>>
+            +event_id: str
+            +event_type: str
+            +aggregate_id: str
+            +timestamp: str
+            +version: int
+            +data: dict
+            }
+
+            class BankAccountAggregate {
+            +balance: float
+            +is_frozen: bool
+            +apply(event)
+            +from_events(events)$
+            }
+
+            class BankCommandHandler {
+            +handle_open_account(cmd)
+            +handle_deposit(cmd)
+            +handle_withdraw(cmd)
+            +handle_transfer(cmd)
+            }
+
+            class BalanceProjection {
+            +handle_event(event)
+            +get_balance(id): View
+            +get_all_accounts(): list
+            }
+
+            class BankQueryHandler {
+            +get_balance(query)
+            +get_history(query)
+            +get_daily_summary(query)
+            }
+
+            EventStore --> DomainEvent: stores
+            BankCommandHandler --> EventStore: writes to
+            BankCommandHandler --> BankAccountAggregate: loads
+            BalanceProjection --> EventStore: subscribes
+            BankQueryHandler --> BalanceProjection: reads
+    </div>
+
+    <h2>Event Sourcing vs Traditional CRUD</h2>
+
+    <table>
+        <tr>
+            <th>Aspect</th>
+            <th>CRUD (Traditional)</th>
+            <th>Event Sourcing</th>
+        </tr>
+        <tr>
+            <td>Storage</td>
+            <td>Current state only</td>
+            <td>All events (history)</td>
+        </tr>
+        <tr>
+            <td>Audit trail</td>
+            <td>Separate audit table</td>
+            <td>Built-in (events ARE the trail)</td>
+        </tr>
+        <tr>
+            <td>Debugging</td>
+            <td>"What happened?" - Unknown</td>
+            <td>Replay and see exactly</td>
+        </tr>
+        <tr>
+            <td>Schema migration</td>
+            <td>ALTER TABLE (risky)</td>
+            <td>New projection (safe)</td>
+        </tr>
+        <tr>
+            <td>Time travel</td>
+            <td>Impossible</td>
+            <td>Replay to any point</td>
+        </tr>
+        <tr>
+            <td>Complexity</td>
+            <td>Simple</td>
+            <td>Higher (worth it for complex domains)</td>
+        </tr>
+    </table>
+
+    <h2>File Structure</h2>
+    <pre>
+p15_cqrs_event_sourcing/
+├── main.py                         # 5 demos showing full CQRS/ES
+├── events/
+│   └── event_store.py              # Append-only event store + domain events
+├── commands/
+│   └── handlers.py                 # Command DTOs + CommandHandler + Aggregate
+├── projections/
+│   └── read_models.py              # Balance, History, Daily projections
+└── queries/
+    └── handlers.py                 # Query DTOs + QueryHandler
+    </pre>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

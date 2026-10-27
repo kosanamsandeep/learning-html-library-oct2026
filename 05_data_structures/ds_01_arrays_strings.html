@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DS 01 — Arrays &amp; Strings</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html"><span class="brand-mark">DS</span><span>DS · 01 Arrays &amp;
+                    Strings</span></a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="00_big_o.html">← Prev</a>
+                <a href="ds_02_linked_lists.html">Next →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">The most fundamental data structure</p>
+                <h1>Arrays &amp; Strings — the foundation of every other DS</h1>
+                <p>An array is a contiguous block of memory holding elements of the same type. Strings are arrays
+                    of characters. Almost every other data structure either <em>uses</em> arrays internally (hash
+                    tables, heaps, dynamic arrays, trees as flat arrays) or <em>compares itself</em> to arrays.</p>
+            </section>
+
+            <section class="concept">
+                <h2>The story <span class="badge warm">Why this matters</span></h2>
+                <div class="story"><strong>Story:</strong> a junior engineer scans an array 100,000 times in a
+                    triple-nested loop. The PR reviewer asks "have you considered a hash set?" — and a 30-second
+                    fix turns a 5-hour batch job into 0.4 seconds. <em>That's the move</em> — recognizing which
+                    cheap structure replaces an expensive search.</div>
+            </section>
+
+            <section class="concept">
+                <h2>Operations &amp; complexity</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>Static array</th>
+                            <th>Dynamic array (Python <code>list</code>, Java <code>ArrayList</code>)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Access by index</td>
+                            <td>O(1)</td>
+                            <td>O(1)</td>
+                        </tr>
+                        <tr>
+                            <td>Search by value (unsorted)</td>
+                            <td>O(n)</td>
+                            <td>O(n)</td>
+                        </tr>
+                        <tr>
+                            <td>Insert at end</td>
+                            <td>O(1) if space</td>
+                            <td>Amortized O(1)</td>
+                        </tr>
+                        <tr>
+                            <td>Insert at start / middle</td>
+                            <td>O(n) — shift everything</td>
+                            <td>O(n)</td>
+                        </tr>
+                        <tr>
+                            <td>Delete at end</td>
+                            <td>O(1)</td>
+                            <td>O(1)</td>
+                        </tr>
+                        <tr>
+                            <td>Delete at start / middle</td>
+                            <td>O(n)</td>
+                            <td>O(n)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>Why <em>amortized</em> O(1) for append? Dynamic arrays double capacity when full. Most appends
+                    are O(1); occasional doubling is O(n) but averaged out it's still O(1) per call.</p>
+            </section>
+
+            <section class="concept">
+                <h2>Common patterns on arrays</h2>
+                <h3>1. Two pointers</h3>
+                <p>Two indices walk through the array — same direction or opposite ends. Replaces many
+                    O(n²) brute-force approaches with O(n).</p>
+                <pre><code># Is the string a palindrome?
+def is_palindrome(s):
+    i, j = 0, len(s) - 1
+    while i &lt; j:
+        if s[i] != s[j]: return False
+        i += 1; j -= 1
+    return True</code></pre>
+
+                <h3>2. Sliding window</h3>
+                <p>Maintain a window <code>[left, right]</code> and a running aggregate. Expand right, contract
+                    left when condition broken.</p>
+                <pre><code># Longest substring without repeating chars
+def longest_unique(s):
+    seen = {}; left = 0; best = 0
+    for right, c in enumerate(s):
+        if c in seen and seen[c] &gt;= left:
+            left = seen[c] + 1
+        seen[c] = right
+        best = max(best, right - left + 1)
+    return best</code></pre>
+
+                <h3>3. Prefix sums</h3>
+                <p>Precompute cumulative sums so any range sum is O(1) instead of O(n).</p>
+                <pre><code>prefix = [0]
+for x in arr:
+    prefix.append(prefix[-1] + x)
+
+# sum of arr[l..r] (inclusive):
+range_sum = prefix[r+1] - prefix[l]</code></pre>
+
+                <h3>4. In-place reversal / rotation</h3>
+                <pre><code># Rotate array by k to the right, in O(1) extra space
+def rotate(arr, k):
+    k %= len(arr)
+    arr.reverse()
+    arr[:k] = reversed(arr[:k])
+    arr[k:] = reversed(arr[k:])</code></pre>
+            </section>
+
+            <section class="concept">
+                <h2>When to use vs when NOT to use</h2>
+                <div class="grid-2">
+                    <div class="mini good">
+                        <h4>Use an array when</h4>
+                        <ul>
+                            <li>You know the size up front or appends dominate.</li>
+                            <li>You access by index often.</li>
+                            <li>Memory locality matters (CPU caches love arrays).</li>
+                            <li>You're iterating in order.</li>
+                        </ul>
+                    </div>
+                    <div class="mini bad">
+                        <h4>Don't use an array when</h4>
+                        <ul>
+                            <li>You insert/delete in the middle frequently → use linked list or deque.</li>
+                            <li>You need fast lookup by key → use hash table.</li>
+                            <li>You need sorted order with fast insert → use BST or sorted container.</li>
+                            <li>You need to push and pop from both ends → use deque.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="concept">
+                <h2>Strings — a few quirks</h2>
+                <ul>
+                    <li>In Python, strings are <strong>immutable</strong>. <code>s += "x"</code> in a loop is
+                        O(n²) because each concatenation creates a new string. Use
+                        <code>"".join(list_of_chars)</code> instead — O(n) total.
+                    </li>
+                    <li>For substring search, Python's <code>in</code> uses a good built-in algorithm; for very
+                        long patterns consider KMP / Rabin-Karp.</li>
+                    <li>Compare characters by ASCII for the trick <code>ord(c) - ord('a')</code> when you need a
+                        size-26 array (e.g., anagram check).</li>
+                </ul>
+            </section>
+
+            <section class="concept">
+                <h2>Practice problems</h2>
+                <ol>
+                    <li>Two Sum (Easy) — hash table.</li>
+                    <li>Best Time to Buy and Sell Stock (Easy) — one pass with min tracker.</li>
+                    <li>Move Zeros (Easy) — two pointers.</li>
+                    <li>Valid Anagram (Easy) — frequency count.</li>
+                    <li>3Sum (Medium) — sort + two pointers.</li>
+                    <li>Container With Most Water (Medium) — two pointers.</li>
+                    <li>Longest Substring Without Repeating Chars (Medium) — sliding window.</li>
+                    <li>Subarray Sum Equals K (Medium) — prefix sum + hash.</li>
+                </ol>
+                <p>👉 Next: <a href="ds_02_linked_lists.html"><strong>Linked Lists</strong></a>.</p>
+            </section>
+        </div>
+    </main>
+    <footer><a href="index.html">Back to hub</a></footer>
+</body>
+
+</html>

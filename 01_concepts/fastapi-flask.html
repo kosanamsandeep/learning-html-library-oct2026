@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI vs Flask — Advantages and When to Use</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">AI</span>
+                <span>AI Engineer Interview Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="grpc.html">gRPC</a>
+                <a href="mcp-server.html">MCP</a>
+                <a href="rag.html">RAG</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#overview">Overview</a>
+            <a href="#fastapi">FastAPI Advantages</a>
+            <a href="#flask">Flask Advantages</a>
+            <a href="#comparison">Head-to-Head Comparison</a>
+            <a href="#when-to-use">When to Use Which</a>
+            <a href="#code-comparison">Code Comparison</a>
+            <a href="#performance">Performance</a>
+            <a href="#interview">Interview Questions</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Python web frameworks</p>
+                    <h1>FastAPI vs Flask</h1>
+                    <p>Flask pioneered micro-framework simplicity in Python. FastAPI builds on modern Python features
+                        (type hints, async/await) to deliver automatic validation, documentation, and high performance.
+                        Both have clear use cases.</p>
+                    <p>This page covers the strengths of each, when to choose one over the other, and what interviewers
+                        expect you to know about building production APIs.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>One-line distinction</h2>
+                    <ul>
+                        <li><strong>Flask:</strong> Battle-tested simplicity, massive ecosystem, synchronous by default
+                        </li>
+                        <li><strong>FastAPI:</strong> Modern, async-first, auto-docs, type-safe, built for ML/AI APIs
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- FastAPI Section -->
+            <section class="section" id="fastapi">
+                <h2>FastAPI Advantages</h2>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>1. Automatic API documentation</h3>
+                        <p>FastAPI generates interactive Swagger UI (/docs) and ReDoc (/redoc) automatically from your
+                            code. No plugins, no configuration. Type hints become the documentation.</p>
+                        <ul>
+                            <li>Swagger UI: test endpoints directly in browser</li>
+                            <li>OpenAPI schema auto-generated</li>
+                            <li>Client SDK generation from schema</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>2. Type-safe request validation</h3>
+                        <p>Uses Pydantic models for automatic request/response validation. Invalid input returns clear
+                            422 errors without any manual validation code.</p>
+                        <ul>
+                            <li>Pydantic V2: 5-50x faster validation than V1</li>
+                            <li>Nested models, custom validators</li>
+                            <li>Automatic type coercion where safe</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>3. Async/await native support</h3>
+                        <p>Built on Starlette and ASGI (Asynchronous Server Gateway Interface). Handles concurrent
+                            requests efficiently without threads — critical for I/O-bound ML serving.</p>
+                        <ul>
+                            <li>async def endpoints for non-blocking I/O</li>
+                            <li>WebSocket support built-in</li>
+                            <li>Background tasks without Celery for simple cases</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>4. Performance</h3>
+                        <p>One of the fastest Python frameworks. Built on Starlette (ASGI) and Uvicorn. Comparable to
+                            Node.js and Go for I/O-bound workloads.</p>
+                        <ul>
+                            <li>ASGI > WSGI for concurrent connections</li>
+                            <li>Uvicorn with uvloop: near-C-level event loop</li>
+                            <li>Benchmarks: 2-3x Flask for concurrent requests</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>5. Dependency injection system</h3>
+                        <p>Declarative dependency injection for database sessions, auth, rate limiting. Dependencies
+                            can be nested, cached, and scoped (request, app lifetime).</p>
+                        <ul>
+                            <li>Clean separation of concerns</li>
+                            <li>Easy testing with dependency overrides</li>
+                            <li>No global state needed</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>6. ML/AI serving advantages</h3>
+                        <p>FastAPI is the de facto choice for serving ML models because of:</p>
+                        <ul>
+                            <li>Async handlers for concurrent inference requests</li>
+                            <li>Pydantic for strict input schema validation</li>
+                            <li>Background tasks for batch processing</li>
+                            <li>WebSocket for streaming LLM outputs</li>
+                            <li>Easy Docker + Kubernetes deployment</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Flask Section -->
+            <section class="section" id="flask">
+                <h2>Flask Advantages</h2>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>1. Simplicity and minimal boilerplate</h3>
+                        <p>A working Flask app is 5 lines. No mandatory project structure, no forced patterns.
+                            Perfect for prototypes, internal tools, and learning.</p>
+                        <ul>
+                            <li>Minimal "magic" — easy to understand what's happening</li>
+                            <li>Explicit over implicit philosophy</li>
+                            <li>Gentle learning curve</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>2. Massive ecosystem</h3>
+                        <p>13+ years of community extensions covering every use case.</p>
+                        <ul>
+                            <li>Flask-SQLAlchemy, Flask-Migrate (database)</li>
+                            <li>Flask-Login, Flask-JWT-Extended (auth)</li>
+                            <li>Flask-CORS, Flask-Limiter (middleware)</li>
+                            <li>Flask-SocketIO, Flask-Mail (features)</li>
+                            <li>Thousands of tutorials and Stack Overflow answers</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>3. Full-stack web development</h3>
+                        <p>Flask excels at serving HTML templates, not just JSON APIs. Jinja2 templating, static files,
+                            session management — everything for a traditional web app.</p>
+                        <ul>
+                            <li>Jinja2 templates with inheritance</li>
+                            <li>Static file serving built-in</li>
+                            <li>Session and cookie management</li>
+                            <li>Flask-Admin for quick admin panels</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>4. Battle-tested stability</h3>
+                        <p>Flask has been in production at companies of all sizes since 2010. Its API is stable,
+                            well-documented,
+                            and rarely has breaking changes.</p>
+                        <ul>
+                            <li>Used by Netflix, LinkedIn, Pinterest</li>
+                            <li>Mature, predictable release cycle</li>
+                            <li>Long-term support and maintenance</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>5. Flexibility</h3>
+                        <p>Flask is truly a micro-framework — it makes no decisions for you. Choose your own ORM,
+                            validation library, auth solution, and project structure.</p>
+                        <ul>
+                            <li>No forced project structure</li>
+                            <li>Use any database (SQLAlchemy, Mongoengine, etc.)</li>
+                            <li>Blueprints for modular applications</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>6. Synchronous simplicity</h3>
+                        <p>For CPU-bound tasks (most ML inference), synchronous code is simpler to reason about.
+                            No async/await complexity, no event loop debugging.</p>
+                        <ul>
+                            <li>Easier debugging (straightforward stack traces)</li>
+                            <li>No async footguns (forgetting await, etc.)</li>
+                            <li>Gunicorn workers for parallelism</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Head-to-Head Comparison -->
+            <section class="section" id="comparison">
+                <h2>Head-to-head comparison</h2>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>FastAPI</th>
+                                <th>Flask</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Server interface</strong></td>
+                                <td>ASGI (async)</td>
+                                <td>WSGI (sync)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Auto documentation</strong></td>
+                                <td>Built-in (Swagger + ReDoc)</td>
+                                <td>Requires flask-restx or flasgger</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Validation</strong></td>
+                                <td>Pydantic (automatic)</td>
+                                <td>Manual or marshmallow/cerberus</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Type hints</strong></td>
+                                <td>Core design principle</td>
+                                <td>Optional, not leveraged</td>
+                            </tr>
+                            <tr>
+                                <td><strong>WebSocket</strong></td>
+                                <td>Native support</td>
+                                <td>Flask-SocketIO extension</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dependency injection</strong></td>
+                                <td>Built-in, powerful</td>
+                                <td>Manual or Flask-Injector</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Learning curve</strong></td>
+                                <td>Moderate (need type hints, async)</td>
+                                <td>Low (minimal concepts)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ecosystem maturity</strong></td>
+                                <td>Growing (2018+)</td>
+                                <td>Very mature (2010+)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>HTML templating</strong></td>
+                                <td>Supported (Jinja2) but not focus</td>
+                                <td>First-class support</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Concurrent performance</strong></td>
+                                <td>Excellent (async I/O)</td>
+                                <td>Thread/process-based</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Production server</strong></td>
+                                <td>Uvicorn / Gunicorn+Uvicorn</td>
+                                <td>Gunicorn / uWSGI</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Testing</strong></td>
+                                <td>httpx + TestClient (async-aware)</td>
+                                <td>pytest + Flask test client</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- When to Use -->
+            <section class="section" id="when-to-use">
+                <h2>When to use which</h2>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Choose FastAPI when</h3>
+                        <ul>
+                            <li>Building a pure REST/JSON API (no HTML serving)</li>
+                            <li>Serving ML models with strict input validation</li>
+                            <li>Need auto-generated API docs for team/clients</li>
+                            <li>High concurrency with async I/O (database, external APIs)</li>
+                            <li>Streaming responses (LLM token streaming via WebSocket/SSE)</li>
+                            <li>Microservices communicating via typed contracts</li>
+                            <li>Greenfield project with modern Python (3.8+)</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Choose Flask when</h3>
+                        <ul>
+                            <li>Building a full-stack web app with HTML pages</li>
+                            <li>Quick prototypes and internal tools</li>
+                            <li>Team is more comfortable with synchronous code</li>
+                            <li>Need specific Flask extensions not available elsewhere</li>
+                            <li>Legacy codebase already using Flask</li>
+                            <li>Simple webhook receivers or internal dashboards</li>
+                            <li>Learning web development (simpler mental model)</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Code Comparison -->
+            <section class="section" id="code-comparison">
+                <h2>Code comparison</h2>
+                <div class="code-compare">
+                    <div class="code-card">
+                        <h3>FastAPI — ML model endpoint</h3>
+                        <pre>from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+import numpy as np
+
+app = FastAPI(title="ML Prediction API")
+
+class PredictionRequest(BaseModel):
+    features: list[float] = Field(
+        ..., min_length=1, max_length=100
+    )
+    model_version: str = "v1"
+
+class PredictionResponse(BaseModel):
+    prediction: float
+    confidence: float
+    model_version: str
+
+@app.post("/predict",
+          response_model=PredictionResponse)
+async def predict(req: PredictionRequest):
+    # Validation is automatic via Pydantic
+    result = model.predict(
+        np.array([req.features])
+    )
+    return PredictionResponse(
+        prediction=float(result[0]),
+        confidence=0.95,
+        model_version=req.model_version
+    )
+
+# Auto-generates /docs with interactive UI
+# Invalid input → automatic 422 with details</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Flask — equivalent endpoint</h3>
+                        <pre>from flask import Flask, request, jsonify
+import numpy as np
+
+app = Flask(__name__)
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    data = request.get_json()
+
+    # Manual validation required
+    if not data or "features" not in data:
+        return jsonify(
+            {"error": "features required"}
+        ), 400
+
+    features = data["features"]
+    if not isinstance(features, list):
+        return jsonify(
+            {"error": "features must be list"}
+        ), 400
+
+    if len(features) > 100:
+        return jsonify(
+            {"error": "max 100 features"}
+        ), 400
+
+    result = model.predict(
+        np.array([features])
+    )
+    return jsonify({
+        "prediction": float(result[0]),
+        "confidence": 0.95,
+        "model_version": data.get(
+            "model_version", "v1"
+        )
+    })
+
+# Need flask-restx/flasgger for docs
+# All validation is manual</pre>
+                    </div>
+                </div>
+
+                <div class="code-compare" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>FastAPI — Streaming LLM response</h3>
+                        <pre>from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+
+app = FastAPI()
+
+@app.post("/generate")
+async def generate(prompt: str):
+    async def token_stream():
+        async for token in llm.generate(prompt):
+            yield f"data: {token}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        token_stream(),
+        media_type="text/event-stream"
+    )</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Flask — Streaming (more complex)</h3>
+                        <pre>from flask import Flask, Response, stream_with_context
+
+app = Flask(__name__)
+
+@app.route("/generate", methods=["POST"])
+def generate():
+    prompt = request.json.get("prompt")
+
+    def token_stream():
+        # Flask streaming is synchronous
+        # Blocks the worker for duration
+        for token in llm.generate_sync(prompt):
+            yield f"data: {token}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return Response(
+        stream_with_context(token_stream()),
+        content_type="text/event-stream"
+    )
+# Worker is blocked during stream
+# Limits concurrency significantly</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Performance -->
+            <section class="section" id="performance">
+                <h2>Performance considerations</h2>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>FastAPI performance profile</h3>
+                        <ul>
+                            <li><strong>Async I/O:</strong> Single process handles thousands of concurrent connections
+                            </li>
+                            <li><strong>Best for:</strong> APIs waiting on DB/external calls (I/O-bound)</li>
+                            <li><strong>Caveat:</strong> CPU-bound work (ML inference) still blocks the event loop
+                                unless
+                                offloaded to a thread/process pool</li>
+                            <li><strong>Solution:</strong> Use run_in_executor() for CPU-heavy tasks, or deploy with
+                                multiple Uvicorn workers</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Flask performance profile</h3>
+                        <ul>
+                            <li><strong>Process/thread based:</strong> Each worker handles one request at a time</li>
+                            <li><strong>Best for:</strong> CPU-bound tasks where each request does real computation</li>
+                            <li><strong>Scaling:</strong> Gunicorn with N workers = N concurrent requests</li>
+                            <li><strong>Simple model:</strong> No async footguns, predictable memory usage per worker
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note" style="margin-top: 18px;">
+                    <h3>Production deployment pattern</h3>
+                    <p><strong>FastAPI:</strong> Uvicorn (ASGI server) + multiple workers, behind nginx/traefik.
+                        For ML serving: FastAPI + Ray Serve or Triton for model inference separation.</p>
+                    <p><strong>Flask:</strong> Gunicorn (WSGI server) + multiple workers, behind nginx.
+                        For ML serving: Flask + Celery for async job processing.</p>
+                </div>
+            </section>
+
+            <!-- Interview Questions -->
+            <section class="section" id="interview">
+                <h2>Interview Questions</h2>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>Why would you choose FastAPI over Flask for a new ML model serving API?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>1) Automatic input validation via Pydantic prevents malformed requests from reaching
+                                model code.
+                                2) Auto-generated docs make it easy for consumers to understand the API contract.
+                                3) Async support handles concurrent inference requests efficiently.
+                                4) Type hints serve as both documentation and runtime validation.
+                                5) WebSocket/SSE support for streaming LLM token generation.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>What's the difference between WSGI and ASGI?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>WSGI (Web Server Gateway Interface) is synchronous — one request per thread/process.
+                                ASGI (Asynchronous Server Gateway Interface) supports async/await — one process can
+                                handle
+                                thousands of concurrent connections by yielding during I/O waits. ASGI also natively
+                                supports
+                                WebSocket and HTTP/2, which WSGI cannot. Flask uses WSGI; FastAPI uses ASGI.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>If ML inference is CPU-bound, does FastAPI's async actually help?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>Not directly — async helps with I/O waits, not CPU computation. If an async endpoint does
+                                CPU-heavy work, it blocks the event loop. Solutions: 1) Use run_in_executor() to offload
+                                to a thread/process pool. 2) Separate the inference into a dedicated service (Ray Serve,
+                                Triton). 3) Use multiple Uvicorn workers (like Gunicorn + Flask). The async advantage
+                                comes
+                                from handling request parsing, validation, DB calls, and response formatting
+                                concurrently.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>How does Pydantic improve API reliability compared to manual validation?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>1) Single source of truth — the model IS the validation, docs, and serialization.
+                                2) No forgotten edge cases — if a field is defined, it's validated.
+                                3) Clear error messages — tells clients exactly which field failed and why.
+                                4) Composable — nested models, custom validators, computed fields.
+                                5) Performance — Pydantic V2 is written in Rust, faster than manual Python checks.
+                                6) IDE support — type hints enable autocomplete and static analysis.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>FastAPI vs Flask — advantages, tradeoffs, and when to use each framework.</p>
+            <div class="mini-links">
+                <a href="index.html">Home</a>
+                <a href="grpc.html">gRPC</a>
+                <a href="mcp-server.html">MCP</a>
+                <a href="docker-cheatsheet.html">Docker</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilot 06 · Multi-Agent Builder Copilot</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="cop">CP</span>Copilot · 06 Builder</div>
+        <div class="links">
+            <a href="index.html">Copilots Hub</a>
+            <a href="05_devops_copilot.html">← 05</a>
+            <a href="../agent_frameworks_comparison/index.html">Frameworks →</a>
+        </div>
+    </div>
+
+    <div class="header cop">
+        <p class="badge">Build 06 · Advanced · Capstone · "A team of copilots"</p>
+        <h1>🤖 Multi-Agent Builder Copilot</h1>
+        <p class="subtitle">The capstone: instead of one assistant, a <strong>team</strong> of specialised
+            copilots — a planner, a coder, and a tester — that take a feature request, write the code, run the
+            tests, fix failures, and open a pull request. A human approves the plan and the final merge.</p>
+    </div>
+
+    <div class="container">
+        <div class="section cop">
+            <h2>The story — why this copilot exists</h2>
+            <p>The earlier copilots each do <em>one</em> job. But real software work is multi-step: understand
+                the request, plan, write code across files, run tests, read failures, fix, repeat. No single
+                prompt does this reliably.</p>
+            <p>A builder copilot splits the work across specialised agents that critique each other and loop
+                until the tests pass — the same structure behind the most ambitious autonomous-coding projects.
+                It's where everything in this folder (RAG, tools, HITL, agents) comes together.</p>
+            <div class="callout fuchsia">
+                <strong>Inspired by:</strong> <code>All-Hands-AI/OpenHands</code> (OpenDevin),
+                <code>gpt-engineer-org/gpt-engineer</code>, <code>geekan/MetaGPT</code>, and
+                <code>Aider-AI/aider</code> — top-starred autonomous software engineers.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The team &amp; the loop</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    SPEC["Feature request"] --> PLAN["🧭 Planner<br/>break into steps"]
+    PLAN --> APPROVE{"Human approves plan?"}
+    APPROVE -->|no| PLAN
+    APPROVE -->|yes| CODE["⌨️ Coder<br/>edit files via tools"]
+    CODE --> TEST["✅ Tester<br/>run the test suite"]
+    TEST --> PASS{"Tests pass?"}
+    PASS -->|no| FIX["Coder reads failures, fixes"]
+    FIX --> TEST
+    PASS -->|yes| PR["Open pull request"]
+    PR --> HUMAN["👤 Human reviews &amp; merges"]
+                </pre>
+                <p class="caption">A plan-then-build-then-verify loop with two human gates: approve the plan,
+                    and own the merge.</p>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The tools the team shares</h2>
+            <pre><code><span class="c-kw">from</span> langchain_core.tools <span class="c-kw">import</span> tool
+<span class="c-kw">import</span> subprocess, pathlib
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">read_file</span>(path: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Read a file from the repo."""</span>
+    <span class="c-kw">return</span> pathlib.Path(path).read_text()
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">write_file</span>(path: <span class="c-cls">str</span>, content: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Create or overwrite a file (runs in a sandbox/branch)."""</span>
+    pathlib.Path(path).write_text(content)
+    <span class="c-kw">return</span> <span class="c-str">f"wrote {path}"</span>
+
+<span class="c-cls">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">run_tests</span>() -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Run the pytest suite and return the output."""</span>
+    r = subprocess.run([<span class="c-str">"pytest"</span>, <span class="c-str">"-q"</span>], capture_output=<span class="c-kw">True</span>, text=<span class="c-kw">True</span>, timeout=<span class="c-cls">300</span>)
+    <span class="c-kw">return</span> r.stdout + r.stderr</code></pre>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — three agents in a graph</h2>
+            <pre><code><span class="c-kw">from</span> langgraph.graph <span class="c-kw">import</span> StateGraph, START, END, MessagesState
+<span class="c-kw">from</span> langgraph.prebuilt <span class="c-kw">import</span> create_react_agent
+
+coder  = create_react_agent(<span class="c-str">"openai:gpt-4o"</span>, [read_file, write_file],
+                            prompt=<span class="c-str">"You implement the plan by editing files."</span>)
+tester = create_react_agent(<span class="c-str">"openai:gpt-4o"</span>, [run_tests],
+                            prompt=<span class="c-str">"You run tests and report pass/fail with details."</span>)
+
+<span class="c-kw">def</span> <span class="c-fn">plan_node</span>(s):   <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: planner.invoke(s)[<span class="c-str">"messages"</span>]}
+<span class="c-kw">def</span> <span class="c-fn">code_node</span>(s):   <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: coder.invoke(s)[<span class="c-str">"messages"</span>]}
+<span class="c-kw">def</span> <span class="c-fn">test_node</span>(s):   <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: tester.invoke(s)[<span class="c-str">"messages"</span>]}
+
+<span class="c-kw">def</span> <span class="c-fn">tests_passed</span>(s):
+    <span class="c-kw">return</span> END <span class="c-kw">if</span> <span class="c-str">"passed"</span> <span class="c-kw">in</span> s[<span class="c-str">"messages"</span>][-<span class="c-cls">1</span>].content.lower() <span class="c-kw">else</span> <span class="c-str">"code"</span>
+
+g = StateGraph(MessagesState)
+g.add_node(<span class="c-str">"plan"</span>, plan_node)
+g.add_node(<span class="c-str">"code"</span>, code_node)
+g.add_node(<span class="c-str">"test"</span>, test_node)
+g.add_edge(START, <span class="c-str">"plan"</span>)
+g.add_edge(<span class="c-str">"plan"</span>, <span class="c-str">"code"</span>)
+g.add_edge(<span class="c-str">"code"</span>, <span class="c-str">"test"</span>)
+g.add_conditional_edges(<span class="c-str">"test"</span>, tests_passed, {<span class="c-str">"code"</span>: <span class="c-str">"code"</span>, END: END})  <span class="c-com"># fix-and-retry loop</span>
+builder = g.compile()</code></pre>
+            <div class="callout fuchsia">
+                <strong>The test loop is the secret.</strong> Letting the coder <em>see real test failures and
+                    try again</em> is what lifts these systems from "writes plausible code" to "writes code that
+                works." Verification, not generation, is the hard part.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>How this builds on the whole folder</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Earlier project</th>
+                        <th>Reused here as…</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>01 Docs Q&amp;A (RAG)</td>
+                        <td>Retrieving repo context / docs for the planner.</td>
+                    </tr>
+                    <tr>
+                        <td>02 Code Review</td>
+                        <td>A reviewer agent that critiques the coder's diff.</td>
+                    </tr>
+                    <tr>
+                        <td>03 Support (HITL)</td>
+                        <td>Human approval gates on the plan and the merge.</td>
+                    </tr>
+                    <tr>
+                        <td>04 Data Analyst (validation)</td>
+                        <td>The "validate before you run" discipline → run tests before PR.</td>
+                    </tr>
+                    <tr>
+                        <td>05 DevOps (tools)</td>
+                        <td>Shell/file tools, sandboxed and time-boxed.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section cop">
+            <h2>Advantages this copilot brings</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Advantage</th>
+                        <th>Why it matters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Automates multi-step work</td>
+                        <td>Whole small features, not just snippets.</td>
+                    </tr>
+                    <tr>
+                        <td>Self-correcting</td>
+                        <td>The test loop catches and fixes its own mistakes.</td>
+                    </tr>
+                    <tr>
+                        <td>Separation of concerns</td>
+                        <td>Specialised agents outperform one do-everything prompt.</td>
+                    </tr>
+                    <tr>
+                        <td>Human stays in control</td>
+                        <td>Approve the plan, own the merge — no surprise changes.</td>
+                    </tr>
+                    <tr>
+                        <td>Composable</td>
+                        <td>Swap the orchestrator (LangGraph / CrewAI / AutoGen) freely.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section cop">
+            <h2>Best practices &amp; guardrails</h2>
+            <ul>
+                <li><strong>Always sandbox</strong> — run in a container and a throwaway branch; never on
+                    <code>main</code> or the host.
+                </li>
+                <li><strong>Two human gates:</strong> approve the plan up front, review the PR at the end. Never
+                    auto-merge.</li>
+                <li><strong>Cap the loop</strong> — a max-iterations limit so a failing test can't spin forever
+                    (and rack up cost).</li>
+                <li><strong>Scope tools tightly</strong> and time-box shell calls.</li>
+                <li><strong>Trace everything</strong> (LangSmith/OTEL) — multi-agent runs are impossible to
+                    debug blind.</li>
+            </ul>
+        </div>
+
+        <div class="section cop">
+            <h2>You've built a copilot toolkit</h2>
+            <div class="callout fuchsia">
+                Across six projects you covered the full spectrum: <strong>grounding</strong> (RAG),
+                <strong>read-and-comment</strong> automation, <strong>tools + escalation</strong>,
+                <strong>validated actions</strong>, <strong>autonomous diagnosis</strong>, and a
+                <strong>self-correcting multi-agent team</strong> — every pattern you need to build a copilot
+                for almost any workflow, with a human always in the pilot seat.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="05_devops_copilot.html"><span class="dir">Previous</span>
+                <div class="ttl">← 05 · DevOps/SRE</div>
+            </a>
+            <a class="next" href="index.html"><span class="dir">Done</span>
+                <div class="ttl">Back to Copilots Hub</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Copilots · 06 of 06</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

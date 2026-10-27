@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 — QLoRA: Quantized LoRA</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #feca57; }
+  h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #ff6b6b; color: #e1e4f0; }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .hl-box { background: rgba(255,107,107,0.08); border-left: 3px solid #ff6b6b; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .hl-yellow { background: rgba(254,202,87,0.08); border-left: 3px solid #feca57; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .hl-green { background: rgba(85,239,196,0.08); border-left: 3px solid #55efc4; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #ff6b6b; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #feca57; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #ff6b6b; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  ul, ol { color: #c8cbe0; padding-left: 1.25rem; line-height: 2; }
+  .stack-diagram { display: flex; align-items: center; gap: 0.5rem; justify-content: center; flex-wrap: wrap; padding: 1rem 0; }
+  .stack-layer { background: #232740; border: 1px solid #2d3154; border-radius: 8px; padding: 0.8rem 1.2rem; text-align: center; font-size: 0.85rem; min-width: 110px; }
+  .mem-compare { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+  @media (max-width:600px) { .mem-compare { grid-template-columns: 1fr; } }
+  .mem-card { background: #232740; border-radius: 8px; padding: 1rem; text-align: center; }
+  .mem-card .mem-val { font-size: 1.4rem; font-weight: 700; }
+  .mem-card .mem-label { font-size: 0.8rem; color: #8b8fa8; }
+  .r { color: #ff6b6b; } .y { color: #feca57; } .g { color: #55efc4; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="03-lora-deep-dive.html">← 03: LoRA</a>
+  <a href="05-other-peft-methods.html">Next: Other PEFT →</a>
+</div>
+
+<h1>04 · QLoRA — Quantized LoRA</h1>
+<p>What happens when you combine LoRA with 4-bit quantization? You get the ability to fine-tune a <strong>65B model on a single 48GB GPU</strong>.</p>
+
+<h2>🎯 The Problem QLoRA Solves</h2>
+
+<div class="card">
+<p>LoRA already reduces trainable parameters by ~100×. But the <strong>base model weights</strong> are still loaded in FP16 — for a 65B model, that's 130 GB of GPU memory just to hold the frozen base. Most people don't have that kind of hardware.</p>
+
+<p><strong>QLoRA</strong> (Dettmers et al., 2023) introduces three innovations to shrink the base model to a fraction of its size while maintaining quality:</p>
+
+<ol>
+  <li><strong>4-bit NormalFloat (NF4)</strong> — A novel quantization data type optimized for normally distributed weights</li>
+  <li><strong>Double Quantization</strong> — Quantize the quantization constants themselves</li>
+  <li><strong>Paged Optimizers</strong> — Use CPU RAM as overflow for GPU memory spikes via unified memory</li>
+</ol>
+</div>
+
+<h2>📉 The Memory Showdown</h2>
+
+<div class="mem-compare">
+  <div class="mem-card" style="border:1px solid #ff6b6b;">
+    <div class="mem-label">Full FT (FP32)</div>
+    <div class="mem-val r">~1.1 TB</div>
+    <div class="mem-label">for 65B model</div>
+  </div>
+  <div class="mem-card" style="border:1px solid #feca57;">
+    <div class="mem-label">LoRA (FP16 base)</div>
+    <div class="mem-val y">~130 GB</div>
+    <div class="mem-label">for 65B model</div>
+  </div>
+  <div class="mem-card" style="border:1px solid #55efc4;">
+    <div class="mem-label">QLoRA (4-bit)</div>
+    <div class="mem-val g">~46 GB</div>
+    <div class="mem-label">for 65B model</div>
+  </div>
+</div>
+
+<div class="hl-box">
+  <strong>🔥 QLoRA made 65B fine-tuning accessible on a single A100 (48GB) or 2× RTX 3090 (24GB each).</strong> Before QLoRA, this required 8+ A100s. The paper showed that a 4-bit 65B model fine-tuned with QLoRA matches the performance of a full 16-bit 65B fine-tune.
+</div>
+
+<h2>🧮 How NormalFloat (NF4) Works</h2>
+
+<div class="card">
+<p>Standard quantization (INT4) assumes uniformly distributed values. But neural network weights follow a <strong>normal distribution</strong> — most values cluster near zero with a few outliers.</p>
+
+<div class="math-block">
+<span class="dim">// Standard INT4: divides the range [-max, max] into 16 equal bins</span>
+<span class="dim">// Problem: most weights fall into the same bin → high quantization error</span>
+
+<span class="dim">// NF4: divides the range into 16 bins where each bin has EQUAL PROBABILITY</span>
+<span class="dim">// under a normal distribution. More bins near zero, fewer at the tails.</span>
+
+<span class="dim">// Result: NF4 preserves more information than INT4 for normally distributed weights.</span>
+</div>
+
+<div class="hl-yellow">
+  <strong>📊 The improvement:</strong> NF4 reduces quantization error by ~50% compared to standard INT4 for normally distributed data. For LLM weights (which are approximately normal), this is a free quality boost.
+</div>
+</div>
+
+<h2>🔁 Double Quantization</h2>
+
+<div class="card">
+<p>When you quantize a weight from FP16 to INT4, you need a <strong>scale factor</strong> (a floating-point number) per group of weights to dequantize them. These scale factors take memory too.</p>
+
+<div class="math-block">
+<span class="dim">// Standard 4-bit: groups of 64 weights share one FP32 scale factor</span>
+<span class="dim">// Overhead: 1 FP32 per 64 weights = 0.5 bits per weight extra</span>
+
+<span class="dim">// Double quantization: quantize the scale factors themselves!</span>
+<span class="dim">// Scale factors are also approximately normally distributed.</span>
+<span class="dim">// Quantize them to FP8 → overhead drops from 0.5 to 0.127 bits per weight.</span>
+</div>
+
+<table>
+  <thead><tr><th>Method</th><th>Weights</th><th>Scale Factors</th><th>Total Bits/Weight</th></tr></thead>
+  <tbody>
+    <tr><td>Standard 4-bit</td><td>4</td><td>0.5</td><td>4.5</td></tr>
+    <tr><td>Double Quantized</td><td>4</td><td>0.127</td><td><strong>4.127</strong></td></tr>
+  </tbody>
+</table>
+
+<div class="hl-green">
+  <strong>💡 This adds up:</strong> For a 70B model, double quantization saves ~3.5 GB of memory — with zero quality loss (the dequantized values are identical).
+</div>
+</div>
+
+<h2>📄 Paged Optimizers</h2>
+
+<div class="card">
+<p>During training, GPU memory usage <strong>spikes</strong> during the backward pass (activations are stored for gradient computation). If the spike exceeds GPU memory, the training crashes.</p>
+
+<p>QLoRA uses NVIDIA's <strong>unified memory</strong> feature to page optimizer states to CPU RAM when they're not immediately needed, then page them back when required:</p>
+
+<div class="stack-diagram">
+  <div class="stack-layer" style="border-color:#55efc4;">GPU Memory</div>
+  <div class="stack-layer" style="color:#636e72;">← page →</div>
+  <div class="stack-layer" style="border-color:#feca57;">CPU RAM</div>
+</div>
+
+<ul>
+  <li><strong>During forward pass:</strong> optimizer states can live on CPU (not needed for forward computation)</li>
+  <li><strong>At gradient computation:</strong> optimizer states are paged back to GPU</li>
+  <li><strong>After weight update:</strong> optimizer states can return to CPU</li>
+</ul>
+
+<div class="hl-yellow">
+  <strong>🔄 This is transparent to the user.</strong> PyTorch's unified memory handles the paging. The trade-off is speed — paging adds latency. But for the ability to fine-tune a 65B model on one GPU, it's worth it.
+</div>
+</div>
+
+<h2>🧪 QLoRA Performance</h2>
+
+<div class="card">
+<p>The QLoRA paper's key result — <strong>a 4-bit model is statistically indistinguishable from the 16-bit version</strong> after fine-tuning:</p>
+
+<table>
+  <thead><tr><th>Method</th><th>MMLU (5-shot)</th><th>Memory (65B)</th></tr></thead>
+  <tbody>
+    <tr><td>Full FT (16-bit)</td><td>63.9</td><td>~780 GB</td></tr>
+    <tr><td>LoRA (16-bit base)</td><td>63.5</td><td>~130 GB</td></tr>
+    <tr><td>QLoRA (4-bit NF4)</td><td>63.9</td><td>~48 GB</td></tr>
+    <tr><td>QLoRA (4-bit NF4 + double quant)</td><td>63.8</td><td>~46 GB</td></tr>
+  </tbody>
+</table>
+
+<div class="hl-box">
+  <strong>🎯 The headline:</strong> QLoRA achieves <strong>~99.8%</strong> of full fine-tuning quality while using <strong>~6%</strong> of the memory. This is the most impactful fine-tuning advancement of the past few years.
+</div>
+</div>
+
+<h2>⚙️ How It All Fits Together</h2>
+
+<div class="card">
+<div class="stack-diagram">
+  <div class="stack-layer" style="border-color:#55efc4;">4-bit NF4 Base Model (frozen)</div>
+  <div class="stack-layer" style="color:#636e72;">↓ dequantize on-the-fly</div>
+  <div class="stack-layer" style="border-color:#6c5ce7;">FP16 Computation (forward/backward)</div>
+  <div class="stack-layer" style="color:#636e72;">↓</div>
+  <div class="stack-layer" style="border-color:#ff6b6b;">FP16 LoRA Adapter (trainable)</div>
+  <div class="stack-layer" style="color:#636e72;">↓</div>
+  <div class="stack-layer" style="border-color:#feca57;">Adam Optimizer States (paged to CPU)</div>
+</div>
+
+<div class="math-block">
+<span class="dim">// QLoRA forward pass for one linear layer:</span>
+<span class="dim">// 1. Dequantize 4-bit W → FP16 (on-the-fly, not all at once)</span>
+<span class="dim">// 2. Compute: h = dequant(W) · x + BA · x  (LoRA in FP16)</span>
+<span class="dim">// 3. Gradients flow only through A and B (W is frozen)</span>
+
+<span class="dim">// Only LoRA gradients and optimizer states need high precision.</span>
+<span class="dim">// Base model stays in 4-bit throughout training.</span>
+</div>
+
+<div class="hl-green">
+  <strong>💾 Practical memory with QLoRA:</strong> A 7B model fine-tunes in ~10 GB. A 13B model in ~18 GB. A 70B model in ~48 GB. This is why QLoRA is the default for open-source fine-tuning in 2024–2025.
+</div>
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

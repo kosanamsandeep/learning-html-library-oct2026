@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>05 — Weighted Sum, Multi-Head & Project Back</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #00cec9; }
+  h3 { font-size: 1.05rem; margin: 1rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #6c5ce7; color: #e1e4f0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .q { color: #6c5ce7; } .k { color: #00cec9; } .v { color: #fd79a8; } .score { color: #fdcb6e; } .attn { color: #55efc4; } .head { color: #b8a9ff; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  .hl-box { background: rgba(108,92,231,0.08); border-left: 3px solid #6c5ce7; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .matrix-grid { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; margin: 1rem 0; }
+  .matrix-row { display: flex; gap: 0.1rem; align-items: center; }
+  .cell { width: 58px; height: 36px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; border-radius: 5px; font-weight: 500; }
+  .cell-a { background: rgba(85,239,196,0.1); color: #55efc4; border: 1px solid rgba(85,239,196,0.12); }
+  .cell-v { background: rgba(253,121,168,0.1); color: #fd79a8; border: 1px solid rgba(253,121,168,0.12); }
+  .cell-h { background: rgba(184,169,255,0.12); color: #b8a9ff; border: 1px solid rgba(184,169,255,0.15); }
+  .cell-dim { background: transparent; color: #636e72; width: auto; padding: 0 0.5rem; font-size: 0.7rem; }
+  .arrow-sym { font-size: 1.5rem; color: #636e72; margin: 0.3rem 0; }
+  .label { font-size: 0.85rem; font-weight: 600; margin: 0.3rem 0; text-align: center; }
+  .shape { font-size: 0.7rem; color: #636e72; font-family: 'JetBrains Mono', monospace; text-align: center; margin-top: 0.15rem; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #6c5ce7; }
+  .step-card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .step-num { display: inline-block; background: #b8a9ff; color: #1a1d2e; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.8rem; border-radius: 100px; margin-bottom: 0.75rem; }
+  .flow-row { display: flex; align-items: center; gap: 1rem; justify-content: center; flex-wrap: wrap; padding: 1rem; }
+  .flow-box { background: #232740; border: 1px solid #2d3154; border-radius: 10px; padding: 0.75rem 1.25rem; text-align: center; font-size: 0.85rem; min-width: 90px; }
+  .flow-arrow { font-size: 1.2rem; color: #636e72; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="04-causal-masking.html">← 04: Masking</a>
+  <a href="06-training-and-loss.html">Next: Training & Loss →</a>
+</div>
+
+<h1>05 · Weighted Sum, Multi-Head &amp; Project Back</h1>
+<p>The final steps of attention: blend Values into context, combine multiple perspectives, and restore the original embedding size.</p>
+
+<h2>🎯 Step 5: Weighted Sum — A · V</h2>
+
+<div class="step-card">
+<div class="step-num">Step 5</div>
+<h3>Attention Weights × Values = Context-Aware Tokens</h3>
+<p>Each token's output is the <strong>weighted blend</strong> of all Values, weighted by attention. Mathematically: multiply the attention matrix <span class="attn"><strong>A</strong></span> (T×T) by the Value matrix <span class="v"><strong>V</strong></span> (T×d<sub>k</sub>).</p>
+
+<div class="math-block">
+<span class="head">Head_Out</span> = <span class="attn">A</span> · <span class="v">V</span>
+
+<span class="dim">A: (3×3), V: (3×2) → Head_Out: (3×2)</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:0.5rem;justify-content:center;flex-wrap:wrap;padding:1.5rem 0;">
+<div>
+<div class="matrix-grid">
+<div class="label"><span style="color:#55efc4;">Attention A</span></div>
+<div class="matrix-row">
+  <div class="cell cell-a">1.00</div>
+  <div class="cell cell-a">0.00</div>
+  <div class="cell cell-a">0.00</div>
+</div>
+<div class="matrix-row">
+  <div class="cell cell-a">0.24</div>
+  <div class="cell cell-a">0.76</div>
+  <div class="cell cell-a">0.00</div>
+</div>
+<div class="matrix-row">
+  <div class="cell cell-a">0.18</div>
+  <div class="cell cell-a">0.51</div>
+  <div class="cell cell-a">0.31</div>
+</div>
+</div>
+</div>
+<div style="font-size:1.5rem;color:#636e72;">·</div>
+<div>
+<div class="matrix-grid">
+<div class="label"><span style="color:#fd79a8;">Values V</span></div>
+<div class="matrix-row">
+  <div class="cell cell-v">10</div>
+  <div class="cell cell-v">20</div>
+</div>
+<div class="matrix-row">
+  <div class="cell cell-v">30</div>
+  <div class="cell cell-v">40</div>
+</div>
+<div class="matrix-row">
+  <div class="cell cell-v">50</div>
+  <div class="cell cell-v">60</div>
+</div>
+</div>
+</div>
+<div style="font-size:1.5rem;color:#636e72;">=</div>
+<div>
+<div class="matrix-grid">
+<div class="label"><span style="color:#b8a9ff;">Head Output</span></div>
+<div class="matrix-row">
+  <div class="cell cell-h">10.0</div>
+  <div class="cell cell-h">20.0</div>
+  <div class="cell cell-dim">← "the"</div>
+</div>
+<div class="matrix-row">
+  <div class="cell cell-h">25.2</div>
+  <div class="cell cell-h">35.2</div>
+  <div class="cell cell-dim">← "cat"</div>
+</div>
+<div class="matrix-row">
+  <div class="cell cell-h">32.6</div>
+  <div class="cell cell-h">42.6</div>
+  <div class="cell cell-dim">← "sat"</div>
+</div>
+</div>
+</div>
+</div>
+
+<h3>What Happened to Each Token?</h3>
+<table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin:1rem 0;">
+  <thead><tr><th>Token</th><th>Before (its V)</th><th>After</th><th>What Changed</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>"the"</td>
+      <td style="color:#fd79a8;">[10, 20]</td>
+      <td style="color:#b8a9ff;">[10.0, 20.0]</td>
+      <td><span style="color:#636e72;">Unchanged — only attended to itself</span></td>
+    </tr>
+    <tr>
+      <td>"cat"</td>
+      <td style="color:#fd79a8;">[30, 40]</td>
+      <td style="color:#b8a9ff;">[25.2, 35.2]</td>
+      <td><span style="color:#55efc4;">Pulled toward "the" (24% of [10,20] blended in)</span></td>
+    </tr>
+    <tr>
+      <td>"sat"</td>
+      <td style="color:#fd79a8;">[50, 60]</td>
+      <td style="color:#b8a9ff;">[32.6, 42.6]</td>
+      <td><span style="color:#55efc4;">Dramatically shifted: 18% "the" + 51% "cat" + 31% self</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>🔄 Step 6: Multi-Head Attention</h2>
+
+<div class="step-card">
+<div class="step-num">Step 6a</div>
+<h3>Why Multiple Heads?</h3>
+<p>A single attention head can only learn <strong>one</strong> notion of relevance. With multiple heads, the model learns <strong>diverse</strong> attention patterns in parallel.</p>
+
+<div style="display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0;">
+  <div style="flex:1;min-width:160px;background:#232740;border-radius:8px;padding:1rem;text-align:center;">
+    <div style="font-size:0.75rem;color:#636e72;text-transform:uppercase;">Head 1</div>
+    <div style="color:#6c5ce7;font-weight:600;font-size:0.9rem;">Syntax</div>
+    <div style="font-size:0.8rem;color:#8b8fa8;">"cat" → "sat"<br>(subject-verb)</div>
+  </div>
+  <div style="flex:1;min-width:160px;background:#232740;border-radius:8px;padding:1rem;text-align:center;">
+    <div style="font-size:0.75rem;color:#636e72;text-transform:uppercase;">Head 2</div>
+    <div style="color:#00cec9;font-weight:600;font-size:0.9rem;">Proximity</div>
+    <div style="font-size:0.8rem;color:#8b8fa8;">Adjacent tokens<br>get higher weight</div>
+  </div>
+  <div style="flex:1;min-width:160px;background:#232740;border-radius:8px;padding:1rem;text-align:center;">
+    <div style="font-size:0.75rem;color:#636e72;text-transform:uppercase;">Head 3</div>
+    <div style="color:#fd79a8;font-weight:600;font-size:0.9rem;">Semantics</div>
+    <div style="font-size:0.8rem;color:#8b8fa8;">"sat" → "cat"<br>(verb-agent)</div>
+  </div>
+  <div style="flex:1;min-width:160px;background:#232740;border-radius:8px;padding:1rem;text-align:center;">
+    <div style="font-size:0.75rem;color:#636e72;text-transform:uppercase;">Head 4</div>
+    <div style="color:#fdcb6e;font-weight:600;font-size:0.9rem;">Coreference</div>
+    <div style="font-size:0.8rem;color:#8b8fa8;">Pronouns → nouns<br>("it" → "cat")</div>
+  </div>
+</div>
+</div>
+
+<div class="step-card">
+<div class="step-num">Step 6b</div>
+<h3>Concatenate + Project</h3>
+<p>Each head produces output of size d<sub>k</sub>. With <code>h</code> heads, we concatenate them to get back to <strong>n_embd</strong> dimensions. Then a final projection matrix W<sub>O</sub> mixes information across heads.</p>
+
+<div class="math-block">
+<span class="dim">// 2 heads, each d_k = 2, total = 4 = n_embd</span>
+Concat = ⎡10.0 &nbsp; 20.0 &nbsp; | &nbsp; head₂_outs⎤   <span class="dim">// "the"</span>
+         ⎢25.2 &nbsp; 35.2 &nbsp; | &nbsp; head₂_outc⎥   <span class="dim">// "cat"</span>
+         ⎣32.6 &nbsp; 42.6 &nbsp; | &nbsp; head₂_outs⎦   <span class="dim">// "sat"</span>
+
+<span class="dim">Shape: (3 × 4) — back to original embedding size!</span>
+
+Output = Concat · W<sub>O</sub>    <span class="dim">W<sub>O</sub>: (4 × 4) — mixes information across heads</span>
+</div>
+
+<div class="hl-box">
+  <strong>💡 W<sub>O</sub> is critical:</strong> It's not just a shape-converter. W<sub>O</sub> learns <strong>which heads to trust</strong> for which features. If Head 2 (proximity) is noisy for this token, W<sub>O</sub> can down-weight it. The projection <strong>fuses</strong> multi-perspective attention into a single coherent representation.
+</div>
+</div>
+
+<h2>📐 The Full Attention Block</h2>
+
+<div class="step-card">
+<div class="step-num">Complete</div>
+<div class="flow-row">
+  <div class="flow-box" style="border-color:#6c5ce7;">X<br><span style="font-size:0.7rem;color:#636e72;">input</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="border-color:#6c5ce7;">Q·K<sup>T</sup><br><span style="font-size:0.7rem;color:#636e72;">affinity</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="border-color:#ff6b6b;">Mask<br><span style="font-size:0.7rem;color:#636e72;">causal</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="border-color:#55efc4;">Softmax<br><span style="font-size:0.7rem;color:#636e72;">normalize</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="border-color:#b8a9ff;">A·V<br><span style="font-size:0.7rem;color:#636e72;">context</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="border-color:#00cec9;">Concat·W<sub>O</sub><br><span style="font-size:0.7rem;color:#636e72;">project back</span></div>
+</div>
+
+<h3 style="margin-top:1.25rem;">What Comes Next?</h3>
+<p style="font-size:0.95rem;">The attention output goes through:</p>
+<ol style="color:#c8cbe0;padding-left:1.25rem;line-height:2.2;">
+  <li><strong>Residual connection</strong> — Add the original X back: <code>Output = X + Attention(X)</code>. This preserves information and helps gradients flow.</li>
+  <li><strong>LayerNorm</strong> — Stabilize activations.</li>
+  <li><strong>Feed-Forward Network (FFN)</strong> — Each token independently processes its attended representation through MLP layers.</li>
+  <li><strong>Another residual + norm</strong> — Then on to the <strong>next layer</strong>.</li>
+</ol>
+<p style="font-size:0.9rem;color:#636e72;">A typical GPT has 12–96 such layers stacked. Each layer refines the representations further, with progressively more abstract attention patterns.</p>
+</div>
+
+<div class="hl-box">
+  <strong>🔑 Key takeaway:</strong> The attention output (A·V) is a <strong>context-dependent blend</strong> of all previous tokens, weighted by learned relevance. Multiple heads capture different relationship types. The final projection fuses them back into a single rich representation — ready for the next layer or the final prediction.
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

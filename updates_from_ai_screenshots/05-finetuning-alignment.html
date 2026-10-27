@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>05 — Fine-Tuning & Alignment Landscape</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0b0e14; --surface:#11151d; --surface2:#161b26; --border:#232a38; --text:#e6e8ee; --dim:#8a93a6; --mute:#5c6575; --accent:#4fd1c5; --accent2:#7aa2f7; --amber:#e9b949; --rose:#e06c75; --green:#98c379; --violet:#a78bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .tag{ display:inline-block; font-size:0.65rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:0.25em 0.7em; border-radius:100px; margin-right:0.4em; vertical-align:middle; }
+  .tag-v{ background:rgba(152,219,121,0.12); color:var(--green); border:1px solid rgba(152,219,121,0.25); }
+  .tag-h{ background:rgba(167,139,250,0.12); color:var(--violet); border:1px solid rgba(167,139,250,0.25); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(79,209,197,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(233,185,73,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; } @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← AI Industry Radar</a> · Module 05</div>
+  <h1>Fine-Tuning &amp; <em style="color:var(--violet);font-style:normal;">Alignment Landscape</em></h1>
+  <p><span class="tag tag-h">High value</span> The complete technique map — from parameter-efficient tuning to preference optimisation. Includes GRPO, which is what DeepSeek actually uses, so it's directly relevant to your benchmarking.</p>
+
+  <h2>The Full Technique Map</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph LR
+    FT["Fine-Tuning"] --> PEFT["Parameter-Efficient<br/>PEFT"]
+    FT --> ALIGN["Alignment<br/>Preference Optimisation"]
+    PEFT --> P1["LoRA"]
+    PEFT --> P2["QLoRA"]
+    PEFT --> P3["Prefix / P-Tuning"]
+    PEFT --> P4["Adapter Tuning"]
+    PEFT --> P5["BitFit"]
+    PEFT --> P6["Soft Prompts"]
+    ALIGN --> A1["RLHF"]
+    ALIGN --> A2["RLAIF"]
+    ALIGN --> A3["DPO"]
+    ALIGN --> A4["GRPO"]
+    ALIGN --> A5["Instruction Tuning"]
+    FT --> O1["Multi-Task Fine-Tuning"]
+    FT --> O2["Federated Fine-Tuning"]
+  </div>
+  </div>
+
+  <div class="card">
+    <h3>PEFT — Parameter-Efficient Methods</h3>
+    <table>
+      <thead><tr><th>Method</th><th>What it does</th><th>Params added</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td><strong>LoRA</strong></td><td>Frozen base + low-rank update <code>ΔW = BA</code></td><td>~0.01–0.1%</td><td>The default; merges to zero latency</td></tr>
+        <tr><td><strong>QLoRA</strong></td><td>LoRA on a 4-bit quantised base</td><td>~0.01–0.1%</td><td>Memory-constrained; 65B on one GPU</td></tr>
+        <tr><td><strong>Prefix / P-Tuning</strong></td><td>Learnable virtual tokens prepended to inputs/attn</td><td>~0.01–0.1%</td><td>Generation tasks; consumes sequence length</td></tr>
+        <tr><td><strong>Adapter Tuning</strong></td><td>Small bottleneck MLPs inserted between sublayers</td><td>~3–5%</td><td>Legacy; higher inference overhead than LoRA</td></tr>
+        <tr><td><strong>BitFit</strong></td><td>Trains only bias terms</td><td>~0.1%</td><td>Cheap probes, tiny tweaks</td></tr>
+        <tr><td><strong>Soft Prompts</strong></td><td>Learnable embeddings used as prompt prefixes</td><td>tiny</td><td>Quick domain conditioning</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Alignment — Preference Optimisation</h3>
+    <table>
+      <thead><tr><th>Method</th><th>Core idea</th><th>Reward model?</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>RLHF</strong></td><td>Train a reward model on human preferences, then RL-optimise the policy</td><td>Yes (RM)</td><td>The classic pipeline (InstructGPT)</td></tr>
+        <tr><td><strong>RLAIF</strong></td><td>Same, but an <em>AI</em> labels preferences instead of humans</td><td>Yes (AI-labeled)</td><td>Scales labelling; slightly noisier</td></tr>
+        <tr><td><strong>DPO</strong></td><td>Direct preference optimisation — skip the RM, optimise policy from preference pairs directly</td><td>No</td><td>Simpler, more stable than RLHF</td></tr>
+        <tr><td><strong>GRPO</strong></td><td>Group Relative Policy Optimisation — RL with group-relative advantage (no separate critic)</td><td>No (group baseline)</td><td><strong>Used in DeepSeek's training</strong>; cheaper, parallel-friendly</td></tr>
+        <tr><td><strong>Instruction Tuning</strong></td><td>Supervised fine-tuning on instruction→response pairs</td><td>No</td><td>The base layer of "chat" models</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><strong>Why GRPO matters to you:</strong> it's the RL method behind DeepSeek's reasoning models. Understanding it explains why DeepSeek models are both strong at reasoning and cheap to serve — group-relative advantage removes the memory-hungry critic network that classic PPO/RLHF needs. Go to the DeepSeekMath GRPO paper for implementation detail.</div>
+  </div>
+
+  <h2>The Full List (from the practitioner thread — accurate)</h2>
+  <div class="card">
+    <p>The complete set named in the original post, all real and correctly named (the "RLAIF" entry was listed twice — a copy error, not a duplicate technique):</p>
+    <p style="line-height:2.1;">
+      <code>LoRA</code> · <code>QLoRA</code> · <code>Prefix Tuning</code> · <code>Adapter Tuning</code> · <code>Instruction Tuning</code> · <code>P-Tuning</code> · <code>BitFit</code> · <code>Soft Prompts</code> · <code>RLHF</code> · <code>RLAIF</code> · <code>DPO</code> · <code>GRPO</code> · <code>Multi-Task Fine-Tuning</code> · <code>Federated Fine-Tuning</code>
+    </p>
+    <div class="callout warn"><strong>Curriculum advice:</strong> bookmark the list as a checklist, but learn from <strong>primary papers</strong>, not the tweet: LoRA paper, DPO paper, DeepSeekMath GRPO paper, QLoRA paper.</div>
+  </div>
+
+  <h2>How Fine-Tuning Fits With Your Projects</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>When to reach for PEFT</h3>
+      <ul>
+        <li>Consistent output format (JSON, schemas)</li>
+        <li>Domain style / vocabulary</li>
+        <li>Reduce prompt length by baking behaviour into weights</li>
+        <li>You have open-source weights to download</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>When <em>not</em> to (from your own learnings)</h3>
+      <ul>
+        <li>Frontier API models (DeepSeek, Claude) — no weights, API fine-tuning is expensive</li>
+        <li>Dynamic knowledge → use RAG instead</li>
+        <li>Fewer than ~100 clean examples → prompt engineering first</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><strong>Bottom line:</strong> for your single-user learning setups, QLoRA on a 7–13B open model is the practical tool. Understanding GRPO/DPO gives you the conceptual layer behind why those models behave the way they do — which is exactly the depth worth having when you benchmark DeepSeek against GLM/Kimi.</div>
+
+  <a class="prev" href="04-inference-serving.html">← Back: Inference &amp; Serving</a>
+  <a class="next" href="06-tools-directory.html">Next: Verified Tools &amp; MCP Directory →</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#11151d',primaryColor:'#161b26',primaryBorderColor:'#4fd1c5',primaryTextColor:'#e6e8ee',lineColor:'#4fd1c5',secondaryColor:'#0b0e14'}});</script>
+</body>
+</html>

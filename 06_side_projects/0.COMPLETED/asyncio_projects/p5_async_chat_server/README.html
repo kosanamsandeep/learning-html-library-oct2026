@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P5 · Async TCP Chat Server</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>A</span>Asyncio Projects</a>
+            <nav class="top-links"><a href="../index.html">Hub</a><a
+                    href="../p4_resilient_orchestrator/README.html">Prev: P4</a><a href="../../index.html">Side
+                    projects</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 5 · Advanced</p>
+            <h1>Async TCP chat server — many clients, one event loop</h1>
+            <p class="lead">This capstone turns the earlier ideas into a real network program. The server accepts many
+                TCP clients, gives each client its own coroutine, and broadcasts messages without creating one
+                operating-system thread per user.</p>
+        </section>
+        <section class="card">
+            <h2>The story</h2>
+            <p>A chat room is mostly waiting: waiting for a new connection, waiting for a line of text, waiting for a
+                socket to accept bytes. Asyncio is excellent here because the event loop can serve one idle client while
+                another client is typing and a third client is receiving a broadcast.</p>
+        </section>
+        <section class="card">
+            <h2>Files</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>server.py</code></td>
+                        <td>Async TCP server using <code>asyncio.start_server</code>, streams, broadcast, lock, and
+                            graceful client cleanup.</td>
+                    </tr>
+                    <tr>
+                        <td><code>client.py</code></td>
+                        <td>Async client that reads from the server while also accepting terminal input.</td>
+                    </tr>
+                    <tr>
+                        <td><code>requirements.txt</code></td>
+                        <td>No external dependencies.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="card">
+            <h2>Network mental model</h2>
+            <div class="flow">
+                <div class="step">Client connects</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Server creates handler coroutine</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Handler awaits incoming lines</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Room broadcasts to all writers</div>
+            </div>
+            <p>Each client is handled by <code>handle_client</code>. The event loop switches between clients whenever a
+                handler awaits socket input or socket drain.</p>
+        </section>
+        <section class="card">
+            <h2>Core server code</h2>
+            <pre><code>server = await asyncio.start_server(
+    lambda reader, writer: handle_client(reader, writer, room),
+    host,
+    port,
+)
+
+async with server:
+    await server.serve_forever()</code></pre>
+            <p><code>StreamReader</code> reads bytes from the client. <code>StreamWriter</code> writes bytes back.
+                <code>await writer.drain()</code> is important because it respects TCP backpressure if a client is slow.
+            </p>
+        </section>
+        <section class="card">
+            <h2>Why the chat room uses a lock</h2>
+            <p>The chat room has a shared dictionary of connected clients. Even though asyncio usually runs one task at
+                a time, tasks can interleave at await points. The lock makes joins, leaves, and snapshots of connected
+                clients safe and easy to reason about.</p>
+            <pre><code>async with self._lock:
+    self._clients[client.writer] = client</code></pre>
+        </section>
+        <section class="card">
+            <h2>How to run</h2>
+            <pre><code>cd 06_side_projects/asyncio_projects/p5_async_chat_server
+python server.py
+
+# Open another terminal:
+python client.py
+
+# Open a third terminal for a second user:
+python client.py</code></pre>
+            <p>Type a name, then messages. Type <code>/quit</code> to leave.</p>
+        </section>
+        <section class="card">
+            <h2>What to remember</h2>
+            <ul>
+                <li>Async servers are ideal for many mostly-idle connections.</li>
+                <li><code>asyncio.start_server</code> creates a coroutine per connection.</li>
+                <li><code>reader.readline</code> waits for network input without blocking all clients.</li>
+                <li><code>writer.drain</code> handles network backpressure.</li>
+                <li>Shared state still needs careful coordination, often with <code>asyncio.Lock</code>.</li>
+            </ul>
+            <div class="callout"><strong>Interview answer:</strong> An asyncio TCP server scales well for many idle or
+                I/O-bound clients because each connection is a coroutine. The event loop resumes whichever connection
+                has data ready, so the server avoids one thread per client while still handling many clients
+                concurrently.</div>
+        </section>
+    </main>
+</body>
+
+</html>

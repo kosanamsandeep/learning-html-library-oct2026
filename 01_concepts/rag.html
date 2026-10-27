@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrieval Augmented Generation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="langgraph.html">LangGraph</a>
+                <a href="systems-comparison.html">Systems Compare</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What RAG is</a>
+            <a href="#advantages">Advantages</a>
+            <a href="#vector-db">Choosing a vector DB</a>
+            <a href="#dense-vs-sparse">Dense vs sparse embeddings</a>
+            <a href="#indexing">Indexing strategies</a>
+            <a href="#chunking">Chunking strategies</a>
+            <a href="#reranking">Reranking</a>
+            <a href="#inference">Inference pipeline</a>
+            <a href="#context-window">Context window and cost</a>
+            <a href="#caching">Caching in RAG</a>
+            <a href="#evaluation">Evaluation methods</a>
+            <a href="#hallucinations">Avoiding hallucinations</a>
+            <a href="#pipeline">End-to-end setup</a>
+            <a href="#interview">Questionnaire</a>
+            <a href="#next-steps">Next steps</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Systems track</p>
+                    <h1>Retrieval Augmented Generation end to end</h1>
+                    <p><strong>RAG</strong> is a pattern where an application retrieves relevant external knowledge
+                        first and then gives that evidence to the LLM during generation. The model does not answer only
+                        from static pretraining weights. It answers using retrieved context.</p>
+                    <p>The practical value is simple: RAG helps ground answers in your own data, reduce hallucinations,
+                        avoid frequent model retraining, and keep enterprise knowledge current.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core flow</h2>
+                    <p class="formula">documents -> chunk -> embed -> index -> retrieve -> rerank -> prompt -> LLM
+                        answer</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What RAG solves</h3>
+                        <p>If your model needs up-to-date private or domain-specific knowledge, relying only on
+                            base-model weights is usually not enough. RAG connects the model to external evidence at
+                            query time.</p>
+                    </div>
+                    <div class="card">
+                        <h3>What RAG is not</h3>
+                        <p>RAG is not fine-tuning. Fine-tuning changes model behavior or style. RAG injects fresh
+                            context during inference without changing model weights.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="advantages">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Advantage</th>
+                                <th>Why it matters</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Fresh knowledge</td>
+                                <td>You can update the corpus without retraining the model.</td>
+                            </tr>
+                            <tr>
+                                <td>Better grounding</td>
+                                <td>Answers can be tied to retrieved evidence instead of pure model memory.</td>
+                            </tr>
+                            <tr>
+                                <td>Enterprise safety</td>
+                                <td>You can constrain the answer to approved internal documents.</td>
+                            </tr>
+                            <tr>
+                                <td>Lower retraining burden</td>
+                                <td>You do not need full fine-tunes every time documents change.</td>
+                            </tr>
+                            <tr>
+                                <td>Explainability</td>
+                                <td>You can show which chunks or sources were used.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="vector-db">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Storage layer</p>
+                        <h2>Choosing the vector database based on requirement</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Need</th>
+                                <th>Likely fit</th>
+                                <th>Why</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Managed SaaS and fast startup</td>
+                                <td>Pinecone, Weaviate Cloud</td>
+                                <td>Less ops overhead, easy production start.</td>
+                            </tr>
+                            <tr>
+                                <td>Open-source self-hosting</td>
+                                <td>Qdrant, Weaviate, Milvus</td>
+                                <td>Good when you need control and infra ownership.</td>
+                            </tr>
+                            <tr>
+                                <td>Already invested in Postgres</td>
+                                <td>pgvector</td>
+                                <td>Good for moderate scale and simpler architecture.</td>
+                            </tr>
+                            <tr>
+                                <td>Hybrid keyword plus vector search</td>
+                                <td>Elasticsearch, OpenSearch, Weaviate</td>
+                                <td>Strong when lexical matching matters along with semantics.</td>
+                            </tr>
+                            <tr>
+                                <td>Very high scale ANN search</td>
+                                <td>Milvus, Qdrant, Pinecone</td>
+                                <td>Better ANN support and operational tuning.</td>
+                            </tr>
+                            <tr>
+                                <td>Developer prototyping</td>
+                                <td>Chroma, FAISS</td>
+                                <td>Fast to start, but not always ideal as production infrastructure.</td>
+                            </tr>
+                            <tr>
+                                <td>Low-latency cache-like retrieval</td>
+                                <td>Redis with vector support</td>
+                                <td>Useful when retrieval and cache patterns overlap.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Practical rule:</strong> choose by scale, filtering needs, hybrid search support, latency
+                        target, ops model, and existing stack familiarity. The “best” vector DB is highly workload
+                        dependent.</p>
+                </div>
+            </section>
+
+            <section class="section" id="dense-vs-sparse">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Retrieval representation</p>
+                        <h2>Dense vs sparse vector creation in RAG</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Dense embeddings</h3>
+                        <p>Dense embeddings map text into compact continuous vectors where semantic similarity is
+                            captured even when exact words differ.</p>
+                        <ul class="stack-list">
+                            <li>Strong for semantic meaning and paraphrases.</li>
+                            <li>Good when users ask natural-language questions that may not share exact wording with
+                                source documents.</li>
+                            <li>Very common in modern RAG systems.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Sparse embeddings</h3>
+                        <p>Sparse representations emphasize exact term importance or lexical signals, often behaving
+                            closer to learned keyword weighting or BM25-style retrieval.</p>
+                        <ul class="stack-list">
+                            <li>Strong for exact phrase, keyword, and identifier matching.</li>
+                            <li>Useful when product names, codes, legal terms, or medical terminology matter heavily.
+                            </li>
+                            <li>Often better when exact wording is more important than broad semantics.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Dense</th>
+                                <th>Sparse</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Main strength</td>
+                                <td>Semantic similarity and paraphrase understanding.</td>
+                                <td>Exact lexical matching and token-level precision.</td>
+                            </tr>
+                            <tr>
+                                <td>Best for</td>
+                                <td>Natural language questions over conceptual content.</td>
+                                <td>Identifiers, product SKUs, legal clauses, logs, exact terms.</td>
+                            </tr>
+                            <tr>
+                                <td>Main weakness</td>
+                                <td>May miss exact rare keywords or underweight exact codes.</td>
+                                <td>May miss semantically similar phrasing that uses different words.</td>
+                            </tr>
+                            <tr>
+                                <td>Typical use</td>
+                                <td>General semantic retrieval.</td>
+                                <td>Keyword-heavy or exact-match retrieval.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="interview-grid">
+                    <div class="example">
+                        <h2>When dense is advantageous</h2>
+                        <p>If a user asks, <strong>How do I reduce latency in a retrieval system?</strong> and the
+                            source document says <strong>optimize end-to-end query response time</strong>, dense
+                            retrieval can still connect them even though the wording differs.</p>
+                    </div>
+                    <div class="example">
+                        <h2>When sparse is advantageous</h2>
+                        <p>If a user asks for a specific product code like <strong>ABX-4417</strong>, sparse retrieval
+                            usually has an advantage because exact token matching matters more than semantic similarity.
+                        </p>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>What should you use?</h2>
+                    <p><strong>Use dense retrieval when semantic meaning is the main signal.</strong> <strong>Use sparse
+                            retrieval when exact wording is critical.</strong> In many production RAG systems, the
+                        strongest answer is <strong>hybrid retrieval</strong>, where dense and sparse scores are
+                        combined so you get both semantic recall and exact-match precision.</p>
+                </div>
+                <div class="note">
+                    <p><strong>Practical advice:</strong> if your corpus contains codes, product names, legal
+                        references, medical terms, ticket ids, or logs, do not rely only on dense embeddings. Use sparse
+                        or hybrid retrieval.</p>
+                </div>
+            </section>
+
+            <section class="section" id="indexing">
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Common indexing strategies</h3>
+                        <ul class="stack-list">
+                            <li><strong>Flat / brute force:</strong> most accurate, expensive at scale.</li>
+                            <li><strong>HNSW:</strong> very common ANN choice with strong latency-recall tradeoff.</li>
+                            <li><strong>IVF Flat:</strong> cluster-first search, good for large collections.</li>
+                            <li><strong>IVF PQ / product quantization:</strong> compress vectors for large-scale memory
+                                efficiency.</li>
+                            <li><strong>Hybrid dense + sparse:</strong> combine embeddings with BM25 or keyword signals.
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>How to decide</h3>
+                        <ul class="stack-list">
+                            <li>Use flat search only for small corpora or evaluation baselines.</li>
+                            <li>Use HNSW for many practical production use cases.</li>
+                            <li>Use IVF or quantization methods when scale is large and memory matters.</li>
+                            <li>Use hybrid indexing when exact terminology matters, such as product codes, legal
+                                clauses, or medical terms.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="chunking">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Retrieval quality</p>
+                        <h2>Chunking strategies and ideal chunk size</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Strategy</th>
+                                <th>How it works</th>
+                                <th>Best use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Fixed-size token chunks</td>
+                                <td>Split every N tokens with optional overlap.</td>
+                                <td>Simple baseline and large uniform corpora.</td>
+                            </tr>
+                            <tr>
+                                <td>Sentence or paragraph chunking</td>
+                                <td>Split on natural boundaries.</td>
+                                <td>Human-readable documents where local coherence matters.</td>
+                            </tr>
+                            <tr>
+                                <td>Recursive chunking</td>
+                                <td>Try headers, then paragraphs, then sentences, then tokens.</td>
+                                <td>General-purpose document pipelines.</td>
+                            </tr>
+                            <tr>
+                                <td>Semantic chunking</td>
+                                <td>Split where topic changes significantly.</td>
+                                <td>High-quality knowledge bases and long-form documents.</td>
+                            </tr>
+                            <tr>
+                                <td>Parent-child chunking</td>
+                                <td>Retrieve small child chunks but keep larger parent context.</td>
+                                <td>Useful when precision and broader context both matter.</td>
+                            </tr>
+                            <tr>
+                                <td>Sliding window overlap</td>
+                                <td>Each chunk overlaps nearby text.</td>
+                                <td>Reduce boundary loss when answers cross chunk edges.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid two">
+                    <div class="note">
+                        <h3>Ideal chunk size is not universal</h3>
+                        <p>There is no single best chunk size. For many practical RAG systems, a first reasonable range
+                            is roughly <strong>200 to 500 tokens</strong> with some overlap, then tune from there.</p>
+                    </div>
+                    <div class="note">
+                        <h3>Practical tuning rule</h3>
+                        <p>Use smaller chunks when precision matters and answers are local. Use larger chunks when
+                            context is distributed across paragraphs. Always evaluate recall, answer quality, and token
+                            cost together.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="reranking">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What reranking is</h3>
+                        <p>The retriever first finds a set of candidate chunks, often top-k by vector similarity. A
+                            reranker then scores those candidates more precisely against the query and reorders them.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>Why reranking is required</h3>
+                        <p>Dense retrieval is fast, but similarity search alone may not return the best evidence
+                            ordering. Reranking improves precision so the LLM sees fewer but better chunks.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Typical flow:</strong> retrieve top 20 or top 50 candidates cheaply, rerank them with a
+                        stronger cross-encoder or ranking model, then pass top 3 to top 8 chunks into the final prompt.
+                    </p>
+                </div>
+            </section>
+
+            <section class="section" id="inference">
+                <div class="diagram-card">
+                    <img src="assets/rag-pipeline.svg"
+                        alt="Diagram showing RAG ingestion, chunking, embeddings, vector DB, reranker, query retrieval, prompt building, cache layer, and LLM answer.">
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Query comes in</h3>
+                        <p>Normalize the query and check cache first if your system supports it.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Embed the query</h3>
+                        <p>The query is converted into the same embedding space as the indexed chunks.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Retrieve candidates</h3>
+                        <p>The retriever searches the vector DB, often with filters such as tenant, date, or document
+                            type.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Rerank results</h3>
+                        <p>A reranker sorts the most relevant evidence more precisely.</p>
+                    </div>
+                    <div class="step">
+                        <h3>5. Build the prompt</h3>
+                        <p>The system includes the user question, retrieved evidence, instructions, and formatting
+                            constraints.</p>
+                    </div>
+                    <div class="step">
+                        <h3>6. Generate the answer</h3>
+                        <p>The LLM answers using the selected evidence and can optionally cite sources.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="context-window">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Cost control</p>
+                        <h2>Model context window and how to use it efficiently</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>What context window means</h3>
+                        <p>The context window is the maximum amount of input and output tokens the model can consider in
+                            one request. Retrieved chunks consume that budget directly.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why this affects cost</h3>
+                        <p>More tokens mean higher latency and higher inference cost. Sending too many mediocre chunks
+                            is one of the easiest ways to waste money in RAG.</p>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Technique</th>
+                                <th>Why it helps</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Retrieve fewer but better chunks</td>
+                                <td>Reduces prompt size without hurting answer quality if reranking is good.</td>
+                            </tr>
+                            <tr>
+                                <td>Use metadata filters early</td>
+                                <td>Narrows search before generation.</td>
+                            </tr>
+                            <tr>
+                                <td>Compress context</td>
+                                <td>Summarize or extract only relevant passages before final generation.</td>
+                            </tr>
+                            <tr>
+                                <td>Use smaller models for retrieval-side tasks</td>
+                                <td>Planner, classifier, or summarizer steps may not need the largest LLM.</td>
+                            </tr>
+                            <tr>
+                                <td>Cache aggressively</td>
+                                <td>Skips retrieval or generation when possible.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="caching">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Latency and cost</p>
+                        <h2>Caching in RAG and how to avoid unnecessary LLM calls</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cache type</th>
+                                <th>What is cached</th>
+                                <th>When it helps</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Query cache</td>
+                                <td>Normalized user query to prior response.</td>
+                                <td>Repeated exact or near-exact questions.</td>
+                            </tr>
+                            <tr>
+                                <td>Retrieval cache</td>
+                                <td>Query to top-k retrieved chunks.</td>
+                                <td>Skip repeated vector search.</td>
+                            </tr>
+                            <tr>
+                                <td>Embedding cache</td>
+                                <td>Text to embedding vector.</td>
+                                <td>Avoid recomputing embeddings for repeated content.</td>
+                            </tr>
+                            <tr>
+                                <td>Semantic answer cache</td>
+                                <td>Cluster of similar questions to approved answers.</td>
+                                <td>Frequently asked stable questions.</td>
+                            </tr>
+                            <tr>
+                                <td>Chunk cache</td>
+                                <td>Document fragments or parsed outputs.</td>
+                                <td>Large corpora with repeated downstream usage.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How to hit cache and skip the LLM</h3>
+                        <ul class="stack-list">
+                            <li>Normalize queries first.</li>
+                            <li>Check exact cache for deterministic FAQ-like prompts.</li>
+                            <li>Check semantic cache with similarity threshold.</li>
+                            <li>Validate freshness rules and access control.</li>
+                            <li>If cache confidence is high, return the cached answer directly.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Common databases for caching</h3>
+                        <ul class="stack-list">
+                            <li>Redis for fast key-value and TTL-based caching.</li>
+                            <li>Postgres for persistent structured cache records.</li>
+                            <li>Elasticsearch or OpenSearch for searchable response history.</li>
+                            <li>Vector-enabled stores for semantic cache lookup.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="code-card">
+                    <h3>Simple cache-first pipeline</h3>
+                    <pre>normalize(query)
+if exact_cache_hit(query):
+    return cached_answer
+
+if semantic_cache_hit(query, threshold=0.95):
+    return cached_answer
+
+chunks = retrieve(query)
+top_chunks = rerank(chunks)
+
+if answerable_without_llm(top_chunks):
+    return templated_or_cached_response
+
+return llm_generate(query, top_chunks)</pre>
+                </div>
+            </section>
+
+            <section class="section" id="evaluation">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Quality measurement</p>
+                        <h2>How to evaluate a RAG system with RAGAS, DeepEval, and core metrics</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What should be evaluated</h3>
+                        <p>A RAG system has at least two quality layers: <strong>retrieval quality</strong> and
+                            <strong>generation quality</strong>. If you only judge the final answer, you can miss
+                            whether the retriever failed or the LLM ignored good evidence.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Baseline metric buckets</h3>
+                        <ul class="stack-list">
+                            <li>Retrieval recall and precision.</li>
+                            <li>Context precision and context recall.</li>
+                            <li>Faithfulness or groundedness of the answer.</li>
+                            <li>Answer relevancy, correctness, latency, and token cost.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Framework</th>
+                                <th>What it is useful for</th>
+                                <th>What to watch out for</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>RAGAS</td>
+                                <td>Popular RAG-focused evaluation framework with metrics such as faithfulness, answer
+                                    relevancy, context precision, and context recall.</td>
+                                <td>Judge-model scoring is helpful but not perfect. Always spot-check results with human
+                                    review on important datasets.</td>
+                            </tr>
+                            <tr>
+                                <td>DeepEval</td>
+                                <td>Useful for LLM and RAG evaluation pipelines, regression testing, and automated
+                                    quality checks across prompt and workflow changes.</td>
+                                <td>Good for repeatable testing, but you still need carefully curated eval sets and
+                                    clear pass-fail thresholds.</td>
+                            </tr>
+                            <tr>
+                                <td>Human review set</td>
+                                <td>Best for business-critical validation, especially when correctness standards are
+                                    strict or domain-specific.</td>
+                                <td>Expensive and slower, so usually used on high-value golden datasets.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Strong practice:</strong> maintain a small golden evaluation set with known good sources,
+                        expected answers, and known failure cases. Use RAGAS or DeepEval for fast iteration, then
+                        confirm important changes against human-reviewed examples.</p>
+                </div>
+                <div class="checkpoint">
+                    <h2>Most useful evaluation split</h2>
+                    <p>Measure retrieval separately from generation. If relevant chunks were never retrieved, the fix is
+                        usually chunking, indexing, filtering, or reranking. If the right chunks were retrieved but the
+                        answer is still wrong, the fix is usually prompt design, model choice, context formatting, or
+                        output constraints.</p>
+                </div>
+            </section>
+
+            <section class="section" id="hallucinations">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Grounding and safety</p>
+                        <h2>How to reduce hallucinations in RAG using CoT, ToT, guardrails, and stronger grounding</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>First principle</h3>
+                        <p>The most effective way to reduce hallucinations is usually not fancy prompting. It is better
+                            retrieval, better context selection, and explicit instructions to answer only from evidence.
+                            Reasoning techniques help, but they are not substitutes for grounding.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Important distinction</h3>
+                        <p><strong>CoT</strong> and <strong>ToT</strong> help the model reason through a problem.
+                            <strong>Guardrails</strong> help constrain behavior and outputs. They solve different parts
+                            of the problem.</p>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Technique</th>
+                                <th>How it helps</th>
+                                <th>Best use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Grounded prompt with citations</td>
+                                <td>Forces the answer to be tied to retrieved evidence and cite sources or chunk ids.
+                                </td>
+                                <td>Default baseline for production RAG.</td>
+                            </tr>
+                            <tr>
+                                <td>Abstention rule</td>
+                                <td>Tells the model to say it does not know when evidence is missing or weak.</td>
+                                <td>Critical for enterprise and regulated use cases.</td>
+                            </tr>
+                            <tr>
+                                <td>CoT</td>
+                                <td>Helps multi-step reasoning by encouraging the model to break the problem into steps.
+                                </td>
+                                <td>Useful when the answer requires reasoning over multiple retrieved chunks.</td>
+                            </tr>
+                            <tr>
+                                <td>ToT</td>
+                                <td>Explores multiple reasoning branches before selecting a path.</td>
+                                <td>Useful for hard planning or search problems, but often too expensive for everyday
+                                    RAG queries.</td>
+                            </tr>
+                            <tr>
+                                <td>Guardrails</td>
+                                <td>Apply input rules, retrieval checks, schema constraints, forbidden content rules,
+                                    and output validators.</td>
+                                <td>Useful when correctness, format, or policy compliance matters.</td>
+                            </tr>
+                            <tr>
+                                <td>Verification pass</td>
+                                <td>Runs a second step to check whether each claim is supported by retrieved evidence.
+                                </td>
+                                <td>Useful for high-stakes responses.</td>
+                            </tr>
+                            <tr>
+                                <td>Query rewriting or decomposition</td>
+                                <td>Improves retrieval by rewriting vague questions or splitting them into smaller
+                                    sub-questions.</td>
+                                <td>Useful when user queries are broad, ambiguous, or multi-part.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Prompt shape for grounded answers</h3>
+                        <pre>You must answer only from the provided context.
+If the context is insufficient, say: "I do not have enough evidence in the retrieved documents."
+For every major claim, cite the supporting source id.
+Do not invent missing facts.</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Guardrail flow</h3>
+                        <pre>validate_input(query)
+query = rewrite_if_needed(query)
+chunks = retrieve_and_rerank(query)
+if evidence_too_weak(chunks):
+    return abstain()
+
+answer = grounded_generate(query, chunks)
+validate_output_schema(answer)
+verify_claims_against_chunks(answer, chunks)
+return answer</pre>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>When to use CoT:</strong> use it when the answer requires synthesis across multiple
+                        pieces of evidence. <strong>When not to rely on it:</strong> if the retrieved evidence is wrong
+                        or missing, CoT will often produce a well-argued wrong answer.</p>
+                </div>
+                <div class="note">
+                    <p><strong>When to use ToT:</strong> use it for deliberate search, complex planning, or
+                        exploration-heavy agent tasks. For normal FAQ-style RAG, it is usually overkill because latency
+                        and cost rise quickly.</p>
+                </div>
+                <div class="checkpoint">
+                    <h2>Most practical anti-hallucination stack</h2>
+                    <p>For most real systems, start with strong retrieval, reranking, citation-based prompting,
+                        abstention rules, and output validation. Add CoT selectively for multi-hop reasoning. Add ToT
+                        only when the task is genuinely search-heavy and the extra cost is justified.</p>
+                </div>
+            </section>
+
+            <section class="section" id="pipeline">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Production setup</p>
+                        <h2>How to build the full RAG pipeline</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Ingestion pipeline</h3>
+                        <p>Load documents, clean text, attach metadata, and chunk content carefully.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Embedding and indexing pipeline</h3>
+                        <p>Create embeddings, choose the vector index strategy, and store chunks with metadata.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Online retrieval path</h3>
+                        <p>Query normalization, cache check, vector retrieval, filtering, and reranking happen here.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Prompt assembly path</h3>
+                        <p>Only the most useful evidence should go to the LLM. Keep prompts tight for cost control.</p>
+                    </div>
+                    <div class="step">
+                        <h3>5. Answer and feedback loop</h3>
+                        <p>Return the answer, optionally cite sources, log retrieval quality, and use offline evaluation
+                            to keep improving chunking and reranking.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Good RAG is not just vector search.</strong> In practice, quality usually comes from the
+                        combination of chunking, filtering, reranking, prompt design, caching, and evaluation.</p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>How do you choose chunk size in RAG?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>I start from the document structure and expected answer granularity, then evaluate
+                                retrieval recall, answer quality, and token cost together. There is no universal best
+                                size, though 200 to 500 tokens is often a useful first range.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is reranking often worth the extra step?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because cheap retrieval gives broad recall, but reranking gives better precision. That
+                                means fewer irrelevant chunks enter the prompt, which improves quality and reduces cost.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your RAG system is accurate but too expensive. What knobs do you turn first?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Reduce prompt bloat, lower top-k after reranking, add metadata filters, introduce answer
+                                or retrieval caching, and compress context before final generation.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Users say answers feel grounded but miss exact product codes. What would you inspect?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>I would inspect hybrid retrieval, lexical search support, chunk granularity around
+                                structured codes, and whether reranking is overfavoring semantic similarity over exact
+                                match.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="next-steps">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Action plan</p>
+                        <h2>Next steps if you want to build a good RAG system</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Start with a simple baseline</h3>
+                        <p>Use recursive chunking, dense embeddings, a practical vector store, and top-k retrieval.
+                            Measure answer quality before adding complexity.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Add metadata filters and evaluation</h3>
+                        <p>Track retrieval relevance, answer groundedness, latency, and token cost. Do not tune blind.
+                        </p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Add reranking if retrieval quality is noisy</h3>
+                        <p>Reranking is often the first major quality improvement after a baseline dense retriever.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Add hybrid retrieval if exact terms matter</h3>
+                        <p>If your data contains ids, product codes, legal references, or log strings, combine dense and
+                            sparse retrieval.</p>
+                    </div>
+                    <div class="step">
+                        <h3>5. Add graph-aware retrieval if relationships matter</h3>
+                        <p>If answers depend on entities, dependencies, citations, or multi-hop relationships, combine
+                            vector retrieval with a graph layer instead of relying only on chunk similarity.</p>
+                    </div>
+                    <div class="step">
+                        <h3>6. Add caching before scaling traffic</h3>
+                        <p>Introduce exact, semantic, and retrieval caches early if you expect repeated questions or
+                            latency constraints.</p>
+                    </div>
+                    <div class="step">
+                        <h3>7. Optimize prompt size continuously</h3>
+                        <p>Keep only the best chunks in the prompt. RAG quality and cost both depend on disciplined
+                            context selection.</p>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Most practical rule</h2>
+                    <p>Do not begin with the most complex RAG architecture you can imagine. Start with a measurable
+                        baseline, then add reranking, hybrid retrieval, and caching only where the metrics show real
+                        need.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>RAG is best treated as a production retrieval system plus a generation system, not as a single embedding
+                trick.</p>
+            <div class="mini-links">
+                <a href="systems-comparison.html">Systems Compare</a>
+                <a href="langgraph.html">LangGraph</a>
+                <a href="graph-rag-vector-strategies.html">Graph and Vector Retrieval</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

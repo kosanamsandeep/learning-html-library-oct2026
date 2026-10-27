@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Code Review Assistant</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="../"><span>&#8592;</span> Project Hub</a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Project 15 &middot; Cross-Cutting &middot; Capstone</p>
+      <h1>AI Code Review Assistant</h1>
+      <p class="lead">An end-to-end pipeline that reviews every PR against your organisation's anti-pattern corpus, updates the SBOM when dependencies change, and cryptographically signs the review output with the CI system's identity. It weaves eval, supply chain security, and attestation into a single automated workflow.</p>
+    </section>
+
+    <section class="card">
+      <h2>Pipeline Architecture</h2>
+      <p>Unlike isolated tools that handle one concern, this capstone project builds a multi-stage pipeline that touches every challenge area of AI adoption in a production environment: evaluation (review against known anti-patterns), supply chain (SBOM diffing and signing), and governance (verifiable attestation of automated reviews).</p>
+
+      <div class="mermaid">
+<pre class="mermaid">
+---
+config:
+  look: handDrawn
+  theme: neutral
+---
+flowchart LR
+    PR["PR Event"] --> Trigger["CI Trigger"]
+    Trigger --> Checkout["Checkout PR Branch"]
+    Checkout --> Review["Code Review Stage"]
+    Checkout --> Deps["Dependency Check"]
+
+    subgraph Review_Eval["Review & Eval Stage"]
+        Review --> Diff["Generate Diff"]
+        Diff --> AntiPattern["Scan Against Anti-Pattern Corpus"]
+        AntiPattern --> LLM["LLM Review"]
+        LLM --> ReviewReport["Review Report"]
+    end
+
+    subgraph SBOM_Stage["SBOM & Supply Chain Stage"]
+        Deps --> GenSBOM["Generate SBOM"]
+        GenSBOM --> DiffSBOM["Diff Against Baseline SBOM"]
+        DiffSBOM --> SBOMReport["SBOM Change Report"]
+    end
+
+    ReviewReport --> Combine["Combine Reports"]
+    SBOMReport --> Combine
+    Combine --> Sign["Sign Combined Report"]
+    Sign --> Post["Post Review Comment on PR"]
+
+    style PR fill:#fef3c7,stroke:#b45309,color:#78350f
+    style Trigger fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
+    style Sign fill:#ccfbf1,stroke:#0f766e,color:#134e4a
+    style Post fill:#d1fae5,stroke:#047857,color:#064e3b
+    style Review_Eval fill:#fce7f3,stroke:#be185d,color:#831843
+    style SBOM_Stage fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
+</pre>
+      </div>
+
+      <h3>Stage-by-stage breakdown</h3>
+      <table>
+        <tr><th>Stage</th><th>What it does</th><th>Challenge area</th></tr>
+        <tr><td>Code Review</td><td>Generates a diff, passes it through the anti-pattern corpus (from Project 10), then runs an LLM-powered review that looks for bugs, style violations, and security issues flagged by the corpus.</td><td>Eval framework</td></tr>
+        <tr><td>SBOM Diff</td><td>Generates an SBOM for the PR branch, diffs it against the base branch's SBOM, and flags new/vulnerable/removed dependencies.</td><td>Supply chain</td></tr>
+        <tr><td>Report Signing</td><td>Combines review and SBOM reports into a single attestation, then signs it with the CI system's private key (e.g. Sigstore keyless signing or cosign).</td><td>Attestation &amp; governance</td></tr>
+        <tr><td>Post Comment</td><td>Posts the signed attestation digest alongside a human-readable summary as a PR comment.</td><td>Developer workflow</td></tr>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Component Interaction</h2>
+      <p>The pipeline is designed as a sequence of composable stages that communicate through a shared report envelope. Each stage adds its findings to the envelope; the final signing stage seals it.</p>
+
+      <div class="mermaid">
+<pre class="mermaid">
+---
+config:
+  look: handDrawn
+  theme: neutral
+---
+flowchart TD
+    subgraph Envelope["Report Envelope (JSON)"]
+        Meta["PR metadata<br/>repo, sha, author, timestamp"]
+        ReviewData["review_results<br/>- anti-pattern matches<br/>- LLM findings<br/>- severity scores"]
+        SBOMData["sbom_delta<br/>- added deps<br/>- removed deps<br/>- vuln alerts"]
+        Signature["signature<br/>- key ID<br/>- signed digest<br/>- timestamp"]
+    end
+
+    Envelope -->|"stage 1: review"| EvalStage["Anti-Pattern Scanner<br/>+ LLM Reviewer"]
+    Envelope -->|"stage 2: sbom"| SBOMStage["SBOM Generator<br/>+ Diff Engine"]
+    Envelope -->|"stage 3: signing"| SignStage["Sigstore / cosign<br/>Signing"]
+    SignStage -->|"published"| GH["GitHub PR Comment<br/>+ Artifact Attestation"]
+
+    style Envelope fill:#ccfbf1,stroke:#0f766e,color:#134e4a
+    style EvalStage fill:#fce7f3,stroke:#be185d,color:#831843
+    style SBOMStage fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
+    style SignStage fill:#d1fae5,stroke:#047857,color:#064e3b
+</pre>
+      </div>
+
+      <h3>Report Envelope Schema</h3>
+      <pre><code>{
+  "pr": {
+    "number": 1234,
+    "sha": "abc123...",
+    "base": "main",
+    "head": "feature/foo",
+    "author": "dev@org.com"
+  },
+  "review_results": {
+    "anti_pattern_matches": [
+      {"pattern": "sql-injection", "file": "db.py", "line": 42, "severity": "critical"},
+      {"pattern": "hardcoded-secret", "file": "config.py", "line": 15, "severity": "high"}
+    ],
+    "llm_findings": [
+      {"type": "logic-error", "description": "Off-by-one in loop bounds", "file": "sort.py", "line": 23}
+    ],
+    "overall_score": 72
+  },
+  "sbom_delta": {
+    "added": [{"name": "requests", "version": "2.31.0"}],
+    "removed": [{"name": "urllib3", "version": "1.26.0"}],
+    "vulnerable": []
+  },
+  "signature": {
+    "key_id": "ci-bot@org.com",
+    "digest": "sha256:...",
+    "algorithm": "ecdsa-p256",
+    "signed_at": "2025-07-14T15:30:00Z"
+  }
+}
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Starter Code &mdash; Pipeline Orchestration</h2>
+      <pre><code>import json
+import hashlib
+import subprocess
+from pathlib import Path
+from typing import Optional
+
+# ----- Stage 1: Anti-Pattern Scan + LLM Review -----
+
+ANTI_PATTERN_CORPUS = {
+    "sql-injection": {"pattern": r"execute\(.*\+.*\)", "severity": "critical"},
+    "hardcoded-secret": {"pattern": r"(password|secret|api_key)\s*=\s*['\"][^'\"]+['\"]", "severity": "high"},
+    "shell-injection": {"pattern": r"os\.system\(.*\+.*\)", "severity": "critical"},
+    "insecure-deserialization": {"pattern": r"pickle\.loads\(.*\)", "severity": "high"},
+    "weak-crypto": {"pattern": r"md5\(|sha1\(", "severity": "medium"},
+}
+
+
+def stage_review(diff_text: str) -> dict:
+    """Scan diff against anti-pattern corpus and run LLM review."""
+    findings = []
+    for name, spec in ANTI_PATTERN_CORPUS.items():
+        import re
+        matches = re.finditer(spec["pattern"], diff_text)
+        for m in matches:
+            line_num = diff_text[:m.start()].count("\n") + 1
+            findings.append({
+                "pattern": name,
+                "severity": spec["severity"],
+                "line": line_num,
+            })
+    # In production: call LLM for deeper review
+    return {
+        "anti_pattern_matches": findings,
+        "llm_findings": [],
+        "overall_score": max(0, 100 - len(findings) * 15),
+    }
+
+
+# ----- Stage 2: SBOM Generation and Diff -----
+
+def generate_sbom(repo_path: Path) -> dict:
+    """
+    Wrap a tool like syft or cdxgen to produce
+    an SBOM in CycloneDX JSON format.
+    """
+    result = subprocess.run(
+        ["syft", str(repo_path), "-o", "cyclonedx-json"],
+        capture_output=True, text=True, timeout=120,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"SBOM generation failed: {result.stderr}")
+    return json.loads(result.stdout)
+
+
+def diff_sbom(base_sbom: dict, head_sbom: dict) -> dict:
+    """
+    Compare two CycloneDX SBOMs and return added,
+    removed, and vulnerable components.
+    """
+    def _pkg_set(sbom: dict) -> set:
+        return set(
+            f"{c['name']}@{c['version']}"
+            for c in sbom.get("components", [])
+        )
+
+    base = _pkg_set(base_sbom)
+    head = _pkg_set(head_sbom)
+    return {
+        "added": sorted(head - base),
+        "removed": sorted(base - head),
+        "vulnerable": [],  # In production: query OSV/GHSA
+    }
+
+
+# ----- Stage 3: Signing -----
+
+def sign_report(report: dict, key_id: str = "ci-bot@org.com") -> dict:
+    """
+    Sign the report digest with the CI identity.
+    Uses cosign keyless signing in production.
+    """
+    report_bytes = json.dumps(report, sort_keys=True).encode()
+    digest = hashlib.sha256(report_bytes).hexdigest()
+    # In production: subprocess.run(["cosign", "sign-blob", ...])
+    report["signature"] = {
+        "key_id": key_id,
+        "digest": f"sha256:{digest}",
+        "algorithm": "sha256",
+        "signed_at": "2025-07-14T15:30:00Z",  # use datetime.utcnow()
+    }
+    return report
+
+
+# ----- Full Pipeline -----
+
+def run_pipeline(pr_number: int, repo_path: Path, base_sbom: Optional[dict] = None) -> dict:
+    # Gather diff
+    result = subprocess.run(
+        ["git", "diff", "origin/main..."],
+        capture_output=True, text=True, cwd=repo_path,
+    )
+    diff_text = result.stdout
+
+    # Stage 1
+    review_results = stage_review(diff_text)
+
+    # Stage 2
+    head_sbom = generate_sbom(repo_path)
+    sbom_delta = diff_sbom(base_sbom or {}, head_sbom)
+
+    # Build envelope
+    report = {
+        "pr": {
+            "number": pr_number,
+            "sha": subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                capture_output=True, text=True, cwd=repo_path,
+            ).stdout.strip(),
+        },
+        "review_results": review_results,
+        "sbom_delta": sbom_delta,
+    }
+
+    # Stage 3: sign
+    report = sign_report(report)
+    return report
+
+
+# ----- CLI entry point -----
+
+if __name__ == "__main__":
+    report = run_pipeline(
+        pr_number=1234,
+        repo_path=Path("/tmp/my-repo"),
+        base_sbom=None,
+    )
+    print(json.dumps(report, indent=2))
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>How the Three Challenge Areas Intersect</h2>
+      <p>This project demonstrates that AI eval, supply chain security, and governance are not independent concerns&mdash;they interact in production in ways that isolated tools miss:</p>
+
+      <div class="grid">
+        <div class="grid-item">
+          <strong>Eval + Supply Chain</strong>
+          <p style="font-size:0.85rem;margin-top:0.5rem;">An AI-generated code change that introduces a vulnerable dependency (e.g. a known-vulnerable version of a logging library) would be caught by the review LLM, but only the SBOM diff can confirm the version change. Together they provide defence in depth.</p>
+        </div>
+        <div class="grid-item">
+          <strong>Eval + Signing</strong>
+          <p style="font-size:0.85rem;margin-top:0.5rem;">Without signing, there is no way to prove that the review was actually performed by the CI system and not forged. Signing links the review output to a specific pipeline run, enabling audit trails and non-repudiation.</p>
+        </div>
+        <div class="grid-item">
+          <strong>Supply Chain + Signing</strong>
+          <p style="font-size:0.85rem;margin-top:0.5rem;">The SBOM delta is useless if it can be tampered with. Signing the combined report ensures that the dependency changes detected by the pipeline are the ones visible in the audit log, not modified after the fact.</p>
+        </div>
+        <div class="grid-item">
+          <strong>All Three + Observability</strong>
+          <p style="font-size:0.85rem;margin-top:0.5rem;">The signed report becomes a verifiable data point for the governance dashboard (Project 16). It feeds metrics like "percentage of PRs reviewed by AI" and "mean time to address flagged dependencies."</p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Capstone takeaway:</strong> The most robust AI-assisted workflows embed evaluation and security checks into a pipeline that is <em>verifiable by design</em>. Anyone inspecting a PR should be able to trace the review back through the signed attestation to the specific pipeline run, agent configuration, and anti-pattern corpus version used.
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPT Architecture — QKV Deep Dive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', -apple-system, system-ui, sans-serif;
+    background: #0f1117;
+    color: #e1e4f0;
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 2.5rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #6c5ce7, #00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .subtitle { color: #8b8fa8; font-size: 1.1rem; margin-bottom: 2rem; }
+  .course-map {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 2rem 0;
+  }
+  .course-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: #1a1d2e;
+    border: 1px solid #2d3154;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #e1e4f0;
+    transition: all 0.2s;
+  }
+  .course-item:hover {
+    border-color: #6c5ce7;
+    background: #1e2240;
+    transform: translateX(4px);
+  }
+  .course-num {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #6c5ce7;
+    min-width: 2.2rem;
+    text-align: center;
+  }
+  .course-info h3 { font-size: 1.05rem; font-weight: 600; }
+  .course-info p { color: #8b8fa8; font-size: 0.9rem; margin-top: 0.2rem; }
+  .course-tag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 100px;
+    margin-left: 0.75rem;
+    font-weight: 600;
+  }
+  .tag-core { background: rgba(108,92,231,0.2); color: #6c5ce7; border: 1px solid rgba(108,92,231,0.2); }
+  .tag-adv { background: rgba(0,206,201,0.15); color: #00cec9; border: 1px solid rgba(0,206,201,0.2); }
+  .tag-ref { background: rgba(253,121,168,0.15); color: #fd79a8; border: 1px solid rgba(253,121,168,0.2); }
+  .existing-files { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #2d3154; }
+  .existing-files h3 { color: #8b8fa8; margin-bottom: 0.75rem; font-size: 0.95rem; font-weight: 500; }
+  .existing-files a {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    margin: 0.25rem;
+    background: #1a1d2e;
+    border: 1px solid #2d3154;
+    border-radius: 8px;
+    color: #b8b8d0;
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: border-color 0.2s;
+  }
+  .existing-files a:hover { border-color: #00cec9; }
+  .note { background: rgba(253,203,110,0.08); border-left: 3px solid #fdcb6e; padding: 1rem 1.25rem; border-radius: 0 10px 10px 0; margin: 1.5rem 0; font-size: 0.9rem; color: #c8cbe0; }
+</style>
+</head>
+<body>
+
+<h1>🧠 GPT Architecture: Q·K·V Deep Dive</h1>
+<p class="subtitle">A step-by-step walkthrough from raw embeddings to next-token prediction</p>
+
+<div class="note">
+  <strong>📖 How to use:</strong> Files are numbered sequentially — start at <strong>01</strong> and follow through. Each builds on the previous. The final files are reference cheatsheets you can revisit anytime.
+</div>
+
+<div class="course-map">
+
+  <a href="01-qkv-overview.html" class="course-item">
+    <div class="course-num">01</div>
+    <div class="course-info">
+      <h3>Q·K·V Overview &amp; The Library Analogy <span class="course-tag tag-core">Core</span></h3>
+      <p>Why three separate matrices? Intuition through the library search metaphor. What problem does QKV solve?</p>
+    </div>
+  </a>
+
+  <a href="02-input-and-projection.html" class="course-item">
+    <div class="course-num">02</div>
+    <div class="course-info">
+      <h3>Input Embeddings → Q, K, V Projection <span class="course-tag tag-core">Core</span></h3>
+      <p>The Input Matrix X, learned weight matrices W_Q, W_K, W_V, and the linear projection down to head dimension d_k.</p>
+    </div>
+  </a>
+
+  <a href="03-attention-scores.html" class="course-item">
+    <div class="course-num">03</div>
+    <div class="course-info">
+      <h3>Attention Scores — Q·Kᵀ &amp; Scaling <span class="course-tag tag-core">Core</span></h3>
+      <p>Dot-product affinity, why divide by √d_k, and how scores encode "how much should token A attend to token B?"</p>
+    </div>
+  </a>
+
+  <a href="04-causal-masking.html" class="course-item">
+    <div class="course-num">04</div>
+    <div class="course-info">
+      <h3>Causal Masking &amp; Softmax <span class="course-tag tag-core">Core</span></h3>
+      <p>Why decoder-only models mask future tokens, setting upper-triangle to -∞. Then Softmax → attention distribution.</p>
+    </div>
+  </a>
+
+  <a href="05-weighted-sum-and-output.html" class="course-item">
+    <div class="course-num">05</div>
+    <div class="course-info">
+      <h3>Weighted Sum, Multi-Head &amp; Project Back <span class="course-tag tag-core">Core</span></h3>
+      <p>A·V = context-aware token representations. Concatenating parallel heads, W_O projection back to full embedding size.</p>
+    </div>
+  </a>
+
+  <a href="06-training-and-loss.html" class="course-item">
+    <div class="course-num">06</div>
+    <div class="course-info">
+      <h3>Training &amp; Loss Minimization <span class="course-tag tag-adv">Advanced</span></h3>
+      <p>How cross-entropy loss flows back through Q, K, V weights. The gradient tells W_Q, W_K, W_V exactly how to improve.</p>
+    </div>
+  </a>
+
+  <a href="07-next-token-prediction.html" class="course-item">
+    <div class="course-num">07</div>
+    <div class="course-info">
+      <h3>From Attention to Next-Token Prediction <span class="course-tag tag-adv">Advanced</span></h3>
+      <p>The full forward pass: tokenization → embedding → N layers of attention+FFN → unembed → softmax → sample.</p>
+    </div>
+  </a>
+
+  <a href="08-cheatsheet.html" class="course-item">
+    <div class="course-num">08</div>
+    <div class="course-info">
+      <h3>Cheat Sheet &amp; Quick Reference <span class="course-tag tag-ref">Reference</span></h3>
+      <p>All equations, matrix shapes, hyperparameter relationships, and key terminology in one place.</p>
+    </div>
+  </a>
+
+</div>
+
+<div class="existing-files">
+  <h3>📁 Other resources in this folder</h3>
+  <a href="qkv_attention_explainer.html">🎬 Interactive QKV Simulation</a>
+  <a href="nanogpt_explained.html">nanoGPT Explained</a>
+  <a href="nanogpt_math_workbook.html">nanoGPT Math Workbook</a>
+  <a href="llm_evolution_comparison.html">LLM Evolution Comparison</a>
+</div>
+
+</body>
+</html>

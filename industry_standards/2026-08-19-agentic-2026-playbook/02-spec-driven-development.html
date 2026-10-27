@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 — Spec-Driven Development & GitHub Spec Kit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38; --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575; --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f; --green:#a3e077; --violet:#c09bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← Agentic Engineering Playbook</a> · Module 02</div>
+  <h1>Spec-Driven Development &amp; <em style="color:var(--violet);font-style:normal;">GitHub Spec Kit</em></h1>
+  <p>The most prominent methodology shift of 2026: <strong>write the spec first and treat it as the source of truth; the code is what the agent generates from it.</strong> It's an old idea (specs aren't new) re-applied to AI agents — and it is being adopted because agents turn vague briefs into confident, expensive guesses.</p>
+
+  <h2>The problem: the "brilliant intern"</h2>
+  <div class="callout"><strong>The failure it fixes:</strong> hand an agent a vague brief and it fills every gap with plausible-but-wrong guesses — a refund endpoint that reverses payment before checking whether the order shipped. It types fluently but skips edge cases. Field estimates: <strong>~75% of AI-generated code needs rework before merge</strong>, and teams without clear specs report <strong>~3x more debugging time</strong>. The <em>spec</em>, not a longer prompt, is the bounding box.</div>
+
+  <h2>The six stages (Spec Kit workflow)</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph LR
+    A["1 · Constitution<br/>standing rulebook"] --> B["2 · Specify<br/>what &amp; why, not how"]
+    B --> C["3 · Clarify<br/>structured Q&A pass"]
+    C --> D["4 · Plan<br/>tech approach, owns 'how'"]
+    D --> E["5 · Tasks<br/>agent-sized units + deps"]
+    E --> F["6 · Implement<br/>agent follows the settled spec"]
+    F -->|"requirements change"| B
+  </div>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Stage</th><th>Artifact</th><th>What it pins down</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1 · Constitution</strong></td><td><code>constitution</code></td><td>Standing principles that outlive any one feature: scope, stack versions, coding standards, repo structure (e.g. hexagonal), non-negotiables (compliance, security baselines, naming).</td></tr>
+        <tr><td><strong>2 · Specify</strong></td><td><code>spec.md</code></td><td><em>What</em> to build and <em>why</em> — feature description, user/problem statements, functional &amp; non-functional requirements, scenarios, success criteria. Implementation details are forbidden (no framework or DB names); a checklist fails the spec if any leak in.</td></tr>
+        <tr><td><strong>3 · Clarify</strong></td><td>updated <code>spec.md</code></td><td>Conditional structured Q&amp;A: inserts <code>[NEEDS CLARIFICATION]</code> markers, asks up to 3 questions with suggested answers (scope and security get priority), scans for <em>logical gaps between requirements</em>. Repeats until no new questions.</td></tr>
+        <tr><td><strong>4 · Plan</strong></td><td><code>plan.md</code></td><td>Selected stack, architecture, component breakdown, API/data contracts, integration points, deployment, testing approach. Consults the constitution. This is where the <em>how</em> lives — deliberately separate from the spec.</td></tr>
+        <tr><td><strong>5 · Tasks</strong></td><td><code>tasks.md</code></td><td>Discrete agent-executable tasks by user story, with dependency management, parallel markers (<code>[P]</code>), exact file paths, test-first structure, and per-phase checkpoints.</td></tr>
+        <tr><td><strong>6 · Implement</strong></td><td>the code</td><td>The agent executes the task list respecting deps and parallel markers, following TDD. It validates that constitution/spec/plan/tasks all exist before generating code.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Change is a spec edit, not a code patch</h2>
+  <div class="callout"><strong>The core principle:</strong> when requirements change, <em>edit the spec and regenerate the affected tasks</em> — do not hand-patch generated code. Example from the field: a sharing feature changed from per-user to per-team; the team edited the spec and regenerated the affected tasks, keeping the change consistent end-to-end. Some workflows add a <strong>convergence/assessment</strong> stage — gap-finding, a test gate, diff analysis, and a 4-pillar scored verdict (Spec Compliance · Code Quality · Test Adequacy · Risk &amp; Evidence), passing only when all pillars ≥ 70.</div>
+
+  <h2>Maturity levels — where to aim</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>Level</th><th>Name</th><th>Model</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1</strong></td><td>Spec-First</td><td>Write a spec before prompting; often ephemeral — high drift risk.</td></tr>
+        <tr><td><strong>2</strong></td><td>Spec-Anchored</td><td>Spec files live in the repo (<code>.speckit/</code>, constitution); agents implement from them — the Spec Kit model.</td></tr>
+        <tr><td><strong>3</strong></td><td>Spec-as-Source</td><td>Spec is canonical; code regenerates when the spec changes; spec-code alignment is enforced.</td></tr>
+        <tr><td><strong>4</strong></td><td>Spec-to-Application</td><td>Spec is a formal model; code is compiled deterministically (model-to-text), removing the LLM from the generation path — for SOC 2 / HIPAA / DoD reproducible builds.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>When to use it — and when not to</h2>
+  <div class="card">
+    <div class="callout"><strong>Use it when</strong> an AI coding agent does the bulk of the implementation and you want control over what it builds — greenfield features and well-scoped, up-front-pinnable changes. Not for pure exploration where requirements are still unknown.</div>
+    <div class="callout warn"><strong>Two failure modes:</strong>
+      <ul style="margin-top:0.5rem;">
+        <li><strong>Automating a broken process</strong> — a spec for an already-broken process just makes the agent build the broken thing faster.</li>
+        <li><strong>Vibe-coding without security review</strong> — dropping the human review gate reintroduces exactly the unsafe code the spec was meant to prevent.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>2026 field reports</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Thoughtworks Radar (Apr 2026)</strong> — "two broad camps are emerging: teams that rely on continually improving coding agents with minimal structure, and those that favor defined workflows and detailed specifications." Spec Kit is on the radar.</li>
+      <li><strong>Brownfield challenges:</strong> instruction bloat (growing agent instructions → "context rot") and over-verbose markdown outputs. Fix: extract reusable guidance into skills, customize templates, keep it lean.</li>
+      <li><strong>Independent convergence:</strong> major AI vendors reportedly converged on spec-first practice within the same ~18-month window — a rare industry-wide consensus.</li>
+    </ul>
+    <div class="callout"><strong>Worked example (from the Agent Patterns Catalog):</strong> a team's old habit of prompting the agent straight into code "produced plausible files that missed half the edge cases." Adding the constitution → spec → clarify → plan → tasks → implement layer kept the agent bounded and made every claim reviewable before code existed.</div>
+  </div>
+
+  <div class="card">
+    <h3>Sources</h3>
+    <p style="font-size:0.85rem;color:var(--mute);">
+      · <a href="https://www.agentpatternscatalog.org/methodologies/spec-driven-development/">Agent Patterns Catalog · Spec-Driven Development — Methodology</a> (primary)<br>
+      · <a href="https://github.com/Anioko/spec-driven-development/blob/main/docs/maturity-levels.md">spec-driven-development · Maturity levels</a><br>
+      · <a href="https://labs.sogeti.com/spec-driven-development-taming-ais-brilliant-intern-problem-part-1/">Sogeti Labs · Spec-Driven Development: Taming AI's Brilliant Intern Problem</a><br>
+      · <a href="https://www.thoughtworks.com/zh-cn/radar/languages-and-frameworks/github-spec-kit">Thoughtworks Technology Radar · GitHub Spec Kit (Apr 2026)</a><br>
+      · <a href="https://learn.microsoft.com/en-us/training/modules/spec-driven-development-github-spec-kit-greenfield-intro/">Microsoft Learn · Spec-Driven Development module</a>
+    </p>
+  </div>
+
+  <a class="prev" href="01-dynamic-workflows.html">← Back: Dynamic Workflows</a>
+  <a class="next" href="03-context-infrastructure.html">Next: The 80% Problem &amp; Context Infrastructure →</a>
+
+</div>
+</body>
+</html>

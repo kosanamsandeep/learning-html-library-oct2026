@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Project Structure for Scalable Applications</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">PS</span>
+                <span>Python Project Structure Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="python-design-patterns-testing.html">Patterns and Testing</a>
+                <a href="python-solid-principles.html">SOLID</a>
+                <a href="python-dependency-injection.html">Dependency Injection</a>
+                <a href="#layout">Project layout</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#why-structure">Why structure matters</a>
+            <a href="#layout">Recommended layout</a>
+            <a href="#layers">What each folder does</a>
+            <a href="#tests">Where tests should live</a>
+            <a href="#bdd">Where BDD files should live</a>
+            <a href="#example-flow">How a request moves</a>
+            <a href="#anti-patterns">Common mistakes</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card" id="why-structure">
+                <div>
+                    <p class="eyebrow">Architecture for maintainability</p>
+                    <h1>A scalable Python project structure keeps API code, business logic, data access, and tests
+                        separate.</h1>
+                    <p>When Python applications grow, the main failure mode is not syntax. It is <strong>mixing too
+                            many concerns in the same files</strong>. Routes start containing business rules, models
+                        start
+                        calling third-party APIs, and test setup becomes painful.</p>
+                    <p>A clean structure gives every part of the system a clear place. That makes onboarding easier,
+                        refactoring safer, and testing much cheaper.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>One-line rule</h2>
+                    <ul>
+                        <li><strong>Routes:</strong> translate HTTP into application calls</li>
+                        <li><strong>Services:</strong> hold business logic</li>
+                        <li><strong>Repositories:</strong> talk to storage</li>
+                        <li><strong>Tests:</strong> verify behavior at different levels</li>
+                        <li><strong>BDD features:</strong> express user-visible behavior clearly</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section" id="layout">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Suggested layout</p>
+                        <h2>A practical project structure for Python applications</h2>
+                    </div>
+                </div>
+                <div class="code-card">
+                    <h3>Example layout</h3>
+                    <pre>app/
+  api/
+    routes/
+      users.py
+      orders.py
+  services/
+    user_service.py
+    order_service.py
+  repositories/
+    user_repository.py
+    order_repository.py
+  domain/
+    models.py
+    schemas.py
+  integrations/
+    payment_gateway.py
+    email_client.py
+  core/
+    config.py
+    logging.py
+    dependencies.py
+  main.py
+
+tests/
+  unit/
+  integration/
+  api/
+
+features/
+  checkout.feature
+  user_signup.feature
+
+steps/
+  test_checkout_steps.py
+  test_signup_steps.py</pre>
+                </div>
+                <div class="note">
+                    <p><strong>Simple mental model:</strong> keep the runtime app under <strong>app/</strong>, test code
+                        under <strong>tests/</strong>, and business-readable BDD scenarios under
+                        <strong>features/</strong>.
+                    </p>
+                </div>
+            </section>
+
+            <section class="section" id="layers">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Folder responsibilities</p>
+                        <h2>What each folder should contain</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Folder</th>
+                                <th>Purpose</th>
+                                <th>Should contain</th>
+                                <th>Should avoid</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>api/routes</td>
+                                <td>HTTP entry points</td>
+                                <td>Request parsing, response formatting, auth checks</td>
+                                <td>Heavy business logic and SQL queries</td>
+                            </tr>
+                            <tr>
+                                <td>services</td>
+                                <td>Business rules</td>
+                                <td>Use-case logic, orchestration, validation flow</td>
+                                <td>Framework-specific route code</td>
+                            </tr>
+                            <tr>
+                                <td>repositories</td>
+                                <td>Persistence access</td>
+                                <td>Database queries, storage operations</td>
+                                <td>HTTP concerns and unrelated business rules</td>
+                            </tr>
+                            <tr>
+                                <td>domain</td>
+                                <td>Core data concepts</td>
+                                <td>Entities, schemas, value objects, enums</td>
+                                <td>Database sessions and external API calls</td>
+                            </tr>
+                            <tr>
+                                <td>integrations</td>
+                                <td>External systems</td>
+                                <td>Adapters for email, payments, LLMs, queues</td>
+                                <td>Core domain rules spread across vendor code</td>
+                            </tr>
+                            <tr>
+                                <td>core</td>
+                                <td>Shared application setup</td>
+                                <td>Config, dependency wiring, logging, settings</td>
+                                <td>Feature-specific logic</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="tests">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Testing layout</p>
+                        <h2>Where tests should live</h2>
+                    </div>
+                </div>
+                <div class="grid three">
+                    <div class="card">
+                        <h3>Unit tests</h3>
+                        <p>Put focused service or domain tests in <strong>tests/unit</strong>. These should be fast,
+                            isolated, and mostly free of databases and network calls.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Integration tests</h3>
+                        <p>Put repository or external integration tests in <strong>tests/integration</strong>. These
+                            verify real boundaries such as database access, queues, or APIs.</p>
+                    </div>
+                    <div class="card">
+                        <h3>API tests</h3>
+                        <p>Put route-level or end-to-end HTTP tests in <strong>tests/api</strong>. These verify that
+                            the service surface behaves correctly from the client perspective.</p>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Useful rule of thumb</h2>
+                    <p>Most logic bugs should be caught in unit tests. Integration and API tests should be fewer, more
+                        expensive, and targeted at boundary risk.</p>
+                </div>
+            </section>
+
+            <section class="section" id="bdd">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Behavior files</p>
+                        <h2>Where BDD feature files and step definitions should live</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Feature files</h3>
+                        <p>Store business-readable scenarios in <strong>features/</strong>. These files describe
+                            behavior in Given-When-Then language and should be understandable without reading the
+                            application code.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Step definitions</h3>
+                        <p>Store the Python glue code in <strong>steps/</strong> or a test-specific package. Step
+                            definitions connect the natural-language scenario to executable code and assertions.</p>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>Minimal BDD example</h3>
+                    <pre>features/
+  login.feature
+
+steps/
+  test_login_steps.py</pre>
+                </div>
+            </section>
+
+            <section class="section" id="example-flow">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Request flow</p>
+                        <h2>How a typical request should move through the app</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Route receives the request</h3>
+                        <p>The route parses input, checks auth, and calls a service method.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Service applies business rules</h3>
+                        <p>The service validates workflow decisions and coordinates domain behavior.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Repository reads or writes data</h3>
+                        <p>The repository handles the persistence details and returns data in a useful shape.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Route returns the response</h3>
+                        <p>The route translates the service result into an HTTP response or serialized output.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="anti-patterns">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">What to avoid</p>
+                        <h2>Common structural mistakes</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Fat route files</h3>
+                        <ul class="stack-list">
+                            <li>SQL in route handlers</li>
+                            <li>Business rules mixed with HTTP parsing</li>
+                            <li>Third-party API calls directly inside endpoints</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Ambiguous shared folders</h3>
+                        <ul class="stack-list">
+                            <li>Large misc or utils modules that hide unrelated logic</li>
+                            <li>Helpers that become a dumping ground</li>
+                            <li>Shared code without clear ownership or purpose</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <a class="card" href="python-dependency-injection.html">
+                        <span class="tag">Related</span>
+                        <h3>Dependency injection with FastAPI</h3>
+                        <p>See how providers and overrides connect clean project layers without hard coupling.</p>
+                    </a>
+                    <a class="card" href="python-architecture-comparison.html">
+                        <span class="tag warm">Related</span>
+                        <h3>Monolith vs modular monolith vs microservices</h3>
+                        <p>See how project structure choices map to deployment and service-boundary decisions.</p>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>This page shows how to structure Python applications so services, repositories, tests, and BDD files are
+                easy to navigate and maintain.</p>
+            <div class="mini-links">
+                <a href="index.html">Back to home</a>
+                <a href="python-design-patterns-testing.html">Patterns and testing</a>
+                <a href="python-solid-principles.html">SOLID in Python</a>
+                <a href="python-dependency-injection.html">Dependency injection</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

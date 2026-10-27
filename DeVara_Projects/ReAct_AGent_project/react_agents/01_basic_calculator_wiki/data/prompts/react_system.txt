@@ -1,0 +1,18 @@
+Answer the user using the tools below.
+
+Tools:
+{tools}
+
+Use this exact format:
+
+Question: the input question
+Thought: think about what to do
+Action: one of [{tool_names}]
+Action Input: the input for the tool
+Observation: the tool result
+... (repeat Thought/Action/Action Input/Observation as needed)
+Thought: I now know the final answer
+Final Answer: the answer to the user
+
+Question: {input}
+Thought:{agent_scratchpad}

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIY SBOM Generator</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="../"><span>AI</span>Adoption Projects</a>
+      <div class="top-links">
+        <a href="../">Hub</a>
+        <a href="../06_sbom_diff_checker/">Next: SBOM Diff Checker</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Project 05 &mdash; Supply Chain Security</p>
+      <h1>DIY SBOM Generator</h1>
+      <p class="lead">Build a script that scans a Python project, resolves transitive dependencies from <code>requirements.txt</code> + <code>pip freeze</code>, and outputs a CycloneDX-format Software Bill of Materials (SBOM) as JSON.</p>
+    </section>
+
+    <div class="card">
+      <h2>Architecture &amp; Data Flow</h2>
+      <p>The generator follows a linear pipeline: capture the installed environment, resolve each package's dependencies recursively, then assemble the results into the CycloneDX schema.</p>
+      <div class="mermaid">
+<pre class="mermaid">
+flowchart LR
+    A["📄 requirements.txt"] --> C["pip list --format=json"]
+    B["pip freeze"] --> C
+    C --> D["🔍 Resolve Transitive Dependencies"]
+    D --> E["🧬 Build Dependency Graph"]
+    E --> F["📦 Assemble CycloneDX JSON"]
+    F --> G["💾 sbom.json Output"]
+
+    style A fill:#e0e7ff,stroke:#4338ca
+    style B fill:#e0e7ff,stroke:#4338ca
+    style C fill:#ccfbf1,stroke:#0f766e
+    style D fill:#fef3c7,stroke:#b45309
+    style E fill:#ccfbf1,stroke:#0f766e
+    style F fill:#d1fae5,stroke:#047857
+    style G fill:#d1fae5,stroke:#047857
+</pre>
+      </div>
+      <ol>
+        <li><strong>Read project state</strong> &mdash; Parse <code>requirements.txt</code> (or <code>pyproject.toml</code>) for top-level dependencies, then capture the exact installed versions via <code>pip list --format=json</code>.</li>
+        <li><strong>Resolve transitive deps</strong> &mdash; Use <code>pip inspect</code> or the <code>pip_api</code> library to enumerate each package's declared dependencies. Walk the tree recursively, avoiding cycles.</li>
+        <li><strong>Build dependency graph</strong> &mdash; For each package recorded, track which packages it depends on and whether those are required, optional, or development-only.</li>
+        <li><strong>Generate CycloneDX document</strong> &mdash; Assemble a JSON object conforming to the CycloneDX 1.5 schema with <code>bomFormat</code>, <code>specVersion</code>, <code>metadata</code>, <code>components</code>, and <code>dependencies</code> arrays.</li>
+        <li><strong>Write output</strong> &mdash; Serialize to <code>sbom.json</code> with deterministic ordering for reproducible diffs.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Understanding CycloneDX Fields</h2>
+      <p>The CycloneDX standard defines a minimal but expressive schema. Every component in the SBOM carries these key fields:</p>
+      <table>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td><code>bomFormat</code></td>
+          <td>string</td>
+          <td>Always <code>"CycloneDX"</code>. Identifies the document format.</td>
+        </tr>
+        <tr>
+          <td><code>specVersion</code></td>
+          <td>string</td>
+          <td>Schema version, e.g. <code>"1.5"</code>. Controls which fields are valid.</td>
+        </tr>
+        <tr>
+          <td><code>metadata</code></td>
+          <td>object</td>
+          <td>Includes timestamp, tool info (the generator), and the root <code>component</code> (your project).</td>
+        </tr>
+        <tr>
+          <td><code>components[]</code></td>
+          <td>array</td>
+          <td>Every software artifact &mdash; each has a <code>name</code>, <code>version</code>, <code>type</code> (library/framework), <code>purl</code>, and optional <code>licenses</code>.</td>
+        </tr>
+        <tr>
+          <td><code>dependencies[]</code></td>
+          <td>array</td>
+          <td>Maps each component <code>ref</code> (its <code>bom-ref</code> or <code>purl</code>) to an array of <code>dependsOn</code> references, forming the dependency graph.</td>
+        </tr>
+        <tr>
+          <td><code>purl</code></td>
+          <td>string</td>
+          <td>Package URL &mdash; a universal identifier like <code>pkg:pypi/requests@2.31.0</code>. Enables tool-agnostic matching across ecosystems.</td>
+        </tr>
+      </table>
+
+      <div class="callout">
+        <strong>Why PURL matters:</strong> Package URLs (<code>pkg:pypi/django@5.0#arch=linux</code>) provide a universal naming scheme that works across package managers (pip, npm, Maven, etc.). SBOM consumers use PURLs to match components against vulnerability databases like the National Vulnerability Database (NVD) or GitHub Advisory Database.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Starter Code: Python SBOM Generator</h2>
+      <p>This minimal implementation uses <code>pip list</code> for installed packages and <code>pip inspect</code> (available in pip 24+) to resolve dependencies. For older pip versions, you can substitute with <code>pip_api.installed_distributions</code> from the <code>pip-api</code> package.</p>
+      <pre><code>#!/usr/bin/env python3
+"""sbom_gen.py — Generate a CycloneDX 1.5 SBOM for the current Python environment."""
+
+import json
+import subprocess
+import sys
+from datetime import datetime, timezone
+
+
+def get_installed_packages():
+    """Return list of dicts with name, version from pip list."""
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "list", "--format=json"],
+        capture_output=True, text=True, check=True
+    )
+    return json.loads(result.stdout)
+
+
+def get_dependency_tree():
+    """Use pip inspect (pip >= 24) to get the resolved dependency graph."""
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "inspect"],
+        capture_output=True, text=True, check=True
+    )
+    data = json.loads(result.stdout)
+    # data["installed"] is a dict keyed by package name
+    return data.get("installed", {})
+
+
+def build_cyclonedx(installed_pkgs, dep_tree):
+    """Assemble a CycloneDX 1.5 document from pip data."""
+    components = []
+    dependencies = []
+    bom_refs = {}  # name -> bom-ref
+
+    # Build components list
+    for pkg in installed_pkgs:
+        name = pkg["name"]
+        version = pkg["version"]
+        ref = f"pkg:pypi/{name}@{version}".lower()
+        bom_refs[name] = ref
+
+        component = {
+            "type": "library",
+            "name": name,
+            "version": version,
+            "purl": ref,
+            "bom-ref": ref,
+        }
+        components.append(component)
+
+    # Build dependency graph
+    for name, info in dep_tree.items():
+        ref = bom_refs.get(name)
+        if not ref:
+            continue
+        deps = info.get("dependencies", [])
+        depends_on = []
+        for dep_name in deps:
+            dep_version = deps[dep_name].get("version", "")
+            dep_ref = f"pkg:pypi/{dep_name}@{dep_version}".lower()
+            depends_on.append(dep_ref)
+        dependencies.append({
+            "ref": ref,
+            "dependsOn": depends_on,
+        })
+
+    return {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.5",
+        "serialNumber": f"urn:uuid:{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-sbom",
+        "version": 1,
+        "metadata": {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "tools": [{"vendor": "DIY", "name": "sbom_gen.py", "version": "0.1.0"}],
+            "component": {
+                "type": "application",
+                "name": "my-project",
+                "version": "0.1.0",
+                "bom-ref": "pkg:pypi/my-project@0.1.0",
+            },
+        },
+        "components": components,
+        "dependencies": dependencies,
+    }
+
+
+def main():
+    print("🔍 Scanning installed packages...", file=sys.stderr)
+    installed = get_installed_packages()
+    print(f"   Found {len(installed)} packages.", file=sys.stderr)
+
+    print("🧬 Resolving dependency tree...", file=sys.stderr)
+    dep_tree = get_dependency_tree()
+
+    print("📦 Assembling CycloneDX document...", file=sys.stderr)
+    sbom = build_cyclonedx(installed, dep_tree)
+
+    output_path = "sbom.json"
+    with open(output_path, "w") as f:
+        json.dump(sbom, f, indent=2)
+    print(f"✅ SBOM written to {output_path}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+    </div>
+
+    <div class="card">
+      <h2>Transitive Dependencies &amp; Resolution Strategy</h2>
+      <p>Understanding transitive dependencies is critical for an accurate SBOM. A direct dependency (one you list in <code>requirements.txt</code>) pulls in its own dependencies, which pull in theirs, forming a tree.</p>
+
+      <div class="callout">
+        <strong>Example:</strong> Your project depends on <code>requests</code>, which depends on <code>urllib3</code>, <code>certifi</code>, <code>idna</code>, and <code>charset-normalizer</code>. An SBOM that omits these transitive deps will miss vulnerabilities in <code>urllib3</code> &mdash; defeating the purpose of the SBOM.
+      </div>
+
+      <h3>Resolution Approaches</h3>
+      <table>
+        <tr>
+          <th>Method</th>
+          <th>Pros</th>
+          <th>Cons</th>
+        </tr>
+        <tr>
+          <td><code>pip inspect</code> (pip 24+)</td>
+          <td>Official, accurate, includes dependency metadata</td>
+          <td>Requires recent pip; not available in all environments</td>
+        </tr>
+        <tr>
+          <td><code>pip-api</code> library</td>
+          <td>Works with older pip; easy to integrate</td>
+          <td>External dependency; may lag pip releases</td>
+        </tr>
+        <tr>
+          <td>Parse <code>METADATA</code> files directly</td>
+          <td>Zero dependencies; full control</td>
+          <td>Fragile; format changes between Python versions</td>
+        </tr>
+        <tr>
+          <td><code>pip freeze</code> only (flat list)</td>
+          <td>Simplest approach</td>
+          <td>No dependency graph &mdash; flat list only, no parent-child relationships</td>
+        </tr>
+      </table>
+
+      <h3>Handling Cycles</h3>
+      <p>Dependency cycles are rare in Python (pip resolves them) but can appear in edge cases. Always track visited nodes during resolution to avoid infinite loops:</p>
+      <pre><code>def resolve_tree(package_name, visited=None):
+    if visited is None:
+        visited = set()
+    if package_name in visited:
+        return {}  # break cycle
+    visited.add(package_name)
+    # ... fetch dependency info ...
+</code></pre>
+    </div>
+
+    <div class="card">
+      <h2>Running &amp; Extending</h2>
+      <p><strong>Quick start:</strong></p>
+      <pre><code># Create a virtual environment and install some packages
+python -m venv .venv && source .venv/bin/activate
+pip install requests flask django
+
+# Generate the SBOM
+python sbom_gen.py
+
+# Inspect the output
+cat sbom.json | jq '.components | length'
+cat sbom.json | jq '.dependencies[0]'</code></pre>
+
+      <p><strong>Ideas for extension:</strong></p>
+      <ul>
+        <li><strong>License detection:</strong> Query <code>pip show &lt;package&gt;</code> and parse the <code>License:</code> field, or use the <code>Classifier: License ...</code> lines.</li>
+        <li><strong>Vulnerability lookup:</strong> After generating the SBOM, pass it to <code>pip-audit</code> or the OSV API to cross-reference known CVEs.</li>
+        <li><strong>CI/CD integration:</strong> Run this script in your build pipeline, upload the SBOM to Dependency-Track or GitHub Dependency Graph, and fail the build if critical vulnerabilities are found.</li>
+        <li><strong>Multi-format output:</strong> Add SPDX format support alongside CycloneDX so the SBOM works with a wider range of tooling.</li>
+      </ul>
+
+      <p class="quiet">Project source: <a href="https://cyclonedx.org/specification/overview/">CycloneDX Specification</a> &bull; <a href="https://github.com/package-url/purl-spec">Package URL Spec</a></p>
+    </div>
+  </main>
+</body>
+</html>

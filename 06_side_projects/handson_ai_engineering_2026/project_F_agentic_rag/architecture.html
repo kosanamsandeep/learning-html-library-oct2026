@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<title>Project F · Self-Reflective Agentic RAG · Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+ :root{--accent:#7cf0ff;--line:#2a345a;--panel:#121a33;--ink:#e8ecf7;--muted:#a8b3d1}
+ body{margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:#070a17;color:var(--ink);line-height:1.55}
+ header{padding:36px 28px;background:radial-gradient(900px 320px at 0 0,#1a2452 0,transparent 60%);border-bottom:1px solid var(--line)}
+ header h1{margin:0;color:#fff;font-size:1.9rem}header .tag{color:var(--accent);font-size:.85rem}
+ main{padding:28px;max-width:1200px;margin:auto}
+ section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px}
+ section h2{margin-top:0;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:8px}
+ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem}
+ th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left}
+ th{background:#1b2549;color:#cfe1ff}tr:hover td{background:#192142}
+ code{background:#0a0f24;padding:1px 6px;border-radius:4px;color:#ffd6a5}
+ .mermaid{background:#0a0f24;border-radius:8px;padding:16px}
+ .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:600}
+ .ok{background:rgba(124,255,178,.12);color:#7CFFB2;border:1px solid rgba(124,255,178,.4)}
+ .warn{background:rgba(255,209,102,.12);color:#ffd166;border:1px solid rgba(255,209,102,.4)}
+ a{color:var(--accent)} .crumbs{margin-bottom:14px;color:var(--muted)}
+</style></head><body>
+<header><div class="crumbs"><a href="../INDEX.html">← Back to Suite Index</a></div>
+<div class="tag">🧠 Agentic RAG · LangGraph state machine</div>
+<h1>Project F — Self-Reflective Agentic RAG</h1>
+<p style="color:var(--muted);max-width:900px">Inspired by C-RAG / Self-RAG. The
+graph grades retrieval relevance, generation groundedness and final answer
+quality, looping back through query rewriting when any check fails.</p></header>
+<main>
+
+<section><h2>1 · State Machine</h2>
+<div class="mermaid">
+flowchart TD
+  ST([START]) --> R[retrieve]
+  R --> GR[grade_rel]
+  GR -- relevant --> G[generate]
+  GR -- not relevant --> RW[rewrite_query]
+  RW --> R
+  G --> GG[grade_groundedness]
+  GG -- grounded --> GQ[grade_quality]
+  GG -- hallucinated --> G
+  GQ -- quality_ok --> END([END])
+  GQ -- weak --> RW
+  GR -- max iters --> END
+  GQ -- max iters --> END
+</div>
+</section>
+
+<section><h2>2 · State (TypedDict) ERD</h2>
+<div class="mermaid">
+erDiagram
+  RAGSTATE {
+    string question
+    string rewritten_question
+    list   docs
+    string answer
+    bool   relevance_ok
+    bool   grounded_ok
+    bool   quality_ok
+    int    iterations
+  }
+  DOC {
+    string id PK
+    text   text
+  }
+  RAGSTATE ||--o{ DOC : retrieved
+</div>
+</section>
+
+<section><h2>3 · Component Table</h2>
+<table><thead><tr><th>Node</th><th>Function</th><th>Type</th></tr></thead><tbody>
+<tr><td><code>retrieve</code></td><td>BM25 search (swap for hybrid in prod)</td><td>worker</td></tr>
+<tr><td><code>grade_rel</code></td><td>Are passages relevant?</td><td>grader (structured-output)</td></tr>
+<tr><td><code>generate</code></td><td>Grounded answer w/ citations</td><td>worker</td></tr>
+<tr><td><code>grade_ground</code></td><td>Hallucination check</td><td>grader</td></tr>
+<tr><td><code>grade_quality</code></td><td>Does it answer the question?</td><td>grader</td></tr>
+<tr><td><code>rewrite</code></td><td>Query rewriter (temp=0.3)</td><td>worker</td></tr>
+</tbody></table>
+</section>
+
+<section><h2>4 · 2026 Stack Evaluation</h2>
+<table><thead><tr><th>Aspect</th><th>Status</th><th>Note</th></tr></thead><tbody>
+<tr><td>Self-RAG / C-RAG pattern</td><td><span class="pill ok">SOTA</span></td><td>Proven 2024-2026; LangGraph is the canonical impl.</td></tr>
+<tr><td>Graders</td><td><span class="pill ok">SOTA</span></td><td>Structured output replaces brittle keyword parsing.</td></tr>
+<tr><td>Reasoning model for graders</td><td><span class="pill warn">Optional</span></td><td>Use o3-mini / Gemini-3 thinking only on graders to save cost.</td></tr>
+<tr><td>Eval harness</td><td><span class="pill warn">Add</span></td><td>Ragas-2 + DeepEval suites + LangSmith traces.</td></tr>
+<tr><td>Loop bounds</td><td><span class="pill ok">Yes</span></td><td>iterations &lt; 3 prevents runaway loops.</td></tr>
+</tbody></table>
+</section>
+
+</main>
+<script>mermaid.initialize({startOnLoad:true,theme:'dark'});</script>
+</body></html>

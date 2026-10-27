@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Project 8: Authentication Platform - Interfaces & DI Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1100px;
+            margin: auto;
+            padding: 30px;
+            line-height: 1.7;
+            color: #333;
+            background: #fafafa
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #8e44ad;
+            padding-bottom: 10px
+        }
+
+        h2 {
+            color: #7d3c98;
+            margin-top: 40px
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05)
+        }
+
+        .concept {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto
+        }
+
+        .mermaid {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left
+        }
+
+        th {
+            background: #8e44ad;
+            color: #fff
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 12px;
+            border-bottom: 2px solid #8e44ad;
+            z-index: 100
+        }
+
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #7d3c98;
+            font-weight: bold
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🔐 Project 8: Authentication Platform</h1>
+    <p><strong>Level:</strong> Advanced | <strong>Focus:</strong> Abstract Classes, Interfaces, Dependency Inversion</p>
+
+    <nav>
+        <a href="#dip">DIP Explained</a>
+        <a href="#interfaces">Interfaces</a>
+        <a href="#plug">Plug & Play</a>
+        <a href="#diagram">Architecture</a>
+        <a href="#folder">Structure</a>
+    </nav>
+
+    <div id="dip">
+        <h2>⚡ Dependency Inversion Principle (DIP)</h2>
+
+        <div class="concept">
+            <h3>The Rule</h3>
+            <p><strong>"High-level modules should NOT depend on low-level modules. Both should depend on
+                    abstractions."</strong></p>
+        </div>
+
+        <div class="mermaid">
+            graph TD
+            subgraph "❌ Without DIP"
+            A[AuthService] -->|directly depends on| B[LocalAuthProvider]
+            A -->|directly depends on| C[OAuthProvider]
+            Note1[Adding new provider = change AuthService!]
+            end
+        </div>
+
+        <div class="mermaid">
+            graph TD
+            subgraph "✅ With DIP"
+            D[AuthService] -->|depends on| E[AuthProvider Interface]
+            F[LocalAuthProvider] -->|implements| E
+            G[OAuthProvider] -->|implements| E
+            H[ApiKeyProvider] -->|implements| E
+            Note2[Adding new provider = just implement interface!]
+            end
+        </div>
+    </div>
+
+    <div id="interfaces">
+        <h2>🔌 The Interface System</h2>
+
+        <div class="mermaid">
+            classDiagram
+            class AuthProvider {
+            <<interface>>
+                +authenticate(credentials)* AuthResult
+                +validate_token(token)* AuthResult
+                +revoke_token(token)* bool
+                +get_provider_name()* str
+                }
+
+                class PasswordHasher {
+                <<interface>>
+                    +hash_password(password)* str
+                    +verify_password(password, hash)* bool
+                    }
+
+                    class TokenStore {
+                    <<interface>>
+                        +store_token(token)* void
+                        +get_token(token_str)* AuthToken
+                        +revoke_token(token_str)* bool
+                        +cleanup_expired()* int
+                        }
+
+                        class LocalAuthProvider {
+                        +authenticate(credentials) AuthResult
+                        +validate_token(token) AuthResult
+                        +register_user(...)
+                        }
+
+                        class ApiKeyProvider {
+                        +authenticate(credentials) AuthResult
+                        +validate_token(token) AuthResult
+                        +register_api_key(...)
+                        }
+
+                        AuthProvider <|.. LocalAuthProvider AuthProvider <|.. ApiKeyProvider LocalAuthProvider -->
+                            PasswordHasher : uses
+                            LocalAuthProvider --> TokenStore : uses
+                            ApiKeyProvider --> TokenStore : uses
+        </div>
+    </div>
+
+    <div id="plug">
+        <h2>🔌 Plug and Play Design</h2>
+
+        <div class="highlight">
+            <h3>Adding a New Auth Provider</h3>
+            <pre>
+# Step 1: Create new provider (implement interface)
+class OAuthProvider(AuthProvider):
+    def authenticate(self, credentials):
+        code = credentials["code"]
+        # Exchange code for token with Google/GitHub
+        ...
+    
+    def validate_token(self, token): ...
+    def revoke_token(self, token): ...
+    def get_provider_name(self): return "oauth"
+
+# Step 2: Register it (ONE line change!)
+auth_service.register_provider(OAuthProvider())
+
+# Step 3: Use it
+auth_service.authenticate("oauth", {"code": "abc123"})
+
+# NOTHING ELSE CHANGES! Not the service, not other providers, nothing.
+</pre>
+        </div>
+    </div>
+
+    <div id="diagram">
+        <h2>🔄 Authentication Flow</h2>
+
+        <div class="mermaid">
+            sequenceDiagram
+            participant Client
+            participant Service as AuthService
+            participant Provider as AuthProvider (any)
+            participant Hasher as PasswordHasher
+            participant Store as TokenStore
+
+            Client->>Service: authenticate("local", {user, pass})
+            Service->>Service: Find provider by name
+            Service->>Provider: provider.authenticate(credentials)
+            Provider->>Hasher: verify_password(pass, hash)
+            Hasher-->>Provider: True/False
+            Provider->>Store: store_token(new_token)
+            Provider-->>Service: AuthResult(success, user, token)
+            Service-->>Client: AuthResult
+
+            Note over Client,Store: Same flow works for ANY provider!
+        </div>
+    </div>
+
+    <div id="folder">
+        <h2>📁 Folder Structure</h2>
+        <div class="card" style="font-family:monospace">
+            p8_authentication_platform/<br>
+            ├── main.py<br>
+            ├── <strong>interfaces/</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 🆕 ABSTRACT
+            INTERFACES<br>
+            │ &nbsp;&nbsp;└── auth_provider.py &nbsp;← AuthProvider, PasswordHasher, TokenStore<br>
+            ├── <strong>providers/</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 🆕
+            CONCRETE IMPLEMENTATIONS<br>
+            │ &nbsp;&nbsp;├── local_auth_provider.py ← Username/password auth<br>
+            │ &nbsp;&nbsp;└── api_key_provider.py &nbsp;&nbsp;&nbsp;← API key auth<br>
+            └── services/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── auth_service.py &nbsp;&nbsp;&nbsp;← Depends ONLY on interfaces
+        </div>
+
+        <div class="card" style="background:#eaf2f8">
+            <h3>🎯 Key Takeaways</h3>
+            <ol>
+                <li><strong>Interfaces define WHAT</strong>, implementations define HOW</li>
+                <li><strong>DIP</strong>: Both high and low level depend on abstractions</li>
+                <li><strong>Plug & Play</strong>: New providers need zero changes to existing code</li>
+                <li><strong>Multiple interfaces</strong>: AuthProvider + PasswordHasher + TokenStore</li>
+                <li><strong>Next:</strong> Project 9 introduces Factory and Strategy patterns for behavior selection
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Router</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="brand" href="../"><span>AI</span>AI Adoption Projects</a>
+  <div class="nav-links">
+    <a href="../">Hub</a>
+    <a href="../01_context_file_generator/">Context Generator</a>
+    <a href="../02_minimal_mcp_server/">MCP Server</a>
+    <a href="../03_agent_audit_trail_hook/">Audit Hook</a>
+  </div>
+</nav>
+
+<main class="shell">
+  <section class="hero">
+    <p class="eyebrow">Project 04</p>
+    <h1>Agent Router</h1>
+    <p class="subtitle">
+      A thin orchestrator that classifies incoming tasks by type and routes them to the most capable
+      agent in your pool — with fallback strategies, capability registries, and graceful degradation
+      when no agent matches perfectly.
+    </p>
+  </section>
+
+  <section class="card">
+    <span class="tag">OVERVIEW</span>
+    <h2>Why route instead of hard-code?</h2>
+    <p>
+      Organizations that adopt AI coding tools rarely stop at one. A typical setup might include:
+    </p>
+    <ul>
+      <li><strong>Claude Code</strong> for architecture design, planning, and refactoring</li>
+      <li><strong>GitHub Copilot</strong> for inline autocomplete and quick function generation</li>
+      <li><strong>A custom MCP-augmented agent</strong> for domain-specific tasks like security analysis or database schema design</li>
+      <li><strong>A fast, cheap model</strong> (e.g., Claude Haiku) for formatting, linting, and simple Q&A</li>
+    </ul>
+    <p>
+      Without a router, the developer manually decides which tool to use for each task — a slow, inconsistent
+      process. The <strong>Agent Router</strong> automates this decision: it classifies the task, consults a
+      capability registry, and dispatches to the best matching agent.
+    </p>
+    <div class="callout">
+      <strong>Key principle:</strong> Routing is classification + dispatch. Switching is manual.
+      A router makes agent selection systematic, transparent, and auditable.
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="tag indigo">ARCHITECTURE</span>
+    <h2>System design</h2>
+
+    <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TB
+    User[User / CI / API] --> R[Agent Router<br/>Orchestrator]
+
+    subgraph Router["Router Internals"]
+        direction TB
+        C[Task Classifier<br/>LLM or rule-based]
+        REG[Agent Capability<br/>Registry]
+        M[Matcher + Scorer]
+        F[Fallback Handler]
+    end
+
+    R --> C
+    C --> M
+    REG --> M
+    M -->|"Best match &gt;= threshold"| A1
+    M -->|"Best match &gt;= threshold"| A2
+    M -->|"Best match &gt;= threshold"| A3
+    M -->|"Below threshold"| F
+    F --> A4[Fallback Agent<br/>e.g. general-purpose]
+
+    subgraph Pool["Agent Pool"]
+        A1[Claude Code<br/>Architecture / Planning]
+        A2[Copilot<br/>Inline code gen]
+        A3[Security Agent<br/>MCP-augmented]
+        A4
+    end
+
+    A1 --> Resp[Response to User]
+    A2 --> Resp
+    A3 --> Resp
+    A4 --> Resp
+
+    style R fill:#e0e7ff,stroke:#4338ca,stroke-width:2px
+    style C fill:#fef3c7,stroke:#d97706
+    style REG fill:#ccfbf1,stroke:#0f766e
+    style F fill:#ffe4e6,stroke:#be123c
+    style Pool fill:#f3f4f6,stroke:#9ca3af
+</pre>
+      <div class="caption">The router classifies every incoming task, matches it against the agent registry,
+      and dispatches to the highest-scoring agent — or falls back to a general-purpose agent.</div>
+    </div>
+
+    <p>The routing decision has four stages:</p>
+    <ol>
+      <li><strong>Classification:</strong> Extract task type, domain, complexity, and required capabilities from the user input. This can be an LLM call, a few-shot classifier, or a rule-based heuristic (keyword matching).</li>
+      <li><strong>Registration:</strong> Each agent declares its capabilities in a registry — what task types it handles, what models it uses, its strengths and limitations.</li>
+      <li><strong>Scoring:</strong> Compare the task profile against each agent's capability profile. Produce a match score (0.0 - 1.0) for each agent.</li>
+      <li><strong>Dispatch:</strong> Send the task to the agent with the highest score. If all scores fall below a threshold, route to a fallback agent instead.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <span class="tag green">STARTER CODE</span>
+    <h2>Python — router core logic</h2>
+    <p>The following implementation shows the pure routing logic decoupled from any specific agent SDK.
+    The agent registry is declarative, the classifier is a simple keyword-based heuristic (upgradable to
+    an LLM classifier), and the dispatcher is a clean <code>match → score → route</code> pipeline.</p>
+
+<pre><code><span class="c-com">"""agent_router.py — Classify, match, and dispatch tasks to the right agent."""</span>
+
+<span class="c-kw">from</span> dataclasses <span class="c-kw">import</span> dataclass, field
+<span class="c-kw">from</span> typing <span class="c-kw">import</span> Callable, Literal
+<span class="c-kw">import</span> re
+
+
+<span class="c-com"># ---------------------------------------------------------------------------</span>
+<span class="c-com"># Data models</span>
+<span class="c-com"># ---------------------------------------------------------------------------</span>
+
+
+@dataclass
+<span class="c-kw">class</span> <span class="c-cls">TaskProfile</span>:
+    <span class="c-str">"""What we know about an incoming task after classification."""</span>
+    raw_input: <span class="c-kw">str</span>
+    task_type: <span class="c-kw">str</span>                     <span class="c-com"># "code_gen" | "review" | "architect" | "explain" | "security" | ...</span>
+    domain: <span class="c-kw">str</span> = <span class="c-str">"general"</span>              <span class="c-com"># "python" | "fastapi" | "infra" | ...</span>
+    complexity: Literal[<span class="c-str">"low"</span>, <span class="c-str">"medium"</span>, <span class="c-str">"high"</span>] = <span class="c-str">"medium"</span>
+    language: <span class="c-kw">str</span> = <span class="c-str">"python"</span>
+    requires_context: <span class="c-kw">bool</span> = <span class="c-kw">False</span>
+
+
+@dataclass
+<span class="k">class</span> <span class="c-cls">AgentCapability</span>:
+    <span class="c-str">"""What an agent can do and how good it is at it."""</span>
+    name: <span class="c-kw">str</span>
+    description: <span class="c-kw">str</span>
+    task_types: <span class="c-kw">list</span>[<span class="c-kw">str</span>]                  <span class="c-com"># task types it handles</span>
+    domains: <span class="c-kw">list</span>[<span class="c-kw">str</span>]                     <span class="c-com"># domain specializations</span>
+    max_complexity: Literal[<span class="c-str">"low"</span>, <span class="c-str">"medium"</span>, <span class="c-str">"high"</span>] = <span class="c-str">"high"</span>
+    supports_context: <span class="c-kw">bool</span> = <span class="c-kw">True</span>
+    invoke: Callable[[<span class="c-kw">str</span>], <span class="c-kw">str</span>] = field(repr=<span class="c-kw">False</span>)  <span class="c-com"># how to call this agent</span>
+
+
+<span class="c-com"># ---------------------------------------------------------------------------</span>
+<span class="c-com"># Classifier</span>
+<span class="c-com"># ---------------------------------------------------------------------------</span>
+
+
+<span class="c-kw">def</span> <span class="c-fn">classify_task</span>(user_input: <span class="c-kw">str</span>) -> TaskProfile:
+    <span class="c-com">"""Heuristic classifier. Replace with an LLM call for stronger accuracy."""</span>
+    text = user_input.lower()
+
+    <span class="c-com"># Task type heuristics</span>
+    <span class="c-kw">if</span> re.search(<span class="c-str">r"review|audit|check|security|vulnerab"</span>, text):
+        task_type = <span class="c-str">"security"</span>
+    <span class="c-kw">elif</span> re.search(<span class="c-str">r"architect|design|plan|schema|system|diagram"</span>, text):
+        task_type = <span class="c-str">"architect"</span>
+    <span class="c-kw">elif</span> re.search(<span class="c-str">r"explain|what is|how does|why|difference|compare"</span>, text):
+        task_type = <span class="c-str">"explain"</span>
+    <span class="c-kw">elif</span> re.search(<span class="c-str">r"write|implement|create|add|refactor|update|fix"</span>, text):
+        task_type = <span class="c-str">"code_gen"</span>
+    <span class="c-kw">else</span>:
+        task_type = <span class="c-str">"code_gen"</span>
+
+    <span class="c-com"># Domain detection</span>
+    domain = <span class="c-str">"general"</span>
+    <span class="c-kw">if</span> re.search(<span class="c-str">r"fastapi|django|flask|api|endpoint|route"</span>, text):
+        domain = <span class="c-str">"web"</span>
+    <span class="c-kw">elif</span> re.search(<span class="c-str">r"docker|kubernetes|k8s|deploy|ci|cd|terraform"</span>, text):
+        domain = <span class="c-str">"infra"</span>
+    <span class="c-kw">elif</span> re.search(<span class="c-str">r"sql|database|query|schema|migration|orm"</span>, text):
+        domain = <span class="c-str">"data"</span>
+
+    <span class="c-com"># Complexity estimate</span>
+    complexity = <span class="c-str">"medium"</span>
+    <span class="c-kw">if</span> re.search(<span class="c-str">r"simple|quick|trivial|easy|format|rename"</span>, text):
+        complexity = <span class="c-str">"low"</span>
+    <span class="c-kw">elif</span> re.search(<span class="c-str">"complex|advanced|large|multi|distributed|optimize"</span>, text):
+        complexity = <span class="c-str">"high"</span>
+
+    <span class="c-kw">return</span> TaskProfile(
+        raw_input=user_input,
+        task_type=task_type,
+        domain=domain,
+        complexity=complexity,
+        requires_context=<span class="c-str">"context"</span> <span class="c-kw">in</span> text or <span class="c-str">"existing"</span> <span class="c-kw">in</span> text,
+    )
+
+
+<span class="c-com"># ---------------------------------------------------------------------------</span>
+<span class="c-com"># Matching &amp; scoring</span>
+<span class="c-com"># ---------------------------------------------------------------------------</span>
+
+<span class="c-kw">def</span> <span class="c-fn">score_agent</span>(task: TaskProfile, agent: AgentCapability) -> float:
+    <span class="c-com">"""Score how well an agent matches a task (0.0 - 1.0)."""</span>
+    score = 0.0
+
+    <span class="c-com"># Task type match (highest weight)</span>
+    <span class="c-kw">if</span> task.task_type <span class="c-kw">in</span> agent.task_types:
+        score += 0.5
+
+    <span class="c-com"># Domain match</span>
+    <span class="c-kw">if</span> task.domain <span class="c-kw">in</span> agent.domains:
+        score += 0.2
+    <span class="c-kw">elif</span> <span class="c-str">"general"</span> <span class="c-kw">in</span> agent.domains:
+        score += 0.1
+
+    <span class="c-com"># Complexity fit</span>
+    complexity_order = {<span class="c-str">"low"</span>: 0, <span class="c-str">"medium"</span>: 1, <span class="c-str">"high"</span>: 2}
+    <span class="c-kw">if</span> complexity_order[task.complexity] &lt;= complexity_order[agent.max_complexity]:
+        score += 0.2
+    <span class="c-kw">else</span>:
+        score += 0.05  <span class="c-com"># can still try but not ideal</span>
+
+    <span class="c-com"># Context support</span>
+    <span class="c-kw">if</span> task.requires_context <span class="c-kw">and</span> agent.supports_context:
+        score += 0.1
+
+    <span class="c-kw">return</span> min(score, 1.0)
+
+
+<span class="c-kw">def</span> <span class="c-fn">route</span>(
+    task: TaskProfile,
+    agents: <span class="c-kw">list</span>[AgentCapability],
+    threshold: <span class="c-kw">float</span> = 0.3,
+) -> AgentCapability:
+    <span class="c-com">"""Route the task to the best-matching agent, falling back if needed."""</span>
+    scored = [(score_agent(task, a), a) <span class="c-kw">for</span> a <span class="c-kw">in</span> agents]
+    scored.sort(key=<span class="c-kw">lambda</span> x: x[0], reverse=<span class="c-kw">True</span>)
+
+    best_score, best_agent = scored[0]
+    <span class="c-kw">if</span> best_score &lt; threshold:
+        <span class="c-com"># Below threshold — find fallback agent</span>
+        fallbacks = [a <span class="c-kw">for</span> a <span class="c-kw">in</span> agents <span class="c-kw">if</span> <span class="c-str">"fallback"</span> <span class="c-kw">in</span> a.task_types]
+        <span class="c-kw">if</span> fallbacks:
+            <span class="k">return</span> fallbacks[0]
+        <span class="c-kw">return</span> best_agent  <span class="c-com"># best effort</span>
+
+    <span class="k">return</span> best_agent
+
+
+<span class="c-com"># ---------------------------------------------------------------------------</span>
+<span class="c-com"># Example usage</span>
+<span class="c-com"># ---------------------------------------------------------------------------</span>
+
+<span class="c-kw">if</span> __name__ == <span class="c-str">"__main__"</span>:
+    <span class="c-com"># Define agent pool</span>
+    agents = [
+        AgentCapability(
+            name=<span class="c-str">"claude-code"</span>,
+            description=<span class="c-str">"Architecture and planning agent"</span>,
+            task_types=[<span class="c-str">"architect"</span>, <span class="c-str">"code_gen"</span>, <span class="c-str">"explain"</span>],
+            domains=[<span class="c-str">"general"</span>, <span class="c-str">"web"</span>, <span class="c-str">"infra"</span>, <span class="c-str">"data"</span>],
+            max_complexity=<span class="c-str">"high"</span>,
+            supports_context=<span class="k">True</span>,
+            invoke=<span class="c-kw">lambda</span> msg: <span class="c-str">f"[claude-code] {msg[:50]}..."</span>,
+        ),
+        AgentCapability(
+            name=<span class="c-str">"copilot"</span>,
+            description=<span class="c-str">"Inline code generation agent"</span>,
+            task_types=[<span class="c-str">"code_gen"</span>],
+            domains=[<span class="c-str">"general"</span>, <span class="c-str">"web"</span>],
+            max_complexity=<span class="c-str">"medium"</span>,
+            supports_context=<span class="k">True</span>,
+            invoke=<span class="c-kw">lambda</span> msg: <span class="c-str">f"[copilot] {msg[:50]}..."</span>,
+        ),
+        AgentCapability(
+            name=<span class="c-str">"security-agent"</span>,
+            description=<span class="c-str">"Security review agent"</span>,
+            task_types=[<span class="c-str">"security"</span>, <span class="c-str">"review"</span>],
+            domains=[<span class="c-str">"web"</span>, <span class="c-str">"infra"</span>],
+            max_complexity=<span class="c-str">"high"</span>,
+            supports_context=<span class="k">True</span>,
+            invoke=<span class="c-kw">lambda</span> msg: <span class="c-str">f"[security-agent] {msg[:50]}..."</span>,
+        ),
+        AgentCapability(
+            name=<span class="c-str">"quick-agent"</span>,
+            description=<span class="c-str">"Fast, cheap agent for simple tasks"</span>,
+            task_types=[<span class="c-str">"code_gen"</span>, <span class="c-str">"explain"</span>, <span class="c-str">"fallback"</span>],
+            domains=[<span class="c-str">"general"</span>],
+            max_complexity=<span class="c-str">"low"</span>,
+            supports_context=<span class="k">False</span>,
+            invoke=<span class="c-kw">lambda</span> msg: <span class="c-str">f"[quick-agent] {msg[:50]}..."</span>,
+        ),
+    ]
+
+    <span class="c-com"># Simulate tasks</span>
+    tasks = [
+        <span class="c-str">"Design a microservices architecture for an e-commerce platform"</span>,
+        <span class="c-str">"Write a FastAPI endpoint for user registration"</span>,
+        <span class="c-str">"Review this code for security vulnerabilities: ..."</span>,
+        <span class="c-str">"Rename the variable `x` to `user_count`"</span>,
+    ]
+
+    <span class="c-kw">for</span> t <span class="c-kw">in</span> tasks:
+        profile = classify_task(t)
+        agent = route(profile, agents)
+        print(<span class="c-str">f"Task: {t}"</span>)
+        print(<span class="c-str">f"  → Classified: type={profile.task_type}, domain={profile.domain}, complexity={profile.complexity}"</span>)
+        print(<span class="c-str">f"  → Routed to: {agent.name} (score: {score_agent(profile, agent):.2f})"</span>)
+        print()
+</code></pre>
+  </section>
+
+  <section class="card">
+    <span class="tag amber">DEEP DIVE</span>
+    <h2>Routing vs. switching — why it matters</h2>
+    <p>These terms are often used interchangeably, but they describe fundamentally different mechanisms:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>Routing</th>
+          <th>Switching</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Decision basis</strong></td>
+          <td>Task characteristics (type, domain, complexity, required capabilities)</td>
+          <td>Simple rule (e.g., "if file is .py, use Copilot") or manual choice</td>
+        </tr>
+        <tr>
+          <td><strong>Granularity</strong></td>
+          <td>Per-task — each task is individually classified and routed</td>
+          <td>Per-session or per-file — the same agent handles everything</td>
+        </tr>
+        <tr>
+          <td><strong>Fallback</strong></td>
+          <td>Graceful degradation: score below threshold → fallback agent</td>
+          <td>Hard failure: "this agent can't handle that" with no recovery</td>
+        </tr>
+        <tr>
+          <td><strong>Observability</strong></td>
+          <td>Routing decisions are logged, scored, and auditable</td>
+          <td>Choice is opaque — no record of why an agent was chosen</td>
+        </tr>
+        <tr>
+          <td><strong>Adaptability</strong></td>
+          <td>New agents register capabilities; scoring adjusts automatically</td>
+          <td>Rules must be manually updated when the agent pool changes</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout indigo">
+      <strong>When to use each:</strong> Use routing when you have 3+ agents with overlapping capabilities
+      and tasks that vary in type and complexity. Use switching (a simple if-else) when you have exactly
+      two agents with clearly separated responsibilities — but be prepared to upgrade to routing as the
+      system grows.
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="tag">STEP-BY-STEP</span>
+    <h2>How to adopt this project</h2>
+    <div class="steps">
+      <div class="step-row">
+        <div class="num">1</div>
+        <div><strong>Define your agent pool</strong> — list every coding agent your team uses. For each, document: what task types it handles, what domains it knows, its maximum complexity, and whether it can access project context.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">2</div>
+        <div><strong>Build the registry</strong> — represent each agent as a <code>AgentCapability</code> object (as in the starter code). Store the registry in a JSON or YAML file for easy editing.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">3</div>
+        <div><strong>Implement the classifier</strong> — start with keyword heuristics (fast, no external dependency). If accuracy is insufficient, swap to an LLM call that returns structured JSON.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">4</div>
+        <div><strong>Choose a fallback strategy</strong> — options: route to a general-purpose agent, ask the user to choose, or return an error with the available agents. The starter code uses a "quick-agent" fallback.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">5</div>
+        <div><strong>Add observability</strong> — log every routing decision: task, classification, scores, chosen agent, response time. Use this data to tune thresholds and detect when agents' capabilities drift.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="pager">
+    <a href="../03_agent_audit_trail_hook/" class="prev">
+      <div class="dir">Previous</div>
+      <div class="ttl">Agent Audit Trail Hook</div>
+    </a>
+    <a href="../" class="next">
+      <div class="dir">Back to Hub</div>
+      <div class="ttl">Project Hub</div>
+    </a>
+  </div>
+</main>
+
+<footer>
+  AI Adoption Projects &mdash; Educational explainers for agentic engineering workflows.
+</footer>
+
+</body>
+</html>

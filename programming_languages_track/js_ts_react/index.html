@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript · TypeScript · React — Web Track</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>JS</span>Web Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Track Hub</a>
+                <a href="why_javascript.html">Why JS</a>
+                <a href="python_vs_javascript.html">Python vs JS</a>
+                <a href="javascript_vs_typescript.html">JS vs TS</a>
+                <a href="the_dom_explained.html">The DOM</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Web Track · JavaScript → TypeScript → React</p>
+            <h1>You already think like a programmer. Now borrow the browser's language.</h1>
+            <p class="lead">You know Python. That means 80% of JavaScript is already familiar — variables, loops,
+                functions, objects. What is genuinely new is <em>where</em> the code runs (the browser), <em>how</em> it
+                talks to a live page (the DOM), and the safety net you bolt on top (TypeScript). This mini-track is
+                designed to build interest before you commit to a full bootcamp.</p>
+            <p>
+                <span class="tag js">JavaScript</span>
+                <span class="tag ts">TypeScript</span>
+                <span class="tag react">React</span>
+                <span class="tag py">You know Python</span>
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>The learning path, at a glance</h2>
+            <div class="diagram">
+                <pre class="mermaid">
+flowchart LR
+    A["Python<br/>you are here"] --> B["JavaScript<br/>same ideas, new home: the browser"]
+    B --> C["TypeScript<br/>JavaScript + a type checker"]
+    C --> D["React<br/>build UIs from components"]
+    B -.-> E["Node.js<br/>JavaScript on the server"]
+    style A fill:#dbeafe,stroke:#3776ab,color:#0f172a
+    style B fill:#fef9c3,stroke:#a16207,color:#0f172a
+    style C fill:#dbeafe,stroke:#3178c6,color:#0f172a
+    style D fill:#cff4fc,stroke:#0b7285,color:#0f172a
+    style E fill:#e2e8f0,stroke:#1e293b,color:#0f172a
+                </pre>
+            </div>
+            <p class="cap">Learn JS first, add TypeScript once the language feels natural, then React ties it together.
+            </p>
+        </section>
+
+        <section class="card" id="pages">
+            <h2>Start here — four short reads</h2>
+            <a class="project js" href="why_javascript.html">
+                <strong>01 · WHY BOTHER</strong>
+                Why JavaScript / TypeScript / React belongs on a Senior AI Engineer's path — and where each one runs.
+            </a>
+            <a class="project py" href="python_vs_javascript.html">
+                <strong>02 · PYTHON vs JAVASCRIPT</strong>
+                Side-by-side syntax for everything you use daily, plus a clear "when to use which".
+            </a>
+            <a class="project ts" href="javascript_vs_typescript.html">
+                <strong>03 · JAVASCRIPT vs TYPESCRIPT</strong>
+                What types buy you, what they cost, and the moment it becomes worth adding TypeScript.
+            </a>
+            <a class="project react" href="the_dom_explained.html">
+                <strong>04 · THE DOM, EXPLAINED</strong>
+                Correcting a common misconception — the DOM is not a "convention", it is a live tree the browser hands
+                you.
+            </a>
+        </section>
+
+        <section class="card">
+            <h2>The one-line mental model</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Thing</th>
+                        <th>What it actually is</th>
+                        <th>Python analogy</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="tag js">JavaScript</span></td>
+                        <td>The programming language the browser can run natively.</td>
+                        <td>Like Python, but the "standard runtime" is a web page.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tag ts">TypeScript</span></td>
+                        <td>JavaScript plus a compile-time type checker. Strips down to plain JS to run.</td>
+                        <td>Like Python type hints + mypy, but stricter and mandatory-ish.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tag react">React</span></td>
+                        <td>A library for building UIs as reusable components that re-render on data change.</td>
+                        <td>Like a templating engine that updates itself when your data changes.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DOM</strong></td>
+                        <td>The live, in-memory tree the browser builds from your HTML. JS edits this tree.</td>
+                        <td>Like an object tree you mutate — except the screen redraws when you do.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Node.js</strong></td>
+                        <td>JavaScript running outside the browser (servers, tools, scripts). No DOM here.</td>
+                        <td>Like running <code>python script.py</code> — just <code>node script.js</code>.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How to use this before a bootcamp</h2>
+            <ol>
+                <li>Read <a href="why_javascript.html">Why JS</a> to see where it fits your career goal.</li>
+                <li>Skim <a href="python_vs_javascript.html">Python vs JS</a> — you will recognise almost everything.
+                </li>
+                <li>Read <a href="the_dom_explained.html">The DOM</a> so the browser stops feeling like magic.</li>
+                <li>Read <a href="javascript_vs_typescript.html">JS vs TS</a> to understand what a real codebase looks
+                    like.</li>
+                <li>Then a bootcamp is just practice + React — the concepts will already be yours.</li>
+            </ol>
+        </section>
+    </main>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#fef9c3',
+                primaryTextColor: '#0f172a',
+                primaryBorderColor: '#a16207',
+                lineColor: '#7c83b8',
+                fontFamily: 'Segoe UI, system-ui, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

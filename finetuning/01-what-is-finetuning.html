@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01 — What Is Fine-Tuning?</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #feca57; }
+  h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #ff6b6b; color: #e1e4f0; }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .hl-box { background: rgba(255,107,107,0.08); border-left: 3px solid #ff6b6b; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .hl-yellow { background: rgba(254,202,87,0.08); border-left: 3px solid #feca57; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #ff6b6b; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #feca57; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #ff6b6b; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  ul, ol { color: #c8cbe0; padding-left: 1.25rem; line-height: 2; }
+  .spectrum { display: flex; align-items: center; gap: 0.5rem; justify-content: center; flex-wrap: wrap; padding: 1.5rem 0; }
+  .spec-item { background: #232740; border-radius: 8px; padding: 0.8rem 1.2rem; text-align: center; font-size: 0.85rem; min-width: 120px; }
+  .spec-arrow { color: #636e72; font-size: 1.2rem; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="index.html">← Index</a>
+  <a href="02-full-finetuning.html">Next: Full Fine-Tuning →</a>
+</div>
+
+<h1>01 · What Is Fine-Tuning?</h1>
+<p>Before learning <em>how</em> LoRA and QLoRA work, we need to understand <strong>why</strong> fine-tuning exists and what problem it solves.</p>
+
+<h2>🧠 The Pretrain-Then-Adapt Paradigm</h2>
+
+<div class="card">
+<p>Modern LLMs are <strong>pretrained</strong> on internet-scale data (trillions of tokens) to predict the next token. This gives them broad knowledge of language, facts, and reasoning patterns. But a base pretrained model is <strong>not</strong> useful out of the box — it just completes text.</p>
+
+<p><strong>Fine-tuning</strong> is the process of taking that pretrained model and adapting it to a specific task, style, or domain by continuing training on a smaller, targeted dataset.</p>
+
+<div class="hl-yellow">
+  <strong>🎯 The key insight:</strong> Pretraining teaches the model <em>language</em>. Fine-tuning teaches the model <em>what to do with it</em> — follow instructions, chat, write code, summarize, etc.
+</div>
+</div>
+
+<h2>📊 The Spectrum of Adaptation</h2>
+
+<div class="spectrum">
+  <div class="spec-item" style="border:1px solid #636e72;">Prompt<br>Engineering</div>
+  <div class="spec-arrow">→</div>
+  <div class="spec-item" style="border:1px solid #8b8fa8;">In-Context<br>Learning</div>
+  <div class="spec-arrow">→</div>
+  <div class="spec-item" style="border:1px solid #feca57;">RAG<br>(Retrieval)</div>
+  <div class="spec-arrow">→</div>
+  <div class="spec-item" style="border:1px solid #ff6b6b;">PEFT<br>(LoRA etc.)</div>
+  <div class="spec-arrow">→</div>
+  <div class="spec-item" style="border:1px solid #ff6b6b;">Full<br>Fine-Tune</div>
+  <div class="spec-arrow">→</div>
+  <div class="spec-item" style="border:1px solid #6c5ce7;">Train from<br>Scratch</div>
+</div>
+
+<table>
+  <thead><tr><th>Method</th><th>Parameters Updated</th><th>Data Needed</th><th>Compute Cost</th><th>When to Use</th></tr></thead>
+  <tbody>
+    <tr><td>Prompt Engineering</td><td>None</td><td>None</td><td>🟢 Free</td><td>Quick experiments, simple tasks</td></tr>
+    <tr><td>In-Context Learning</td><td>None</td><td>A few examples</td><td>🟢 Free</td><td>One-shot patterns, demonstrations</td></tr>
+    <tr><td>RAG</td><td>None</td><td>Knowledge base</td><td>🟢 Low</td><td>Factual grounding, dynamic knowledge</td></tr>
+    <tr><td><strong>PEFT (LoRA, etc.)</strong></td><td><strong>&lt;1%</strong></td><td><strong>100–10K</strong></td><td><strong>🟡 Moderate</strong></td><td><strong>Most practical sweet spot</strong></td></tr>
+    <tr><td>Full Fine-Tune</td><td>100%</td><td>1K–100K</td><td>🔴 High</td><td>Major domain adaptation</td></tr>
+    <tr><td>Train from Scratch</td><td>100% (new model)</td><td>Trillions</td><td>🔴🟤 Extreme</td><td>New architecture / language</td></tr>
+  </tbody>
+</table>
+
+<h2>💡 Why Not Just Prompt Engineer?</h2>
+
+<div class="card">
+<p>Prompt engineering works for many tasks, but has hard limits:</p>
+<ul>
+  <li><strong>Context window bound</strong> — you can't fit an entire domain's knowledge into a prompt</li>
+  <li><strong>No memory</strong> — the model doesn't "learn" from your prompts; every call is fresh</li>
+  <li><strong>Fragile</strong> — small prompt changes can cause large output changes</li>
+  <li><strong>No structural change</strong> — you can't teach the model a new format or behavior that's very different from its pretraining distribution</li>
+</ul>
+
+<div class="hl-box">
+  <strong>⚡ Fine-tuning baked the behavior into the weights.</strong> An instruction-tuned model (like Llama-2-Chat or Mistral-Instruct) was fine-tuned on instruction-response pairs. The model isn't <em>told</em> to follow instructions — it simply <em>does</em>, because the weights have been updated to produce instruction-following behavior.
+</div>
+</div>
+
+<h2>🧩 The Two Families of Fine-Tuning</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th></th><th>Full Fine-Tuning</th><th>Parameter-Efficient (PEFT)</th></tr></thead>
+  <tbody>
+    <tr><td><strong>What updates?</strong></td><td>Every weight in the model</td><td>A small subset (or added parameters)</td></tr>
+    <tr><td><strong>Memory for 7B model</strong></td><td>~56 GB (full weights + optimizer + grads)</td><td>~16 GB (base weights frozen + small adapters)</td></tr>
+    <tr><td><strong>Output</strong></td><td>A full copy of the model per task</td><td>A small adapter file (megabytes)</td></tr>
+    <tr><td><strong>Switching tasks</strong></td><td>Replace the entire model</td><td>Hot-swap the adapter</td></tr>
+    <tr><td><strong>Overfitting risk</strong></td><td>Higher (especially with small data)</td><td>Lower (fewer parameters)</td></tr>
+  </tbody>
+</table>
+
+<div class="hl-yellow">
+  <strong>💡 PEFT is the default choice in 2024+.</strong> Unless you have a very specific need to update all weights (and the budget for it), start with LoRA or QLoRA. They cover 95% of practical fine-tuning use cases.
+</div>
+</div>
+
+<h2>🔑 Before We Dive In</h2>
+
+<p>Throughout this series, a few themes will recur:</p>
+<ul>
+  <li><strong>Memory cost</strong> — the biggest bottleneck in fine-tuning. Storing optimizer states (Adam: 2× model size in floats) often costs more than the weights themselves.</li>
+  <li><strong>Catastrophic forgetting</strong> — updating too many weights can erase the pretrained knowledge. PEFT avoids this by keeping base weights frozen.</li>
+  <li><strong>Multi-task serving</strong> — PEFT adapters can be loaded and unloaded dynamically, serving hundreds of fine-tuned variants from one base model.</li>
+</ul>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

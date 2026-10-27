@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P1 — Hello FastAPI</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="../index.html"><span class="brand-mark">P1</span><span>Hello FastAPI</span></a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../03_best_practices.html">← Best practices</a>
+                <a href="../p2_todo_crud/README.html">Next: P2 →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">Project 1 · Beginner · ~30 lines of code</p>
+                <h1>Hello FastAPI — your first "wow"</h1>
+                <p>3 endpoints. ~30 lines of code. You get a full interactive API explorer (Swagger UI), a
+                    second one (ReDoc), automatic input validation, typed responses, and an OpenAPI spec — for
+                    free. This is the project where FastAPI sells itself.</p>
+            </section>
+
+            <section class="concept">
+                <h2>The problem we're solving</h2>
+                <p>You're writing a new web API. Even a tiny one needs:</p>
+                <ul>
+                    <li>A way to define routes.</li>
+                    <li>Validation of inputs (path params, query params, JSON bodies).</li>
+                    <li>Documentation so consumers know what to call and what to expect.</li>
+                    <li>Clean error messages when input is wrong.</li>
+                </ul>
+                <p>FastAPI gives you all four from one source of truth: your Python type hints.</p>
+            </section>
+
+            <section class="concept">
+                <h2>How FastAPI solves it</h2>
+                <pre><code>from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI(title="Hello FastAPI", version="1.0.0")
+
+class Greeting(BaseModel):
+    message: str
+    name: str
+
+@app.get("/")
+def root():
+    return {"hello": "world"}
+
+@app.get("/greet/{name}", response_model=Greeting)
+def greet(name: str) -&gt; Greeting:
+    return Greeting(message=f"Hello, {name}!", name=name)
+
+@app.get("/add")
+def add(a: int, b: int):
+    return {"sum": a + b}</code></pre>
+                <p>From these ~15 lines, FastAPI generates:</p>
+                <ul>
+                    <li><strong>OpenAPI 3.1 schema</strong> at <code>/openapi.json</code>.</li>
+                    <li><strong>Swagger UI</strong> at <code>/docs</code> — try every endpoint in the browser.</li>
+                    <li><strong>ReDoc UI</strong> at <code>/redoc</code> — beautiful read-only reference.</li>
+                    <li><strong>Auto-422 errors</strong> if you call <code>/add?a=2&amp;b=foo</code>.</li>
+                </ul>
+            </section>
+
+            <section class="concept">
+                <h2>What if you DIDN'T use FastAPI?</h2>
+                <div class="grid-2">
+                    <div class="mini bad">
+                        <h4>Vanilla Flask</h4>
+                        <ul>
+                            <li>Add <code>flasgger</code> or <code>flask-smorest</code> to get Swagger.</li>
+                            <li>Add <code>marshmallow</code> or hand-write validation per route.</li>
+                            <li>Manually return 400s with consistent error shape.</li>
+                            <li>Manually convert query strings to int (or get
+                                <code>TypeError</code>s).
+                            </li>
+                            <li>~3x the code for the same behaviour.</li>
+                        </ul>
+                    </div>
+                    <div class="mini bad">
+                        <h4>Plain WSGI / http.server</h4>
+                        <ul>
+                            <li>Write your own router.</li>
+                            <li>Parse the query string yourself.</li>
+                            <li>Forget Swagger entirely.</li>
+                            <li>Re-invent four wheels per route.</li>
+                        </ul>
+                    </div>
+                </div>
+                <p>You can do all of this. People have for 20 years. FastAPI just makes the boring parts
+                    disappear so you spend energy on the actual feature.</p>
+            </section>
+
+            <section class="concept">
+                <h2>Run it</h2>
+                <pre><code>cd 06_side_projects/fastapi_projects/p1_hello_fastapi
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+
+uvicorn main:app --reload
+
+# Then open in a browser:
+#   http://127.0.0.1:8000/             → {"hello": "world"}
+#   http://127.0.0.1:8000/greet/Sandeep
+#   http://127.0.0.1:8000/add?a=2&b=5
+#   http://127.0.0.1:8000/docs         ← Swagger UI
+#   http://127.0.0.1:8000/redoc        ← ReDoc</code></pre>
+            </section>
+
+            <section class="concept">
+                <h2>Things to try</h2>
+                <ol>
+                    <li>Hit <code>/add?a=2&amp;b=hello</code>. You get a structured 422 with the field name and
+                        why it failed. No code written.</li>
+                    <li>Open <code>/docs</code>, click "Try it out" on any endpoint. Click "Execute". See the
+                        live curl command, request URL, response.</li>
+                    <li>Add a new route: <code>/multiply</code>. Watch Swagger update on the next reload.</li>
+                    <li>Change <code>response_model=Greeting</code> to a model that doesn't match what you
+                        return — FastAPI will fail loudly. Type safety in action.</li>
+                </ol>
+            </section>
+
+            <section class="concept">
+                <h2>What you learned</h2>
+                <ul>
+                    <li>How to create a FastAPI app and run it with uvicorn.</li>
+                    <li>Path parameters (<code>{name}</code>) and query parameters
+                        (<code>a: int</code>) with type coercion.</li>
+                    <li>Pydantic <code>BaseModel</code> as both input and output types.</li>
+                    <li>How OpenAPI / Swagger UI is generated for free from your code.</li>
+                </ul>
+                <p>👉 Next: <a href="../p2_todo_crud/README.html"><strong>P2 — Todo CRUD with Pydantic + Dependency
+                            Injection</strong></a>.</p>
+            </section>
+        </div>
+    </main>
+    <footer><a href="../index.html">Back to hub</a></footer>
+</body>
+
+</html>

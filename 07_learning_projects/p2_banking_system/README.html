@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Project 2: Banking System - Architecture Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1100px;
+            margin: auto;
+            padding: 30px;
+            line-height: 1.7;
+            color: #333;
+            background: #fafafa
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #e74c3c;
+            padding-bottom: 10px
+        }
+
+        h2 {
+            color: #c0392b;
+            margin-top: 40px
+        }
+
+        h3 {
+            color: #27ae60
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05)
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .concept {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Fira Code', monospace
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto
+        }
+
+        .mermaid {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left
+        }
+
+        th {
+            background: #e74c3c;
+            color: #fff
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 12px;
+            border-bottom: 2px solid #e74c3c;
+            z-index: 100
+        }
+
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #c0392b;
+            font-weight: bold
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🏦 Project 2: Banking System</h1>
+    <p><strong>Level:</strong> Beginner+ | <strong>Focus:</strong> Inheritance, Polymorphism, Method Overriding</p>
+
+    <nav>
+        <a href="#concepts">Concepts</a>
+        <a href="#hierarchy">Class Hierarchy</a>
+        <a href="#polymorphism">Polymorphism</a>
+        <a href="#sequence">Sequence</a>
+        <a href="#folder">Folder Structure</a>
+        <a href="#comparison">Comparison</a>
+        <a href="#debug">Debug Exercises</a>
+    </nav>
+
+    <!-- ================================================================== -->
+    <div id="concepts">
+        <h2>🧠 Core Concepts</h2>
+
+        <div class="concept">
+            <h3>INHERITANCE = "IS-A" Relationship</h3>
+            <p><strong>Test:</strong> "Is a [child] a [parent]?"</p>
+            <ul>
+                <li>SavingsAccount IS-A Account ✅ → Inheritance works!</li>
+                <li>Car IS-A Vehicle ✅ → Inheritance works!</li>
+                <li>Engine IS-A Car ❌ → Don't inherit! (Engine is PART OF car → Composition, Project 3)</li>
+            </ul>
+        </div>
+
+        <div class="concept">
+            <h3>POLYMORPHISM = "Many Forms"</h3>
+            <p>Same method name, different behavior depending on the object type.</p>
+            <pre>accounts = [savings_acc, checking_acc]
+for acc in accounts:
+    acc.withdraw(100)  # Each executes ITS OWN version of withdraw()!
+</pre>
+            <p>You don't need to check "is this savings or checking?" - the object KNOWS how to behave.</p>
+        </div>
+
+        <div class="concept">
+            <h3>METHOD OVERRIDING = "My version is better for me"</h3>
+            <p>Child class REPLACES parent's method with its own version.</p>
+            <p>Account.withdraw() → simple balance check</p>
+            <p>SavingsAccount.withdraw() → balance check + monthly limit</p>
+            <p>CheckingAccount.withdraw() → balance check + overdraft allowed</p>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <div id="hierarchy">
+        <h2>📐 Class Hierarchy Diagram</h2>
+
+        <div class="mermaid">
+            classDiagram
+            class Account {
+            +str account_number
+            +str owner_name
+            #float _balance
+            #list _transactions
+            +deposit(amount) bool
+            +withdraw(amount) bool
+            +get_balance() float
+            +get_account_type() str
+            #_record_transaction(type, amount)
+            }
+
+            class SavingsAccount {
+            -float _interest_rate
+            -int _monthly_withdrawals
+            +withdraw(amount) bool ← OVERRIDES
+            +apply_interest() float
+            +reset_monthly_withdrawals()
+            +get_remaining_withdrawals() int
+            +get_account_type() str ← OVERRIDES
+            }
+
+            class CheckingAccount {
+            -float _overdraft_limit
+            -float _overdraft_fee
+            -float _total_overdraft_fees
+            +withdraw(amount) bool ← OVERRIDES
+            +is_overdrawn() bool
+            +get_available_balance() float
+            +get_account_type() str ← OVERRIDES
+            }
+
+            Account <|-- SavingsAccount : inherits Account <|-- CheckingAccount : inherits </div>
+
+                <div class="highlight">
+                    <h3>🔑 What's Inherited vs Overridden vs New?</h3>
+                    <table>
+                        <tr>
+                            <th>Method</th>
+                            <th>Account (Parent)</th>
+                            <th>SavingsAccount</th>
+                            <th>CheckingAccount</th>
+                        </tr>
+                        <tr>
+                            <td>deposit()</td>
+                            <td>✅ Defined here</td>
+                            <td>Inherited (free!)</td>
+                            <td>Inherited (free!)</td>
+                        </tr>
+                        <tr>
+                            <td>withdraw()</td>
+                            <td>✅ Basic version</td>
+                            <td>🔄 Overridden (+ limit)</td>
+                            <td>🔄 Overridden (+ overdraft)</td>
+                        </tr>
+                        <tr>
+                            <td>get_balance()</td>
+                            <td>✅ Defined here</td>
+                            <td>Inherited</td>
+                            <td>Inherited</td>
+                        </tr>
+                        <tr>
+                            <td>apply_interest()</td>
+                            <td>❌ N/A</td>
+                            <td>🆕 New method</td>
+                            <td>❌ N/A</td>
+                        </tr>
+                        <tr>
+                            <td>is_overdrawn()</td>
+                            <td>❌ N/A</td>
+                            <td>❌ N/A</td>
+                            <td>🆕 New method</td>
+                        </tr>
+                    </table>
+                </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <div id="polymorphism">
+            <h2>🎭 Polymorphism In Action</h2>
+
+            <div class="mermaid">
+                graph LR
+                subgraph "Same Code"
+                A[bank.withdraw'account', 500']
+                end
+
+                subgraph "Runtime Decision"
+                B{What type is account?}
+                end
+
+                subgraph "Different Behavior"
+                C[SavingsAccount.withdraw<br />Check monthly limit<br />Then check balance]
+                D[CheckingAccount.withdraw<br />Allow overdraft<br />Charge fee if needed]
+                end
+
+                A --> B
+                B -->|SavingsAccount| C
+                B -->|CheckingAccount| D
+            </div>
+
+            <div class="card">
+                <h3>Why Is This Powerful?</h3>
+                <p>Without polymorphism, you'd write:</p>
+                <pre>def withdraw(account, amount):
+    if isinstance(account, SavingsAccount):
+        # savings logic...
+    elif isinstance(account, CheckingAccount):
+        # checking logic...
+    elif isinstance(account, BusinessAccount):
+        # business logic...
+    # Gets worse with every new account type!</pre>
+
+                <p>With polymorphism:</p>
+                <pre>def withdraw(account, amount):
+    account.withdraw(amount)  # That's it! Object knows what to do.</pre>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <div id="sequence">
+            <h2>🔄 Sequence: Overdraft Withdrawal</h2>
+
+            <div class="mermaid">
+                sequenceDiagram
+                participant User
+                participant Service as BankService
+                participant Account as CheckingAccount
+
+                User->>Service: withdraw("CHK001", 700)
+                Service->>Service: Find account by number
+                Service->>Account: account.withdraw(700)
+
+                Note over Account: Balance=$500, Overdraft=$300
+                Account->>Account: Check: 700 > 500 + 300?
+                Note over Account: 700 < 800 ✓ Allowed Account->>Account: balance -= 700 (now -$200)
+                    Account->>Account: Detect: going into overdraft!
+                    Account->>Account: balance -= 35 (fee)
+                    Account->>Account: Record WITHDRAWAL transaction
+                    Account->>Account: Record OVERDRAFT_FEE transaction
+
+                    Account-->>Service: Return True (success)
+                    Service-->>User: Return True
+
+                    Note over Account: Final balance: -$235
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <div id="folder">
+            <h2>📁 Folder Structure</h2>
+
+            <div class="card" style="font-family:monospace">
+                p2_banking_system/<br>
+                ├── main.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Demo entry
+                point<br>
+                ├── models/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Domain
+                objects (the "what")<br>
+                │ &nbsp;&nbsp;├── __init__.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Exports all account types<br>
+                │ &nbsp;&nbsp;├── account.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← BASE class (shared logic)<br>
+                │ &nbsp;&nbsp;├── savings_account.py ← CHILD (+ interest, + limit)<br>
+                │ &nbsp;&nbsp;└── checking_account.py ← CHILD (+ overdraft)<br>
+                ├── services/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Business
+                operations<br>
+                │ &nbsp;&nbsp;├── __init__.py<br>
+                │ &nbsp;&nbsp;└── bank_service.py &nbsp;← Manages all accounts<br>
+                └── tests/<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;└── test_banking.py &nbsp;← Verify inheritance works
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <div id="comparison">
+            <h2>⚔️ Inheritance vs No Inheritance</h2>
+
+            <div class="card">
+                <table>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Without Inheritance</th>
+                        <th>With Inheritance</th>
+                    </tr>
+                    <tr>
+                        <td>Code duplication</td>
+                        <td>deposit() copied in every account type</td>
+                        <td>deposit() written ONCE in Account</td>
+                    </tr>
+                    <tr>
+                        <td>Adding new account type</td>
+                        <td>Copy-paste everything, modify</td>
+                        <td>Just override what's different</td>
+                    </tr>
+                    <tr>
+                        <td>Bug in deposit logic</td>
+                        <td>Fix in N places</td>
+                        <td>Fix in ONE place (Account)</td>
+                    </tr>
+                    <tr>
+                        <td>Polymorphism</td>
+                        <td>Need isinstance() checks everywhere</td>
+                        <td>Just call the method, it works!</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <div id="debug">
+            <h2>🐛 Debugging Exercises</h2>
+
+            <div class="warning">
+                <h3>Bug 1: Forgot super().__init__()</h3>
+                <pre>class SavingsAccount(Account):
+    def __init__(self, account_number, owner_name, balance):
+        # OOPS! Forgot to call super().__init__()
+        self._interest_rate = 0.04</pre>
+                <p><strong>What happens?</strong> SavingsAccount has no _balance, no account_number! AttributeError when
+                    you try to use it.</p>
+                <p><strong>Lesson:</strong> ALWAYS call super().__init__() when extending a parent.</p>
+            </div>
+
+            <div class="warning">
+                <h3>Bug 2: Infinite Recursion</h3>
+                <pre>class SavingsAccount(Account):
+    def withdraw(self, amount):
+        # OOPS! Calling self.withdraw() instead of super().withdraw()
+        if self._monthly_withdrawals < 6:
+            return self.withdraw(amount)  # Calls ITSELF forever!</pre>
+                <p><strong>Lesson:</strong> Use <code>super().withdraw()</code> to call the PARENT version.</p>
+            </div>
+
+            <div class="card" style="background:#eaf2f8">
+                <h3>🎯 Key Takeaways</h3>
+                <ol>
+                    <li><strong>IS-A test</strong> before using inheritance</li>
+                    <li><strong>super()</strong> calls the parent's version</li>
+                    <li><strong>Override</strong> only what needs to change</li>
+                    <li><strong>Polymorphism</strong> eliminates type-checking if/else chains</li>
+                    <li><strong>Next:</strong> Project 3 shows when inheritance is WRONG and Composition is better</li>
+                </ol>
+            </div>
+        </div>
+
+        <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

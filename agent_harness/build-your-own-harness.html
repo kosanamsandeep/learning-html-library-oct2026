@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build your own harness</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        :root {
+            --accent: #6d28d9;
+            --accent-soft: #ede9fe;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>AH</span>Agent Harness</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="what-is-an-agent-harness.html">Concept</a>
+                <a href="anatomy-of-a-harness.html">Anatomy</a>
+                <a href="harness-vs-framework-vs-app.html">Layers</a>
+                <a href="harness-showdown.html">Showdown</a>
+                <a href="build-your-own-harness.html">Build one</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Agent harness · page 5 of 5 · runnable</p>
+            <h1>Build your own harness — the agentic loop is just code</h1>
+            <p class="lead">Pages 1–4 are theory; here's the payoff. A harness is not magic — at its core it's a
+                <code>while</code> loop that asks the model "what next?", executes the tool it names, feeds the result
+                back, and repeats. Below is a <strong>~100-line harness you can actually run</strong> (no API key
+                needed: it drives a scripted "model" so you can watch the loop). Then we show the one swap that turns it
+                into a real agent, and where to stop hand-rolling.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · The five pieces, and nothing else</h2>
+            <p>Strip away the marketing and a harness is:</p>
+            <ol>
+                <li><strong>A model interface</strong> — something that returns text or a tool call.</li>
+                <li><strong>A tool registry</strong> — <code>name → (description, function)</code>.</li>
+                <li><strong>A message store</strong> — the running context fed back to the model.</li>
+                <li><strong>An executor</strong> — runs the requested tool, catching errors.</li>
+                <li><strong>Guardrails</strong> — permission gate, iteration cap, stop conditions.</li>
+            </ol>
+            <p>Everything fancy — subagents, skills, compaction, hooks — is an upgrade to one of these five. Build the
+                five and you understand every harness ever made.</p>
+        </section>
+
+        <section class="card">
+            <h2>2 · The runnable harness</h2>
+            <p>Copy this to <code>mini_harness.py</code> and run it with Python 3.10+:</p>
+            <pre><code>"""mini_harness.py — a ~100-line agent harness you can run today.
+
+Runs OFFLINE: "call_model" is a scripted stand-in for a frontier model, so you can
+see the agentic loop (reason -> act -> observe -> repeat) without an API key.
+Swap in a real model call at the marker at the bottom to make it live.
+"""
+from __future__ import annotations
+import json
+import re
+import sys
+
+MAX_ITERATIONS = 10
+
+# ----------------------------------------------------------------------------
+# 2. TOOL REGISTRY: name -> (description, function)
+#    The harness never hard-codes what a tool does — the MODEL decides via these.
+# ----------------------------------------------------------------------------
+TOOLS = {
+    "add": {
+        "description": "Add two integers. args: {'a': int, 'b': int}",
+        "fn": lambda a, b: a + b,
+    },
+    "grep": {
+        "description": "Search files for a term. args: {'pattern': str}",
+        "fn": lambda pattern: f"hits: {len(re.findall(pattern, 'apple banana cherry'))} for {pattern!r}",
+    },
+    "read_file": {
+        "description": "Read a file. args: {'path': str}",
+        "fn": lambda path: f"(contents of {path}, 3 lines)" if path else "ERROR: no path",
+    },
+}
+
+# A fake "smart enough" model: it looks at the GOAL and the LAST tool result,
+# then decides the next step. Real models do the same — just with far more
+# sophistication. Each branch is one "reason" step of the loop.
+def call_model(messages: list[dict]) -> dict:
+    """Return EITHER {'kind': 'final', 'text': str} OR {'kind': 'tool', ...}."""
+    last = messages[-1]["content"]
+    s = messages[0]["content"].lower()
+
+    if "total" in s and last.startswith("tool-result add"):
+        total = int(last.split("=")[1])
+        return {"kind": "final", "text": f"Total is {total}. Done."}
+
+    if "read a file" in s:
+        m = re.search(r"hits: (\d+)", last)
+        if m:  # grep answered -> we have everything, wrap up
+            n = int(m.group(1))
+            return {"kind": "final", "text": f"Found {n} hit{'s' if n != 1 else ''}. Done."}
+        if last.startswith("tool-result read_file"):
+            return {"kind": "tool", "name": "grep", "args": {"pattern": "apple"}}
+        return {"kind": "tool", "name": "read_file", "args": {"path": "notes.txt"}}
+
+    if "total" in s:  # fresh goal, first step of the loop
+        return {"kind": "tool", "name": "add", "args": {"a": 6, "b": 7}}
+
+    # Unknown request -> admit defeat instead of spinning forever.
+    return {"kind": "final", "text": "I don't know how to do that yet."}
+
+
+# ----------------------------------------------------------------------------
+# 5. GUARDRAILS (minimal): permission gate + iteration cap.
+# ----------------------------------------------------------------------------
+def human_approves(action: str) -> bool:
+    """Ask the operator. `input()` is the world's simplest permission prompt.
+
+    If there is no terminal (piped / CI), deny by default — fail closed.
+    """
+    if not sys.stdin.isatty():
+        return False
+    return input(f"  [allow] {action}? [y/N] ").strip().lower() == "y"
+
+
+# ----------------------------------------------------------------------------
+# 3 + 4. MESSAGE STORE + EXECUTOR live inside the loop below.
+# ----------------------------------------------------------------------------
+def run_agent(goal: str, *, ask_every_tool: bool = False) -> None:
+    messages = [{"role": "system", "content": f"goal: {goal}"}]
+    print(f"\n>>> Task: {goal}")
+
+    for step in range(1, MAX_ITERATIONS + 1):
+        decision = call_model(messages)          # 1. model proposes
+        if decision["kind"] == "final":
+            print(f"  [done] {decision['text']}")
+            return
+
+        name, args = decision["name"], decision["args"]
+        action = f"{name}({json.dumps(args)})"
+        if ask_every_tool and not human_approves(action):   # guardrail
+            print(f"  [blocked by user] {action}")
+            return
+
+        tool = TOOLS.get(name)
+        if tool is None:
+            result = f"ERROR: unknown tool {name}"
+        else:
+            try:
+                result = str(tool["fn"](**args))             # 2. harness executes
+            except Exception as e:                           #    errors -> observations
+                result = f"ERROR: {type(e).__name__}: {e}"
+
+        messages.append({"role": "assistant", "content": action})
+        messages.append({"role": "user", "content": f"tool-result {name}={result}"})
+        print(f"  step {step:2d}: {action} -> {result}")
+
+    print(f"  [cap] hit {MAX_ITERATIONS} steps without finishing.")
+
+
+if __name__ == "__main__":
+    # --- Try the default demo ------------------------------------------------
+    run_agent("Add 6 and 7 and give me the total.")
+
+    # --- Try a different goal (read_file -> grep path) -----------------------
+    run_agent("Read a file, then tell me what you found.")
+
+    # --- Now the SAME harness with guardrails ON ------------------------------
+    run_agent("Add 6 and 7 and give me the total.", ask_every_tool=True)
+
+    # === MARKER: make it live =================================================
+    # Replace call_model's body with a real provider call, e.g. Claude:
+    #   import anthropic
+    #   client = anthropic.Anthropic()
+    #   tool_specs = [{"name": n, "description": t["description"]} for n, t in TOOLS.items()]
+    #   ...send messages + tool_specs via client.messages.create(...),
+    #   then:  stop == "tool_use"  -> return {"kind":"tool", ...} from the block
+    #   else:  return {"kind":"final","text": text}
+    # The loop above is unchanged. THAT is the whole point of a harness.
+</code></pre>
+            <p>Run it and watch: each <code>step N</code> line is one trip around the agentic loop from
+                <a href="what-is-an-agent-harness.html">page 1</a>. The third run shows the permission gate stopping the
+                exact same task.</p>
+        </section>
+
+        <section class="card">
+            <h2>3 · The anatomy, mapped onto the code</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Anatomy (page 2)</th>
+                        <th>Where it is in <code>mini_harness.py</code></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Agentic loop</td>
+                        <td><code>run_agent</code>'s <code>for step</code> loop: propose → execute → append → repeat</td>
+                    </tr>
+                    <tr>
+                        <td>Tools / ACI</td>
+                        <td><code>TOOLS</code> registry — descriptions are the whole interface the "model" sees</td>
+                    </tr>
+                    <tr>
+                        <td>Context management</td>
+                        <td><code>messages</code> list grows and is passed whole to <code>call_model</code> (real
+                            harnesses compact it when it overflows)</td>
+                    </tr>
+                    <tr>
+                        <td>Guardrails</td>
+                        <td><code>human_approves</code> permission gate + <code>MAX_ITERATIONS</code> cap + error
+                            capture in the executor</td>
+                    </tr>
+                    <tr>
+                        <td>Model interface</td>
+                        <td><code>call_model(messages) -&gt; decision</code> — swap the body at the MARKER to go live</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>4 · Graduating from hand-rolled to production</h2>
+            <p>Your mini harness nails the concept, but going live exposes the hard 20% that real harnesses exist to
+                save you from:</p>
+            <ul>
+                <li><strong>Reliable tool-call parsing</strong> — real providers return structured <em>tool_use</em>
+                    blocks; hand-parsing free text is fragile.</li>
+                <li><strong>Context compaction</strong> — long tasks overflow the window; summarising correctly is hard.</li>
+                <li><strong>Sandboxing &amp; audit</strong> — a real Bash tool needs permissions, containers, and logs;
+                    your <code>input()</code> gate doesn't scale to unattended runs.</li>
+                <li><strong>Subagents &amp; parallelism</strong> — isolated contexts for fan-out work.</li>
+                <li><strong>Skills &amp; memory</strong> — teachable, persistent behaviour across sessions.</li>
+            </ul>
+            <div class="callout">
+                <strong>So when do you hand-roll?</strong> When you're learning (now), or when your product genuinely
+                needs a loop that lives inside your codebase with bespoke state. Otherwise reach for an existing harness
+                or the <a href="harness-vs-framework-vs-app.html">SDK layer</a> — building your own from scratch is how
+                you appreciate the machinery, not how you ship a product.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Sources &amp; next steps</h2>
+            <div class="sources">
+                <a class="source" href="https://docs.anthropic.com/en/docs/build-with-claude/tool-use" target="_blank" rel="noopener">Anthropic · tool use (the real swap)</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/agents-and-tools/agent-sdk/overview" target="_blank" rel="noopener">Anthropic · Claude Agent SDK</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/agents-and-tools/agent-sdk/subagents" target="_blank" rel="noopener">Agent SDK · subagents</a>
+                <a class="source" href="../latest_stack/eval-llm.html">your library · eval (verify agents before trusting them)</a>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

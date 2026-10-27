@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw — Approach & Best Practices</title>
+    <link rel="stylesheet" href="openclaw.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+    <nav class="navbar">
+        <a class="brand" href="index.html"><span>OC</span>OpenClaw</a>
+        <div class="nav-links">
+            <a href="index.html">Overview</a>
+            <a href="architecture.html">Architecture</a>
+            <a href="best-practices.html">Best Practices</a>
+            <a href="../../industry_standards/index.html">Industry Standards</a>
+        </div>
+    </nav>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Open-source personal AI assistant · ~382K GitHub stars</p>
+            <h1>OpenClaw — Approach &amp; Best Practices</h1>
+            <p class="subtitle">OpenClaw is an open-source, self-hosted personal AI assistant that connects LLMs to 24+ messaging platforms. Built with TypeScript, it follows a hub-and-spoke architecture with multi-agent routing, sandboxed execution, and a powerful plugin ecosystem. This guide extracts the architectural patterns, design decisions, and best practices that make OpenClaw one of the most popular open-source AI projects.</p>
+        </section>
+
+        <div class="card">
+            <h2>📋 What's Inside</h2>
+            <table>
+                <tr><th>Page</th><th>What it covers</th></tr>
+                <tr><td><a href="index.html">Overview</a> (this page)</td><td>What is OpenClaw, how it works at a glance, core principles, ecosystem map</td></tr>
+                <tr><td><a href="architecture.html">Architecture Deep Dive</a></td><td>Hub-and-spoke model, gateway server, auto-reply pipeline, agent runtime, sandboxing, memory system, plugin architecture, channel abstraction</td></tr>
+                <tr><td><a href="best-practices.html">Best Practices</a></td><td>Engineering standards, security patterns, agent design principles, contribution conventions, deployment patterns extracted from the codebase</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>🦞 What is OpenClaw?</h2>
+            <p>OpenClaw is a <strong>self-hosted, open-source personal AI assistant platform</strong> that acts as a gateway between LLMs and your messaging apps. It runs as a persistent daemon on your own hardware (macOS, Linux, Windows) and connects to 24+ chat platforms — WhatsApp, Telegram, Discord, Slack, Signal, iMessage, and more.</p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    User["👤 You"] --> Channels["💬 24+ Messaging Channels<br/>Telegram · WhatsApp · Discord<br/>Slack · Signal · iMessage · etc."]
+    Channels --> Gateway["🦞 OpenClaw Gateway<br/>(daemon process)"]
+    Gateway --> Router["🧠 Agent Router<br/>(multi-agent dispatcher)"]
+    Router --> Agent1["Agent: Main"]
+    Router --> Agent2["Agent: Dev"]
+    Router --> Agent3["Agent: Research"]
+    Agent1 --> LLM["🔑 Your LLM Provider<br/>Claude · GPT · Gemini<br/>DeepSeek · Ollama"]
+    Agent2 --> LLM
+    Agent3 --> LLM
+    Gateway --> Tools["🔧 75+ Tools<br/>Browser · File · Web Search<br/>Memory · Cron · Canvas · MCP"]
+    Gateway --> Skills["📦 ClawHub Skills<br/>13,000+ community skills"]
+
+    style Gateway fill:#ccfbf1,stroke:#0f766e
+    style Router fill:#fef3c7,stroke:#d97706
+    style LLM fill:#e0e7ff,stroke:#4338ca
+</pre>
+                <div class="caption">OpenClaw at a glance — a gateway daemon routing messages from 24+ channels through configurable agents to your LLM provider of choice.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🎯 Core Design Principles</h2>
+            <div class="grid-2">
+                <div class="mini">
+                    <h3>🔐 Privacy-first, self-hosted</h3>
+                    <p>Your data never leaves your infrastructure. The gateway runs on your own machine. No cloud dependency. You bring your own LLM API key.</p>
+                </div>
+                <div class="mini">
+                    <h3>🔌 Channel-agnostic</h3>
+                    <p>Write your agent once, talk to it from any messaging platform. The channel abstraction layer normalizes all 24+ protocols into a unified message format.</p>
+                </div>
+                <div class="mini">
+                    <h3>🧩 Plugin ecosystem</h3>
+                    <p>134+ extension directories, 13,000+ community skills via ClawHub. Plugins can add channels, providers, tools, or features without modifying core.</p>
+                </div>
+                <div class="mini">
+                    <h3>🛡️ Security by design</h3>
+                    <p>Inbound messages are untrusted input. DM pairing, tool policies, sandboxed execution, SSRF protection, prompt injection detection — security is layered into every subsystem.</p>
+                </div>
+                <div class="mini">
+                    <h3>🧠 Multi-agent by default</h3>
+                    <p>Route different channels to different agents with distinct personalities, memories, and tool access. Agents can spawn sub-agents and inspect other sessions.</p>
+                </div>
+                <div class="mini">
+                    <h3>🔄 Powerful agent loop</h3>
+                    <p>Think → act → observe → repeat with streaming, tool use, memory injection, directive parsing, and a rich system prompt builder that composes identity, skills, and memory.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 OpenClaw by the numbers</h2>
+            <table>
+                <tr><th>Metric</th><th>Value</th></tr>
+                <tr><td>GitHub stars</td><td>~382,000</td></tr>
+                <tr><td>Forks</td><td>~80,000</td></tr>
+                <tr><td>Messaging channels supported</td><td>24+</td></tr>
+                <tr><td>Built-in tools</td><td>75+</td></tr>
+                <tr><td>Extension directories</td><td>134+</td></tr>
+                <tr><td>Community skills (ClawHub)</td><td>13,000+</td></tr>
+                <tr><td>Core language</td><td>TypeScript (pnpm workspace)</td></tr>
+                <tr><td>License</td><td>MIT</td></tr>
+                <tr><td>First release</td><td>November 2025 (as Clawdbot)</td></tr>
+                <tr><td>Node.js requirement</td><td>v22+ (recommended: Node 24)</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>🔗 Key GitHub Repositories</h2>
+            <table>
+                <tr><th>Repository</th><th>Description</th><th>Language</th></tr>
+                <tr><td><a href="https://github.com/openclaw/openclaw" target="_blank">openclaw/openclaw</a></td><td>Main CLI + Gateway AI assistant</td><td>TypeScript</td></tr>
+                <tr><td><a href="https://github.com/openclaw/lobster" target="_blank">openclaw/lobster</a></td><td>Native workflow shell / pipeline automation engine</td><td>TypeScript</td></tr>
+                <tr><td><a href="https://github.com/openclaw/clawhub" target="_blank">openclaw/clawhub</a></td><td>Skill directory / marketplace website</td><td>TypeScript</td></tr>
+                <tr><td><a href="https://github.com/openclaw/skills" target="_blank">openclaw/skills</a></td><td>Archive of published skills</td><td>Python</td></tr>
+                <tr><td><a href="https://github.com/neul-labs/openclaw-rs" target="_blank">neul-labs/openclaw-rs</a></td><td>Community Rust implementation</td><td>Rust</td></tr>
+                <tr><td><a href="https://github.com/openclaw/openclaw-ansible" target="_blank">openclaw/openclaw-ansible</a></td><td>Ansible deployment automation</td><td>Shell</td></tr>
+            </table>
+        </div>
+
+        <div class="pager">
+            <a href="architecture.html" class="next">
+                <div class="dir">Next →</div>
+                <div class="ttl">Architecture Deep Dive</div>
+            </a>
+        </div>
+    </main>
+</body>
+</html>

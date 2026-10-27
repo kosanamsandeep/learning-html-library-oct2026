@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent Adoption — Org Playbook & Learning Projects</title>
+  <link rel="stylesheet" href="_shared.css">
+  <style>
+    /* ─── SIDEBAR LAYOUT (overrides shared.css body) ─── */
+    body {
+      display: flex;
+      background: var(--bg);
+    }
+
+    /* ─── SIDEBAR ─── */
+    nav.sidebar {
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+      width: 270px; min-width: 270px;
+      background: var(--paper);
+      border-right: 1px solid var(--line);
+      padding: 1.5rem 1rem;
+      z-index: 10;
+    }
+    nav.sidebar .logo {
+      font-size: 1.05rem; font-weight: 750;
+      color: var(--accent); margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    nav.sidebar .logo span { font-size: 1.3rem; }
+    nav.sidebar .section-label {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--muted); margin: 1.1rem 0 0.35rem 0.25rem;
+      font-weight: 800;
+    }
+    nav.sidebar a {
+      display: block; padding: 0.4rem 0.6rem; border-radius: 6px;
+      color: var(--muted); text-decoration: none; font-size: 0.88rem;
+      transition: all 0.15s;
+    }
+    nav.sidebar a:hover { background: var(--accent-soft); color: var(--accent); }
+    nav.sidebar a.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* ─── MAIN ─── */
+    main.playbook {
+      flex: 1; max-width: 960px; margin: 0 auto; padding: 2rem 2rem 6rem;
+      min-width: 0;
+    }
+
+    .playbook h1 {
+      font-size: 2rem; font-weight: 800; margin-bottom: 0.4rem;
+    }
+    .playbook .subtitle {
+      color: var(--muted); font-size: 1.05rem; margin-bottom: 2rem;
+    }
+
+    /* ─── SECTION HEADERS ─── */
+    .playbook .section-header {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .playbook .section-header h2 {
+      margin: 0; font-size: 1.5rem;
+    }
+    .badge {
+      font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.6rem;
+      border-radius: 999px; letter-spacing: 0.04em;
+    }
+    .badge.amber { background: var(--warn-soft); color: var(--warn); }
+    .badge.green { background: var(--green-soft); color: var(--green); }
+    .badge.purple { background: #e0e7ff; color: var(--gh); }
+    .badge.rose { background: var(--bad-soft); color: var(--bad); }
+
+    /* ─── QUESTION BLOCK ─── */
+    .question {
+      background: var(--accent-soft); border-radius: 10px; padding: 1rem 1.3rem;
+      margin-bottom: 1.25rem; border-left: 4px solid var(--accent);
+    }
+    .question .q-text {
+      font-weight: 600; font-size: 0.95rem; color: #134e4a;
+    }
+
+    /* ─── COLLAPSIBLE DETAIL ─── */
+    .playbook details {
+      background: var(--paper); border-radius: 10px; margin-bottom: 1rem;
+      border: 1px solid var(--line); overflow: hidden;
+    }
+    .playbook details summary {
+      padding: 0.9rem 1.15rem; cursor: pointer; font-weight: 600;
+      transition: background 0.15s;
+    }
+    .playbook details summary:hover { background: var(--bg); }
+    .playbook details summary::marker { color: var(--accent); }
+    .playbook details .body { padding: 0 1.15rem 1.15rem; }
+
+    /* ─── CALL OUT ─── */
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 0.85rem 1.1rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    .callout strong { color: #134e4a; }
+
+    /* ─── PROJECT GRID ─── */
+    .project-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;
+    }
+    .project-card {
+      background: var(--paper); border: 1px solid var(--line);
+      border-radius: 10px; padding: 1.15rem;
+      box-shadow: var(--shadow);
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .project-card:hover {
+      border-color: var(--accent); transform: translateY(-2px);
+    }
+    .project-card h4 {
+      font-size: 1rem; margin-bottom: 0.4rem; color: var(--accent);
+    }
+    .project-card h4 .icon { margin-right: 0.3rem; }
+    .project-card p {
+      font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .project-card .tags {
+      display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.4rem;
+    }
+    .project-card .tags span {
+      font-size: 0.68rem; padding: 0.1rem 0.5rem; border-radius: 999px;
+      background: var(--bg); color: var(--muted); font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .project-card .diff {
+      font-size: 0.8rem; color: var(--warn); margin-top: 0.5rem;
+      padding-top: 0.4rem; border-top: 1px solid var(--line);
+    }
+    .project-card .diff strong { color: var(--ink); }
+
+    /* ─── PROJECT SECTION HEADERS ─── */
+    .section-header h3 {
+      margin: 0 0 0.2rem;
+    }
+    .section-desc { color: var(--muted); margin-bottom: 0.75rem; font-size: 0.92rem; }
+
+    /* ─── ROADMAP TABLE WRAPPER ─── */
+    .playbook .roadmap-table { margin-top: 0.5rem; }
+    .playbook .roadmap-table table { margin: 0; }
+
+    /* ─── GLOSSARY ─── */
+    .playbook .glossary .project-card p {
+      font-size: 0.82rem;
+    }
+
+    /* ─── BACK TO TOP ─── */
+    .back-top {
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: var(--accent); color: #fff; width: 44px; height: 44px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      text-decoration: none; font-size: 1.4rem; font-weight: 700;
+      box-shadow: 0 4px 16px rgba(15, 118, 110, 0.3);
+      transition: opacity 0.2s;
+      opacity: 0; pointer-events: none;
+    }
+    .back-top.visible { opacity: 1; pointer-events: auto; }
+    .back-top:hover { transform: scale(1.1); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 820px) {
+      nav.sidebar { display: none; }
+      .project-grid { grid-template-columns: 1fr; }
+      main.playbook { padding: 1.5rem 1rem; }
+    }
+
+    /* ─── PROJECT LINK ─── */
+    .project-link {
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .project-link:hover { text-decoration: underline; }
+    .project-link::after { content: " →"; }
+
+    /* Fix pre inside details */
+    .playbook details pre { margin: 0.75rem 0; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<nav class="sidebar">
+  <div class="logo"><span>🧩</span> AI Org Playbook</div>
+
+  <div class="section-label">The Three Challenges</div>
+  <a href="#q1" class="active" onclick="setActive(this)">1. Multi-Agent Scaling</a>
+  <a href="#q2" onclick="setActive(this)">2. Supply Chain Security</a>
+  <a href="#q3" onclick="setActive(this)">3. Custom Eval Framework</a>
+
+  <div class="section-label">Learning Projects</div>
+  <a href="#projects-multi" onclick="setActive(this)">Multi-Agent Projects</a>
+  <a href="#projects-supply" onclick="setActive(this)">Supply Chain Projects</a>
+  <a href="#projects-eval" onclick="setActive(this)">Eval Framework Projects</a>
+  <a href="#projects-cross" onclick="setActive(this)">Cross-Cutting Projects</a>
+
+  <div class="section-label">Reference</div>
+  <a href="#roadmap" onclick="setActive(this)">Suggested Roadmap</a>
+  <a href="#concepts" onclick="setActive(this)">Key Concepts Glossary</a>
+</nav>
+
+<!-- ══════════ MAIN ══════════ -->
+<main class="playbook">
+
+  <h1>AI Agent Adoption in the Enterprise</h1>
+  <p class="subtitle">Three real-world challenges, explained + hands-on learning projects to build expertise in each area.</p>
+
+  <!-- ──── SECTION 1 ──── -->
+  <div class="card section" id="q1" style="padding-bottom:2rem;">
+    <div class="section-header">
+      <span style="font-size:1.4rem;">🤖</span>
+      <h2>1. Multi-Agent Infrastructure</h2>
+      <span class="badge amber">ORG SCALING</span>
+    </div>
+    <p>How do you support multiple coding agents (Claude Code, Copilot, Codex, Cursor) across different teams without fragmentation?</p>
+
+    <div class="question">
+      <div class="q-text">❝ Working out how to support multiple coding CLIs/agents — GitHub Copilot, Codex, Claude, and whatever comes next. Trying to scale agentic flows across different engineering teams. ❞</div>
+    </div>
+
+    <details>
+      <summary>📖 The Four-Layer Framework</summary>
+      <div class="body">
+        <p>Each tool has a different interaction model — you can't標準ize on one. Instead, standardize on <strong>what the agents consume</strong>:</p>
+        <table>
+          <tr><th>Layer</th><th>What It Means</th><th>Key Deliverable</th></tr>
+          <tr>
+            <td><strong>1. Process</strong></td>
+            <td>A shared "AI Coding Manifesto" — when to use autocomplete vs. agent, what needs human review, how to handle secrets in prompts</td>
+            <td>1-page playbook</td>
+          </tr>
+          <tr>
+            <td><strong>2. Tooling</strong></td>
+            <td>"README for AI" — every repo has a context file (CLAUDE.md, cursorrules, copilot-instructions.md) that describes itself</td>
+            <td>Context files + generator script</td>
+          </tr>
+          <tr>
+            <td><strong>3. Infrastructure</strong></td>
+            <td>MCP servers for shared services (docs, deploy, schema), central prompt registry, audit trail standard</td>
+            <td>MCP servers + audit hooks</td>
+          </tr>
+          <tr>
+            <td><strong>4. Culture</strong></td>
+            <td>Seed teams → extract patterns → publish → scale. Habits, not tools.</td>
+            <td>Lunch &amp; learns + living docs</td>
+          </tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>💡 Key Insight: The Context File as the Single Source of Truth</summary>
+      <div class="body">
+        <p>The highest-leverage practice: one canonical <code>CLAUDE.md</code> per repo, auto-generating tool-specific configs:</p>
+        <pre>Repo Root
+├── CLAUDE.md                    ← source of truth (you write this)
+├── .github/copilot-instructions.md  ← auto-generated from CLAUDE.md
+├── .cursorrules                    ← auto-generated
+├── .windsurfrules                  ← auto-generated
+└── CODEX.md                        ← auto-generated</pre>
+        <div class="callout">
+          <strong>Why this works:</strong> As new tools emerge ("whatever comes next"), you only update the generator — not every config file. The org standard is "declare in CLAUDE.md, consume everywhere."
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- ──── SECTION 2 ──── -->
+  <div class="card section" id="q2" style="padding-bottom:2rem;">
+    <div class="section-header">
+      <span style="font-size:1.4rem;">🔐</span>
+      <h2>2. Supply Chain Security</h2>
+      <span class="badge green">SBOM + SIGNING</span>
+    </div>
+    <p>In-depth code reviews to inform SBOMs + cryptographically signed pipelines.</p>
+
+    <div class="question" style="border-left-color: var(--green); background: var(--green-soft);">
+      <div class="q-text" style="color: var(--green);">❝ Doing in-depth code reviews to inform SBOMs. Building pipelines and cryptographically signing them. ❞</div>
+    </div>
+
+    <details>
+      <summary>📖 What Is an SBOM?</summary>
+      <div class="body">
+        <p><strong>SBOM = Software Bill of Materials</strong> — a complete inventory of every dependency in your software. Like a food ingredients label for code.</p>
+        <table>
+          <tr><th>Layer</th><th>Examples</th><th>Why Track It?</th></tr>
+          <tr><td>Your code</td><td>app.py, routes.js</td><td>—</td></tr>
+          <tr><td>Direct deps</td><td>fastapi==0.111, react@18.2</td><td>Known vulnerabilities</td></tr>
+          <tr><td>Transitive deps</td><td>urllib3 (dep of requests)</td><td>Hidden attack surface</td></tr>
+          <tr><td>Container layers</td><td>python:3.12-slim</td><td>Base image CVEs</td></tr>
+          <tr><td>CI/CD tools</td><td>actions/checkout@v4</td><td>Pipeline compromise</td></tr>
+        </table>
+        <div class="callout" style="border-left-color: var(--green); background: var(--green-soft);">
+          <strong>Log4j test:</strong> "Where do we use Log4j?" — orgs with SBOMs answered in hours. Orgs without spent weeks. <strong>SBOM = incident response speed.</strong>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>📖 What Does "Cryptographically Signing Pipelines" Mean?</summary>
+      <div class="body">
+        <p>It means proving that a build artifact came from <strong>your legitimate CI pipeline</strong> and hasn't been tampered with since building.</p>
+        <table>
+          <tr><th>Technique</th><th>What It Does</th><th>Tool</th></tr>
+          <tr><td><strong>Container signing</strong></td><td>Sign image with short-lived key tied to CI identity</td><td>Cosign / Sigstore</td></tr>
+          <tr><td><strong>Provenance attestation</strong></td><td>Record what commit + who triggered the build</td><td>SLSA + in-toto</td></tr>
+          <tr><td><strong>Keyless signing</strong></td><td>No shared GPG keys — use OIDC identity from CI runner</td><td>Sigstore (fulcio)</td></tr>
+          <tr><td><strong>Pipeline-as-code</strong></td><td>CI/CD defined in git, reviewed like code, not click-ops</td><td>GitHub Actions / GitLab CI</td></tr>
+        </table>
+        <div class="callout" style="border-left-color: var(--green); background: var(--green-soft);">
+          <strong>The golden flow:</strong> Dev commits → PR review (SBOM checked) → CI builds → CI <strong>signs</strong> image → Registry stores image + signature → Deploy verifies signature → Only then deploy.
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- ──── SECTION 3 ──── -->
+  <div class="card section" id="q3" style="padding-bottom:2rem;">
+    <div class="section-header">
+      <span style="font-size:1.4rem;">🧪</span>
+      <h2>3. Custom Eval Framework</h2>
+      <span class="badge purple">THE MEATIEST PART</span>
+    </div>
+    <p>Why generic benchmarks fail for org-specific AI evaluation, and how to build your own.</p>
+
+    <div class="question" style="border-left-color: var(--gh); background: #e0e7ff;">
+      <div class="q-text" style="color: var(--gh);">❝ They're inventing new processes to evaluate code reviews against "known bad" internal codebases. Standard benchmarks like SWE-bench don't fit. So they're building their own eval framework. ❞</div>
+    </div>
+
+    <details>
+      <summary>📖 Why SWE-bench Doesn't Fit</summary>
+      <div class="body">
+        <table>
+          <tr><th>Dimension</th><th>SWE-bench (generic)</th><th>Their Need (specific)</th></tr>
+          <tr><td><strong>Codebase</strong></td><td>2,300+ bugs from random OSS</td><td>Their own internal repos</td></tr>
+          <tr><td><strong>Languages</strong></td><td>PHP, Python, JS — whatever the OSS uses</td><td>Their language stack (maybe just TS + Go)</td></tr>
+          <tr><td><strong>Goal</strong></td><td>Can the AI produce a passing patch?</td><td>Can the AI <em>find</em> the problem in a review?</td></tr>
+          <tr><td><strong>"Bad" defined as</strong></td><td>Failing unit test</td><td>Org's own anti-pattern catalog</td></tr>
+          <tr><td><strong>Success metric</strong></td><td>Did the patch pass tests?</td><td>Did the AI flag the issue? False positive rate?</td></tr>
+          <tr><td><strong>Distribution</strong></td><td>Off-by-one, null pointers, parse errors</td><td>SQLi, PII leaks, over-privileged IAM, their specific patterns</td></tr>
+        </table>
+        <div class="callout" style="border-left-color: var(--gh); background: #e0e7ff;">
+          <strong>Bottom line:</strong> If you're evaluating an AI code reviewer against SWE-bench, you're measuring how well it fixes random OSS bugs — not whether it catches your team's recurring security mistake.
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>📖 The Architecture of a Custom Eval Framework</summary>
+      <div class="body">
+        <pre>┌──────────────────────────────────────────────────────┐
+│              Custom Eval Framework                     │
+├──────────────────────────────────────────────────────┤
+│                                                        │
+│  1. BUILD "KNOWN-BAD" CORPUS                            │
+│     ├── Historical bugs from your repos                 │
+│     ├── Deliberately-seeded anti-patterns               │
+│     └── Ground truth annotations (issue + line)         │
+│                                                        │
+│  2. RUN INFERENCE                                       │
+│     ├── Your AI code reviewer scans the corpus          │
+│     └── Produces: flagged issues + confidence scores    │
+│                                                        │
+│  3. SCORE                                               │
+│     ├── True Positives: flagged real issues             │
+│     ├── False Positives: flagged harmless code          │
+│     └── False Negatives: missed actual issues           │
+│                                                        │
+│  4. ITERATE                                             │
+│     ├── What did the AI miss that's obvious to humans?  │
+│     ├── Add few-shot examples to the prompt             │
+│     ├── Adjust temperature / system prompt / context    │
+│     └── Re-run → compare precision/recall vs previous   │
+│                                                        │
+└──────────────────────────────────────────────────────┘</pre>
+      </div>
+    </details>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!--               LEARNING PROJECTS                     -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <h2 style="font-size:1.8rem; margin-top:3rem; border-top:2px solid var(--line); padding-top:2rem;" id="projects-multi">
+    🛠️ Hands-On Learning Projects
+  </h2>
+  <p class="subtitle">
+    Each project is designed to be built in a weekend — solo or with a partner. Start from where you are. Click any project to open its detailed explainer.
+  </p>
+
+  <!-- ──── Multi-Agent ──── -->
+  <div style="margin:2rem 0 1rem;">
+    <div class="section-header">
+      <span style="font-size:1.2rem;">🤖</span>
+      <h3>Multi-Agent Infrastructure Projects</h3>
+    </div>
+    <p class="section-desc">Build a system where multiple AI agents can work on the same codebase without stepping on each other.</p>
+  </div>
+
+  <div class="project-grid">
+    <div class="project-card">
+      <h4><span class="icon">📂</span> Context File Generator</h4>
+      <div class="tags"><span>CLI</span><span>Python/Node</span><span>Beginner+</span></div>
+      <p>Write a script that reads a canonical <code>CLAUDE.md</code> and auto-generates <code>.cursorrules</code>, <code>copilot-instructions.md</code>, and <code>CODEX.md</code> from it.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> Understand what each agent's context file needs and how they overlap.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/01_context_file_generator/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">🔌</span> Minimal MCP Server</h4>
+      <div class="tags"><span>MCP</span><span>Python/TS</span><span>Intermediate</span></div>
+      <p>Build a small MCP server that exposes your team's API documentation as a tool. Connect it to Claude Code, then Copilot.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> See how one MCP server can serve <em>any</em> agent that speaks the protocol.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/02_minimal_mcp_server/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">📋</span> Agent Audit Trail Hook</h4>
+      <div class="tags"><span>git hooks</span><span>bash</span><span>Beginner</span></div>
+      <p>Create a git hook that appends a standard footer to every AI-generated commit: <code>AI-Generated: true</code>, session ID, review requirement.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> Understand traceability in practice — build the data to answer "how much of our code is AI-written?"</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/03_agent_audit_trail_hook/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">🏗️</span> Agent Router</h4>
+      <div class="tags"><span>Orchestration</span><span>API</span><span>Advanced</span></div>
+      <p>Build a thin orchestrator that routes a user request to the right agent: "fix typo" → Copilot inline, "refactor module" → Claude Code deep session.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> The UX problem — one interface to many agents. Route by task type, not by tool.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/04_agent_router/">Open project</a>
+    </div>
+  </div>
+
+  <!-- ──── Supply Chain ──── -->
+  <div style="margin:2.5rem 0 1rem;">
+    <div class="section-header">
+      <span style="font-size:1.2rem;">🔐</span>
+      <h3>Supply Chain Security Projects</h3>
+    </div>
+    <p class="section-desc">Learn SBOM generation, dependency auditing, and artifact signing by building each piece yourself.</p>
+  </div>
+
+  <div class="project-grid">
+    <div class="project-card">
+      <h4><span class="icon">📦</span> DIY SBOM Generator</h4>
+      <div class="tags"><span>Python</span><span>CycloneDX</span><span>Intermediate</span></div>
+      <p>Write a script that scans a Python project, resolves transitive deps, and outputs a CycloneDX-format SBOM as JSON.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> Understand what an SBOM actually contains — names, versions, license, dependency graph.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/05_diy_sbom_generator/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">🔍</span> SBOM Diff Checker</h4>
+      <div class="tags"><span>Python/Node</span><span>CI</span><span>Intermediate</span></div>
+      <p>Build a tool that compares two SBOMs (before and after a PR) and flags <strong>new</strong> dependencies introduced by the change.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> The "code review to inform SBOM" process — every new dep should be flagged and justified.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/06_sbom_diff_checker/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">🖊️</span> Container Signing Lab</h4>
+      <div class="tags"><span>Docker</span><span>Cosign</span><span>Intermediate</span></div>
+      <p>Set up a CI pipeline that builds a Docker image, signs it with Cosign (keyless), pushes to a registry, and <strong>refuses</strong> unsigned images at deploy.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> Hands-on with "cryptographically signing pipelines" — the exact build→sign→verify flow.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/07_container_signing_lab/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">📜</span> SLSA Level Walkthrough</h4>
+      <div class="tags"><span>SLSA</span><span>in-toto</span><span>Advanced</span></div>
+      <p>Take a simple project and progressively harden its build pipeline through SLSA Levels 1→4: scripted → hermetic → reproducible → signed provenance.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> The maturity ladder — what each level adds and what it costs. Most orgs never get past L2.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/08_slsa_level_walkthrough/">Open project</a>
+    </div>
+  </div>
+
+  <!-- ──── Eval Framework ──── -->
+  <div style="margin:2.5rem 0 1rem;">
+    <div class="section-header">
+      <span style="font-size:1.2rem;">🧪</span>
+      <h3>Eval Framework Projects</h3>
+    </div>
+    <p class="section-desc">Build your own eval system — from corpus to scoring — so you can measure any AI agent against your standards.</p>
+  </div>
+
+  <div class="project-grid">
+    <div class="project-card">
+      <h4><span class="icon">🗂️</span> Known-Bad Corpus Builder</h4>
+      <div class="tags"><span>Data prep</span><span>Beginner</span></div>
+      <p>Take 10–20 real bugs from your past PRs. Annotate each with file, line range, severity, category, and the fix applied. Store as structured JSON.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> Building the corpus is 80% of the work — your eval quality depends entirely on annotation quality.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/09_known_bad_corpus_builder/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">🦠</span> Seeded Anti-Pattern Inserter</h4>
+      <div class="tags"><span>Python</span><span>Security</span><span>Intermediate</span></div>
+      <p>Write a script that takes a clean codebase and <strong>deliberately inserts</strong> known-bad patterns — SQLi, hardcoded secrets, missing auth checks.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> Synthetic insertion scales your corpus without waiting for real bugs.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/10_seeded_antipattern_inserter/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">📊</span> Eval Runner &amp; Scorecard</h4>
+      <div class="tags"><span>Python</span><span>LLM API</span><span>Intermediate+</span></div>
+      <p>Build a harness that feeds corpus files to an LLM, collects outputs, compares against ground truth, and produces precision/recall/F1 scorecards as HTML.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> The core loop — everything else supports prompt tuning, model selection, threshold setting.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/11_eval_runner_scorecard/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">🎛️</span> Prompt Tuning Workbench</h4>
+      <div class="tags"><span>Web app</span><span>LLM</span><span>Advanced</span></div>
+      <p>Build a dashboard that runs the same corpus against N prompt variants and shows a side-by-side score comparison.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> "Tune the skills/models to find more problems" — systematic improvement, not guessing.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/12_prompt_tuning_workbench/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">🔄</span> Adversarial Eval Loop</h4>
+      <div class="tags"><span>Multi-agent</span><span>Adversarial</span><span>Advanced</span></div>
+      <p>Two-agent system: Agent A writes code (possibly with seeded bugs), Agent B reviews it. A sees B's scores and tries harder to hide bugs.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> Your eval corpus goes stale — adversarial loop keeps it honest and reveals blind spots.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/13_adversarial_eval_loop/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">📈</span> Benchmark Mapping Tool</h4>
+      <div class="tags"><span>Data analysis</span><span>Python</span><span>Intermediate</span></div>
+      <p>Tag SWE-bench bugs by language, category, difficulty, then overlay your org's bug distribution to see where benchmarks overlap.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> Prove to yourself (and your org) why SWE-bench doesn't fit — with data, not intuition.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/14_benchmark_mapping_tool/">Open project</a>
+    </div>
+  </div>
+
+  <!-- ──── Cross-Cutting ──── -->
+  <div style="margin:2.5rem 0 1rem;">
+    <div class="section-header">
+      <span style="font-size:1.2rem;">🧩</span>
+      <h3>Cross-Cutting Projects (Combine All Three)</h3>
+    </div>
+    <p class="section-desc">These projects touch <strong>all three challenges</strong> — the most realistic preparation for production.</p>
+  </div>
+
+  <div class="project-grid">
+    <div class="project-card">
+      <h4><span class="icon">🤝</span> AI Code Review Assistant</h4>
+      <div class="tags"><span>All three</span><span>Capstone</span></div>
+      <p>Build a system that: (1) reviews every PR against your anti-pattern corpus, (2) updates the SBOM if deps changed, (3) signs the review output with your CI identity.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> The production scenario — all three challenges intersect in one workflow.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/15_ai_code_review_assistant/">Open project</a>
+    </div>
+
+    <div class="project-card">
+      <h4><span class="icon">📟</span> AI Governance Dashboard</h4>
+      <div class="tags"><span>All three</span><span>Advanced</span></div>
+      <p>Build a web dashboard showing: (1) which agents are used by which teams, (2) SBOM compliance per repo, (3) eval scores trending over time.</p>
+      <div class="diff"><strong>🔑 Learning goal:</strong> Visibility is the prerequisite for governance. If you can't measure it, you can't improve it.</div>
+      <a class="project-link" href="../06_side_projects/ai_adoption_projects/16_ai_governance_dashboard/">Open project</a>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!--               ROADMAP                              -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <div class="card" id="roadmap">
+    <h2>🗺️ Suggested Learning Roadmap</h2>
+    <div class="roadmap-table">
+      <table>
+        <tr><th>Week</th><th>Focus</th><th>Project</th><th>Time</th></tr>
+        <tr><td>1</td><td>Context files</td><td>Context File Generator</td><td>~3h</td></tr>
+        <tr><td>2</td><td>Traceability</td><td>Agent Audit Trail Hook</td><td>~2h</td></tr>
+        <tr><td>3</td><td>SBOM fundamentals</td><td>DIY SBOM Generator</td><td>~4h</td></tr>
+        <tr><td>4</td><td>Supply chain</td><td>SBOM Diff Checker</td><td>~3h</td></tr>
+        <tr><td>5</td><td>Signing</td><td>Container Signing Lab</td><td>~4h</td></tr>
+        <tr><td>6</td><td>Eval — corpus</td><td>Known-Bad Corpus Builder</td><td>~5h</td></tr>
+        <tr><td>7</td><td>Eval — runner</td><td>Eval Runner &amp; Scorecard</td><td>~6h</td></tr>
+        <tr><td>8</td><td>Eval — iteration</td><td>Prompt Tuning Workbench</td><td>~6h</td></tr>
+        <tr><td>9</td><td>Infrastructure</td><td>Minimal MCP Server</td><td>~5h</td></tr>
+        <tr><td>10</td><td>Capstone start</td><td>AI Code Review Assistant (phase 1)</td><td>~6h</td></tr>
+        <tr><td>11</td><td>Capstone complete</td><td>AI Code Review Assistant (phase 2)</td><td>~6h</td></tr>
+        <tr><td>12</td><td>Adversarial</td><td>Adversarial Eval Loop</td><td>~6h</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!--               GLOSSARY                             -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <div class="card" id="concepts">
+    <h2>📚 Key Concepts Glossary</h2>
+    <div class="project-grid glossary">
+      <div class="project-card">
+        <h4><span class="icon">📄</span> SBOM</h4>
+        <p>Software Bill of Materials — a complete inventory of every dependency, library, container layer, and tool in your software.</p>
+        <div class="tags"><span>Supply chain</span></div>
+      </div>
+      <div class="project-card">
+        <h4><span class="icon">🔑</span> Sigstore / Cosign</h4>
+        <p>Open-source toolchain for signing container images and blobs with ephemeral keys backed by OIDC identity — no long-lived signing keys to steal.</p>
+        <div class="tags"><span>Supply chain</span></div>
+      </div>
+      <div class="project-card">
+        <h4><span class="icon">📊</span> SLSA</h4>
+        <p>Supply-chain Levels for Software Artifacts — a maturity framework (Levels 1–4) for build integrity. Level 4 = fully hermetic + reproducible builds.</p>
+        <div class="tags"><span>Supply chain</span></div>
+      </div>
+      <div class="project-card">
+        <h4><span class="icon">🔌</span> MCP</h4>
+        <p>Model Context Protocol — an open standard for AI agents to call external tools (APIs, databases, services). One server, any agent.</p>
+        <div class="tags"><span>Infrastructure</span></div>
+      </div>
+      <div class="project-card">
+        <h4><span class="icon">🧪</span> SWE-bench</h4>
+        <p>A benchmark of ~2,300 software engineering tasks from real GitHub issues. Measures whether an AI can produce a patch that passes tests.</p>
+        <div class="tags"><span>Eval</span></div>
+      </div>
+      <div class="project-card">
+        <h4><span class="icon">🎯</span> Precision / Recall</h4>
+        <p>Precision = TP / (TP+FP). Recall = TP / (TP+FN). F1 = harmonic mean. Standard eval metrics for classification tasks.</p>
+        <div class="tags"><span>Eval</span></div>
+      </div>
+      <div class="project-card">
+        <h4><span class="icon">🔐</span> In-toto</h4>
+        <p>A framework to sign and verify every step of the software supply chain — "who ran the test step?" "who published the package?" — all cryptographically attested.</p>
+        <div class="tags"><span>Supply chain</span></div>
+      </div>
+      <div class="project-card">
+        <h4><span class="icon">🔄</span> OIDC</h4>
+        <p>OpenID Connect — the protocol behind "keyless signing." Your CI runner gets a short-lived identity token from GitHub/GitLab, which it uses to sign artifacts. No shared secrets.</p>
+        <div class="tags"><span>Infrastructure</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Back to top -->
+  <a href="#" class="back-top" id="backTop">↑</a>
+
+</main>
+
+<script>
+// Sidebar active state
+function setActive(el) {
+  document.querySelectorAll('nav.sidebar a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Show/hide back-to-top button
+const backTop = document.getElementById('backTop');
+window.addEventListener('scroll', () => {
+  backTop.classList.toggle('visible', window.scrollY > 400);
+});
+
+// Highlight nav link based on scroll
+const sections = ['q1', 'q2', 'q3', 'projects-multi', 'projects-supply', 'projects-eval', 'projects-cross', 'roadmap', 'concepts'];
+const navLinks = document.querySelectorAll('nav.sidebar a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(l => {
+        l.classList.remove('active');
+        if (l.getAttribute('href') === '#' + entry.target.id) l.classList.add('active');
+      });
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+sections.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) observer.observe(el);
+});
+</script>
+
+</body>
+</html>

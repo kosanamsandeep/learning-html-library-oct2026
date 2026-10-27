@@ -1,0 +1,77 @@
+[
+  {
+    "title": "FastAPI — CORS Middleware",
+    "content": "To enable CORS in FastAPI, use CORSMiddleware from fastapi.middleware.cors. Add allowed origins, methods, and headers. Example: app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*']). For production, restrict allow_origins to specific domains.",
+    "tags": ["fastapi", "cors", "middleware", "security"]
+  },
+  {
+    "title": "FastAPI — Dependency Injection",
+    "content": "FastAPI supports dependency injection via the Depends function. Dependencies can be functions, classes, or callables. They can have their own dependencies (nested). Use for database sessions, authentication, and shared logic. Example: async def get_db(): db = SessionLocal(); try: yield db; finally: db.close().",
+    "tags": ["fastapi", "dependency-injection", "depends"]
+  },
+  {
+    "title": "FastAPI — Path Operations & Routing",
+    "content": "FastAPI uses decorators like @app.get(), @app.post(), @app.put(), @app.delete() to define routes. Path parameters are declared in the URL pattern. Query parameters are function parameters not in the path. Use Pydantic models for request bodies. Automatic OpenAPI schema generation.",
+    "tags": ["fastapi", "routing", "path-operations"]
+  },
+  {
+    "title": "Python — Async/Await",
+    "content": "Python's asyncio library provides async/await syntax for concurrent code. Define async functions with 'async def' and await coroutines with 'await'. Use asyncio.gather() for parallel execution. Important: async functions must be called with await, and you can't use await outside an async function. Use asyncio.run() as the entry point.",
+    "tags": ["python", "async", "await", "asyncio"]
+  },
+  {
+    "title": "Python — Context Managers (with statement)",
+    "content": "Context managers handle resource setup/cleanup using the 'with' statement. Implement __enter__ and __exit__ methods in a class, or use @contextmanager from contextlib. Example: with open('file.txt') as f: data = f.read(). asyncio supports async context managers with __aenter__ and __aexit__.",
+    "tags": ["python", "context-manager", "with-statement"]
+  },
+  {
+    "title": "Python — Type Hints & Pydantic",
+    "content": "Python 3.12+ supports rich type hints: list[str], dict[str, int], Optional[T], Union[T, U], Literal['a', 'b']. Pydantic v2 uses BaseModel for data validation with type annotations. Field() adds constraints like default, min_length, ge. ConfigDict for model configuration.",
+    "tags": ["python", "type-hints", "pydantic", "validation"]
+  },
+  {
+    "title": "Docker — Dockerfile Best Practices",
+    "content": "Use multi-stage builds to keep images small. Start with a slim base image (python:3.12-slim). Copy only requirements first to leverage Docker layer caching. Use .dockerignore to exclude unnecessary files. Run as non-root user. Use HEALTHCHECK instruction. Prefer COPY over ADD. Use --no-cache-dir for pip.",
+    "tags": ["docker", "dockerfile", "best-practices", "container"]
+  },
+  {
+    "title": "Docker — docker-compose for Multi-Container Apps",
+    "content": "Docker Compose lets you define multi-container apps in a docker-compose.yml file. Define services, networks, and volumes. Use 'depends_on' for startup ordering. Use environment variables for config. Example with web + db: services: web: build: . ports: - '8000:8000', db: image: postgres:16 environment: POSTGRES_DB: myapp.",
+    "tags": ["docker", "compose", "multi-container", "services"]
+  },
+  {
+    "title": "Git — Interactive Rebase",
+    "content": "Use 'git rebase -i HEAD~N' to squash, reorder, or edit the last N commits. Commands: pick (keep), squash (combine), fixup (combine without message), reword (edit message), edit (stop to amend), drop (delete). Never rebase commits that have been pushed to shared branches. Use 'git rebase --abort' to cancel.",
+    "tags": ["git", "rebase", "history", "squash"]
+  },
+  {
+    "title": "Git — Branch Management & Workflow",
+    "content": "Common workflows: GitHub Flow (main + feature branches), GitFlow (main + develop + release + hotfix). Use meaningful branch names: feature/add-login, fix/issue-42. Keep branches short-lived. Delete after merge. Use 'git branch -d' for local, 'git push origin --delete' for remote. Rebase feature branches onto main before PR.",
+    "tags": ["git", "branch", "workflow", "github-flow"]
+  },
+  {
+    "title": "SQLAlchemy — Session Management",
+    "content": "SQLAlchemy 2.0 uses sessionmaker() to create sessions. Use context manager: with Session(engine) as session: session.add(obj); session.commit(). For async: async with AsyncSession(engine) as session. Nested sessions use savepoints. Always close sessions to return connections to the pool. Session per request pattern for web apps.",
+    "tags": ["sqlalchemy", "session", "database", "orm"]
+  },
+  {
+    "title": "SQLAlchemy — Model Declaration (2.0 style)",
+    "content": "SQLAlchemy 2.0 uses declarative_base with type-annotated columns: class User(Base): __tablename__ = 'users'; id: Mapped[int] = mapped_column(primary_key=True); name: Mapped[str] = mapped_column(String(50)). Use Mapped[] for type hints and mapped_column() for column configuration. Relationship() for foreign keys.",
+    "tags": ["sqlalchemy", "models", "orm", "declarative"]
+  },
+  {
+    "title": "Pytest — Fixtures & Parametrization",
+    "content": "Pytest fixtures provide reusable test setup. Use @pytest.fixture decorator. Scope options: function, class, module, session. Use conftest.py to share fixtures across test files. Parametrization: @pytest.mark.parametrize('input,expected', [(1,2), (3,4)]). Fixtures can request other fixtures (dependency injection).",
+    "tags": ["pytest", "testing", "fixtures", "parametrize"]
+  },
+  {
+    "title": "Pytest — Mocking with monkeypatch & mocker",
+    "content": "Use monkeypatch fixture for simple attribute/function replacement: monkeypatch.setattr(obj, 'attr', value). Use pytest-mock's mocker fixture for full unittest.mock: mocker.patch('module.function', return_value=42). Mock external APIs, databases, and file I/O in unit tests. Always restore patches after test.",
+    "tags": ["pytest", "mocking", "monkeypatch", "testing"]
+  },
+  {
+    "title": "Claude Code — MCP Server Configuration",
+    "content": "Claude Code supports MCP servers via .claude/settings.json. Add an 'mcpServers' object with server names as keys. Each server needs 'command' (the executable) and 'args' (list of arguments). Optional 'env' for environment variables. Restart Claude Code after adding a new server. Use 'claude mcp add' CLI command for quick setup.",
+    "tags": ["claude-code", "mcp", "settings", "configuration"]
+  }
+]

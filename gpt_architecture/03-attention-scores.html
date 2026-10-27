@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 — Attention Scores: Q·Kᵀ & Scaling</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #00cec9; }
+  h3 { font-size: 1.05rem; margin: 1rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #6c5ce7; color: #e1e4f0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .q { color: #6c5ce7; } .k { color: #00cec9; } .v { color: #fd79a8; } .score { color: #fdcb6e; } .attn { color: #55efc4; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  .hl-box { background: rgba(108,92,231,0.08); border-left: 3px solid #6c5ce7; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .matrix-grid { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; margin: 1rem 0; }
+  .matrix-row { display: flex; gap: 0.1rem; align-items: center; }
+  .cell { width: 58px; height: 36px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; border-radius: 5px; font-weight: 500; }
+  .cell-s { background: rgba(253,203,110,0.1); color: #fdcb6e; border: 1px solid rgba(253,203,110,0.12); }
+  .cell-dim { background: transparent; color: #636e72; width: auto; padding: 0 0.5rem; font-size: 0.7rem; }
+  .arrow-sym { font-size: 1.5rem; color: #636e72; margin: 0.3rem 0; }
+  .label { font-size: 0.85rem; font-weight: 600; margin: 0.3rem 0; text-align: center; }
+  .shape { font-size: 0.7rem; color: #636e72; font-family: 'JetBrains Mono', monospace; text-align: center; margin-top: 0.15rem; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #6c5ce7; }
+  .step-card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .step-num { display: inline-block; background: #fdcb6e; color: #1a1d2e; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.8rem; border-radius: 100px; margin-bottom: 0.75rem; }
+  .example-row { display: flex; gap: 1.5rem; align-items: center; padding: 1rem; background: #232740; border-radius: 8px; margin: 0.75rem 0; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="02-input-and-projection.html">← 02: Projections</a>
+  <a href="04-causal-masking.html">Next: Causal Masking →</a>
+</div>
+
+<h1>03 · Attention Scores — Q · K<sup>T</sup> &amp; Scaling</h1>
+<p>Now that we have Q, K, V, the model computes <strong>pairwise affinity scores</strong> — how much each token should attend to every other token.</p>
+
+<h2>🔗 Step 2: Dot-Product Affinity</h2>
+
+<div class="step-card">
+<div class="step-num">Step 2</div>
+<h3>Q · K<sup>T</sup> — Every Query × Every Key</h3>
+<p>We take the dot product between each token's Query and every token's Key. A <strong>high dot product</strong> means "this Query found a highly relevant Key."</p>
+
+<div class="math-block">
+Raw Scores = <span class="q">Q</span> · <span class="k">K</span><sup>T</sup><br><br>
+<span class="dim">Q: (3×2), K: (3×2) → K<sup>T</sup>: (2×3) → Result: (3×3)</span><br><br>
+           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; K<sub>the</sub> &nbsp; K<sub>cat</sub> &nbsp; K<sub>sat</sub><br>
+Q<sub>the</sub> &nbsp; ⎡0.07 &nbsp; 0.55 &nbsp; 0.39⎤<br>
+Q<sub>cat</sub> &nbsp; ⎢0.32 &nbsp; 1.92 &nbsp; 1.04⎥<br>
+Q<sub>sat</sub> &nbsp; ⎣0.15 &nbsp; 1.11 &nbsp; 0.75⎦
+</div>
+
+<p><strong>Reading the matrix:</strong></p>
+<div class="example-row">
+  <div><span class="q" style="font-weight:600;">Q<sub>cat</sub></span> <span style="color:#636e72;">×</span> <span class="k" style="font-weight:600;">K<sub>cat</sub></span> <span style="color:#e1e4f0;">= <strong>1.92</strong></span></div>
+  <div><span style="color:#636e72;">→</span> "cat" finds itself highly relevant (top-left of its row) — always attends strongly to itself</div>
+</div>
+<div class="example-row">
+  <div><span class="q" style="font-weight:600;">Q<sub>cat</sub></span> <span style="color:#636e72;">×</span> <span class="k" style="font-weight:600;">K<sub>sat</sub></span> <span style="color:#e1e4f0;">= <strong>1.04</strong></span></div>
+  <div><span style="color:#636e72;">→</span> "cat" also finds "sat" relevant (they're neighbors in the sentence)</div>
+</div>
+<div class="example-row">
+  <div><span class="q" style="font-weight:600;">Q<sub>cat</sub></span> <span style="color:#636e72;">×</span> <span class="k" style="font-weight:600;">K<sub>the</sub></span> <span style="color:#e1e4f0;">= <strong>0.32</strong></span></div>
+  <div><span style="color:#636e72;">→</span> Lower relevance — "the" is a function word with less semantic content</div>
+</div>
+</div>
+
+<h2>📏 Step 2b: Scaling by √d<sub>k</sub></h2>
+
+<div class="step-card">
+<div class="step-num">Why?</div>
+<h3>The Softmax Saturation Problem</h3>
+<p>Dot products grow large with higher dimensions. When d<sub>k</sub> is large, the variance of the dot product increases, pushing softmax into regions with <strong>extremely sharp gradients</strong> — making it hard to learn.</p>
+
+<div class="math-block">
+Variance(Q·K<sup>T</sup>) = d<sub>k</sub>&nbsp;&nbsp;→&nbsp;&nbsp;StdDev = √d<sub>k</sub>
+
+Scaled = (Q · K<sup>T</sup>) / √d<sub>k</sub>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:0.75rem 0;font-size:0.9rem;">
+  <thead><tr><th>Dimension d<sub>k</sub></th><th>Unscaled Variance</th><th>√d<sub>k</sub></th><th>Effect If Unscaled</th></tr></thead>
+  <tbody>
+    <tr><td>2 (our example)</td><td>2</td><td>1.414</td><td>Mild — softmax works fine</td></tr>
+    <tr><td>64 (typical)</td><td>64</td><td>8</td><td>Dot products in range ~[-30, 30] — softmax almost 1-hot</td></tr>
+    <tr><td>128 (large model)</td><td>128</td><td>11.3</td><td>Severe saturation — gradients effectively zero</td></tr>
+  </tbody>
+</table>
+
+<p>Scaling by √d<sub>k</sub> <strong>normalizes the variance back to ~1</strong>, keeping softmax in the "sigmoid" region where gradients flow well.</p>
+
+<h3 style="margin-top:1rem;">Our Example</h3>
+<div class="math-block">
+√d<sub>k</sub> = √2 ≈ 1.414
+
+Scaled Scores = Raw / 1.414
+
+              ⎡0.05 &nbsp; 0.39 &nbsp; 0.28⎤
+              ⎢0.22 &nbsp; 1.35 &nbsp; 0.73⎥
+              ⎣0.10 &nbsp; 0.78 &nbsp; 0.53⎦
+</div>
+</div>
+
+<h2>🧠 Interpreting the Scores</h2>
+
+<div class="matrix-grid">
+  <div class="label"><span style="color:#fdcb6e;">Scaled Scores (3×3)</span></div>
+  <div class="matrix-row">
+    <div class="cell cell-s">0.05</div>
+    <div class="cell cell-s">0.39</div>
+    <div class="cell cell-s">0.28</div>
+    <div class="cell cell-dim">← "the's" queries vs all keys</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-s">0.22</div>
+    <div class="cell cell-s" style="background:rgba(253,203,110,0.2);border-color:rgba(253,203,110,0.3);">1.35</div>
+    <div class="cell cell-s">0.73</div>
+    <div class="cell cell-dim">← "cat's" queries vs all keys</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-s">0.10</div>
+    <div class="cell cell-s">0.78</div>
+    <div class="cell cell-s">0.53</div>
+    <div class="cell cell-dim">← "sat's" queries vs all keys</div>
+  </div>
+  <div class="shape">
+    Rows = Queries (what each token seeks)<br>
+    Cols = Keys (what each token offers)
+  </div>
+</div>
+
+<div class="hl-box">
+  <strong>🔑 Key insight:</strong> The score matrix is <strong>not symmetric</strong>. Q<sub>cat</sub>·K<sub>sat</sub> (0.73) can differ from Q<sub>sat</sub>·K<sub>cat</sub> (0.78). This is by design — "what cat wants from sat" is different from "what sat wants from cat." The two tokens have different informational needs at their positions.
+</div>
+
+<h2>🔍 What Makes a Good Score?</h2>
+<p>During training, the W<sub>Q</sub> and W<sub>K</sub> weights are tuned so that:</p>
+<ul style="color:#c8cbe0;padding-left:1.25rem;line-height:2;">
+  <li><strong>High scores</strong> for tokens that should share information (subject-verb, noun-adjective)</li>
+  <li><strong>Low scores</strong> for unrelated token pairs</li>
+  <li><strong>Multiple heads</strong> learn different notions of relevance (syntax vs semantics vs proximity)</li>
+</ul>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

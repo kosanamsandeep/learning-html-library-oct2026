@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handle Requests — HTTP, requests, gRPC, curl, Auth</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span class="mark">H</span>Handle Requests</a>
+            <nav class="top-links">
+                <a href="../index.html">Side Projects</a>
+                <a href="../../index.html">Home</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">HTTP · gRPC · curl · Auth</p>
+            <h1>Everything you actually need to know about sending requests and getting responses</h1>
+            <p class="lead">A practical, comparison-driven tour. Start with the Python <code>requests</code>
+                library, then learn what's really flying over the wire, then learn the modern alternatives
+                (gRPC), the universal debug tool (curl), and how to secure those calls (cookies, JWT, OAuth,
+                client certs).</p>
+        </section>
+
+        <section class="card">
+            <h2>Pick a topic</h2>
+            <div class="grid">
+                <a class="card-link mini info" href="01_requests_library.html">
+                    <h3>01 · The <code>requests</code> library + HTTP verbs + payloads</h3>
+                    <p class="quiet">How <code>requests.get/post/put/...</code> work end-to-end, what a payload
+                        is, and the payload types (JSON, form, multipart, raw, query).</p>
+                </a>
+                <a class="card-link mini good" href="02_status_codes.html">
+                    <h3>02 · HTTP status codes 1xx → 5xx</h3>
+                    <p class="quiet">A memory trick for every family plus the codes you will actually see in
+                        production.</p>
+                </a>
+                <a class="card-link mini good" href="fastapi_requests_status_implementations/index.html">
+                    <h3>02b · Implement 1xx → 5xx in FastAPI</h3>
+                    <p class="quiet">Copy-pasteable <code>FastAPI</code> + <code>HTTPException</code> code that
+                        returns every status family correctly — headers, response models, and error handlers.</p>
+                </a>
+                <a class="card-link mini warn" href="03_http_vs_grpc.html">
+                    <h3>03 · HTTP vs gRPC + when to use which</h3>
+                    <p class="quiet">REST/HTTP vs gRPC side-by-side, with code, wire format, and a decision
+                        table.</p>
+                </a>
+                <a class="card-link mini note" href="04_curl_correlation.html">
+                    <h3>04 · curl ↔ <code>requests</code> ↔ browser</h3>
+                    <p class="quiet">The same request expressed three ways, so you can copy-paste between
+                        terminal, code, and DevTools.</p>
+                </a>
+                <a class="card-link mini info" href="05_request_essentials.html">
+                    <h3>05 · Parallel essentials you must learn</h3>
+                    <p class="quiet">Headers, timeouts, retries, connection pools, TLS, redirects, streaming,
+                        idempotency, content negotiation, CORS, observability.</p>
+                </a>
+                <a class="card-link mini bad" href="06_auth_methods.html">
+                    <h3>06 · Auth: cookies, JWT, Basic, OAuth, mTLS</h3>
+                    <p class="quiet">What each method actually means, what a developer hands the server, and the
+                        security trade-offs.</p>
+                </a>
+                <a class="card-link mini warn" href="07_realtime_protocols_webrtc.html">
+                    <h3>07 · Real-time protocols & WebRTC (voice)</h3>
+                    <p class="quiet">REST vs SSE vs WebSocket vs gRPC vs WebRTC, why talk-back voice apps (e.g.
+                        ChatGPT voice mode) use WebRTC, and how hard it is to implement.</p>
+                </a>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How the topics connect</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    A[Your code<br/>requests.get/post] -->|builds| B[HTTP request<br/>method + URL + headers + body]
+    B -->|over| C[TCP/TLS]
+    C --> D[Server]
+    D -->|returns| E[HTTP response<br/>status + headers + body]
+    E --> A
+
+    A -. or .-> G[gRPC stub<br/>typed client]
+    G -->|over HTTP/2 + protobuf| D
+
+    B -. debug with .-> F[curl]
+
+    subgraph S[Cross-cutting]
+        H[Auth: cookies / JWT / OAuth / mTLS]
+        I[Headers, timeouts, retries, TLS, redirects]
+        J[Status codes 1xx-5xx]
+    end
+    B --- H
+    B --- I
+    E --- J
+                </pre>
+                <p class="caption">Everything on this hub is one piece of this diagram.</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How to use this folder</h2>
+            <ol>
+                <li>Read <strong>01</strong> end-to-end — it is the foundation.</li>
+                <li>Skim <strong>02</strong> once, then keep it open as a reference when debugging.</li>
+                <li>Read <strong>03</strong> only if you are comparing tech for a real decision.</li>
+                <li><strong>04</strong> is your "translate the request" cheat sheet.</li>
+                <li><strong>05</strong> is the "I shipped to prod, what did I forget" checklist.</li>
+                <li><strong>06</strong> is essential before you put any real data behind a request.</li>
+            </ol>
+        </section>
+    </main>
+
+    <footer>Built for the learning_path · <a href="../index.html">back to Side Projects</a></footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true, theme: 'base',
+            themeVariables: { primaryColor: '#dbeafe', primaryTextColor: '#1f2937', primaryBorderColor: '#1d4ed8', lineColor: '#475569', fontFamily: 'Segoe UI, Aptos, system-ui, sans-serif' }
+        });
+    </script>
+</body>
+
+</html>

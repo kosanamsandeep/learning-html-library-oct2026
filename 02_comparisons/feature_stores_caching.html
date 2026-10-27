@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Stores & Caching Strategies</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            line-height: 1.8;
+        }
+
+        .nav {
+            background: #1a1a2e;
+            padding: 15px 30px;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .nav a {
+            color: #818cf8;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #701a75, #86198f);
+            padding: 60px 40px;
+            text-align: center;
+            border-bottom: 3px solid #e879f9;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #fae8ff;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #f0abfc;
+            font-size: 1.1em;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section h2 {
+            color: #e879f9;
+            font-size: 1.6em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #a21caf;
+            padding-bottom: 8px;
+        }
+
+        .section h3 {
+            color: #f0abfc;
+            font-size: 1.2em;
+            margin: 18px 0 10px;
+        }
+
+        .section p {
+            color: #d1d5db;
+            margin-bottom: 12px;
+        }
+
+        .highlight {
+            background: #2d1033;
+            border-left: 4px solid #c026d3;
+            padding: 18px 22px;
+            border-radius: 0 8px 8px 0;
+            margin: 15px 0;
+        }
+
+        .highlight p {
+            color: #f5d0fe;
+            margin: 0;
+        }
+
+        .concept-card {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            border-top: 3px solid var(--pcolor);
+        }
+
+        .concept-card h3 {
+            color: var(--pcolor);
+            margin-bottom: 8px;
+        }
+
+        .concept-card .desc {
+            color: #d1d5db;
+            margin-bottom: 12px;
+        }
+
+        .concept-card .detail {
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+
+        .concept-card .detail strong {
+            color: var(--pcolor);
+        }
+
+        .concept-card .detail p {
+            color: #9ca3af;
+            margin: 4px 0;
+        }
+
+        .concept-card ul {
+            margin: 10px 0 10px 20px;
+        }
+
+        .concept-card ul li {
+            color: #d1d5db;
+            font-size: 0.9em;
+            margin: 4px 0;
+        }
+
+        .concept-card .example {
+            background: #1e1e3f;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
+            font-family: monospace;
+            font-size: 0.82em;
+            color: #a5b4fc;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.82em;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: #a21caf;
+            color: #fae8ff;
+            padding: 12px 8px;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #1f2937;
+            background: #1a1a2e;
+            vertical-align: top;
+        }
+
+        .comparison-table tr:hover td {
+            background: #1e1e3f;
+        }
+
+        .good {
+            color: #34d399;
+        }
+
+        .mid {
+            color: #fbbf24;
+        }
+
+        .low {
+            color: #f87171;
+        }
+
+        .decision-box {
+            background: linear-gradient(135deg, #064e3b, #065f46);
+            border: 1px solid #059669;
+            border-radius: 10px;
+            padding: 22px;
+            margin: 20px 0;
+        }
+
+        .decision-box h4 {
+            color: #6ee7b7;
+            margin-bottom: 10px;
+        }
+
+        .decision-box p {
+            color: #a7f3d0;
+            margin: 5px 0;
+            font-size: 0.95em;
+        }
+
+        .flow-diagram {
+            background: #0f0f23;
+            border: 1px solid #374151;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #a5b4fc;
+            line-height: 2.2;
+        }
+
+        .flow-diagram .arrow {
+            color: #e879f9;
+        }
+
+        .flow-diagram .node {
+            color: #34d399;
+        }
+
+        .nav-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #1f2937;
+        }
+
+        .nav-footer a {
+            color: #818cf8;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 1px solid #4338ca;
+            border-radius: 8px;
+        }
+
+        .nav-footer a:hover {
+            background: #312e81;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="nav">
+        <a href="orchestration_platforms.html">← Orchestration Platforms</a>
+        <a href="index.html">Overview</a>
+        <a href="agent_dev_kits.html">Next: Agent Dev Kits →</a>
+    </div>
+    <div class="header">
+        <h1>💾 Feature Stores & Caching Strategies</h1>
+        <p>Why feature stores matter, why Redis dominates caching, and how to make LLM apps blazing fast</p>
+    </div>
+    <div class="container">
+
+        <!-- SECTION 1: What are Feature Stores -->
+        <div class="section">
+            <h2>What is a Feature Store?</h2>
+            <p>A <strong>feature store</strong> is a centralized repository for storing, serving, and managing ML
+                features (the processed data that models consume). In the LLM world, it stores embeddings, user
+                profiles, context windows, and pre-computed data that your AI app needs repeatedly.</p>
+            <div class="highlight">
+                <p><strong>The Core Problem:</strong> LLM apps need the same data transformed the same way every time.
+                    Without a feature store, you end up recomputing embeddings, re-fetching user context, and
+                    duplicating transformation logic across training and serving. Feature stores solve the "train-serve
+                    skew" problem and provide a single source of truth for features.</p>
+            </div>
+
+            <div class="flow-diagram">
+                <span class="node">[Raw Data]</span> <span class="arrow">→</span> <span class="node">[Feature
+                    Engineering]</span> <span class="arrow">→</span> <span class="node">[Feature Store]</span> <span
+                    class="arrow">→</span> <span class="node">[Online Serving (Redis/low-latency)]</span><br>
+                <span style="color:#6b7280;"> ↓</span><br>
+                <span class="node"> [Offline Store (S3/BigQuery)]</span> <span class="arrow">→</span> <span
+                    class="node">[Training]</span>
+            </div>
+
+            <h3>Why Feature Stores Matter for LLM Apps</h3>
+            <ul style="margin: 10px 0 10px 25px; color: #d1d5db;">
+                <li><strong>Embedding Cache:</strong> Store pre-computed embeddings to avoid re-embedding the same
+                    documents</li>
+                <li><strong>User Context:</strong> Store user preferences, history, and personalization features for
+                    retrieval</li>
+                <li><strong>Real-time Features:</strong> Serve fresh features (last 5 messages, recent activity) at low
+                    latency</li>
+                <li><strong>Consistency:</strong> Same feature computation in training and serving (no train-serve skew)
+                </li>
+                <li><strong>Versioning:</strong> Track feature versions, roll back, audit what was served when</li>
+            </ul>
+        </div>
+
+        <!-- SECTION 2: Feature Store Platforms -->
+        <div class="section">
+            <h2>Feature Store Platforms Compared</h2>
+
+            <div class="concept-card" style="--pcolor: #f59e0b;">
+                <h3>🍽️ Feast (Open Source)</h3>
+                <div class="desc">The most popular open-source feature store. Lightweight, flexible, self-hosted.
+                    Defines features in code (infrastructure-as-code for ML features).</div>
+                <div class="detail">
+                    <strong>Architecture:</strong>
+                    <p>Offline store (BigQuery/Redshift/S3) + Online store (Redis/DynamoDB) + Registry (metadata)</p>
+                    <p>Features defined in Python → materialized from offline → served from online store</p>
+                </div>
+                <ul>
+                    <li><strong>Pros:</strong> Free, flexible, GitOps-friendly, many backends</li>
+                    <li><strong>Cons:</strong> Self-managed infra, no built-in monitoring at scale</li>
+                    <li><strong>Best for:</strong> Teams who want control, moderate scale, budget-conscious</li>
+                </ul>
+                <div class="example">
+                    # Feast: Define and serve features
+                    from feast import FeatureStore
+
+                    store = FeatureStore(repo_path="./feature_repo")
+
+                    # Get features for online serving (low-latency)
+                    features = store.get_online_features(
+                    features=["user_features:embedding", "user_features:last_query"],
+                    entity_rows=[{"user_id": "u123"}]
+                    ).to_dict()
+                </div>
+            </div>
+
+            <div class="concept-card" style="--pcolor: #60a5fa;">
+                <h3>🚀 Tecton</h3>
+                <div class="desc">Enterprise-grade managed feature platform. Built by the founders of Feast. Handles
+                    real-time feature computation, streaming features, and complex pipelines automatically.</div>
+                <div class="detail">
+                    <strong>Key Differentiator:</strong>
+                    <p>Real-time feature computation (streaming + batch in one platform), not just storage</p>
+                    <p>Handles time-windowed aggregations (e.g., "count of queries in last 5 minutes") automatically</p>
+                </div>
+                <ul>
+                    <li><strong>Pros:</strong> Managed, real-time streaming, enterprise SLAs, monitoring</li>
+                    <li><strong>Cons:</strong> Expensive, vendor lock-in, overkill for small teams</li>
+                    <li><strong>Best for:</strong> Large-scale production apps with real-time requirements</li>
+                </ul>
+            </div>
+
+            <div class="concept-card" style="--pcolor: #34d399;">
+                <h3>🔮 Vertex AI Feature Store (Google)</h3>
+                <div class="desc">Google Cloud's managed feature store. Integrates natively with BigQuery, Vertex AI
+                    Pipelines, and GCP ML stack.</div>
+                <ul>
+                    <li><strong>Pros:</strong> Fully managed, BigQuery integration, auto-scaling, IAM security</li>
+                    <li><strong>Cons:</strong> GCP-only, less flexible than Feast, pricing can grow</li>
+                    <li><strong>Best for:</strong> Teams already on GCP who need managed ML infrastructure</li>
+                </ul>
+            </div>
+
+            <div class="concept-card" style="--pcolor: #ef4444;">
+                <h3>🏗️ AWS SageMaker Feature Store</h3>
+                <div class="desc">Amazon's managed feature store within SageMaker. Online + offline store with tight AWS
+                    integration.</div>
+                <ul>
+                    <li><strong>Pros:</strong> AWS-native, auto-scaling, IAM, integrates with SageMaker pipelines</li>
+                    <li><strong>Cons:</strong> AWS-only, limited customization, can be expensive at scale</li>
+                    <li><strong>Best for:</strong> AWS-heavy organizations already using SageMaker</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SECTION 3: Redis & Caching -->
+        <div class="section">
+            <h2>Why Redis Dominates LLM Caching</h2>
+            <p>Redis is the go-to cache for LLM applications because of its <strong>sub-millisecond latency</strong>,
+                rich data structures, and versatility. Here's why:</p>
+
+            <div class="concept-card" style="--pcolor: #ef4444;">
+                <h3>⚡ Redis for LLM Apps</h3>
+                <div class="desc">Redis isn't just a key-value store. It's a data structure server that serves as cache,
+                    vector DB, message broker, and session store — all at once.</div>
+                <div class="detail">
+                    <strong>Why Redis for LLM/AI specifically:</strong>
+                    <p>1. <strong>Speed:</strong> ~0.1ms reads. LLM API calls cost $0.01-0.10 and take 1-10 seconds.
+                        Caching saves both.</p>
+                    <p>2. <strong>Vector Search:</strong> Redis Stack includes native vector similarity search
+                        (RediSearch)</p>
+                    <p>3. <strong>Semantic Caching:</strong> Cache by meaning, not just exact match</p>
+                    <p>4. <strong>Session/Memory:</strong> Store conversation history with TTL (auto-expire)</p>
+                    <p>5. <strong>Rate Limiting:</strong> Protect against LLM API abuse with Redis counters</p>
+                </div>
+                <div class="example">
+                    import redis
+                    import json
+                    import hashlib
+
+                    r = redis.Redis(host='localhost', port=6379)
+
+                    def cached_llm_call(prompt, model="gpt-4o"):
+                    # Create cache key from prompt hash
+                    cache_key = f"llm:{hashlib.sha256(prompt.encode()).hexdigest()}"
+
+                    # Check cache first
+                    cached = r.get(cache_key)
+                    if cached:
+                    return json.loads(cached) # Cache HIT — saved $$ and time
+
+                    # Cache MISS — call LLM
+                    response = openai.chat.completions.create(model=model, messages=[{"role":"user","content":prompt}])
+                    result = response.choices[0].message.content
+
+                    # Store in cache with 1-hour TTL
+                    r.setex(cache_key, 3600, json.dumps(result))
+                    return result
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 4: Caching Strategies -->
+        <div class="section">
+            <h2>LLM Caching Strategies Compared</h2>
+
+            <div class="concept-card" style="--pcolor: #fbbf24;">
+                <h3>1️⃣ Exact Match Caching</h3>
+                <div class="desc">Cache by exact prompt string (or hash). Simplest approach — if someone asks the exact
+                    same question, return cached answer.</div>
+                <div class="detail">
+                    <strong>How it works:</strong>
+                    <p>key = hash(prompt) → value = LLM response</p>
+                    <p>Hit rate: LOW (users rarely ask identical questions)</p>
+                </div>
+                <ul>
+                    <li><strong>Pros:</strong> Simple, zero false matches, fast lookup</li>
+                    <li><strong>Cons:</strong> Very low hit rate, "What is AI?" ≠ "what is ai?" (unless normalized)</li>
+                    <li><strong>Use when:</strong> API endpoints with predictable inputs, batch processing</li>
+                </ul>
+            </div>
+
+            <div class="concept-card" style="--pcolor: #a78bfa;">
+                <h3>2️⃣ Semantic Caching</h3>
+                <div class="desc">Cache by MEANING. Embed the query, find similar cached queries using vector
+                    similarity. If similarity > threshold, return cached answer.</div>
+                <div class="detail">
+                    <strong>How it works:</strong>
+                    <p>1. Embed new query → vector</p>
+                    <p>2. Search cache for similar vectors (cosine similarity > 0.95)</p>
+                    <p>3. If found → return cached response</p>
+                    <p>4. If not → call LLM, cache result with embedding</p>
+                </div>
+                <ul>
+                    <li><strong>Pros:</strong> Much higher hit rate, catches paraphrases</li>
+                    <li><strong>Cons:</strong> Embedding cost, possible false matches, needs tuning threshold</li>
+                    <li><strong>Use when:</strong> User-facing chatbots, FAQ-style queries, high-traffic apps</li>
+                </ul>
+                <div class="example">
+                    # Semantic Caching with GPTCache or Redis Vector
+                    from gptcache import cache
+                    from gptcache.embedding import Onnx
+                    from gptcache.similarity_evaluation import SearchDistanceEvaluation
+
+                    # Initialize semantic cache
+                    cache.init(
+                    embedding_func=Onnx(),
+                    similarity_evaluation=SearchDistanceEvaluation()
+                    )
+
+                    # "What is machine learning?" and "explain ML" now hit same cache!
+                </div>
+            </div>
+
+            <div class="concept-card" style="--pcolor: #10b981;">
+                <h3>3️⃣ Prompt-Result Caching (with Context)</h3>
+                <div class="desc">Cache based on (prompt + context documents). Same question with different retrieved
+                    docs = different cache entry. Critical for RAG apps.</div>
+                <div class="detail">
+                    <strong>How it works:</strong>
+                    <p>key = hash(prompt + sorted(doc_ids)) → value = LLM response</p>
+                    <p>Invalidate when source documents change</p>
+                </div>
+                <ul>
+                    <li><strong>Pros:</strong> Accurate for RAG, respects context changes</li>
+                    <li><strong>Cons:</strong> Lower hit rate than semantic, needs document tracking</li>
+                    <li><strong>Use when:</strong> RAG pipelines where accuracy matters, enterprise knowledge bases</li>
+                </ul>
+            </div>
+
+            <div class="concept-card" style="--pcolor: #60a5fa;">
+                <h3>4️⃣ KV-Cache (Model-Level)</h3>
+                <div class="desc">Not application-level — this is inside the model. LLMs cache key-value attention
+                    matrices from previous tokens to avoid recomputation during generation.</div>
+                <div class="detail">
+                    <strong>How it works:</strong>
+                    <p>During token generation, previously computed attention K/V pairs are cached in GPU memory</p>
+                    <p>Prefix caching: If multiple prompts share a prefix, cache that prefix's KV state</p>
+                </div>
+                <ul>
+                    <li><strong>Pros:</strong> Dramatic speedup for long contexts, provider-managed</li>
+                    <li><strong>Cons:</strong> GPU memory intensive, managed by inference provider</li>
+                    <li><strong>Use when:</strong> Long system prompts shared across requests (OpenAI does this
+                        automatically)</li>
+                </ul>
+            </div>
+
+            <div class="concept-card" style="--pcolor: #f87171;">
+                <h3>5️⃣ Multi-Layer Caching</h3>
+                <div class="desc">Combine multiple strategies in layers. Check exact match first (fastest), then
+                    semantic (broader), then call LLM (slowest).</div>
+                <div class="detail">
+                    <strong>The layers:</strong>
+                    <p>L1: In-memory exact cache (dict/LRU) → µs latency</p>
+                    <p>L2: Redis exact match → &lt;1ms latency</p>
+                    <p>L3: Redis semantic cache (vector search) → ~5ms latency</p>
+                    <p>L4: LLM API call → 1-10 seconds, costs $$</p>
+                </div>
+                <ul>
+                    <li><strong>Pros:</strong> Maximum cost savings, best latency</li>
+                    <li><strong>Cons:</strong> Complex to implement and maintain, cache invalidation challenges</li>
+                    <li><strong>Use when:</strong> High-traffic production apps where latency and cost matter</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SECTION 5: Comparison Table -->
+        <div class="section">
+            <h2>📊 Caching Strategy Comparison</h2>
+            <div style="overflow-x:auto;">
+                <table class="comparison-table">
+                    <tr>
+                        <th>Strategy</th>
+                        <th>Hit Rate</th>
+                        <th>Accuracy</th>
+                        <th>Complexity</th>
+                        <th>Cost Savings</th>
+                        <th>Best For</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Exact Match</strong></td>
+                        <td class="low">Low (5-15%)</td>
+                        <td class="good">Perfect</td>
+                        <td class="good">Trivial</td>
+                        <td class="low">Low</td>
+                        <td>APIs, batch jobs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Semantic</strong></td>
+                        <td class="good">High (30-60%)</td>
+                        <td class="mid">Good (tunable)</td>
+                        <td class="mid">Medium</td>
+                        <td class="good">High</td>
+                        <td>Chatbots, user queries</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Context-Aware</strong></td>
+                        <td class="mid">Medium (15-30%)</td>
+                        <td class="good">Excellent</td>
+                        <td class="mid">Medium</td>
+                        <td class="mid">Medium</td>
+                        <td>RAG pipelines</td>
+                    </tr>
+                    <tr>
+                        <td><strong>KV-Cache</strong></td>
+                        <td class="good">High</td>
+                        <td class="good">Perfect</td>
+                        <td class="good">Zero (provider)</td>
+                        <td class="mid">Latency savings</td>
+                        <td>Shared system prompts</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multi-Layer</strong></td>
+                        <td class="good">Highest (50-80%)</td>
+                        <td class="good">Very Good</td>
+                        <td class="low">High</td>
+                        <td class="good">Maximum</td>
+                        <td>High-traffic production</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECTION 6: Decision Framework -->
+        <div class="section">
+            <h2>🎯 Decision Framework</h2>
+            <div class="decision-box">
+                <h4>Feature Store Selection:</h4>
+                <p><strong>Small team, want control →</strong> Feast (open-source, self-managed)</p>
+                <p><strong>Real-time streaming features →</strong> Tecton (managed, streaming-native)</p>
+                <p><strong>Already on GCP →</strong> Vertex AI Feature Store</p>
+                <p><strong>Already on AWS →</strong> SageMaker Feature Store</p>
+            </div>
+            <div class="decision-box" style="margin-top: 15px;">
+                <h4>Caching Strategy Selection:</h4>
+                <p><strong>Just starting out →</strong> Exact match with Redis (simple, effective)</p>
+                <p><strong>User-facing chatbot →</strong> Semantic caching (catches paraphrases)</p>
+                <p><strong>RAG application →</strong> Context-aware caching (respects document changes)</p>
+                <p><strong>High traffic, cost-sensitive →</strong> Multi-layer caching</p>
+                <p><strong>Long shared prompts →</strong> Rely on provider KV-cache (automatic)</p>
+            </div>
+        </div>
+
+        <!-- SECTION 7: Pro Thinker -->
+        <div class="section">
+            <h2>🧠 Pro Thinker Analysis</h2>
+            <div class="highlight">
+                <p><strong>Caching is the #1 way to reduce LLM costs in production.</strong> A well-implemented semantic
+                    cache can cut your LLM API spend by 30-60%. The ROI is massive: Redis costs ~$50/month for most
+                    apps; a single LLM call costs $0.01-0.10. If you serve 100K queries/day with 40% cache hit rate, you
+                    save 40K LLM calls/day = $400-4000/day saved. Feature stores become critical when your app needs
+                    real-time personalization (user embeddings, recent activity, preferences) served at &lt;10ms.
+                    Without one, you'll rebuild the same data pipelines repeatedly.</p>
+            </div>
+        </div>
+
+        <div class="nav-footer">
+            <a href="orchestration_platforms.html">← Orchestration Platforms</a>
+            <a href="agent_dev_kits.html">Next: Agent Dev Kits →</a>
+        </div>
+    </div>
+</body>
+
+</html>

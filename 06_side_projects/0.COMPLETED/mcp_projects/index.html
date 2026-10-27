@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP + LangGraph Projects — Basic to Advanced</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="mcp">MCP</span>MCP × LangGraph Projects</div>
+        <div class="links">
+            <a href="../index.html">Side Projects</a>
+            <a href="why_fastmcp.html">Why FastMCP?</a>
+            <a href="../agent_frameworks_comparison/index.html">Compare</a>
+            <a href="../langgraph_projects/index.html">LangGraph</a>
+            <a href="01_first_fastmcp_server.html">Start →</a>
+        </div>
+    </div>
+
+    <div class="header mcp">
+        <p class="badge">Model Context Protocol · FastMCP · LangGraph</p>
+        <h1>🔌 MCP — give your agents a universal tool port</h1>
+        <p class="subtitle">MCP is the <strong>"USB-C for AI tools"</strong>: one open protocol so any agent
+            can use any tool, data source, or prompt — no custom glue. Five incremental builds: write a FastMCP
+            server, plug its tools into a <strong>LangGraph</strong> agent, add resources &amp; prompts, connect
+            multiple/remote servers, and ship a production agent that also consumes <strong>public, ready-made
+                MCP servers</strong>.</p>
+    </div>
+
+    <div class="container">
+        <div class="section mcp">
+            <h2>Why MCP exists — the M×N problem</h2>
+            <p>Before MCP, wiring <strong>M</strong> agents to <strong>N</strong> tools meant writing M×N custom
+                integrations. MCP turns it into <strong>M+N</strong>: every tool exposes one standard server,
+                every agent speaks one standard client.</p>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    subgraph Before["❌ Before MCP — M×N glue"]
+        a1["Agent A"] --- t1["GitHub"]
+        a1 --- t2["Postgres"]
+        a2["Agent B"] --- t1
+        a2 --- t2
+    end
+    subgraph After["✅ With MCP — M+N"]
+        A1["Agent A"] --> H{{"MCP"}}
+        A2["Agent B"] --> H
+        H --> T1["GitHub MCP server"]
+        H --> T2["Postgres MCP server"]
+    end
+                </pre>
+                <p class="caption">Each tool is written once as an MCP server; each agent connects once as an
+                    MCP client.</p>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>The three things an MCP server can expose</h2>
+            <div class="grid-3">
+                <div class="mini mcp">
+                    <h3>🛠️ Tools</h3>
+                    <p>Functions the model can <em>call</em> to take action (query a DB, send an email, do
+                        math). Model-controlled.</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>📄 Resources</h3>
+                    <p>Read-only data the app can <em>load</em> into context (files, rows, docs), addressed by
+                        URI. App-controlled.</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>💬 Prompts</h3>
+                    <p>Reusable, parameterised prompt templates the user can <em>invoke</em> (e.g. "summarise
+                        this PR"). User-controlled.</p>
+                </div>
+            </div>
+            <div class="callout sky">
+                <strong>For agents, tools are 90% of the story.</strong> These projects focus on building and
+                consuming <em>tools</em>, then layer in resources and prompts in build 03.
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>How MCP and LangGraph fit together</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    LG["LangGraph agent<br/>(ReAct / StateGraph)"] -->|langchain-mcp-adapters| CL["MCP Client"]
+    CL -->|stdio / HTTP| S1["Your FastMCP server"]
+    CL -->|HTTP| S2["Public MCP server<br/>(GitHub, filesystem…)"]
+    S1 --> TOOLS1["@mcp.tool functions"]
+    S2 --> TOOLS2["ready-made tools"]
+    TOOLS1 --> LG
+    TOOLS2 --> LG
+                </pre>
+                <p class="caption"><code>langchain-mcp-adapters</code> converts MCP tools into LangChain tools
+                    so a LangGraph agent can call them like any other tool.</p>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>The five builds</h2>
+            <div class="grid">
+                <a class="fw-card mcp" href="01_first_fastmcp_server.html">
+                    <span class="level beginner">Beginner</span>
+                    <h3>01 · Your first FastMCP server</h3>
+                    <p style="color:#9ca3af">Build a server with <code>@mcp.tool</code>, run it over stdio, and
+                        inspect it with the MCP Inspector.</p>
+                    <div><span class="tag sky">FastMCP</span><span class="tag sky">@mcp.tool</span><span
+                            class="tag sky">stdio</span></div>
+                </a>
+                <a class="fw-card mcp" href="02_mcp_tools_in_langgraph.html">
+                    <span class="level beginner">Beginner+</span>
+                    <h3>02 · Use MCP tools in LangGraph</h3>
+                    <p style="color:#9ca3af">Load your server's tools with
+                        <code>langchain-mcp-adapters</code> into a prebuilt ReAct agent.
+                    </p>
+                    <div><span class="tag sky">MultiServerMCPClient</span><span
+                            class="tag sky">create_react_agent</span></div>
+                </a>
+                <a class="fw-card mcp" href="03_resources_and_prompts.html">
+                    <span class="level intermediate">Intermediate</span>
+                    <h3>03 · Tools + resources + prompts</h3>
+                    <p style="color:#9ca3af">A richer server: typed tools, <code>@mcp.resource</code> URIs, and
+                        <code>@mcp.prompt</code> templates — and how each maps into LangGraph.
+                    </p>
+                    <div><span class="tag sky">@mcp.resource</span><span class="tag sky">@mcp.prompt</span></div>
+                </a>
+                <a class="fw-card mcp" href="04_multi_server_and_remote.html">
+                    <span class="level intermediate">Intermediate+</span>
+                    <h3>04 · Multiple &amp; remote servers</h3>
+                    <p style="color:#9ca3af">Connect several servers at once, switch to streamable-HTTP
+                        transport, and consume <strong>public/pre-built</strong> MCP servers.</p>
+                    <div><span class="tag sky">streamable-http</span><span class="tag sky">public servers</span></div>
+                </a>
+                <a class="fw-card mcp" href="05_production_agent.html">
+                    <span class="level advanced">Advanced</span>
+                    <h3>05 · Production agent</h3>
+                    <p style="color:#9ca3af">A stateful LangGraph agent with memory, auth, error handling,
+                        registries (Smithery / official servers), and observability.</p>
+                    <div><span class="tag sky">auth</span><span class="tag sky">checkpointer</span><span
+                            class="tag sky">registries</span></div>
+                </a>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>Install</h2>
+            <pre><code><span class="c-com"># FastMCP — the fastest way to build MCP servers/clients (now part of the official SDK)</span>
+pip install fastmcp
+
+<span class="c-com"># LangGraph + the adapter that turns MCP tools into LangChain tools</span>
+pip install langgraph langchain-mcp-adapters <span class="c-str">"langchain[openai]"</span></code></pre>
+            <div class="callout sky">
+                <strong>FastMCP vs the SDK:</strong> FastMCP is the high-level, decorator-based framework
+                (<code>@mcp.tool</code>). FastMCP 1.0 was merged into the official <code>mcp</code> Python SDK;
+                <strong>FastMCP 2.0</strong> (the <code>fastmcp</code> package) adds clients, auth, deployment,
+                testing and more. We use FastMCP throughout.
+                <br><br>New to it? Read <a href="why_fastmcp.html"><strong>Why FastMCP?</strong></a> — what it
+                overcomes and the advantages it brings.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="../agent_frameworks_comparison/index.html"><span class="dir">Back</span>
+                <div class="ttl">Framework comparison</div>
+            </a>
+            <a class="next" href="01_first_fastmcp_server.html"><span class="dir">Start</span>
+                <div class="ttl">01 · First FastMCP server →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>MCP × LangGraph Projects · Model Context Protocol with FastMCP</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust P6 — Inventory Management</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Rust projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p6_inventory_management/README.html">Python p6</a>
+                <a href="../../go_projects/p6_inventory_management/README.html">Go p6</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust · P6</span></p>
+            <h1>Inventory — Repository trait + a decorator implementation</h1>
+            <p class="lead">Like the Go version, the service depends on a <code>trait Repository</code>. To show how
+                powerful traits get, this version adds a <code>CountingRepo</code> that wraps any other implementation
+                and counts saves — Python's "decorator" pattern, in Rust.</p>
+        </section>
+
+        <section class="card">
+            <h2>Decorator pattern in 8 lines</h2>
+            <pre><code>struct CountingRepo {
+    inner: Box&lt;dyn Repository&gt;,
+    saves: u64,
+}
+
+impl Repository for CountingRepo {
+    fn save(&amp;mut self, it: Item) { self.saves += 1; self.inner.save(it); }
+    fn get(&amp;self, sku: &amp;str) -&gt; Option&lt;&amp;Item&gt; { self.inner.get(sku) }
+    fn all(&amp;self) -&gt; Vec&lt;&amp;Item&gt; { self.inner.all() }
+}</code></pre>
+            <p><code>CountingRepo</code> <em>is</em> a Repository, and it <em>has</em> a Repository inside. You can
+                stack: <code>Counting(Logging(Caching(Memory(...))))</code>. This is composition over inheritance, taken
+                seriously.</p>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd rust_projects/p6_inventory_management
+cargo run</code></pre>
+            <p>Files: <a href="src/main.rs">src/main.rs</a> · <a href="Cargo.toml">Cargo.toml</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

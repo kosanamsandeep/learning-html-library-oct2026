@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootcamp 3 — Python vs Rust syntax</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="why_go_rust.html">Why</a>
+                <a href="syntax_python_vs_go.html">Syntax · Go</a>
+                <a href="why_they_are_fast.html">Why fast</a>
+                <a href="pick_them_fast.html">Pick fast</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Bootcamp · 3 of 5 · <span class="tag rust">Rust</span></p>
+            <h1>Python ↔ Rust syntax in 25 minutes</h1>
+            <p class="lead">Rust is more to learn than Go because it has three big ideas you've never met in Python:
+                ownership, traits, and rich pattern matching. Read each row carefully. The first 30 minutes feel like a
+                wall — by minute 60 you'll find Python errors more confusing than Rust ones.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · Hello world</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>print("hello")</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust</h4>
+                    <pre><code>fn main() {
+    println!("hello");
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p><code>println!</code> is a <em>macro</em> (note the <code>!</code>) — it expands at compile time.
+                        Statements end with <code>;</code>; the last expression of a block is its return value if there
+                        is no <code>;</code>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>2 · Variables and immutability by default</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>name = "Ada"
+name = "Bob"          # ok, same name reassigned</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust</h4>
+                    <pre><code>let name = "Ada";
+// name = "Bob";       // ERROR: name is not mut
+
+let mut counter = 0;
+counter += 1;          // ok</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>Variables are <em>immutable</em> unless you say <code>mut</code>. The compiler will refuse to
+                        compile any accidental mutation. This is annoying for a day, then permanent muscle memory.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>3 · Functions and types</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>def add(a: int, b: int) -&gt; int:
+    return a + b</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust</h4>
+                    <pre><code>fn add(a: i64, b: i64) -&gt; i64 {
+    a + b   // last expression — note: no `;`
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>Types are explicit on parameters and the return value. Numeric types name their width
+                        (<code>i32</code>, <code>i64</code>, <code>u32</code>, <code>f64</code>). The last expression of
+                        a function body <em>is</em> the return.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Result&lt;T, E&gt; — errors as values</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>def divide(a, b):
+    if b == 0:
+        raise ValueError("zero")
+    return a / b
+
+try:
+    r = divide(10, 0)
+except ValueError as e:
+    print(e)</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust</h4>
+                    <pre><code>fn divide(a: f64, b: f64) -&gt; Result&lt;f64, String&gt; {
+    if b == 0.0 {
+        Err("zero".to_string())
+    } else {
+        Ok(a / b)
+    }
+}
+
+match divide(10.0, 0.0) {
+    Ok(r)  =&gt; println!("{r}"),
+    Err(e) =&gt; println!("{e}"),
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>No exceptions. <code>Result&lt;T, E&gt;</code> is an enum with two variants: <code>Ok(T)</code>
+                        and <code>Err(E)</code>. <code>match</code> forces you to handle both. The <code>?</code>
+                        operator is shorthand for "if Err, return it now".</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Structs + impl blocks (Rust's "classes")</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>from dataclasses import dataclass
+
+@dataclass
+class Student:
+    id: int
+    name: str
+
+    def greet(self):
+        print(f"hi {self.name}")</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust</h4>
+                    <pre><code>struct Student {
+    id: u64,
+    name: String,
+}
+
+impl Student {
+    fn new(id: u64, name: &amp;str) -&gt; Self {
+        Self { id, name: name.to_string() }
+    }
+    fn greet(&amp;self) {
+        println!("hi {}", self.name);
+    }
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>Data lives in a <code>struct</code>; behaviour lives in an <code>impl</code> block.
+                        <code>&amp;self</code> is a shared borrow of the receiver (read-only).
+                        <code>&amp;mut self</code> would allow mutation. <code>Self</code> with capital S means "the
+                        current type".</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>6 · Traits (interfaces with super-powers)</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>from typing import Protocol
+
+class Notifier(Protocol):
+    def send(self, msg: str) -&gt; None: ...
+
+class Email:
+    def send(self, msg): print("email:", msg)</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust</h4>
+                    <pre><code>trait Notifier {
+    fn send(&amp;self, msg: &amp;str);
+}
+
+struct Email;
+
+impl Notifier for Email {
+    fn send(&amp;self, msg: &amp;str) {
+        println!("email: {msg}");
+    }
+}
+
+fn notify&lt;N: Notifier&gt;(n: &amp;N, m: &amp;str) {
+    n.send(m);
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>Traits = interfaces. You declare implementation explicitly: <code>impl Notifier for Email</code>.
+                        Generic functions (<code>fn notify&lt;N: Notifier&gt;</code>) get monomorphised at compile time
+                        — zero runtime cost.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>7 · Vec, HashMap — collections</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>names = ["Ada", "Bob"]
+names.append("Cy")
+
+scores = {"ada": 91}
+scores["bob"] = 88</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust</h4>
+                    <pre><code>let mut names: Vec&lt;String&gt; = vec![
+    "Ada".into(), "Bob".into()
+];
+names.push("Cy".into());
+
+use std::collections::HashMap;
+let mut scores: HashMap&lt;String, i32&gt; = HashMap::new();
+scores.insert("ada".into(), 91);
+scores.insert("bob".into(), 88);</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p><code>Vec&lt;T&gt;</code> = list, <code>HashMap&lt;K, V&gt;</code> = dict. Both must be
+                        <code>mut</code> to insert/push. <code>"x".into()</code> converts <code>&amp;str</code> to
+                        <code>String</code> when needed.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>8 · Ownership — the one new idea</h2>
+            <p>Rust replaces both garbage collection and manual <code>free()</code> with <strong>ownership</strong>.
+                Three rules:</p>
+            <ol>
+                <li>Every value has a single <em>owner</em>.</li>
+                <li>When the owner goes out of scope, the value is dropped.</li>
+                <li>You can <em>borrow</em> a value (<code>&amp;</code> or <code>&amp;mut</code>) without taking
+                    ownership.</li>
+            </ol>
+            <pre><code>let s = String::from("hello");
+
+// move:
+let s2 = s;
+// println!("{s}");  // ERROR — s was moved into s2
+
+// borrow:
+let s3 = String::from("hi");
+print_str(&amp;s3);     // borrow, s3 still owned
+println!("{s3}");   // ok</code></pre>
+            <div class="callout rust"><strong>Why this exists:</strong> the compiler proves at compile time that no two
+                parts of your program are mutating the same memory simultaneously. That's how Rust eliminates data races
+                and use-after-free without a GC.</div>
+        </section>
+
+        <section class="card">
+            <h2>9 · Enums + pattern matching (the killer feature)</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>def find_user(id):
+    if id in users:
+        return users[id]
+    return None
+
+u = find_user(7)
+if u is None:
+    ...
+else:
+    ...</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust</h4>
+                    <pre><code>fn find_user(id: u64) -&gt; Option&lt;User&gt; {
+    users.get(&amp;id).cloned()
+}
+
+match find_user(7) {
+    Some(u) =&gt; println!("found {}", u.name),
+    None    =&gt; println!("missing"),
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p><code>Option&lt;T&gt;</code> replaces <code>None</code>. <code>match</code> is exhaustive —
+                        forget the <code>None</code> arm and the compiler refuses to build. Whole categories of "I
+                        forgot the null check" bugs vanish.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>10 · Iterators (zero-cost lazy chains)</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>nums = [1, 2, 3, 4, 5]
+total = sum(n * n for n in nums if n % 2 == 0)</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust</h4>
+                    <pre><code>let nums = [1, 2, 3, 4, 5];
+let total: i32 = nums.iter()
+    .filter(|n| *n % 2 == 0)
+    .map(|n| n * n)
+    .sum();</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>Iterators are lazy and chainable like Python generators — but they compile down to a tight loop
+                        with no heap allocation. This is what "zero-cost abstraction" means in practice.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>11 · Async (when you need it)</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>import asyncio, aiohttp
+
+async def fetch(url):
+    async with aiohttp.ClientSession() as s:
+        async with s.get(url) as r:
+            return await r.text()
+
+asyncio.run(fetch("http://x"))</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust (Tokio)</h4>
+                    <pre><code>#[tokio::main]
+async fn main() -&gt; Result&lt;(), reqwest::Error&gt; {
+    let body = reqwest::get("http://x")
+        .await?
+        .text()
+        .await?;
+    println!("{body}");
+    Ok(())
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p><code>async fn</code> + <code>.await</code> mirror Python. The runtime is <em>not</em> built-in —
+                        you pick one (Tokio is the dominant choice). The <code>?</code> operator propagates errors.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>12 · Standard project layout (Cargo)</h2>
+            <pre><code>myapp/
+├── Cargo.toml      # package name, version, dependencies
+├── Cargo.lock      # locked deps
+└── src/
+    ├── main.go     # for binaries: src/main.rs
+    └── lib.rs      # for libraries</code></pre>
+            <p>Create with <code>cargo new myapp</code>. Run with <code>cargo run</code>. Build with
+                <code>cargo build --release</code>. Test with <code>cargo test</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>13 · The 80/20 cheat sheet</h2>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Class</td>
+                        <td><code>struct</code> + <code>impl</code> block</td>
+                    </tr>
+                    <tr>
+                        <td>List</td>
+                        <td><code>Vec&lt;T&gt;</code></td>
+                    </tr>
+                    <tr>
+                        <td>Dict</td>
+                        <td><code>HashMap&lt;K, V&gt;</code></td>
+                    </tr>
+                    <tr>
+                        <td>None</td>
+                        <td><code>Option&lt;T&gt;</code> with <code>None</code> / <code>Some(x)</code></td>
+                    </tr>
+                    <tr>
+                        <td>Exception</td>
+                        <td><code>Result&lt;T, E&gt;</code> + <code>?</code> operator</td>
+                    </tr>
+                    <tr>
+                        <td>Protocol / ABC</td>
+                        <td><code>trait</code></td>
+                    </tr>
+                    <tr>
+                        <td>Decorator</td>
+                        <td>traits + generics, or macros (<code>#[derive(...)]</code>)</td>
+                    </tr>
+                    <tr>
+                        <td>asyncio</td>
+                        <td>Tokio (<code>async fn</code> / <code>.await</code>)</td>
+                    </tr>
+                    <tr>
+                        <td>pip install</td>
+                        <td><code>cargo add foo</code></td>
+                    </tr>
+                    <tr>
+                        <td>pytest</td>
+                        <td><code>cargo test</code> with <code>#[test]</code> functions</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://doc.rust-lang.org/book/" target="_blank" rel="noopener">The Rust
+                    Programming Language (the Book)</a>
+                <a class="source" href="https://doc.rust-lang.org/rust-by-example/" target="_blank" rel="noopener">Rust
+                    by Example</a>
+                <a class="source" href="https://doc.rust-lang.org/std/" target="_blank" rel="noopener">Standard library
+                    docs</a>
+                <a class="source" href="https://tokio.rs/" target="_blank" rel="noopener">Tokio — async runtime</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

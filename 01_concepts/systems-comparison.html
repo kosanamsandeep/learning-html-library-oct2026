@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP vs LangGraph vs gRPC</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="mcp-server.html">MCP</a>
+                <a href="langgraph.html">LangGraph</a>
+                <a href="grpc.html">gRPC</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#why">Why compare them</a>
+            <a href="#nutshell">In one line each</a>
+            <a href="#matrix">Decision matrix</a>
+            <a href="#pairwise">Key differences</a>
+            <a href="#together">How they work together</a>
+            <a href="#scenarios">Scenario guide</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Systems track</p>
+                    <h1>MCP vs LangGraph vs gRPC</h1>
+                    <p>These three often get mixed together because they all appear in AI systems, but they solve
+                        different layers of the problem. One is about AI-tool interoperability, one is about agent
+                        workflow orchestration, and one is about service-to-service communication.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Fast orientation</h2>
+                    <p class="formula">MCP = tool interface
+                        LangGraph = workflow engine
+                        gRPC = service communication</p>
+                </div>
+            </section>
+
+            <section class="section" id="why">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Why people confuse them</h3>
+                        <p>All three can appear in the same AI product. A single system may use LangGraph for
+                            orchestration, MCP for tool exposure, and gRPC for backend microservice communication.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why separation matters</h3>
+                        <p>If you confuse the layers, you end up using the wrong tool for the job. The right mental
+                            model is to ask: am I exposing tools, orchestrating workflow, or moving data between
+                            services?</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="nutshell">
+                <div class="quick-recap">
+                    <div class="card">
+                        <h3>MCP</h3>
+                        <p>Expose capabilities to AI hosts in a standard, discoverable, callable format.</p>
+                    </div>
+                    <div class="card">
+                        <h3>LangGraph</h3>
+                        <p>Model multi-step agent execution as a graph with shared state and conditional routing.</p>
+                    </div>
+                    <div class="card">
+                        <h3>gRPC</h3>
+                        <p>Connect backend services through typed remote procedure calls over HTTP/2.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="matrix">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Question</th>
+                                <th>MCP</th>
+                                <th>LangGraph</th>
+                                <th>gRPC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Main job</td>
+                                <td>Standardize AI-facing tool discovery and invocation.</td>
+                                <td>Orchestrate stateful, multi-step agent workflows.</td>
+                                <td>Connect services with typed RPC contracts.</td>
+                            </tr>
+                            <tr>
+                                <td>Primary user</td>
+                                <td>AI host or agent platform.</td>
+                                <td>Agent application developer.</td>
+                                <td>Backend or platform engineer.</td>
+                            </tr>
+                            <tr>
+                                <td>Core abstraction</td>
+                                <td>Tool, resource, prompt.</td>
+                                <td>State, node, edge, conditional route.</td>
+                                <td>Service, method, message contract.</td>
+                            </tr>
+                            <tr>
+                                <td>When to use</td>
+                                <td>When multiple AI hosts or agents need portable tools.</td>
+                                <td>When an agent workflow has branching, retries, loops, or checkpointing.</td>
+                                <td>When internal services need efficient typed communication.</td>
+                            </tr>
+                            <tr>
+                                <td>What it does not replace</td>
+                                <td>Your backend APIs and business logic.</td>
+                                <td>Your tool implementations or backend transport.</td>
+                                <td>Your AI workflow logic or tool-discovery layer.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="pairwise">
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>MCP vs LangGraph</h3>
+                        <p>MCP answers: <strong>How does an AI host discover and call tools?</strong></p>
+                        <p>LangGraph answers: <strong>How does an agent move through a controlled multi-step
+                                workflow?</strong></p>
+                        <p>You can use LangGraph without MCP and MCP without LangGraph, but they combine well.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>MCP vs gRPC</h3>
+                        <p>MCP is an AI-facing capability protocol. gRPC is backend service communication. An MCP server
+                            can internally call gRPC services.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>LangGraph vs gRPC</h3>
+                        <p>LangGraph controls the workflow of agent reasoning and tool usage. gRPC just moves structured
+                            requests and responses between services efficiently.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Common mistake</h3>
+                        <p>Trying to use gRPC as if it were an agent workflow framework, or using LangGraph as if it
+                            were a transport protocol, leads to the wrong architecture boundaries.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="together">
+                <div class="note">
+                    <h2>How they work together in one architecture</h2>
+                    <p>A realistic production setup can look like this:</p>
+                    <p class="formula">UI or chat app -> agent host -> LangGraph workflow -> MCP tools -> FastAPI or
+                        gRPC services -> DB and models</p>
+                    <p>In that architecture, LangGraph decides the workflow, MCP standardizes tool access, and gRPC or
+                        FastAPI carries the backend execution.</p>
+                </div>
+            </section>
+
+            <section class="section" id="scenarios">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Use-case guide</p>
+                        <h2>Which one should you reach for?</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Scenario</th>
+                                <th>Best fit</th>
+                                <th>Why</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>You want one AI assistant to use a CRM tool across multiple hosts.</td>
+                                <td>MCP</td>
+                                <td>The priority is tool portability and discoverability.</td>
+                            </tr>
+                            <tr>
+                                <td>You need an agent that plans, calls tools, validates results, retries, and loops.
+                                </td>
+                                <td>LangGraph</td>
+                                <td>The priority is explicit workflow orchestration.</td>
+                            </tr>
+                            <tr>
+                                <td>You are building ten internal microservices that need typed, fast communication.
+                                </td>
+                                <td>gRPC</td>
+                                <td>The priority is service contract quality and transport efficiency.</td>
+                            </tr>
+                            <tr>
+                                <td>You are building an enterprise copilot with many tools and many workflow steps.</td>
+                                <td>MCP + LangGraph</td>
+                                <td>You need both portable tool access and controlled agent execution.</td>
+                            </tr>
+                            <tr>
+                                <td>Your agent tools call internal services that must be efficient and strongly typed.
+                                </td>
+                                <td>MCP + LangGraph + gRPC</td>
+                                <td>Each layer solves a different problem, and together they form a clean stack.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Can MCP replace LangGraph?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>No. MCP exposes tools. LangGraph orchestrates multi-step agent workflows. They solve
+                                different layers.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Can gRPC replace MCP?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>No. gRPC is for backend service communication. It does not provide an AI-native tool
+                                discovery and invocation layer by itself.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You have a working custom React agent with tool calling. What should trigger a move toward
+                            LangGraph or MCP?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Move toward LangGraph when workflow complexity is rising. Move toward MCP when
+                                portability and standardized tool interfaces across hosts become important.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>An interviewer asks for the cleanest one-line difference between all three. What do you say?
+                        </h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>MCP standardizes tool access for AI hosts, LangGraph controls agent workflow, and gRPC
+                                connects backend services efficiently.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Use this page as the decision map after reading the individual MCP, LangGraph, and gRPC pages.</p>
+            <div class="mini-links">
+                <a href="mcp-server.html">MCP</a>
+                <a href="langgraph.html">LangGraph</a>
+                <a href="grpc.html">gRPC</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

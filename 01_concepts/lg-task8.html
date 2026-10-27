@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Task 8 - Memory & Knowledge Building | LangGraph</title>
+</head>
+
+<body>
+<header class="site-header">
+    <div class="shell">
+        <a class="brand" href="index.html">
+            <span class="brand-mark">AI</span>
+            <span>AI Engineer Interview Guide</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </nav>
+    </div>
+</header>
+
+    <main class="cp-container">
+    <div class="cp-hero"><div class="task-num">Task 8</div>
+
+        <h1>Memory & Knowledge Building</h1>
+        <div class="subtitle">Your agent builds a knowledge base — each step making it smarter</div>
+    </div>
+
+    
+        <div class="section">
+            <h2>🧩 What This Task Teaches</h2>
+            <p>Task 3 showed simple accumulation (adding items to a list). Task 8 scales this to
+                <strong>knowledge building</strong> — generating questions, searching for answers, extracting key
+                points,
+                and synthesizing everything into a comprehensive knowledge base. Each node ENRICHES the state.
+            </p>
+
+            <div class="highlight-box">
+                <p><strong>Core Concept:</strong> The "accumulator pattern" at scale. Each node reads existing
+                    knowledge,
+                    generates NEW knowledge, and COMBINES them. By the final node, the state contains
+                    everything discovered across ALL previous operations — a complete knowledge base.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📚 Knowledge Growth Across Nodes</h2>
+            <div class="memory-growth">
+                <div class="memory-layer">
+                    <div class="layer-header">
+                        <strong>❓ After Questions Node</strong>
+                        <span class="count">3 questions generated</span>
+                    </div>
+                    <div class="layer-content">State now has: topic + 3 research questions</div>
+                </div>
+                <div class="memory-layer">
+                    <div class="layer-header">
+                        <strong>🔍 After Search Node</strong>
+                        <span class="count">3 search results added</span>
+                    </div>
+                    <div class="layer-content">State now has: topic + questions + search results for each question</div>
+                </div>
+                <div class="memory-layer">
+                    <div class="layer-header">
+                        <strong>🎯 After Extract Node</strong>
+                        <span class="count">5 key points extracted</span>
+                    </div>
+                    <div class="layer-content">State now has: topic + questions + results + 5 distilled key points</div>
+                </div>
+                <div class="memory-layer final">
+                    <div class="layer-header">
+                        <strong>📚 After Synthesize Node</strong>
+                        <span class="count">Complete knowledge base</span>
+                    </div>
+                    <div class="layer-content">State now has: EVERYTHING above + a comprehensive synthesized knowledge
+                        base</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔄 The Accumulator Pattern</h2>
+            <div class="accumulator-pattern">
+                <p style="color:#9ca3af; margin-bottom:12px;">Each node: <strong style="color:#fb923c;">Read
+                        existing</strong> → <strong style="color:#fbbf24;">Generate new</strong> → <strong
+                        style="color:#34d399;">Combine both</strong></p>
+                <div class="acc-visual">
+                    <span class="acc-box">existing_questions: [q1, q2]</span>
+                    <span class="acc-arrow">+</span>
+                    <span class="acc-box">new_questions: [q3, q4, q5]</span>
+                    <span class="acc-arrow">=</span>
+                    <span class="acc-result">all_questions: [q1, q2, q3, q4, q5]</span>
+                </div>
+            </div>
+            <div class="code-block">
+                <span style="color:#c084fc">def</span> <span
+                    style="color:#60a5fa">generate_questions_node</span>(state):
+                <span style="color:#6b7280"># 1. READ existing knowledge</span>
+                existing = state.get(<span style="color:#34d399">"questions"</span>, [])
+
+                <span style="color:#6b7280"># 2. GENERATE new knowledge (using LLM)</span>
+                new_questions = llm.invoke(f<span style="color:#34d399">"Generate 3 questions about
+                    {state['topic']}"</span>)
+
+                <span style="color:#6b7280"># 3. COMBINE: append new to existing (never replace!)</span>
+                all_questions = existing + new_questions
+
+                <span style="color:#c084fc">return</span> {
+                <span style="color:#34d399">"questions"</span>: all_questions, <span style="color:#6b7280">#
+                    Accumulated!</span>
+                <span style="color:#34d399">"operations_count"</span>: state[<span
+                    style="color:#34d399">"operations_count"</span>] + 1 <span style="color:#6b7280"># Tracked!</span>
+                }
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 State Structure — Rich & Accumulating</h2>
+            <div class="code-block">
+                <span style="color:#c084fc">class</span> <span style="color:#60a5fa">MemoryState</span>(TypedDict):
+                topic: str <span style="color:#6b7280"># Fixed input</span>
+                questions: List[str] <span style="color:#6b7280"># Accumulates questions</span>
+                search_results: List[str] <span style="color:#6b7280"># Accumulates search findings</span>
+                key_points: List[str] <span style="color:#6b7280"># Accumulates distilled insights</span>
+                knowledge_base: str <span style="color:#6b7280"># Final synthesized knowledge</span>
+                operations_count: int <span style="color:#6b7280"># Tracks total operations</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔀 How Task 8 Differs from Task 7</h2>
+            <div class="diff-box">
+                <h4>Task 7 → Task 8 Evolution</h4>
+                <p><strong>Task 7</strong> used tools to fetch external data but processed it in a single pass — search
+                    once, summarize once, done.<br>
+                    <strong>Task 8</strong> shows how to BUILD KNOWLEDGE over multiple operations.
+                    Each node enriches the state. The final node doesn't just summarize search results —
+                    it synthesizes questions + results + key points into a comprehensive knowledge base.
+                    The state grows richer at every step, preserving ALL intermediate findings.
+                </p>
+            </div>
+            <table style="width:100%; border-collapse:collapse; margin:15px 0;">
+                <tr style="background:#c2410c;">
+                    <th style="padding:12px; text-align:left; color:#fff7ed;">Aspect</th>
+                    <th style="padding:12px; text-align:left; color:#fff7ed;">Task 7</th>
+                    <th style="padding:12px; text-align:left; color:#fff7ed;">Task 8</th>
+                </tr>
+                <tr style="background:#1a1a2e;">
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Processing style</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Single pass through pipeline</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Multi-layer enrichment</td>
+                </tr>
+                <tr style="background:#1a1a2e;">
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">State after completion</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Final summary only</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Full audit trail (questions → results →
+                        points → synthesis)</td>
+                </tr>
+                <tr style="background:#1a1a2e;">
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Knowledge depth</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Surface-level (one search)</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Deep (multi-step analysis)</td>
+                </tr>
+                <tr style="background:#1a1a2e;">
+                    <td style="padding:12px;">Analogy</td>
+                    <td style="padding:12px;">Quick Google search</td>
+                    <td style="padding:12px;">Research paper methodology</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>✅ Advantages of This Task</h2>
+            <ul class="advantage-list">
+                <li><strong>Knowledge building</strong> — state becomes a growing knowledge base, not just transient
+                    data</li>
+                <li><strong>Full audit trail</strong> — you can see exactly what was asked, found, and concluded</li>
+                <li><strong>Operations tracking</strong> — operations_count provides workflow telemetry</li>
+                <li><strong>LLM at every layer</strong> — generates questions, extracts points, synthesizes knowledge
+                </li>
+                <li><strong>Scalable pattern</strong> — add more enrichment nodes without changing existing ones</li>
+                <li><strong>Debuggability</strong> — if the final answer is wrong, inspect intermediate state to find
+                    where</li>
+            </ul>
+        </div>
+
+        <div class="key-insight">
+            <h4>💡 Key Insight</h4>
+            <p>This is how real AI research agents work: they don't just search and summarize.
+                They generate hypotheses (questions), gather evidence (search), extract insights (key points),
+                and synthesize understanding (knowledge base). Each layer builds on the previous ones.
+                Task 9 combines this with loops AND tools for the complete agent.</p>
+        </div>
+
+        <div class="cp-nav-footer">
+            <a href="lg-task7.html">← Task 7: Tools</a>
+            <a href="lg-task9.html">Next: Task 9 - Complete Agent →</a>
+        </div>
+    </div>
+
+    </main>
+
+<footer class="site-footer">
+    <div class="shell">
+        <p>Part of the AI and ML Interview Starter Guide. Open locally in any browser.</p>
+        <div class="mini-links">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </div>
+    </div>
+</footer>
+</body>
+
+</html>

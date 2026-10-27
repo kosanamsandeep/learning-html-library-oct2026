@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust P3 — Hospital Management</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Rust projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p3_hospital_management/README.html">Python p3</a>
+                <a href="../../go_projects/p3_hospital_management/README.html">Go p3</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust · P3</span></p>
+            <h1>Hospital Management — composition, with the borrow checker watching</h1>
+            <p class="lead">Hospital → Department → Doctor → Appointment. The fun bit in Rust: when you want to mutate a
+                Doctor that lives inside a Department that lives inside a Hospital, you have to <em>walk down through
+                    mutable borrows</em>. That's <code>get_mut</code>, <code>iter_mut</code>, and the <code>?</code>
+                operator working together.</p>
+        </section>
+
+        <section class="card">
+            <h2>The mutable-walk pattern</h2>
+            <pre><code>fn book(&amp;mut self, dept: &amp;str, doctor_id: u64, ...) -&gt; Result&lt;(), String&gt; {
+    let d = self.departments.get_mut(dept)
+        .ok_or_else(|| format!("no such department: {dept}"))?;
+    let doc = d.find_doctor_mut(doctor_id)
+        .ok_or("no such doctor")?;
+    doc.book(patient, when);
+    Ok(())
+}</code></pre>
+            <p>Each <code>get_mut</code> hands you a fresh mutable borrow that lives as long as the surrounding scope
+                needs it. <code>?</code> propagates the <code>None</code>/<code>Err</code> case to the caller. You
+                cannot accidentally hold two mutable borrows of the same data at once — the compiler refuses.</p>
+        </section>
+
+        <section class="card">
+            <h2>Tradeoff</h2>
+            <p>Yes, this is more code than Python's <code>hospital["Cardiology"][1].book(...)</code>. The payoff is that
+                races, dangling references, and accidental aliasing are <em>compile errors</em>. In a 50k-line codebase,
+                that pays back many times over.</p>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd rust_projects/p3_hospital_management
+cargo run</code></pre>
+            <p>Files: <a href="src/main.rs">src/main.rs</a> · <a href="Cargo.toml">Cargo.toml</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

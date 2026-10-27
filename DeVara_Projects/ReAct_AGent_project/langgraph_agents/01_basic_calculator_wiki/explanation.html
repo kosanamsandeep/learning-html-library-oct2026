@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>LangGraph 01 · Calculator + Wikipedia (async FastAPI)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../../assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <a class="back" href="../../index.html">← Portfolio home</a>
+  <h1><span class="pill">Basic</span> 01 · Calculator + Wikipedia (LangGraph)</h1>
+  <p>Same logic as ReAct 01 — but the agent is a graph with a checkpointer, so memory is free per <code>thread_id</code>.</p>
+</header>
+<main>
+
+<h2>📖 Story mode — same Helper Friend, but now in a building with rooms</h2>
+<div class="callout good">
+<b>The scene.</b> Same friend, same two pockets (calculator + Wikipedia). But this time he doesn’t freestyle in a café — he works inside a <b>small building</b> with three doors clearly labelled:
+<b>AGENT</b> (thinking room), <b>TOOLS</b> (where the pockets live), and <b>END</b> (exit with the answer).
+A <b>janitor</b> (MemorySaver) sits at the entrance with a clipboard, writes down everything that happens in <i>your</i> file (keyed by <code>thread_id</code>), so when you come back later he hands the friend the full history.
+</div>
+
+<h3>What happens when you press “Ask”</h3>
+<ol>
+<li><b>You type:</b> <code>POST /ask { "question": "…", "thread_id": "raj" }</code>.</li>
+<li><b>Janitor pulls Raj’s file</b> from <code>MemorySaver</code> → attaches it as the running message list.</li>
+<li><b>Door 1 — AGENT room:</b> the LLM looks at the messages and either (a) decides to use a tool, or (b) says “I’m done.”</li>
+<li><b>If a tool:</b> goes to <b>Door 2 — TOOLS room</b>, where <code>@tool</code>-decorated functions (<code>calculate</code>, <code>wiki_summary</code>) actually run. The result becomes a new <code>ToolMessage</code>.</li>
+<li><b>Back to AGENT room</b> with the new observation — loop continues until the LLM emits no more tool calls.</li>
+<li><b>Door 3 — END:</b> the final <code>AIMessage</code> is returned. The janitor saves the whole updated thread.</li>
+<li><b>Output:</b> JSON answer to your browser. Next time Raj asks a follow-up with the same <code>thread_id</code>, the friend already knows what was discussed.</li>
+</ol>
+
+<div class="mermaid">
+flowchart LR
+    Start(["🚪 POST /ask"]) --> J["🧹 MemorySaver<br/>load thread"]
+    J --> Agent["🧠 AGENT node<br/>(LLM decides)"]
+    Agent -->|tool_calls| Tools["🔧 TOOLS node<br/>calc / wiki"]
+    Tools --> Agent
+    Agent -->|no more tools| End(["🏁 END → JSON"])
+    End --> J2["🧹 MemorySaver<br/>save thread"]
+</div>
+
+<div class="callout warn">
+<b>One-line recall trick:</b> <i>“Building with three rooms and a janitor who remembers you.”</i>
+Same ReAct loop as react_agents/01, but it’s now an explicit graph with a checkpointer — the LangGraph way.
+</div>
+
+<h2>Folder structure</h2>
+<pre>
+01_basic_calculator_wiki/
+├── agents/
+│   ├── base_agent.py
+│   ├── graph_agent.py        # uses langgraph.prebuilt.create_react_agent + MemorySaver
+│   └── skills/
+│       ├── calculator_skill.py
+│       └── wiki_skill.py
+├── core/                     # config, logger
+├── data/prompts/system.txt
+├── models/model_client.py
+├── workflows/qa_workflow.py
+├── tests/test_agents.py
+├── main.py                   # FastAPI POST /ask {question, thread_id}
+├── requirements.txt
+├── .env.example
+└── explanation.html
+</pre>
+
+<h2>The graph LangGraph builds for us</h2>
+<div class="mermaid">
+flowchart LR
+    Start((start)) --> Agent[agent node<br/>LLM]
+    Agent -->|tool_calls?| Cond{has tool calls?}
+    Cond -- yes --> Tools[tools node<br/>calculator / wiki]
+    Tools --> Agent
+    Cond -- no --> End((END))
+</div>
+
+<h2>Why LangGraph here?</h2>
+<table>
+<tr><th>Feature</th><th>Used by this project</th></tr>
+<tr><td>Typed message state</td><td>Every step appends to <code>messages</code> — easy to inspect.</td></tr>
+<tr><td>Conditional edge</td><td>Built-in: route to tools node when LLM emits tool calls.</td></tr>
+<tr><td><code>MemorySaver</code> checkpointer</td><td>Pass <code>thread_id</code> via <code>configurable</code> → conversation persists automatically.</td></tr>
+<tr><td>Streaming</td><td><code>graph.astream</code> yields after each node — UI-friendly.</td></tr>
+</table>
+
+<h2>Resumable conversation via thread_id</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant U as Client
+    participant API as /ask
+    participant G as Graph (thread=alice)
+    participant CP as MemorySaver
+    U->>API: {"question":"23*45+1","thread_id":"alice"}
+    API->>G: ainvoke
+    G->>CP: save state v1
+    G-->>API: 1036
+    U->>API: {"question":"Eiffel year","thread_id":"alice"}
+    API->>G: ainvoke
+    G->>CP: load v1, append, save v2
+    G-->>API: 1889
+    U->>API: {"question":"× 2","thread_id":"alice"}
+    G->>CP: load v2 (knows '1889')
+    G-->>API: 3778
+</div>
+
+<h2>Run</h2>
+<pre>cd langgraph_agents/01_basic_calculator_wiki
+pip install -r requirements.txt
+copy .env.example .env
+python main.py
+# POST http://127.0.0.1:8101/ask  body:{"question":"23*45+1","thread_id":"alice"}</pre>
+
+<h2>ReAct 01 vs LangGraph 01</h2>
+<table>
+<tr><th>Concern</th><th>ReAct version</th><th>LangGraph version</th></tr>
+<tr><td>Multi-turn memory</td><td>Manual <code>ConversationBufferMemory</code></td><td>Free via <code>MemorySaver</code> + <code>thread_id</code></td></tr>
+<tr><td>Branching / parallelism</td><td>Hard to add</td><td>Add a node + edge</td></tr>
+<tr><td>Resumability</td><td>Lost on crash</td><td>Checkpointer survives restarts (use SQLite/Postgres saver)</td></tr>
+<tr><td>Streaming events</td><td>Manual</td><td><code>graph.astream</code> for free</td></tr>
+</table>
+
+</main>
+<footer>langgraph_agents · 01_basic_calculator_wiki</footer>
+</body>
+</html>

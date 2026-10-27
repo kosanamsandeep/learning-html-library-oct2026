@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust P4 — E-commerce API</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Rust projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p4_ecommerce_api/README.html">Python p4</a>
+                <a href="../../go_projects/p4_ecommerce_api/README.html">Go p4</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust · P4</span></p>
+            <h1>E-commerce API — DTO seam, validate-then-mutate</h1>
+            <p class="lead">Same DTO pattern as the Go version, but with one extra Rust touch: <strong>validate the
+                    whole order first, then mutate</strong>. If you mutated as you went and the third line failed, you'd
+                have already deducted stock from the first two — the borrow checker can't save you from that, only
+                design can.</p>
+        </section>
+
+        <section class="card">
+            <h2>The two-pass pattern</h2>
+            <pre><code>// Pass 1: validate every line, accumulate the total.
+for line in lines {
+    let p = self.products.get(&amp;line.product_id)
+        .ok_or_else(|| format!("unknown product {}", line.product_id))?;
+    if line.quantity &lt;= 0 || line.quantity &gt; p.stock {
+        return Err(format!("bad quantity for {}", line.product_id));
+    }
+    total_cent += line.quantity * p.price_cent;
+}
+
+// Pass 2: now we know everything is valid, mutate.
+for line in lines {
+    let p = self.products.get_mut(&amp;line.product_id).unwrap();
+    p.stock -= line.quantity;
+}</code></pre>
+            <p>This is a transferable design lesson — equally useful in Python. Validate first, mutate later.</p>
+        </section>
+
+        <section class="card">
+            <h2>What a real Rust app would change</h2>
+            <ul>
+                <li>Add <code>serde</code> + <code>serde_json</code> in <code>Cargo.toml</code> and
+                    <code>#[derive(Serialize, Deserialize)]</code> on the DTOs. The hand-rolled <code>to_json</code>
+                    goes away.</li>
+                <li>Add an <code>axum</code> or <code>actix-web</code> handler around the Catalog — same shape,
+                    different dispatcher.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd rust_projects/p4_ecommerce_api
+cargo run</code></pre>
+            <p>Files: <a href="src/main.rs">src/main.rs</a> · <a href="Cargo.toml">Cargo.toml</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

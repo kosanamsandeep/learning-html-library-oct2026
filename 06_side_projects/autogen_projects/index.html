@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGen Projects — Basic to Advanced</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="ag">AG</span>AutoGen Projects</div>
+        <div class="links">
+            <a href="../index.html">Side Projects</a>
+            <a href="../agent_frameworks_comparison/index.html">Compare</a>
+            <a href="01_quickstart.html">Start →</a>
+        </div>
+    </div>
+
+    <div class="header ag">
+        <p class="badge">Microsoft AutoGen v0.4 · AgentChat</p>
+        <h1>💬 AutoGen — agents that converse</h1>
+        <p class="subtitle">AutoGen models a system as <strong>conversational agents</strong> running on an
+            async actor runtime. Four incremental builds: a single assistant, a two-agent team, tool use, and
+            multi-agent group chat with termination and observability.</p>
+    </div>
+
+    <div class="container">
+        <div class="section ag">
+            <h2>The AutoGen mental model</h2>
+            <p>Everything is a <strong>message-passing agent</strong>. An <code>AssistantAgent</code> wraps an
+                LLM. A <strong>team</strong> (like <code>RoundRobinGroupChat</code>) coordinates several agents
+                that take turns until a <strong>termination condition</strong> is met. You run a team with
+                <code>run()</code> or stream it to a <code>Console</code>.
+            </p>
+            <div class="callout teal">
+                <strong>v0.4 is a full rewrite.</strong> The library is now layered:
+                <code>autogen-core</code> (the actor runtime), <code>autogen-agentchat</code> (the easy
+                agent/team API used here), and <code>autogen-ext</code> (model clients, tools, integrations).
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>The progression</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    A1["01 · Single<br/>AssistantAgent"] --> A2["02 · Two-agent<br/>RoundRobin team"]
+    A2 --> A3["03 · Tools /<br/>function calling"]
+    A3 --> A4["04 · GroupChat<br/>+ advanced"]
+    classDef b fill:#064e3b,stroke:#34d399,color:#d1fae5
+    classDef i fill:#1e3a5f,stroke:#60a5fa,color:#dbeafe
+    classDef a fill:#500724,stroke:#f472b6,color:#fbcfe8
+    class A1,A2 b
+    class A3 i
+    class A4 a
+                </pre>
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>Pick a build</h2>
+            <div class="grid">
+                <a class="fw-card ag" href="01_quickstart.html">
+                    <span class="level beginner">Beginner</span>
+                    <h3>01 · Quickstart — single agent</h3>
+                    <p style="color:#9ca3af">Install, create a model client, run one
+                        <code>AssistantAgent</code>, and stream its reply.
+                    </p>
+                    <div><span class="tag teal">AssistantAgent</span><span class="tag teal">model client</span></div>
+                </a>
+                <a class="fw-card ag" href="02_two_agent_team.html">
+                    <span class="level beginner">Beginner+</span>
+                    <h3>02 · Two-agent team</h3>
+                    <p style="color:#9ca3af">A writer and a critic in a <code>RoundRobinGroupChat</code> that
+                        loops until the critic says <code>APPROVE</code>.</p>
+                    <div><span class="tag teal">RoundRobinGroupChat</span><span class="tag teal">termination</span>
+                    </div>
+                </a>
+                <a class="fw-card ag" href="03_tools.html">
+                    <span class="level intermediate">Intermediate</span>
+                    <h3>03 · Tools &amp; function calling</h3>
+                    <p style="color:#9ca3af">Give an agent Python functions as tools, with
+                        <code>reflect_on_tool_use</code> so it explains the result.
+                    </p>
+                    <div><span class="tag teal">tools</span><span class="tag teal">FunctionTool</span></div>
+                </a>
+                <a class="fw-card ag" href="04_groupchat_advanced.html">
+                    <span class="level advanced">Advanced</span>
+                    <h3>04 · GroupChat &amp; advanced patterns</h3>
+                    <p style="color:#9ca3af"><code>SelectorGroupChat</code>, human-in-the-loop, state
+                        save/load, and OpenTelemetry observability.</p>
+                    <div><span class="tag teal">SelectorGroupChat</span><span class="tag teal">UserProxy</span><span
+                            class="tag teal">tracing</span></div>
+                </a>
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>Install</h2>
+            <pre><code>pip install -U <span class="c-str">"autogen-agentchat"</span> <span class="c-str">"autogen-ext[openai]"</span>
+<span class="c-com"># optional: the AutoGen Studio low-code UI</span>
+pip install -U autogenstudio</code></pre>
+        </div>
+
+        <div class="pager">
+            <a href="../agent_frameworks_comparison/index.html"><span class="dir">Back</span>
+                <div class="ttl">Framework comparison</div>
+            </a>
+            <a class="next" href="01_quickstart.html"><span class="dir">Start</span>
+                <div class="ttl">01 · Quickstart →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>AutoGen Projects · Microsoft AutoGen v0.4 (AgentChat)</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

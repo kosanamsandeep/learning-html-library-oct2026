@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSM States Explained Simply</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            max-width: 980px;
+            margin: 36px auto;
+            padding: 0 20px 40px;
+            line-height: 1.65;
+            background: #f7f9fc;
+            color: #162033;
+        }
+
+        h1 {
+            color: #0d6efd;
+            border-bottom: 4px solid #0d6efd;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #0a58ca;
+            margin-top: 34px;
+        }
+
+        h3 {
+            margin-bottom: 6px;
+            color: #243b6b;
+        }
+
+        code {
+            background: #e8f0ff;
+            color: #0a3f91;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        pre {
+            background: #111827;
+            color: #e5e7eb;
+            padding: 18px;
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 18px 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        }
+
+        th,
+        td {
+            border: 1px solid #dbe3ef;
+            padding: 12px 14px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #0d6efd;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f1f6ff;
+        }
+
+        .card {
+            background: white;
+            border-left: 5px solid #0d6efd;
+            padding: 16px 20px;
+            margin: 18px 0;
+            border-radius: 0 10px 10px 0;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        }
+
+        .success {
+            border-left-color: #198754;
+            background: #f0fff7;
+        }
+
+        .blocked {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .warning {
+            border-left-color: #ffc107;
+            background: #fffaf0;
+        }
+
+        .pill {
+            display: inline-block;
+            background: #0d6efd;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            margin: 3px;
+        }
+
+        .flow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin: 14px 0;
+        }
+
+        .node,
+        .event {
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .node {
+            background: #e8f0ff;
+            color: #0a3f91;
+            border: 1px solid #adc9ff;
+        }
+
+        .event {
+            background: #fff3cd;
+            color: #664d03;
+            border: 1px solid #ffda6a;
+        }
+
+        .arrow {
+            font-size: 1.3rem;
+            color: #495057;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>How the FSM Sets States and Allows Transitions</h1>
+
+    <p>
+        This page explains the finite state machine in <code>machine/fsm.py</code> using simple words.
+        Think of the FSM as a strict traffic controller for an order workflow: it knows the current state,
+        listens for events, checks rules, and only then moves to the next state.
+    </p>
+
+    <p>
+        <span class="pill">State</span>
+        <span class="pill">Event</span>
+        <span class="pill">Transition</span>
+        <span class="pill">Guard</span>
+        <span class="pill">Action</span>
+    </p>
+
+    <div class="card">
+        <h2>One-line summary</h2>
+        <p>
+            A state changes only when you call <code>send(event)</code>, a matching transition exists from the current
+            state, and the transition guard allows it.
+        </p>
+    </div>
+
+    <h2>1. Where is the current state stored?</h2>
+
+    <p>
+        The machine stores the current state in one private variable:
+    </p>
+
+    <pre>self._current_state: str = initial_state</pre>
+
+    <p>
+        In the order workflow, the machine starts here:
+    </p>
+
+    <pre>machine = StateMachine(initial_state="draft", context=context)</pre>
+
+    <div class="card">
+        <strong>Simple meaning:</strong> when the order workflow is created, the order starts in <code>draft</code>.
+        Nothing else is the current state until the FSM updates <code>self._current_state</code>.
+    </div>
+
+    <h2>2. What is a state?</h2>
+
+    <p>
+        A state is a named stage of the workflow. In this project, states are registered using
+        <code>add_state(StateConfig(...))</code>.
+    </p>
+
+    <table>
+        <tr>
+            <th>State</th>
+            <th>Meaning</th>
+            <th>Final?</th>
+        </tr>
+        <tr>
+            <td><code>draft</code></td>
+            <td>Order has been created but not submitted.</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>pending_payment</code></td>
+            <td>Order is waiting for payment.</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>paid</code></td>
+            <td>Payment has succeeded.</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>processing</code></td>
+            <td>Order is being prepared.</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>shipped</code></td>
+            <td>Order has been shipped.</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>delivered</code></td>
+            <td>Order reached the customer.</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td><code>cancelled</code></td>
+            <td>Order was cancelled.</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td><code>refunded</code></td>
+            <td>Money was returned to the customer.</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td><code>payment_failed</code></td>
+            <td>Payment attempt failed.</td>
+            <td>No</td>
+        </tr>
+    </table>
+
+    <h2>3. What is a transition?</h2>
+
+    <p>
+        A transition is one allowed movement from one state to another, triggered by an event.
+    </p>
+
+    <pre>Transition(
+    from_state="draft",
+    event="submit",
+    to_state="pending_payment",
+    guard=lambda ctx: ctx["order"].total_amount > 0,
+)</pre>
+
+    <div class="flow">
+        <span class="node">draft</span>
+        <span class="arrow">--</span>
+        <span class="event">submit</span>
+        <span class="arrow">--&gt;</span>
+        <span class="node">pending_payment</span>
+    </div>
+
+    <div class="card">
+        <strong>Simple meaning:</strong> if the machine is currently in <code>draft</code> and it receives
+        the event <code>submit</code>, it may move to <code>pending_payment</code>.
+    </div>
+
+    <h2>4. When is a transition allowed?</h2>
+
+    <p>A transition is allowed only when both checks pass:</p>
+
+    <table>
+        <tr>
+            <th>Check</th>
+            <th>Question asked by the FSM</th>
+            <th>If answer is yes</th>
+        </tr>
+        <tr>
+            <td>1. Matching transition exists</td>
+            <td>Is there a transition where <code>from_state == current_state</code> and
+                <code>event == event_sent</code>?</td>
+            <td>The FSM continues to guard checking.</td>
+        </tr>
+        <tr>
+            <td>2. Guard passes</td>
+            <td>Is there no guard, or does the guard return <code>True</code>?</td>
+            <td>The FSM performs the state change.</td>
+        </tr>
+    </table>
+
+    <div class="card success">
+        <h3>Allowed example</h3>
+        <p>Current state is <code>draft</code>, event is <code>submit</code>, and order total is greater than zero.</p>
+        <div class="flow">
+            <span class="node">draft</span>
+            <span class="arrow">--</span>
+            <span class="event">submit</span>
+            <span class="arrow">--&gt;</span>
+            <span class="node">pending_payment</span>
+        </div>
+        <p>Result: <code>success=True</code>, and current state becomes <code>pending_payment</code>.</p>
+    </div>
+
+    <h2>5. When is a transition not allowed?</h2>
+
+    <h3>Case A: No transition is defined for that state and event</h3>
+
+    <div class="card blocked">
+        <p>
+            If the current state is <code>draft</code> and you send <code>ship</code>, the FSM searches for:
+        </p>
+        <pre>from_state="draft" and event="ship"</pre>
+        <p>
+            No such transition exists, because shipping is only allowed from <code>processing</code>.
+        </p>
+        <p>
+            Result: <code>success=False</code>, error says no transition exists, and the state stays <code>draft</code>.
+        </p>
+    </div>
+
+    <h3>Case B: A transition exists, but its guard fails</h3>
+
+    <div class="card blocked">
+        <p>
+            If the current state is <code>draft</code> and you send <code>submit</code>, a transition exists.
+            But this transition has a guard:
+        </p>
+        <pre>guard=lambda ctx: ctx["order"].total_amount > 0</pre>
+        <p>
+            If the cart is empty, <code>total_amount</code> is <code>0</code>, so the guard returns <code>False</code>.
+        </p>
+        <p>
+            Result: <code>success=False</code>, <code>guard_failed=True</code>, and the state stays <code>draft</code>.
+        </p>
+    </div>
+
+    <h2>6. What exactly happens inside <code>send(event)</code>?</h2>
+
+    <p>This is the simple decision flow:</p>
+
+    <table>
+        <tr>
+            <th>Step</th>
+            <th>What the FSM does</th>
+            <th>Example</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td>Looks at the current state.</td>
+            <td><code>draft</code></td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>Finds transitions matching current state and event.</td>
+            <td><code>draft</code> + <code>submit</code></td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>If none match, rejects the event.</td>
+            <td><code>draft</code> + <code>ship</code> is rejected.</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>If a guard exists, runs the guard.</td>
+            <td><code>total_amount > 0</code></td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>If guard fails, rejects the event.</td>
+            <td>Empty cart cannot submit.</td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td>Runs old state's <code>on_exit</code>, if configured.</td>
+            <td>Leaving <code>draft</code>.</td>
+        </tr>
+        <tr>
+            <td>7</td>
+            <td>Runs transition action, if configured.</td>
+            <td>Increase <code>payment_attempts</code>.</td>
+        </tr>
+        <tr>
+            <td>8</td>
+            <td>Sets the new current state.</td>
+            <td><code>self._current_state = transition.to_state</code></td>
+        </tr>
+        <tr>
+            <td>9</td>
+            <td>Runs new state's <code>on_enter</code>, if configured.</td>
+            <td>Add note: awaiting payment.</td>
+        </tr>
+        <tr>
+            <td>10</td>
+            <td>Stores the result in history and notifies listeners.</td>
+            <td>Audit trail is updated.</td>
+        </tr>
+    </table>
+
+    <div class="card warning">
+        <strong>Important:</strong> the state is actually changed at this line in <code>fsm.py</code>:
+        <pre>self._current_state = transition.to_state</pre>
+        This line is reached only after a matching transition is found and its guard passes.
+    </div>
+
+    <h2>7. Allowed and blocked examples from the order workflow</h2>
+
+    <table>
+        <tr>
+            <th>Current state</th>
+            <th>Event sent</th>
+            <th>Allowed?</th>
+            <th>Why?</th>
+            <th>New state</th>
+        </tr>
+        <tr>
+            <td><code>draft</code></td>
+            <td><code>submit</code></td>
+            <td>Yes, if total &gt; 0</td>
+            <td>Transition exists and guard passes.</td>
+            <td><code>pending_payment</code></td>
+        </tr>
+        <tr>
+            <td><code>draft</code></td>
+            <td><code>ship</code></td>
+            <td>No</td>
+            <td>No transition exists from <code>draft</code> using <code>ship</code>.</td>
+            <td>Still <code>draft</code></td>
+        </tr>
+        <tr>
+            <td><code>pending_payment</code></td>
+            <td><code>pay</code></td>
+            <td>Yes</td>
+            <td>Transition exists and has no guard.</td>
+            <td><code>paid</code></td>
+        </tr>
+        <tr>
+            <td><code>paid</code></td>
+            <td><code>ship</code></td>
+            <td>No</td>
+            <td>Must first send <code>start_processing</code>.</td>
+            <td>Still <code>paid</code></td>
+        </tr>
+        <tr>
+            <td><code>processing</code></td>
+            <td><code>ship</code></td>
+            <td>Yes, if address exists</td>
+            <td>Transition exists and guard checks shipping address.</td>
+            <td><code>shipped</code></td>
+        </tr>
+        <tr>
+            <td><code>shipped</code></td>
+            <td><code>cancel</code></td>
+            <td>No</td>
+            <td>Cancellation transitions are only added for <code>draft</code>, <code>pending_payment</code>,
+                <code>paid</code>, and <code>processing</code>.</td>
+            <td>Still <code>shipped</code></td>
+        </tr>
+        <tr>
+            <td><code>delivered</code></td>
+            <td><code>refund</code></td>
+            <td>Yes</td>
+            <td>A partial refund transition exists after delivery.</td>
+            <td><code>refunded</code></td>
+        </tr>
+    </table>
+
+    <h2>8. How to check without changing state</h2>
+
+    <p>
+        The FSM has helper methods for asking what is possible before sending an event.
+    </p>
+
+    <table>
+        <tr>
+            <th>Method</th>
+            <th>Meaning</th>
+            <th>Does it change state?</th>
+        </tr>
+        <tr>
+            <td><code>can_send("submit")</code></td>
+            <td>Returns <code>True</code> if this event can currently transition successfully.</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>available_events()</code></td>
+            <td>Returns all currently allowed events whose guards pass.</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>is_in_final_state()</code></td>
+            <td>Returns <code>True</code> if current state is marked final.</td>
+            <td>No</td>
+        </tr>
+    </table>
+
+    <h2>9. Mental model</h2>
+
+    <div class="card">
+        <p>For every event, ask these questions in order:</p>
+        <ol>
+            <li>Where am I now? That is <code>current_state</code>.</li>
+            <li>Is this event listed as a transition from this state?</li>
+            <li>If yes, does the guard allow it?</li>
+            <li>If yes, run actions and set <code>current_state</code> to the transition's <code>to_state</code>.</li>
+            <li>If no, keep the current state unchanged and return a failed result.</li>
+        </ol>
+    </div>
+
+    <h2>10. Tiny example</h2>
+
+    <pre>machine.current_state
+# "draft"
+
+machine.send("submit")
+# allowed only if order.total_amount > 0
+# current_state becomes "pending_payment"
+
+machine.send("ship")
+# blocked because there is no pending_payment --ship--&gt; ... transition
+# current_state stays "pending_payment"
+
+machine.send("pay")
+# allowed
+# current_state becomes "paid"</pre>
+
+    <div class="card success">
+        <strong>Final takeaway:</strong> states are not randomly assigned. They are set only by successful transitions.
+        A successful transition requires the right current state, the right event, and a passing guard if one exists.
+    </div>
+</body>
+
+</html>

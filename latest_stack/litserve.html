@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>09 · LitServe — Latest Stack</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        pre.mermaid {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>LS</span>Latest Stack</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="performance.html">Performance</a>
+                <a href="../01_concepts/fastapi-flask.html">FastAPI / Flask</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Page 9 of 9</p>
+            <h1>LitServe — the batteries-included model server from Lightning AI</h1>
+            <p class="lead"><strong>LitServe</strong> is an open-source serving framework built on FastAPI by
+                Lightning AI, designed specifically for ML / AI workloads. It gives you dynamic batching, GPU
+                scheduling, multi-model routing, streaming, and multi-worker scaling out of the box — so you write
+                two methods (<code>setup</code> and <code>predict</code>) instead of an entire async server. Think
+                <em>FastAPI for models, with the model-server plumbing already wired</em>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>1 · Where it sits</h2>
+            <pre class="mermaid">
+flowchart LR
+  client[Client] --> http[HTTP / SSE / WS]
+  http --> ls[LitServe<br/>FastAPI under the hood]
+  ls --> batch[Dynamic batching]
+  batch --> worker1[GPU worker 1]
+  batch --> worker2[GPU worker 2]
+  worker1 --> model1[Your model]
+  worker2 --> model1
+            </pre>
+        </section>
+
+        <section class="card">
+            <h2>2 · LitServe vs FastAPI vs vLLM vs TorchServe</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>FastAPI</th>
+                        <th>LitServe</th>
+                        <th>vLLM</th>
+                        <th>TorchServe / TGI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Generic HTTP framework</td>
+                        <td>Yes</td>
+                        <td>Yes (built on it)</td>
+                        <td>No (LLM only)</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td>Bring any model (vision, audio, ML, LLM)</td>
+                        <td>Yes — you wire it</td>
+                        <td>Yes — opinionated</td>
+                        <td>LLMs only</td>
+                        <td>LLMs / PyTorch</td>
+                    </tr>
+                    <tr>
+                        <td>Dynamic batching</td>
+                        <td>You build it</td>
+                        <td>Built-in</td>
+                        <td>Continuous batching</td>
+                        <td>Built-in</td>
+                    </tr>
+                    <tr>
+                        <td>GPU worker pooling</td>
+                        <td>You build it</td>
+                        <td>Built-in</td>
+                        <td>Built-in</td>
+                        <td>Built-in</td>
+                    </tr>
+                    <tr>
+                        <td>Streaming (SSE)</td>
+                        <td>Yes — you wire it</td>
+                        <td>Built-in</td>
+                        <td>Yes</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td>Multi-model on one server</td>
+                        <td>You build it</td>
+                        <td>Built-in</td>
+                        <td>Limited</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td>OpenAI-compatible API</td>
+                        <td>You build it</td>
+                        <td>Yes (LLM spec)</td>
+                        <td>Yes</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td>LLM throughput optimisations (PagedAttention, etc.)</td>
+                        <td>No</td>
+                        <td>Wraps vLLM</td>
+                        <td>Native</td>
+                        <td>Partial</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>3 · When to pick LitServe vs FastAPI</h2>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>Pick LitServe</h3>
+                    <ul>
+                        <li>You're serving any ML model (vision, audio, embeddings, classical ML, or LLM).</li>
+                        <li>You need batching + GPU pooling without writing the queue yourself.</li>
+                        <li>You're juggling multiple models on one server.</li>
+                        <li>You want an OpenAI-compatible LLM endpoint without writing the spec.</li>
+                    </ul>
+                </div>
+                <div class="mini good">
+                    <h3>Pick plain FastAPI</h3>
+                    <ul>
+                        <li>Your endpoint isn't model inference (CRUD, auth, business logic).</li>
+                        <li>You want full control over the HTTP layer.</li>
+                        <li>You're not GPU-bound; concurrency is I/O.</li>
+                        <li>You already have a battle-tested deployment.</li>
+                    </ul>
+                </div>
+                <div class="mini good">
+                    <h3>Pick vLLM (only)</h3>
+                    <ul>
+                        <li>Pure LLM serving at scale; you want the absolute highest throughput.</li>
+                        <li>You don't need a custom Python frontend.</li>
+                    </ul>
+                </div>
+                <div class="mini warn">
+                    <h3>Combine LitServe + vLLM</h3>
+                    <p>LitServe in front for routing, auth, and multi-model; vLLM as the LLM engine. Lightning ships
+                        official integration.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Hello-LitServe in 15 lines</h2>
+            <pre><code># pip install litserve
+import litserve as ls
+from transformers import pipeline
+
+class SentimentAPI(ls.LitAPI):
+    def setup(self, device):
+        self.pipe = pipeline("sentiment-analysis", device=device)
+
+    def decode_request(self, request):
+        return request["text"]
+
+    def predict(self, x):
+        return self.pipe(x)[0]
+
+    def encode_response(self, output):
+        return {"label": output["label"], "score": output["score"]}
+
+if __name__ == "__main__":
+    server = ls.LitServer(SentimentAPI(), accelerator="auto",
+                          max_batch_size=8, batch_timeout=0.05)
+    server.run(port=8000)
+</code></pre>
+            <p class="quiet">That tiny class gives you: a <code>/predict</code> endpoint, automatic GPU placement,
+                request batching up to 8 within 50 ms, OpenAPI docs, and worker pooling.</p>
+        </section>
+
+        <section class="card">
+            <h2>5 · LLM streaming with LitServe</h2>
+            <pre><code>import litserve as ls
+from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
+import torch
+from threading import Thread
+
+class LLM(ls.LitAPI):
+    def setup(self, device):
+        name = "microsoft/Phi-3.5-mini-instruct"
+        self.tok = AutoTokenizer.from_pretrained(name)
+        self.mdl = AutoModelForCausalLM.from_pretrained(
+            name, torch_dtype=torch.bfloat16, device_map=device
+        )
+
+    def decode_request(self, request):
+        return request["prompt"]
+
+    def predict(self, prompt):
+        streamer = TextIteratorStreamer(self.tok, skip_prompt=True)
+        inputs = self.tok(prompt, return_tensors="pt").to(self.mdl.device)
+        Thread(target=self.mdl.generate,
+               kwargs=dict(**inputs, streamer=streamer, max_new_tokens=256)).start()
+        for chunk in streamer:
+            yield chunk        # LitServe turns this into an SSE stream
+
+    def encode_response(self, output):
+        for chunk in output:
+            yield {"delta": chunk}
+
+if __name__ == "__main__":
+    ls.LitServer(LLM(), accelerator="auto", stream=True).run(port=8000)
+</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>6 · Multi-model routing</h2>
+            <pre><code>import litserve as ls
+
+class MultiModel(ls.LitAPI):
+    def setup(self, device):
+        self.classifier = load_classifier(device)
+        self.summariser = load_summariser(device)
+
+    def decode_request(self, request):
+        return request["task"], request["text"]
+
+    def predict(self, payload):
+        task, text = payload
+        if task == "classify":
+            return self.classifier(text)
+        elif task == "summarise":
+            return self.summariser(text)
+        raise ValueError(f"unknown task {task}")
+</code></pre>
+            <p>One server, one GPU, two models, automatic batching per task.</p>
+        </section>
+
+        <section class="card">
+            <h2>7 · Production checklist</h2>
+            <ol>
+                <li>Set <code>max_batch_size</code> and <code>batch_timeout</code> based on your p95 latency budget.
+                </li>
+                <li>Use <code>workers_per_device&gt;1</code> for I/O-bound preprocessing.</li>
+                <li>Front it with Caddy / nginx for TLS &amp; rate limiting.</li>
+                <li>Expose <code>/health</code> and <code>/metrics</code> (Prometheus middleware on the underlying
+                    FastAPI app).</li>
+                <li>Deploy with Lightning Studios, Docker, or any Kubernetes (it's stateless).</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://lightning.ai/docs/litserve/home" target="_blank" rel="noopener">LitServe
+                    official docs</a>
+                <a class="source" href="https://github.com/Lightning-AI/LitServe" target="_blank"
+                    rel="noopener">Lightning-AI/LitServe</a>
+                <a class="source" href="https://lightning.ai/docs/litserve/features/batching" target="_blank"
+                    rel="noopener">LitServe — Dynamic batching</a>
+                <a class="source" href="https://lightning.ai/docs/litserve/features/streaming" target="_blank"
+                    rel="noopener">LitServe — Streaming</a>
+                <a class="source" href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener">FastAPI docs</a>
+                <a class="source" href="https://docs.vllm.ai/" target="_blank" rel="noopener">vLLM docs</a>
+                <a class="source" href="https://pytorch.org/serve/" target="_blank" rel="noopener">TorchServe</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

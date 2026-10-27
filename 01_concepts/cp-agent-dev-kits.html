@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Agent Development Kits & Cloud AI Platforms</title>
+</head>
+
+<body>
+<header class="site-header">
+    <div class="shell">
+        <a class="brand" href="index.html">
+            <span class="brand-mark">AI</span>
+            <span>AI Engineer Interview Guide</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </nav>
+    </div>
+</header>
+
+    <main class="cp-container">
+    <div class="cp-hero"><h1>🛠️ Agent Development Kits & Cloud AI Platforms</h1>
+        <p>Google ADK, AWS Bedrock Agents, Azure AI Agent Service — building agents with cloud-native tooling</p></div>
+
+    
+
+        <!-- SECTION 1: Overview -->
+        <div class="section">
+            <h2>The Cloud Agent Platform Landscape</h2>
+            <p>Every major cloud provider now offers a dedicated platform for building AI agents. These differ from
+                open-source frameworks (LangGraph, AutoGen) in that they provide <strong>managed
+                    infrastructure</strong>: hosting, scaling, monitoring, security, and integration with cloud services
+                out of the box.</p>
+            <div class="highlight">
+                <p><strong>Key Insight:</strong> Open-source frameworks give you control and flexibility. Cloud
+                    platforms give you scale and managed operations. Many production systems use BOTH: an open-source
+                    framework for agent logic + a cloud platform for deployment and infrastructure.</p>
+            </div>
+            <div class="ecosystem-diagram">
+                <span class="provider gcp">Google Cloud:</span> Vertex AI + ADK + Gemini + A2A Protocol<br>
+                <span class="provider aws">AWS:</span> Bedrock Agents + Nova + Lambda + Knowledge Bases<br>
+                <span class="provider azure">Azure:</span> AI Agent Service + OpenAI + Semantic Kernel + Foundry<br>
+            </div>
+        </div>
+
+        <!-- SECTION 2: Google ADK Deep Dive -->
+        <div class="section">
+            <h2>🟢 Google Agent Development Kit (ADK) — Deep Dive</h2>
+
+            <div class="platform-card" style="--pcolor: #34d399;">
+                <h3>Google ADK</h3>
+                <div class="tagline">"An open-source, code-first Python framework for building, evaluating, and
+                    deploying sophisticated AI agents"</div>
+                <div class="desc">Released April 2025, Google ADK is designed for building multi-agent systems that work
+                    together. It's model-agnostic (not just Gemini) and integrates deeply with Vertex AI for production
+                    deployment.</div>
+
+                <div class="arch">
+                    <strong>Core Architecture:</strong>
+                    <p>• <strong>Agent class:</strong> Base unit — wraps an LLM with tools, instructions, and sub-agents
+                    </p>
+                    <p>• <strong>Tools:</strong> Function tools, built-in tools (Search, Code Execution), MCP tools,
+                        OpenAPI tools</p>
+                    <p>• <strong>Multi-Agent:</strong> Agents can delegate to sub-agents (hierarchical orchestration)
+                    </p>
+                    <p>• <strong>Sessions:</strong> Built-in memory and state management per conversation</p>
+                    <p>• <strong>Runners:</strong> Execute agents locally (InMemoryRunner) or in cloud (VertexAiRunner)
+                    </p>
+                </div>
+
+                <h3 style="margin-top: 20px; color: #34d399;">Key Advantages</h3>
+                <ul>
+                    <li><strong>Multi-Agent by Default:</strong> First-class support for agent hierarchies — parent
+                        agents delegate to specialized sub-agents</li>
+                    <li><strong>A2A Protocol:</strong> Agent-to-Agent protocol for cross-platform agent communication
+                        (open standard)</li>
+                    <li><strong>Model Agnostic:</strong> Works with Gemini, GPT-4, Claude, Llama — any
+                        LiteLLM-compatible model</li>
+                    <li><strong>Built-in Evaluation:</strong> Test agents against ground truth with eval framework</li>
+                    <li><strong>MCP Support:</strong> Native Model Context Protocol integration for tool interop</li>
+                    <li><strong>Local → Cloud:</strong> Develop locally with InMemoryRunner, deploy to Vertex AI with
+                        one config change</li>
+                    <li><strong>Streaming:</strong> Real-time streaming of agent responses and tool calls</li>
+                    <li><strong>Open Source:</strong> Apache 2.0 license, community-driven</li>
+                </ul>
+
+                <div class="example">
+                    # Google ADK: Multi-agent weather assistant
+                    from google.adk.agents import Agent
+                    from google.adk.runners import InMemoryRunner
+                    from google.adk.sessions import InMemorySessionService
+
+                    def get_weather(city: str) -> dict:
+                    """Get current weather for a city."""
+                    return {"city": city, "temp": "22°C", "condition": "Sunny"}
+
+                    def get_forecast(city: str, days: int) -> dict:
+                    """Get weather forecast."""
+                    return {"city": city, "forecast": [f"Day {i}: Sunny" for i in range(1, days+1)]}
+
+                    # Create specialized sub-agents
+                    current_weather_agent = Agent(
+                    name="current_weather",
+                    model="gemini-2.0-flash",
+                    instruction="You provide current weather data only.",
+                    tools=[get_weather]
+                    )
+
+                    forecast_agent = Agent(
+                    name="forecast",
+                    model="gemini-2.0-flash",
+                    instruction="You provide multi-day forecasts.",
+                    tools=[get_forecast]
+                    )
+
+                    # Parent orchestrator delegates to sub-agents
+                    root_agent = Agent(
+                    name="weather_orchestrator",
+                    model="gemini-2.0-flash",
+                    instruction="Route weather queries to the appropriate specialist.",
+                    sub_agents=[current_weather_agent, forecast_agent]
+                    )
+
+                    # Run locally
+                    runner = InMemoryRunner(agent=root_agent, app_name="weather_app")
+                    session = await runner.session_service.create_session(app_name="weather_app", user_id="u1")
+                    response = runner.run(user_id="u1", session_id=session.id, new_message="What's the weather in
+                    London?")
+                </div>
+            </div>
+
+            <div class="platform-card" style="--pcolor: #6ee7b7;">
+                <h3>A2A Protocol (Agent-to-Agent)</h3>
+                <div class="tagline">Open standard for agents to discover and communicate with each other across
+                    platforms</div>
+                <div class="desc">Google's A2A protocol allows agents built on ANY framework to communicate. An ADK
+                    agent can talk to a LangGraph agent or a CrewAI agent — as long as they expose an A2A-compatible
+                    endpoint.</div>
+                <div class="arch">
+                    <strong>How A2A Works:</strong>
+                    <p>1. <strong>Agent Card:</strong> JSON metadata describing what the agent can do (capabilities,
+                        skills)</p>
+                    <p>2. <strong>Task Protocol:</strong> Standardized request/response format for agent interactions
+                    </p>
+                    <p>3. <strong>Discovery:</strong> Agents can discover each other via agent cards (like APIs have
+                        OpenAPI specs)</p>
+                    <p>4. <strong>Streaming:</strong> Support for long-running tasks with progress updates</p>
+                </div>
+                <ul>
+                    <li><strong>Why it matters:</strong> No more vendor lock-in for agents. Your agents become
+                        interoperable services.</li>
+                    <li><strong>Analogy:</strong> HTTP is to web services what A2A is to AI agents — a common protocol
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SECTION 3: AWS Bedrock Agents -->
+        <div class="section">
+            <h2>🟠 AWS Bedrock Agents</h2>
+            <div class="platform-card" style="--pcolor: #f59e0b;">
+                <h3>Amazon Bedrock Agents</h3>
+                <div class="tagline">"Fully managed agents that plan, execute, and iterate — no infrastructure to
+                    manage"</div>
+                <div class="desc">AWS's approach: you define an agent's instructions, knowledge bases, and action groups
+                    (tools). Bedrock handles the orchestration loop (ReAct-style) automatically. Zero server management.
+                </div>
+
+                <div class="arch">
+                    <strong>Architecture:</strong>
+                    <p>• <strong>Foundation Model:</strong> Choose from Claude, Llama, Nova, Mistral on Bedrock</p>
+                    <p>• <strong>Knowledge Bases:</strong> Managed RAG — upload docs, auto-chunks, auto-embeds,
+                        auto-indexes</p>
+                    <p>• <strong>Action Groups:</strong> Tools defined as OpenAPI specs → backed by Lambda functions</p>
+                    <p>• <strong>Guardrails:</strong> Built-in content filtering, PII redaction, topic blocking</p>
+                    <p>• <strong>Memory:</strong> Managed conversation memory with session persistence</p>
+                </div>
+
+                <ul>
+                    <li><strong>Pros:</strong> Zero infrastructure, managed RAG, built-in guardrails, auto-scaling</li>
+                    <li><strong>Pros:</strong> Multi-agent collaboration support (agent can invoke other agents)</li>
+                    <li><strong>Pros:</strong> Deep AWS integration (S3, Lambda, DynamoDB, OpenSearch)</li>
+                    <li><strong>Cons:</strong> AWS lock-in, limited customization of orchestration logic</li>
+                    <li><strong>Cons:</strong> Can't implement custom agent patterns (e.g., Plan-Execute)</li>
+                    <li><strong>Cons:</strong> Debugging agent decisions can be opaque</li>
+                    <li><strong>Best for:</strong> AWS-native teams wanting quick agent deployment without
+                        infrastructure concerns</li>
+                </ul>
+
+                <div class="example">
+                    # AWS Bedrock Agent invocation (boto3)
+                    import boto3
+
+                    client = boto3.client('bedrock-agent-runtime')
+
+                    response = client.invoke_agent(
+                    agentId='AGENT_ID',
+                    agentAliasId='ALIAS_ID',
+                    sessionId='session-123',
+                    inputText='What were our Q3 revenue numbers?'
+                    )
+
+                    # Agent automatically: interprets query → searches knowledge base →
+                    # calls action group if needed → synthesizes answer
+                    for event in response['completion']:
+                    print(event['chunk']['bytes'].decode())
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 4: Azure AI Agent Service -->
+        <div class="section">
+            <h2>🔵 Azure AI Agent Service</h2>
+            <div class="platform-card" style="--pcolor: #60a5fa;">
+                <h3>Azure AI Agent Service (Preview)</h3>
+                <div class="tagline">"Enterprise-grade agent platform with Azure OpenAI, Semantic Kernel, and Azure
+                    Foundry"</div>
+                <div class="desc">Microsoft's answer: deeply integrated with Azure OpenAI, built on Semantic Kernel, and
+                    designed for enterprise compliance. Supports OpenAI Assistants API format for portability.</div>
+
+                <div class="arch">
+                    <strong>Architecture:</strong>
+                    <p>• <strong>Azure AI Foundry:</strong> The platform layer (model catalog, evaluations, deployment)
+                    </p>
+                    <p>• <strong>Agent Service:</strong> Managed agent runtime (built on Assistants API pattern)</p>
+                    <p>• <strong>Semantic Kernel:</strong> Orchestration framework (C#/Python) for agent logic</p>
+                    <p>• <strong>Tools:</strong> Code Interpreter, File Search, Azure Functions, Bing Search, Azure AI
+                        Search</p>
+                    <p>• <strong>Models:</strong> GPT-4o, GPT-4, o1, o3 + open models (Llama, Mistral) via catalog</p>
+                </div>
+
+                <ul>
+                    <li><strong>Pros:</strong> Enterprise security (Azure AD, RBAC, private endpoints)</li>
+                    <li><strong>Pros:</strong> OpenAI Assistants API compatible (easy migration)</li>
+                    <li><strong>Pros:</strong> Multi-model support via Azure AI model catalog</li>
+                    <li><strong>Pros:</strong> Integrated evaluation and monitoring</li>
+                    <li><strong>Cons:</strong> Azure-dependent, complex pricing</li>
+                    <li><strong>Cons:</strong> Still in preview (features may change)</li>
+                    <li><strong>Best for:</strong> Enterprise Microsoft shops needing compliance + AI agents</li>
+                </ul>
+
+                <div class="example">
+                    # Azure AI Agent Service (Python SDK)
+                    from azure.ai.projects import AIProjectClient
+                    from azure.identity import DefaultAzureCredential
+
+                    client = AIProjectClient(
+                    credential=DefaultAzureCredential(),
+                    endpoint="https://your-project.services.ai.azure.com"
+                    )
+
+                    agent = client.agents.create_agent(
+                    model="gpt-4o",
+                    name="research-agent",
+                    instructions="You are a research assistant with access to our knowledge base.",
+                    tools=[{"type": "file_search"}] # Built-in RAG tool
+                    )
+
+                    thread = client.agents.create_thread()
+                    client.agents.create_message(thread_id=thread.id, role="user", content="Summarize Q3 report")
+                    run = client.agents.create_and_process_run(thread_id=thread.id, agent_id=agent.id)
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 5: Comparison Table -->
+        <div class="section">
+            <h2>📊 Cloud Agent Platforms Compared</h2>
+            <div style="overflow-x:auto;">
+                <table class="comparison-table">
+                    <tr>
+                        <th>Feature</th>
+                        <th>Google ADK</th>
+                        <th>AWS Bedrock Agents</th>
+                        <th>Azure AI Agent Service</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Open Source</strong></td>
+                        <td class="good">Yes (Apache 2.0)</td>
+                        <td class="low">No (managed only)</td>
+                        <td class="mid">Partial (Semantic Kernel is OSS)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Model Agnostic</strong></td>
+                        <td class="good">Yes (any LiteLLM model)</td>
+                        <td class="mid">Bedrock models only</td>
+                        <td class="mid">Azure catalog models</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multi-Agent</strong></td>
+                        <td class="good">First-class (sub-agents)</td>
+                        <td class="mid">Supported (agent invocation)</td>
+                        <td class="mid">Via Semantic Kernel</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Custom Orchestration</strong></td>
+                        <td class="good">Full control</td>
+                        <td class="low">Limited (managed ReAct)</td>
+                        <td class="mid">Via Semantic Kernel</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Managed Infrastructure</strong></td>
+                        <td class="mid">Optional (Vertex AI)</td>
+                        <td class="good">Fully managed</td>
+                        <td class="good">Fully managed</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Built-in RAG</strong></td>
+                        <td class="mid">Via Vertex AI Search</td>
+                        <td class="good">Knowledge Bases (auto)</td>
+                        <td class="good">File Search tool</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Guardrails</strong></td>
+                        <td class="mid">Custom callbacks</td>
+                        <td class="good">Built-in (PII, topics)</td>
+                        <td class="good">Content Safety</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Interoperability</strong></td>
+                        <td class="good">A2A + MCP protocols</td>
+                        <td class="low">AWS ecosystem only</td>
+                        <td class="mid">Assistants API format</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Local Development</strong></td>
+                        <td class="good">Full local dev story</td>
+                        <td class="low">Cloud-only testing</td>
+                        <td class="mid">Semantic Kernel local</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Primary Language</strong></td>
+                        <td>Python</td>
+                        <td>Python, Java, JS</td>
+                        <td>C#, Python</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Maturity</strong></td>
+                        <td class="mid">New (April 2025)</td>
+                        <td class="good">GA (production)</td>
+                        <td class="mid">Preview</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECTION 6: When to Use What -->
+        <div class="section">
+            <h2>🎯 Decision Framework</h2>
+            <div class="decision-box">
+                <h4>Choose Your Agent Platform:</h4>
+                <p><strong>🟢 Want full control + open source + multi-agent →</strong> Google ADK</p>
+                <p><strong>🟢 Need cross-platform agent communication →</strong> Google ADK (A2A protocol)</p>
+                <p><strong>🟠 Want zero infrastructure + quick deployment →</strong> AWS Bedrock Agents</p>
+                <p><strong>🟠 Already on AWS with S3 data →</strong> AWS Bedrock Agents + Knowledge Bases</p>
+                <p><strong>🔵 Enterprise Microsoft shop + compliance needs →</strong> Azure AI Agent Service</p>
+                <p><strong>🔵 Need .NET support →</strong> Azure + Semantic Kernel</p>
+                <p><strong>🟣 Maximum flexibility (but self-manage) →</strong> LangGraph or AutoGen (open-source only)
+                </p>
+            </div>
+        </div>
+
+        <!-- SECTION 7: Pro Thinker -->
+        <div class="section">
+            <h2>🧠 Pro Thinker Analysis</h2>
+            <div class="highlight">
+                <p><strong>The future is multi-agent + interoperable.</strong> Google's ADK + A2A protocol is the most
+                    forward-thinking approach: agents shouldn't be locked into one platform. The A2A protocol is
+                    analogous to how HTTP standardized web communication — it could standardize agent communication. AWS
+                    Bedrock Agents is the most "batteries included" (managed RAG, guardrails, zero infra), but you
+                    sacrifice customization. Azure sits in between with Semantic Kernel providing flexibility and the
+                    managed service providing scale. <strong>My recommendation:</strong> Learn Google ADK for its clean
+                    architecture and multi-agent patterns. Use a cloud platform (Bedrock/Azure) when you need managed
+                    ops. They're complementary, not competing — ADK agents can run ON Vertex AI, just like LangGraph
+                    agents can run on LangSmith Cloud.</p>
+            </div>
+        </div>
+
+        <div class="cp-nav-footer">
+            <a href="cp-feature-stores-caching.html">← Feature Stores & Caching</a>
+            <a href="cp-index.html">Back to Overview</a>
+        </div>
+    </div>
+
+    </main>
+
+<footer class="site-footer">
+    <div class="shell">
+        <p>Part of the AI and ML Interview Starter Guide. Open locally in any browser.</p>
+        <div class="mini-links">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </div>
+    </div>
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning Path — Workspace Index</title>
+    <style>
+        :root {
+            --bg: #f4efe6;
+            --paper: #fffaf2;
+            --ink: #1c1917;
+            --muted: #5f564d;
+            --line: #d9ccb8;
+            --shadow: 0 18px 40px rgba(28, 25, 23, 0.08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.6;
+            background: linear-gradient(180deg, #faf5ec 0%, #f4efe6 100%);
+        }
+
+        .shell {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            margin: 0 0 0.4rem;
+        }
+
+        h2 {
+            margin-top: 2rem;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 0.3rem;
+        }
+
+        .lead {
+            color: var(--muted);
+            font-size: 1.1rem;
+            margin: 0 0 1.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .card {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 1.2rem 1.4rem;
+            text-decoration: none;
+            color: var(--ink);
+            box-shadow: var(--shadow);
+            transition: transform 0.15s, border-color 0.15s;
+            display: block;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: #4338ca;
+        }
+
+        .tag {
+            font-family: "Cascadia Mono", "Consolas", monospace;
+            font-size: 0.78rem;
+            color: #4338ca;
+            letter-spacing: 0.06em;
+        }
+
+        .card h3 {
+            margin: 0.2rem 0 0.3rem;
+        }
+
+        .card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .meta {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        code {
+            background: #fffaf2;
+            border: 1px solid var(--line);
+            padding: 0.05rem 0.35rem;
+            border-radius: 4px;
+            font-family: "Cascadia Mono", "Consolas", monospace;
+            font-size: 0.9em;
+        }
+
+        ul {
+            padding-left: 1.2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="shell">
+        <h1>Learning Path</h1>
+        <p class="lead">Self-paced curriculum across ML concepts, system design, data structures, side projects,
+            and end-to-end builds. Folders are numbered in suggested reading order — but every track is
+            independent.</p>
+
+        <h2>The tracks</h2>
+        <div class="grid">
+            <a class="card" href="01_concepts/index.html">
+                <span class="tag">01 · CONCEPTS</span>
+                <h3>ML / AI concept library</h3>
+                <p>Activation functions, transformers, RAG, evaluation, vision, MCP, Docker / kubectl
+                    cheatsheets — 50+ pages.</p>
+            </a>
+            <a class="card" href="02_comparisons/index.html">
+                <span class="tag">02 · COMPARISONS</span>
+                <h3>Cross-platform comparisons</h3>
+                <p>LLM providers, agent dev kits, agentic frameworks, RAG strategies — side-by-side.</p>
+            </a>
+            <a class="card" href="04_system_design/index.html">
+                <span class="tag">04 · SYSTEM DESIGN</span>
+                <h3>LLD + HLD, beginner → pro</h3>
+                <p>OOP, SOLID, design patterns, UML, scalability, DBs, distributed systems, famous case
+                    studies. Includes the database selection guide.</p>
+            </a>
+            <a class="card" href="05_data_structures/index.html">
+                <span class="tag">05 · DATA STRUCTURES</span>
+                <h3>DSA — beginner → advanced</h3>
+                <p>Big-O through trees, graphs, tries, DP, interview patterns. 60-day roadmap.</p>
+            </a>
+            <a class="card" href="06_side_projects/index.html">
+                <span class="tag">06 · SIDE PROJECTS</span>
+                <h3>Applied project tracks</h3>
+                <p>FastAPI service builds and LangGraph agent workflows, organized by technology under one
+                    side-projects hub.</p>
+            </a>
+            <a class="card" href="07_learning_projects/learning_tracker.html">
+                <span class="tag">07 · LEARNING PROJECTS</span>
+                <h3>Python OOP → architect</h3>
+                <p>p1–p20: from student management CRUD to RAG platform, event-driven queue, API gateway.</p>
+            </a>
+            <a class="card" href="system_design_academy/index.html">
+                <span class="tag">SYSTEM DESIGN ACADEMY</span>
+                <h3>15 hands-on builds from the systemdesign42 curriculum</h3>
+                <p>Fundamentals (rate limiter, consistent hashing, bloom filter, idempotency, URL shortener),
+                    case studies (distributed counter, leaderboard, presence, saga, geo lookup), and AI engineering
+                    (agentic patterns, multi-agent, memory, context, knowledge Q&amp;A with eval).</p>
+            </a>
+            <a class="card" href="industry_standards/index.html">
+                <span class="tag">INDUSTRY STANDARDS</span>
+                <h3>Anthropic · OpenAI · GitHub Copilot — best practices</h3>
+                <p>How the major AI providers say to build agents, design tools, package skills, and integrate
+                    Claude Code / Codex into your SDLC. Two runnable sample projects + a stay-updated guide,
+                    every claim cited to the official source.</p>
+            </a>
+            <a class="card" href="programming_languages_track/index.html">
+                <span class="tag">PROGRAMMING LANGUAGES TRACK</span>
+                <h3>Learn new languages the way you already know Python</h3>
+                <p>Go &amp; Rust bootcamp (advantages, syntax vs Python, why they're fast, how to pick them up) plus
+                    20 single-file parallel projects mirroring the Python learning_projects. Now also a Web track
+                    — JavaScript → TypeScript → React — with Python/JS comparisons and a mermaid DOM explainer.</p>
+            </a>
+            <a class="card" href="OOP%20to%20Architect%20Learning%20Blueprint.html">
+                <span class="tag">📄 BLUEPRINT</span>
+                <h3>OOP to Architect blueprint</h3>
+                <p>Single-page overview of the whole journey.</p>
+            </a>
+        </div>
+
+        <h2>Folder layout</h2>
+        <pre
+            style="background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.2rem; overflow-x: auto;">
+learning_path/
+├── README.html                  ← you are here
+├── OOP to Architect Learning Blueprint.html
+│
+├── 01_concepts/                 ← was: docs/
+├── 02_comparisons/              ← was: docs_cross_platform_comparison/
+├── 04_system_design/            ← was: system_design/
+├── 05_data_structures/          ← was: data_structures/
+├── 06_side_projects/            ← applied side-project tracks
+│   ├── fastapi_projects/         ← FastAPI APIs, async, httpx, auth, production patterns
+│   ├── langgraph_projects/       ← LangGraph agent workflow examples
+│   ├── testing_projects/         ← pytest, beginner to advanced (unit, integration, E2E)
+│   └── asyncio_projects/         ← asyncio, queues, orchestration, TCP servers
+├── 07_learning_projects/        ← was: learning_projects/
+├── system_design_academy/       ← 15 builds from the systemdesign42 curriculum
+│   ├── system_design_fundamentals/   ← rate limiter, hashing, bloom, idempotency, URL shortener
+│   ├── system_design_case_studies/   ← counter, leaderboard, presence, saga, geo lookup
+│   └── ai_engineering/               ← agentic patterns, multi-agent, memory, context, knowledge Q&A
+├── industry_standards/          ← Anthropic / OpenAI / GitHub Copilot best practices
+│   ├── anthropic_building_agents.html, anthropic_tools_and_skills.html
+│   ├── openai_agents_sdk.html, github_copilot_best_practices.html
+│   ├── multi_scenario_playbook.html, stay_updated_motivated.html
+│   ├── claude_code_in_sdlc/          ← sample: CLAUDE.md + custom skill + demo module
+│   └── codex_in_sdlc/                ← sample: AGENTS.md + Agents-SDK reviewer agent
+├── programming_languages_track/ ← Go &amp; Rust bootcamp + 20 parallel projects, plus a JS/TS/React web track
+│   ├── bootcamp/                     ← why_go_rust, syntax_python_vs_{go,rust}, why_they_are_fast, pick_them_fast
+│   ├── js_ts_react/                  ← why_javascript, python_vs_javascript, javascript_vs_typescript, the_dom_explained
+│   ├── go_projects/                  ← p1–p10 Go (single main.go each, stdlib only)
+│   └── rust_projects/                ← p1–p10 Rust (single src/main.rs each, stdlib only)
+│
+├── _notes/                      ← was: to_do/   (personal scratchpad)
+└── _archive/                    ← old zip snapshots
+</pre>
+
+        <h2>Suggested reading order</h2>
+        <ol>
+            <li>Skim <a href="01_concepts/index.html">01_concepts</a> for the topic you're curious about.</li>
+            <li>For a real Python career path, follow <a
+                    href="07_learning_projects/learning_tracker.html">07_learning_projects</a> top to bottom.</li>
+            <li>To prep for product-company interviews, do <a href="04_system_design/roadmap.html">04_system_design</a>
+                + <a href="05_data_structures/roadmap.html">05_data_structures</a> in parallel (30 + 60 days).</li>
+            <li>To get hands-on with modern Python APIs, build <a
+                    href="06_side_projects/fastapi_projects/index.html">fastapi_projects</a> P1 → P6 in order.</li>
+            <li>Use <a href="06_side_projects/langgraph_projects/index.html">langgraph_projects</a> when you need
+                agent orchestration.</li>
+            <li>To learn testing properly (pytest, fixtures, mocks, integration, E2E, TDD), work through <a
+                    href="06_side_projects/testing_projects/index.html">testing_projects</a> P1 → P10.</li>
+            <li>To learn async Python concurrency, follow <a
+                    href="06_side_projects/asyncio_projects/index.html">asyncio_projects</a> P1 → P5.</li>
+            <li>To turn famous system-design patterns into running code, walk through <a
+                    href="system_design_academy/index.html">system_design_academy</a> — fundamentals, case studies,
+                and AI engineering, 15 projects total.</li>
+            <li>To level-up on official best practices for agents/tools/skills and to wire Claude Code or Codex
+                into your day job, read <a href="industry_standards/index.html">industry_standards</a> — five guides
+                + two runnable sample projects + a stay-updated playbook.</li>
+            <li>To pick up Go and Rust quickly using the Python work you already know, run through <a
+                    href="programming_languages_track/index.html">programming_languages_track</a> — bootcamp pages
+                first, then read each
+                Python p<em>n</em> alongside its Go and Rust twins, and use the JS/TS/React web track to prep for a
+                JavaScript bootcamp.</li>
+        </ol>
+
+        <p class="meta">Renames done in the move to numbered folders are tracked by git as renames (history
+            preserved). Old zips moved to <code>_archive/</code>. The personal todo folder is now
+            <code>_notes/</code> so it sorts to the bottom.
+        </p>
+    </div>
+</body>
+
+</html>

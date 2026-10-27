@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P20 - Microservice Chassis Explained Simply</title>
+    <style>
+        :root {
+            --bg: #f1fbf6;
+            --paper: #ffffff;
+            --ink: #1f2937;
+            --muted: #5f6878;
+            --line: #cce7d6;
+            --accent: #198754;
+            --soft: #dcfce7;
+            --blue-soft: #eff6ff;
+            --amber-soft: #fffbeb;
+            --red-soft: #fff1f2;
+            --shadow: 0 18px 40px rgba(31, 41, 55, .08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+            --mono: "Cascadia Mono", "Consolas", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.65;
+            background: linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+        }
+
+        .shell {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 2.5rem 1.4rem;
+        }
+
+        header {
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, .92);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .brand {
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 750;
+        }
+
+        .brand span {
+            display: inline-grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            margin-right: .5rem;
+            border-radius: 6px;
+            color: white;
+            background: var(--accent);
+        }
+
+        .top-links {
+            display: flex;
+            gap: .8rem;
+            flex-wrap: wrap;
+        }
+
+        .top-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .92rem;
+        }
+
+        .hero {
+            padding: 3rem 0 1.5rem;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 860px;
+            margin: .25rem 0 .75rem;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            line-height: 1.08;
+        }
+
+        h2 {
+            margin: 0 0 .8rem;
+            font-size: 1.45rem;
+        }
+
+        h3 {
+            margin: 0 0 .4rem;
+        }
+
+        p {
+            margin: 0 0 .85rem;
+        }
+
+        .lead {
+            max-width: 810px;
+            color: var(--muted);
+            font-size: 1.08rem;
+        }
+
+        .card {
+            margin: 1rem 0;
+            padding: 1.25rem 1.4rem;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .mini {
+            padding: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fffdfb;
+        }
+
+        .good {
+            background: var(--soft);
+            border-color: #a7f3d0;
+        }
+
+        .warn {
+            background: var(--amber-soft);
+            border-color: #fde68a;
+        }
+
+        .bad {
+            background: var(--red-soft);
+            border-color: #fecdd3;
+        }
+
+        .flow {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+            margin: 1rem 0;
+        }
+
+        .step {
+            flex: 1 1 150px;
+            padding: .9rem;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: var(--blue-soft);
+            color: #1e3a8a;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .arrow {
+            align-self: center;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .callout {
+            padding: 1rem 1.15rem;
+            border-left: 4px solid var(--accent);
+            background: var(--soft);
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: .6rem;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: .75rem;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background: #ecfdf5;
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .9em;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            padding: .06rem .35rem;
+            border-radius: 4px;
+        }
+
+        pre {
+            overflow-x: auto;
+            padding: 1rem;
+            color: #e5e7eb;
+            background: #111827;
+            border-radius: 8px;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+            border: 0;
+        }
+
+        ol,
+        ul {
+            padding-left: 1.2rem;
+        }
+
+        .quiet {
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../learning_tracker.html"><span>P20</span>Microservice Chassis</a>
+            <nav class="top-links">
+                <a href="../learning_tracker.html">Learning tracker</a>
+                <a href="main.py">main.py</a>
+                <a href="chassis/config.py">config.py</a>
+                <a href="chassis/health.py">health.py</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 20 simplified</p>
+            <h1>A microservice chassis means: the reusable starter kit every service needs</h1>
+            <p class="lead">Business logic is only part of a microservice. Real services also need configuration,
+                logging, health checks, service discovery, and graceful startup/shutdown. This project builds those
+                common pieces as a reusable chassis.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Imagine you build ten microservices: order, payment, inventory, shipping, notification, pricing, catalog,
+                user, audit, and reporting.</p>
+            <div class="grid">
+                <div class="mini bad">
+                    <h3>Without a chassis</h3>
+                    <p>Every team rewrites config loading, logging, health endpoints, service discovery, and shutdown
+                        logic differently. Operations become inconsistent.</p>
+                </div>
+                <div class="mini good">
+                    <h3>With a chassis</h3>
+                    <p>Every service starts with the same production-ready foundation. Teams focus on business code
+                        instead of repeating infrastructure code.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The mental model</h2>
+            <div class="flow">
+                <div class="step">config</div>
+                <div class="arrow">+</div>
+                <div class="step">logging</div>
+                <div class="arrow">+</div>
+                <div class="step">health checks</div>
+                <div class="arrow">+</div>
+                <div class="step">service registry</div>
+                <div class="arrow">+</div>
+                <div class="step">lifecycle</div>
+                <div class="arrow">=</div>
+                <div class="step">service foundation</div>
+            </div>
+            <div class="callout"><strong>Important:</strong> a chassis is not your business feature. It is the platform
+                layer that lets your business feature run safely in production.</div>
+        </section>
+
+        <section class="card">
+            <h2>What each file does</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Simple meaning</th>
+                        <th>Focus on</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Runs demos for config, logging, health checks, service registry, and lifecycle.</td>
+                        <td>All five demo functions</td>
+                    </tr>
+                    <tr>
+                        <td><code>chassis/config.py</code></td>
+                        <td>Loads configuration from defaults, file values, environment variables, and runtime
+                            overrides.</td>
+                        <td><code>ConfigManager.get()</code>, <code>override()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>chassis/logging.py</code></td>
+                        <td>Structured logs with correlation IDs and bound context.</td>
+                        <td><code>StructuredLogger</code>, <code>set_correlation_id()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>chassis/health.py</code></td>
+                        <td>Liveness/readiness checks for Kubernetes-style health probes.</td>
+                        <td><code>HealthRegistry</code>, <code>FunctionHealthIndicator</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>chassis/registry.py</code></td>
+                        <td>Service registration, discovery, heartbeat, and load balancing.</td>
+                        <td><code>ServiceRegistry.resolve()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>chassis/lifecycle.py</code></td>
+                        <td>Starts components in order and stops them in reverse order.</td>
+                        <td><code>LifecycleManager.start()</code>, <code>stop()</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Configuration in plain English</h2>
+            <p>Configuration values can come from multiple places. Higher priority sources win.</p>
+            <div class="flow">
+                <div class="step">defaults</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">file config</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">environment</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">runtime override</div>
+            </div>
+            <pre><code>config.define("server.port", 8080)
+config.load_dict({"server.port": 8081})
+os.environ["MYAPP_SERVER_PORT"] = "9090"
+config.override("feature.dark_mode", True)</code></pre>
+            <p>In this project, environment beats file, and runtime override beats everything.</p>
+        </section>
+
+        <section class="card">
+            <h2>Structured logging in plain English</h2>
+            <p>Plain logs are hard to search. Structured logs are key-value data that log tools can filter.</p>
+            <pre><code>set_correlation_id("req-abc123")
+logger.info("Request received", method="POST", path="/orders")
+db_logger = logger.bind(component="database")
+db_logger.info("Query executed", duration_ms=12)</code></pre>
+            <p>The correlation ID connects logs across services for one request. If order service calls payment service,
+                both can log <code>req-abc123</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>Health checks in plain English</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Probe</th>
+                        <th>Question</th>
+                        <th>What happens if it fails?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Liveness</td>
+                        <td>Is the process alive?</td>
+                        <td>Kubernetes may restart the container.</td>
+                    </tr>
+                    <tr>
+                        <td>Readiness</td>
+                        <td>Can this service serve traffic right now?</td>
+                        <td>Load balancer stops sending traffic to it.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout">A service can be alive but not ready. Example: the process is running, but database
+                connection is down.</div>
+        </section>
+
+        <section class="card">
+            <h2>Service registry in plain English</h2>
+            <p>When there are multiple instances of a service, clients need a way to find one healthy instance.</p>
+            <pre><code>registry.register("order-service", "order-1", "10.0.1.1", 8080)
+registry.register("order-service", "order-2", "10.0.1.2", 8080)
+instance = registry.resolve("order-service", LoadBalanceStrategy.ROUND_ROBIN)</code></pre>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Strategy</th>
+                        <th>Meaning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>ROUND_ROBIN</code></td>
+                        <td>Send calls to instance 1, then 2, then 3, then repeat.</td>
+                    </tr>
+                    <tr>
+                        <td><code>RANDOM</code></td>
+                        <td>Pick a healthy instance randomly.</td>
+                    </tr>
+                    <tr>
+                        <td><code>LEAST_CONNECTIONS</code></td>
+                        <td>Pick the instance doing the least work.</td>
+                    </tr>
+                    <tr>
+                        <td><code>CONSISTENT_HASH</code></td>
+                        <td>Use a key, such as customer ID, so the same key tends to hit the same instance.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Lifecycle in plain English</h2>
+            <p>Services should start dependencies first and stop user-facing traffic first.</p>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>Startup order</h3>
+                    <p>Database -> cache -> message queue -> HTTP server. The HTTP server starts last because traffic
+                        should arrive only after dependencies are ready.</p>
+                </div>
+                <div class="mini warn">
+                    <h3>Shutdown order</h3>
+                    <p>HTTP server -> message queue -> cache -> database. Stop accepting traffic first, finish work,
+                        then close dependencies.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>What each demo teaches</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Demo</th>
+                        <th>What to watch</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>demo_1_config_management()</code></td>
+                        <td>Config priority: defaults, file, environment, runtime override.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_2_structured_logging()</code></td>
+                        <td>Correlation ID follows a request through multiple logs and child loggers.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_3_health_checks()</code></td>
+                        <td>Liveness and readiness checks produce UP or DOWN reports.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_4_service_registry()</code></td>
+                        <td>Multiple service instances register and are resolved with load balancing.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_5_lifecycle_management()</code></td>
+                        <td>Components start in priority order and stop in reverse order.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 07_learning_projects/p20_microservice_chassis
+python main.py</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Best reading order</h2>
+            <ol>
+                <li>Read this file first.</li>
+                <li>Open <code>chassis/config.py</code> and understand the priority chain.</li>
+                <li>Open <code>chassis/logging.py</code> and understand correlation IDs.</li>
+                <li>Open <code>chassis/health.py</code> and compare liveness vs readiness.</li>
+                <li>Open <code>chassis/lifecycle.py</code> and read <code>start()</code> and <code>stop()</code>.</li>
+                <li>Run <code>python main.py</code> and follow one demo at a time.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Interview answer in simple words</h2>
+            <p class="quiet">Use this when someone asks, "What belongs in a microservice chassis?"</p>
+            <div class="callout">A microservice chassis provides reusable cross-cutting infrastructure for every
+                service: configuration, structured logging, health checks, service discovery, and lifecycle management.
+                It keeps these concerns consistent across services, so product teams can focus on business logic while
+                operations get predictable behavior in production.</div>
+        </section>
+    </main>
+</body>
+
+</html>

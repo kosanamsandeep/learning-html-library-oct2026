@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>1 · The Architecture · Personify-Service</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <div class="shell">
+        <nav class="nav">
+            <a class="brand" href="index.html">
+                <span class="mark">P</span> Personify-Service · Reading Guide
+            </a>
+            <span class="spacer"></span>
+            <a class="link" href="01_architecture.html">Architecture</a>
+            <a class="link" href="03_design_patterns.html">Patterns</a>
+            <a class="link" href="05_learnings_checklist.html">Self-Check</a>
+            <a class="link" href="06_scenarios.html">Practice</a>
+            <a class="link" href="../index.html">↩ Side Projects</a>
+        </nav>
+
+        <header class="hero">
+            <span class="eyebrow">Chapter 1 · The Mental Model</span>
+            <h1>The Architecture</h1>
+            <p class="lead">
+                Before reading a single handler, understand the shape of the building. Personify-Service uses
+                <strong>Domain-Driven Design</strong> arranged as four concentric layers. Get this picture in
+                your head and every file suddenly has an obvious "home".
+            </p>
+        </header>
+
+        <div class="toc">
+            <div class="tt">In this chapter</div>
+            <ol>
+                <li><a href="#layers">The four layers</a></li>
+                <li><a href="#deps">The dependency rule (the one rule)</a></li>
+                <li><a href="#map">The folder map</a></li>
+                <li><a href="#entry">Where the program starts</a></li>
+                <li><a href="#why">Why bother with all this structure?</a></li>
+                <li><a href="#quiz">Check yourself</a></li>
+            </ol>
+        </div>
+
+        <h2 id="layers">1 · The four layers</h2>
+        <p>
+            Everything lives under <code>src/</code> split into four packages. Each has one job and talks
+            only to its neighbours through clear contracts.
+        </p>
+
+        <div class="grid grid-2">
+            <div class="card">
+                <span class="chip interfaces"><span class="dot"></span>interfaces/</span>
+                <h3>Delivery layer</h3>
+                <p>The only layer that knows about <strong>HTTP and Tornado</strong>. Handlers, marshmallow
+                    schemas, and Swagger docs. It translates the outside world into plain Python calls.</p>
+            </div>
+            <div class="card">
+                <span class="chip app"><span class="dot"></span>app/</span>
+                <h3>Application layer</h3>
+                <p>The <strong>use-cases</strong>: <code>UserService</code>, <code>ContactService</code>.
+                    They orchestrate domain + infrastructure but contain no framework or database code.</p>
+            </div>
+            <div class="card">
+                <span class="chip domain"><span class="dot"></span>domain/</span>
+                <h3>Domain layer</h3>
+                <p>The <strong>models</strong> — <code>UserModel</code>, <code>ContactModel</code> — and their
+                    base classes. Pure data + validation. The heart that everything else serves.</p>
+            </div>
+            <div class="card">
+                <span class="chip infra"><span class="dot"></span>infra/</span>
+                <h3>Infrastructure layer</h3>
+                <p>The <strong>"how"</strong>: database adapters, repositories, unit-of-work, token/hash
+                    generators, parsers, validators, logging, constants. All the messy real-world details.</p>
+            </div>
+        </div>
+
+        <div class="diagram">
+            <div class="mermaid">
+                flowchart TB
+                subgraph I["interfaces · delivery (HTTP / Tornado)"]
+                H[Handlers + Schemas]
+                end
+                subgraph A["app · use-cases"]
+                S[Services + Factories]
+                end
+                subgraph D["domain · models"]
+                M[UserModel · ContactModel]
+                end
+                subgraph N["infra · how"]
+                R[Repositories · Unit of Work · Adapters · Generators]
+                end
+                H --> S
+                S --> M
+                S --> R
+                R --> M
+                classDef i fill:#dbe7fe,stroke:#2563eb,color:#1d4ed8;
+                classDef a fill:#ece3fd,stroke:#7c3aed,color:#6d28d9;
+                classDef d fill:#cdeee8,stroke:#0d9488,color:#0f766e;
+                classDef n fill:#f7e6c4,stroke:#b45309,color:#92400e;
+                class H i;
+                class S a;
+                class M d;
+                class R n;
+            </div>
+            <div class="cap">Four layers, four responsibilities. Notice that <strong>domain</strong> sits in the middle
+                — everyone depends on it; it depends on no one.</div>
+        </div>
+
+        <h2 id="deps">2 · The dependency rule — the one rule to remember</h2>
+        <p>
+            The single most important idea in this whole codebase:
+        </p>
+        <div class="callout">
+            <div class="ct acc">The Dependency Rule</div>
+            <p><strong>Dependencies point inward.</strong> Outer layers (HTTP) may import inner layers
+                (services, domain). Inner layers must <em>never</em> import outer ones. The domain knows
+                nothing about Tornado, MongoDB, or JSON.</p>
+        </div>
+        <p>
+            This is what makes the service <strong>framework-agnostic</strong>. You could throw away Tornado
+            and bolt on FastAPI by rewriting only <code>interfaces/</code> — the services and domain wouldn't
+            change a line. That testability and replaceability is the entire payoff.
+        </p>
+
+        <div class="diagram">
+            <div class="mermaid">
+                flowchart LR
+                HTTP[interfaces] --> APP[app] --> DOM[domain]
+                INFRA[infra] --> DOM
+                APP --> INFRA
+                GOOD["allowed: outer to inner"]:::ok
+                BAD["forbidden: domain to Tornado"]:::bad
+                classDef ok fill:#d8f3e6,stroke:#16794f,color:#0f5132;
+                classDef bad fill:#fde4df,stroke:#b42318,color:#842029;
+            </div>
+            <div class="cap">Arrows only ever flow toward the domain. When you read an import that breaks this, you've
+                found a smell.</div>
+        </div>
+
+        <h2 id="map">3 · The folder map</h2>
+        <p>Here is the tree, annotated so you know what each folder is for:</p>
+        <pre><code><span class="c-com">src/</span>
+├── server.py            <span class="c-com"># entry point — starts the Tornado IOLoop</span>
+├── bootstrap.py         <span class="c-com"># composition root — wires every adapter once</span>
+├── tornado_app.py       <span class="c-com"># the route table (URL → handler + injected deps)</span>
+│
+├── <span class="c-cls">interfaces/</span>          <span class="c-com"># DELIVERY — the only HTTP-aware layer</span>
+│   └── http/
+│       ├── tornado/
+│       │   ├── handlers/    <span class="c-com"># base_handler, signup, signin, contact…</span>
+│       │   └── schemas/     <span class="c-com"># marshmallow request/response DTOs</span>
+│       └── swagger/         <span class="c-com"># OpenAPI doc generation</span>
+│
+├── <span class="c-cls">app/</span>                 <span class="c-com"># USE-CASES — services orchestrate work</span>
+│   ├── base_generic_service.py
+│   ├── user_service.py · contact_service.py
+│   └── factory/             <span class="c-com"># builders that wire a service per request</span>
+│
+├── <span class="c-cls">domain/</span>              <span class="c-com"># MODELS — pure data + validation</span>
+│   ├── base_model.py · base_sql_model.py
+│   └── user_model.py · contact_model.py
+│
+└── <span class="c-cls">infra/</span>               <span class="c-com"># THE "HOW" — all real-world detail</span>
+    ├── adapters/        <span class="c-com"># wrap pymongo / sqlalchemy / minio</span>
+    ├── data/
+    │   ├── repositories/    <span class="c-com"># CRUD per store (mongo, postgres)</span>
+    │   └── unit_of_work/    <span class="c-com"># transaction boundary + its factories</span>
+    ├── generator/       <span class="c-com"># hashing, jwt token, identity (uuid)</span>
+    ├── validators/      <span class="c-com"># query-argument validation</span>
+    ├── parser/ · transform/ · builders/
+    ├── logging/         <span class="c-com"># structured logger with request context</span>
+    └── constants/       <span class="c-com"># _string, _url, _type — no magic values</span></code></pre>
+
+        <div class="callout tip">
+            <div class="ct">Reading shortcut</div>
+            <p>When you open an unfamiliar file, first ask "<em>which layer am I in?</em>". That alone tells
+                you what it's allowed to do and what it should delegate elsewhere.</p>
+        </div>
+
+        <h2 id="entry">4 · Where the program starts</h2>
+        <p>Three files form the startup spine. Read them in this order:</p>
+        <ol class="steps">
+            <li>
+                <strong><code>server.py</code> — the ignition</strong>
+                <p>Tiny by design. It builds the application and hands it to Tornado's event loop. Nothing
+                    business-y happens here.</p>
+            </li>
+            <li>
+                <strong><code>bootstrap.py</code> — the composition root</strong>
+                <p>The single place where all infrastructure is created and connected: Postgres engine,
+                    Mongo client, MinIO client, logger. It checks each is reachable and <strong>fails fast</strong>
+                    with a <code>ConnectionError</code> if not. After this runs, the app is fully wired.</p>
+            </li>
+            <li>
+                <strong><code>tornado_app.py</code> — the route table</strong>
+                <p>Maps each URL to a handler <em>and</em> injects that handler's dependencies (logger, schema
+                    validators, the right service factory). This is dependency injection done by hand — no magic.</p>
+            </li>
+        </ol>
+
+        <div class="callout warn">
+            <div class="ct">Composition root, defined</div>
+            <p>A <strong>composition root</strong> is the one spot in an app where you assemble the object
+                graph. Keeping it in <code>bootstrap.py</code> means every other file can stay ignorant of how
+                things are constructed — they just receive what they need.</p>
+        </div>
+
+        <h2 id="why">5 · Why bother with all this structure?</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Benefit</th>
+                        <th>What it buys you</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Testability</strong></td>
+                        <td>Services take their dependencies as arguments, so tests pass in fakes — no real DB needed
+                            for unit tests.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Replaceability</strong></td>
+                        <td>Swap MongoDB for another store by writing one new repository + adapter. Services don't
+                            notice.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Readability</strong></td>
+                        <td>Every concept has exactly one home. New contributors find code by responsibility, not by
+                            guessing.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Parallel work</strong></td>
+                        <td>One person edits handlers while another edits repositories — they meet only at stable
+                            interfaces.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="muted">The cost is more files and indirection. For a throwaway script that's overkill;
+            for a service meant to live and grow, it pays for itself quickly.</p>
+
+        <h2 id="quiz">Check yourself</h2>
+        <details class="quiz">
+            <summary>Which layer is allowed to <code>import tornado</code>?</summary>
+            <div class="ans">Only <strong>interfaces/</strong> (the delivery layer). If you see Tornado imported
+                inside <code>app/</code>, <code>domain/</code>, or <code>infra/</code>, the dependency rule has
+                been violated.</div>
+        </details>
+        <details class="quiz">
+            <summary>Where would code that talks to MongoDB live?</summary>
+            <div class="ans">In <strong>infra/</strong> — specifically an <em>adapter</em> wrapping PyMongo plus a
+                <em>repository</em> that exposes CRUD. Services never touch PyMongo directly.
+            </div>
+        </details>
+        <details class="quiz">
+            <summary>If you replaced Tornado with FastAPI, which layers change?</summary>
+            <div class="ans">Only <strong>interfaces/</strong>. The whole point of the dependency rule is that
+                services and domain are framework-agnostic, so they stay untouched.</div>
+        </details>
+        <details class="quiz">
+            <summary>What is the job of <code>bootstrap.py</code>?</summary>
+            <div class="ans">It's the <strong>composition root</strong>: it creates and connects every piece of
+                infrastructure once at startup and fails fast if a dependency is unreachable.</div>
+        </details>
+
+        <div class="pager">
+            <a href="index.html">
+                <span class="dir">← Back</span>
+                <span class="ttl">Home · Overview</span>
+            </a>
+            <a class="next" href="02_request_lifecycle.html">
+                <span class="dir">Next →</span>
+                <span class="ttl">2 · A Request's Lifecycle</span>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p><strong>Personify-Service · Code Reading Guide</strong> — Chapter 1 of 5.</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#e0e7ff',
+                primaryTextColor: '#312e81',
+                primaryBorderColor: '#4338ca',
+                lineColor: '#7c83b8',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

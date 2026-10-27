@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P4 · Mocking external APIs — weather notifier</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>T</span>Testing Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p3_exceptions_edge_cases/README.html">Prev: P3</a>
+                <a href="../p5_tdd_password_validator/README.html">Next: P5</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 4 · Intermediate</p>
+            <h1>Mocking external APIs — never let your tests touch the internet</h1>
+            <p class="lead">A test that calls a real weather API is slow, flaky, and broken every time the API
+                changes. The fix is mocking: replace the parts that talk to the outside world with fake stand-ins
+                that behave however the test needs. Here you will learn three different ways to do it.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You build a small service: "if there is more than a 60% chance of rain tomorrow, send the user a
+                notification". Two things in this story you do not control — the weather API and the email service.
+                If your tests use the real ones, your CI will fail at 3 a.m. for reasons that have nothing to do
+                with your code. Mocks let you pretend those collaborators returned exactly what you want.</p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>weather_service.py</code></td>
+                        <td>Three classes: <code>WeatherClient</code> (HTTP), <code>EmailNotifier</code> (real
+                            notifier), <code>WeatherService</code> (the rule).</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_weather_service.py</code></td>
+                        <td>Three mocking approaches side by side.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>The seam — why we split the code into three pieces</h2>
+            <div class="flow">
+                <div class="step">WeatherClient<br><span class="quiet">talks to HTTP</span></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">WeatherService<br><span class="quiet">pure rule</span></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Notifier<br><span class="quiet">sends message</span></div>
+            </div>
+            <p>The middle piece is what we actually care about. By accepting the two collaborators as constructor
+                arguments, the service is <strong>testable by design</strong> — you can pass fakes in tests and the
+                real ones in production. This is also the entire idea behind dependency injection.</p>
+        </section>
+
+        <section class="card">
+            <h2>Approach 1 — inject a MagicMock (preferred)</h2>
+            <pre><code>client = MagicMock(spec=WeatherClient)
+client.get_forecast.return_value = Forecast("Bengaluru", 0.8, 27.0)
+notifier = MagicMock()
+service = WeatherService(client, notifier)
+
+service.notify_if_rain_expected("Bengaluru", "asha@example.com")
+
+notifier.send.assert_called_once()</code></pre>
+            <p>This is the cleanest. The test reads top-to-bottom: build fakes, call the service, assert the side
+                effect happened. <code>spec=WeatherClient</code> means the mock will reject any attribute that the
+                real class does not have, which catches typos.</p>
+        </section>
+
+        <section class="card">
+            <h2>Approach 2 — patch the third-party call site</h2>
+            <pre><code>@patch("weather_service.requests.get")
+def test_weather_client_parses_api_response(mock_get):
+    mock_get.return_value.json.return_value = {"rain_chance": 0.75, "temperature_c": 22.5}
+    mock_get.return_value.raise_for_status.return_value = None
+
+    forecast = WeatherClient().get_forecast("Pune")
+
+    assert forecast.rain_chance == 0.75</code></pre>
+            <p>Use this when the code under test calls a library directly. The golden rule: <strong>patch where the
+                    name is looked up, not where it is defined</strong>. We patch
+                <code>weather_service.requests.get</code>
+                because that is where <code>WeatherClient</code> looks for it.</p>
+        </section>
+
+        <section class="card">
+            <h2>Approach 3 — pytest-mock (`mocker` fixture)</h2>
+            <pre><code>def test_service_calls_notifier_with_pytest_mock(mocker):
+    client = mocker.Mock(spec=WeatherClient)
+    client.get_forecast.return_value = Forecast("Chennai", 0.9, 30.0)
+    notifier = mocker.Mock()
+
+    WeatherService(client, notifier).notify_if_rain_expected("Chennai", "ravi@x.com")
+
+    notifier.send.assert_called_once()</code></pre>
+            <p><code>pytest-mock</code> is a thin wrapper that auto-cleans up patches at the end of each test. Same
+                power as <code>unittest.mock</code>, less boilerplate.</p>
+        </section>
+
+        <section class="card">
+            <h2>Mock vs Stub vs Fake — the practical difference</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Term</th>
+                        <th>Meaning</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Stub</strong></td>
+                        <td>Returns canned data, that is all.</td>
+                        <td><code>client.get_forecast.return_value = Forecast(...)</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mock</strong></td>
+                        <td>Returns data <em>and</em> records calls so you can assert how it was used.</td>
+                        <td><code>notifier.send.assert_called_once_with(...)</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fake</strong></td>
+                        <td>A simple working implementation, for testing only.</td>
+                        <td><code>class InMemoryNotifier: def send(self, r, m): self.sent.append((r, m))</code></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="quiet">All three count as "test doubles". Pick the lightest one that proves what you need.</p>
+        </section>
+
+        <section class="card">
+            <h2>What you should and should NOT assert with mocks</h2>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>Do assert</h3>
+                    <ul>
+                        <li>That the collaborator was called when it should be.</li>
+                        <li>That it was called <strong>once</strong> when uniqueness matters.</li>
+                        <li>That the arguments it was called with are correct.</li>
+                    </ul>
+                </div>
+                <div class="mini bad">
+                    <h3>Don't over-assert</h3>
+                    <ul>
+                        <li>Don't lock in internal call order if the order is not part of the contract.</li>
+                        <li>Don't mock the thing under test. Then you are testing the mock.</li>
+                        <li>Don't mock value objects (dataclasses, dicts). Just construct them.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 06_side_projects/testing_projects/p4_mocking_external_apis
+pip install -r requirements.txt
+pytest -v</code></pre>
+            <p>Note the tests run in milliseconds even though the real client would talk to
+                <code>example-weather.test</code>
+                which does not even exist. That is the win.</p>
+        </section>
+
+        <section class="card">
+            <h2>What you should take away from P4</h2>
+            <ul>
+                <li>Mocks let unit tests stay fast, deterministic, and offline.</li>
+                <li>Inject collaborators when you can; patch when you must.</li>
+                <li>"Patch where it is used, not where it is defined."</li>
+                <li>Assert behavior (the call happened with the right args), not implementation details.</li>
+            </ul>
+            <div class="callout"><strong>Interview-ready answer:</strong> "I prefer constructor injection so my
+                service accepts a real client in production and a mock in tests. When that is not possible I patch
+                the dependency at the call site with <code>unittest.mock.patch</code> or the <code>mocker</code>
+                fixture from <code>pytest-mock</code>. I assert that the right collaborator was called with the
+                right arguments, not the internal implementation steps."</div>
+        </section>
+
+        <section class="card">
+            <h2>Reading order</h2>
+            <ol>
+                <li>Read <code>weather_service.py</code> and notice the three classes.</li>
+                <li>Read the tests grouped by approach (inject, patch, mocker).</li>
+                <li>Run <code>pytest -v</code>.</li>
+                <li>Continue to <a href="../p5_tdd_password_validator/README.html">P5 · Test-Driven Development</a>.
+                </li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<title>Project B · Multi-Agent Financial Analyst · Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+ :root{--bg:#0b1020;--panel:#121a33;--ink:#e8ecf7;--muted:#a8b3d1;--accent:#7cf0ff;--line:#2a345a}
+ body{margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:#070a17;color:var(--ink);line-height:1.55}
+ header{padding:36px 28px;background:radial-gradient(900px 320px at 0 0,#1a2452 0,transparent 60%);border-bottom:1px solid var(--line)}
+ header h1{margin:0;color:#fff;font-size:1.9rem}header .tag{color:var(--accent);font-size:.85rem}
+ main{padding:28px;max-width:1200px;margin:auto}
+ section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px}
+ section h2{margin-top:0;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:8px}
+ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem}
+ th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+ th{background:#1b2549;color:#cfe1ff}tr:hover td{background:#192142}
+ code{background:#0a0f24;padding:1px 6px;border-radius:4px;color:#ffd6a5}
+ .mermaid{background:#0a0f24;border-radius:8px;padding:16px}
+ .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:600}
+ .ok{background:rgba(124,255,178,.12);color:#7CFFB2;border:1px solid rgba(124,255,178,.4)}
+ .warn{background:rgba(255,209,102,.12);color:#ffd166;border:1px solid rgba(255,209,102,.4)}
+ a{color:var(--accent)} .crumbs{margin-bottom:14px;color:var(--muted)}
+</style></head><body>
+<header><div class="crumbs"><a href="../INDEX.html">← Back to Suite Index</a></div>
+<div class="tag">🤖 Multi-Agent · LangGraph · Supervisor Pattern</div>
+<h1>Project B — Multi-Agent Financial Analyst</h1>
+<p style="color:var(--muted);max-width:900px">A supervisor coordinates three
+specialist ReAct agents — Researcher (news), Analyst (quant), Writer (report)
+— to produce an investment memo from a single ticker.</p></header>
+<main>
+
+<section><h2>1 · Architecture</h2>
+<div class="mermaid">
+flowchart LR
+  U[User: "Analyse AAPL"] --> SUP{Supervisor<br/>structured-output<br/>route}
+  SUP -->|researcher| R[Researcher Agent<br/>tool: web_search_news]
+  SUP -->|analyst| A[Analyst Agent<br/>tools: price_history, fundamentals]
+  SUP -->|writer| W[Writer Agent]
+  R --> SUP
+  A --> SUP
+  W --> SUP
+  SUP -->|FINISH| OUT[Investment Report]
+</div>
+</section>
+
+<section><h2>2 · Sequence (Happy Path)</h2>
+<div class="mermaid">
+sequenceDiagram
+  participant U as User
+  participant S as Supervisor
+  participant R as Researcher
+  participant A as Analyst
+  participant W as Writer
+  U->>S: ticker = AAPL
+  S->>R: collect news & filings
+  R-->>S: bullets
+  S->>A: pull prices & fundamentals
+  A-->>S: metrics JSON
+  S->>W: draft report
+  W-->>S: markdown report
+  S-->>U: FINISH
+</div>
+</section>
+
+<section><h2>3 · Component Table</h2>
+<table><thead><tr><th>Module</th><th>Role</th><th>Tools</th></tr></thead><tbody>
+<tr><td><code>graph.py / supervisor_node</code></td><td>Routing brain (structured output)</td><td>—</td></tr>
+<tr><td><code>graph.py / researcher</code></td><td>News + sentiment</td><td><code>web_search_news</code> (Tavily)</td></tr>
+<tr><td><code>graph.py / analyst</code></td><td>Price + fundamentals analytics</td><td><code>get_price_history</code>, <code>get_company_fundamentals</code> (yfinance)</td></tr>
+<tr><td><code>graph.py / writer</code></td><td>Final report synthesis</td><td>—</td></tr>
+<tr><td><code>tools.py</code></td><td>Tool wrappers w/ stub fallbacks</td><td>httpx, yfinance</td></tr>
+</tbody></table>
+</section>
+
+<section><h2>4 · State ERD</h2>
+<div class="mermaid">
+erDiagram
+  TEAMSTATE {
+    list  messages
+    string next
+  }
+  WORKER {
+    string name
+    string prompt
+    list   tools
+  }
+  TEAMSTATE ||--o{ WORKER : "routed_to"
+</div>
+</section>
+
+<section><h2>5 · 2026 Stack Evaluation</h2>
+<table><thead><tr><th>Layer</th><th>Choice</th><th>Status</th><th>Note</th></tr></thead><tbody>
+<tr><td>Orchestrator</td><td>LangGraph 0.2 supervisor</td><td><span class="pill ok">SOTA</span></td><td>State-machine beats free-form CrewAI for control.</td></tr>
+<tr><td>Routing</td><td>Structured output (Pydantic <code>Route</code>)</td><td><span class="pill ok">SOTA</span></td><td>Eliminates regex-based routing.</td></tr>
+<tr><td>Workers</td><td><code>create_react_agent</code></td><td><span class="pill ok">Modern</span></td><td>Single-line ReAct construction.</td></tr>
+<tr><td>News tool</td><td>Tavily</td><td><span class="pill ok">Modern</span></td><td>Alt: Exa, You.com, Brave Search.</td></tr>
+<tr><td>Memory</td><td>None (one-shot)</td><td><span class="pill warn">Add</span></td><td>Plug Zep / Mem0 v2 for multi-session memory.</td></tr>
+<tr><td>Eval</td><td>Missing</td><td><span class="pill warn">Add</span></td><td>LangSmith eval set + factuality judge.</td></tr>
+</tbody></table>
+</section>
+
+</main>
+<script>mermaid.initialize({startOnLoad:true,theme:'dark'});</script>
+</body></html>

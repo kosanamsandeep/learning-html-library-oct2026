@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 12 — Exception Handling &amp; Recovery</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 12 — Exception Handling &amp; Recovery</h1>
+  <p>Production agents fail constantly. Retry, fall back, circuit-break, log, alert.</p>
+  <p><span class="tag">Decorator</span><span class="tag">Circuit Breaker</span><span class="tag">Resilience</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Three layers protect agentic systems:</p>
+<ol>
+  <li><strong>Retry</strong> — transient failures (timeouts, 5xx). Use exponential backoff + jitter.</li>
+  <li><strong>Fallback</strong> — alternate path or cached / smaller model.</li>
+  <li><strong>Circuit Breaker</strong> — when failure rate spikes, stop calling the broken dependency for a cool-down window.</li>
+</ol>
+<div class="callout tip"><strong>Mental model:</strong> a power grid — fuses trip, secondary lines kick in, the system stays up.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+stateDiagram-v2
+  [*] --> Closed
+  Closed --> Closed: success
+  Closed --> Open: failure rate &gt; threshold
+  Open --> HalfOpen: cooldown elapsed
+  HalfOpen --> Closed: probe success
+  HalfOpen --> Open: probe failure
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Shopping copilot vs flaky vendor API</h2>
+<div class="callout scenario">
+A 2026 shopping copilot calls a small e-commerce vendor API. Vendor goes down for 4 minutes. With retries + circuit breaker, the copilot tries twice with backoff, then trips the breaker, falls back to a cached catalog snapshot, and the user still gets recommendations — slightly stale, but non-broken.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant C as Copilot
+  participant V as Vendor API
+  participant Cache as Cached snapshot
+  U->>C: "find dress under ₹2k"
+  C->>V: search()
+  V--xC: timeout
+  C->>V: retry (backoff)
+  V--xC: 503
+  Note over C: breaker → OPEN
+  C->>Cache: fallback search
+  Cache-->>C: cached results
+  C-->>U: results (degraded badge)
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Library / Framework</th><th>Resilience features</th></tr>
+  <tr><td>Tenacity (Python)</td><td>Retry decorators with backoff.</td></tr>
+  <tr><td>pybreaker / purgatory</td><td>Circuit breaker.</td></tr>
+  <tr><td>LangChain</td><td><code>with_retry()</code> and <code>with_fallbacks()</code> on Runnables.</td></tr>
+  <tr><td>LangGraph</td><td>Try/except nodes; replays on retry.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Decorator</strong></td><td><code>@retry</code> wraps any callable.</td></tr>
+  <tr><td><strong>Circuit Breaker</strong></td><td>Stateful guard around the dependency.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td>Different fallback strategies (cache, smaller model, error msg).</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── resilience.py    # @retry + CircuitBreaker
+├── client.py        # ResilientClient with fallback
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>Why exponential backoff + jitter?</summary><div>Backoff avoids hammering a recovering service; jitter prevents synchronized retries from clients all waking at the same moment (the "thundering herd").</div></details>
+<details class="qa"><summary>When is retrying wrong?</summary><div>Non-idempotent operations (e.g., charging a card). Either make it idempotent with an idempotency key or only retry on safe errors.</div></details>
+</section>
+
+</main>
+<footer>Chapter 12 of 21.</footer>
+</body>
+</html>

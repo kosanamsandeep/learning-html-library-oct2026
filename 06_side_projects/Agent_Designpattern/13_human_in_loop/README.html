@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 13 — Human-in-the-Loop</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 13 — Human-in-the-Loop</h1>
+  <p>The agent pauses for a human to approve, edit, or veto before sensitive actions.</p>
+  <p><span class="tag">Approval gate</span><span class="tag">Chain of Responsibility</span><span class="tag">State</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>For high-risk operations (payments, code merges, medical advice, legal text) you bake in checkpoints where a human must confirm. The agent serializes its plan, asks, and resumes (or aborts) on the response.</p>
+<div class="callout tip"><strong>Mental model:</strong> a junior banker who can prepare paperwork but can't sign — partner approval required.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart TD
+  R([Request]) --> A[Agent processes]
+  A --> S{Risk score &gt; threshold?}
+  S -->|"low"| AUTO[Auto-approve]
+  S -->|"high"| H[[Human reviewer]]
+  H -->|"approve"| AUTO
+  H -->|"reject"| X([Reject + reason])
+  H -->|"edit"| AUTO
+  AUTO --> O([Execute])
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Bank loan agent</h2>
+<div class="callout scenario">
+A 2026 retail-bank loan copilot can auto-approve loans below ₹2L for prime customers. Above that, the agent prepares the file, runs underwriting checks, and routes to a human officer with a one-click "approve / reject / request docs" UI. SLA: human responds in &lt; 4 hours.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as Customer
+  participant A as Loan Agent
+  participant Risk as Risk engine
+  participant H as Human officer
+  U->>A: apply for ₹5L loan
+  A->>Risk: score
+  Risk-->>A: medium-risk, ₹5L > auto threshold
+  A->>H: review (with full file)
+  H-->>A: approve with reduced limit ₹4L
+  A-->>U: ₹4L offer
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>HITL hooks</th></tr>
+  <tr><td>LangGraph</td><td><code>interrupt()</code> + <code>Command(resume=...)</code> for human pauses.</td></tr>
+  <tr><td>CrewAI</td><td>Task <code>human_input=True</code> flag.</td></tr>
+  <tr><td>OpenAI Agents</td><td>Approval queues / required action.</td></tr>
+  <tr><td>Custom</td><td>Persistent task with status (this project).</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Chain of Responsibility</strong></td><td><code>Reviewer</code>s try to handle; pass on if not their concern.</td></tr>
+  <tr><td><strong>State</strong></td><td>Application transitions: SUBMITTED → REVIEW → DECIDED.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td>Auto vs human approver are interchangeable.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── application.py    # LoanApplication + state
+├── reviewers.py      # AutoApprover → HumanReviewer (CoR)
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>How do you handle async human responses without blocking?</summary><div>Persist the agent state, return a "pending" status, push a notification, and resume from a checkpoint when the human responds (LangGraph's checkpointer makes this trivial).</div></details>
+<details class="qa"><summary>What's a good HITL UX?</summary><div>Show the agent's reasoning + tool calls + risk flags. Provide three actions: approve / reject / edit. Capture the reason — it's a great fine-tuning signal.</div></details>
+</section>
+
+</main>
+<footer>Chapter 13 of 21.</footer>
+</body>
+</html>

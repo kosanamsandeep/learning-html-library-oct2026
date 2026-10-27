@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>4 · How to Read This Codebase · Personify-Service</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <div class="shell">
+        <nav class="nav">
+            <a class="brand" href="index.html">
+                <span class="mark">P</span> Personify-Service · Reading Guide
+            </a>
+            <span class="spacer"></span>
+            <a class="link" href="01_architecture.html">Architecture</a>
+            <a class="link" href="03_design_patterns.html">Patterns</a>
+            <a class="link" href="05_learnings_checklist.html">Self-Check</a>
+            <a class="link" href="06_scenarios.html">Practice</a>
+            <a class="link" href="../index.html">↩ Side Projects</a>
+        </nav>
+
+        <header class="hero">
+            <span class="eyebrow">Chapter 4 · Don't Get Lost</span>
+            <h1>How to Read This Codebase</h1>
+            <p class="lead">
+                A big DDD tree can feel intimidating. The trick is not to read it folder-by-folder, but to
+                <strong>follow one feature end-to-end</strong>. This chapter gives you a concrete reading order
+                and a feature trail you can repeat for any endpoint.
+            </p>
+        </header>
+
+        <div class="toc">
+            <div class="tt">In this chapter</div>
+            <ol>
+                <li><a href="#order">The recommended reading order</a></li>
+                <li><a href="#trail">Follow one feature: the "sign in" trail</a></li>
+                <li><a href="#cheats">Reading cheats &amp; conventions</a></li>
+                <li><a href="#run">Run it yourself</a></li>
+                <li><a href="#quiz">Check yourself</a></li>
+            </ol>
+        </div>
+
+        <h2 id="order">1 · The recommended reading order</h2>
+        <p>Open files in this sequence the first time. It goes from the outside in, matching how a request
+            actually travels.</p>
+        <ol class="steps">
+            <li>
+                <strong>README + docker-compose</strong>
+                <p>Get the elevator pitch and see which services spin up (app, Postgres, Mongo, MinIO, nginx).
+                    You learn the runtime shape before any code.</p>
+            </li>
+            <li>
+                <strong><code>server.py</code> → <code>bootstrap.py</code> → <code>tornado_app.py</code></strong>
+                <p>The startup spine from <a href="01_architecture.html">Chapter 1</a>. The route table is your
+                    map: every URL and the handler it points to.</p>
+            </li>
+            <li>
+                <strong>Pick ONE route and open its handler</strong>
+                <p>e.g. <code>signin_handler.py</code>. Read only its <code>post()</code> — resist wandering.</p>
+            </li>
+            <li>
+                <strong>Jump to the service it calls</strong>
+                <p>The handler calls <code>self._service.something(...)</code>. Open that service method and read
+                    the business rule.</p>
+            </li>
+            <li>
+                <strong>Drop into the base service + UoW + repository</strong>
+                <p>See how <code>_add</code>/<code>_get</code> route through the <code>with unit_of_work</code>
+                    block to the repository, then the adapter, then the driver.</p>
+            </li>
+            <li>
+                <strong>Glance at the schema + model</strong>
+                <p>Open the marshmallow schema and the domain model to see the data shape the whole trail moves
+                    around.</p>
+            </li>
+        </ol>
+        <div class="callout tip">
+            <div class="ct">The golden rule of code reading</div>
+            <p>Follow <em>one</em> thread to the end before starting another. Breadth-first reading of a big
+                codebase is how you get lost; depth-first along a single feature is how you build a mental model.</p>
+        </div>
+
+        <h2 id="trail">2 · Follow one feature: the "sign in" trail</h2>
+        <p>Here is the exact file-to-file path for <code>POST /api/v1/signin</code>. Trace it with the source
+            open and you'll have read every layer in about ten minutes.</p>
+
+        <div class="diagram">
+            <div class="mermaid">
+                flowchart TB
+                A["tornado_app.py<br />route: /signin -> UserSignInHandler"] --> B["signin_handler.py<br />post(): call
+                loginUserWithCredentials"]
+                B --> C["user_service.py<br />verify hash, encode JWT"]
+                C --> D["base_generic_service.py<br />_get via unit_of_work"]
+                D --> E["postgres_unit_of_work.py<br />session + repository"]
+                E --> F["postgres_repository.py<br />query by username"]
+                F --> G["postgres_adapter.py<br />SQLAlchemy engine"]
+                C --> H["generator/hashing.py + token.py<br />verify password, sign JWT"]
+                B --> I["schemas/v1/user_schema.py<br />validate body"]
+                classDef i fill:#dbe7fe,stroke:#2563eb,color:#1d4ed8;
+                classDef a fill:#ece3fd,stroke:#7c3aed,color:#6d28d9;
+                classDef n fill:#f7e6c4,stroke:#b45309,color:#92400e;
+                class A,B,I i;
+                class C,D a;
+                class E,F,G,H n;
+            </div>
+            <div class="cap">One feature, every layer. Memorise this shape and any other endpoint reads the same way.
+            </div>
+        </div>
+
+        <h3>The destination — what sign-in actually does</h3>
+        <pre><code><span class="c-com"># app/user_service.py</span>
+<span class="c-kw">def</span> <span class="c-fn">loginUserWithCredentials</span>(<span class="c-self">self</span>, data) -> <span class="c-cls">Union</span>[<span class="c-bi">str</span>, <span class="c-cls">List</span>[<span class="c-bi">str</span>]]:
+    _findUser = <span class="c-self">self</span>.<span class="c-fn">findByUserName</span>(userName=data.username)   <span class="c-com"># repository read</span>
+    <span class="c-kw">if</span> _findUser <span class="c-kw">is not</span> <span class="c-kw">None</span>:
+        <span class="c-kw">if</span> <span class="c-cls">HashGenerator</span>.<span class="c-fn">is_valid</span>(_findUser.password, data.password):
+            _encode = {FieldNameConstants.USER_ID: <span class="c-bi">str</span>(_findUser._id)}
+            <span class="c-kw">return</span> <span class="c-cls">TokenGenerator</span>.<span class="c-fn">encode</span>(data=_encode)       <span class="c-com"># issue JWT</span>
+        _errors.<span class="c-fn">append</span>(MessagesConstants.MSG_INVALID_PASSWORD)
+    <span class="c-kw">else</span>:
+        _errors.<span class="c-fn">append</span>(<span class="c-bi">f</span><span class="c-str">'Account with {data.username} does not exist'</span>)
+    <span class="c-kw">return</span> _errors</code></pre>
+        <p>That one method touches the repository (read), the hash generator (verify), and the token
+            generator (sign) — a perfect cross-section of the whole architecture.</p>
+
+        <h2 id="cheats">3 · Reading cheats &amp; conventions</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>When you see…</th>
+                        <th>It means…</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Base*</code> prefix</td>
+                        <td>A reusable parent — read it once, then every subclass is just "this + a few methods".</td>
+                    </tr>
+                    <tr>
+                        <td><code>build_*.py</code> / <code>*Factory</code></td>
+                        <td>Object construction — go here to see <em>how</em> something is wired, not what it does.</td>
+                    </tr>
+                    <tr>
+                        <td><code>with self.unit_of_work as _uow</code></td>
+                        <td>You're inside a transaction; commit/rollback is automatic.</td>
+                    </tr>
+                    <tr>
+                        <td><code>self._model_type().dump()/.load()</code></td>
+                        <td>marshmallow (de)serialisation between Python objects and DB/JSON.</td>
+                    </tr>
+                    <tr>
+                        <td><code>infra/constants/_string.py</code></td>
+                        <td>The dictionary of every literal — no magic strings scattered around.</td>
+                    </tr>
+                    <tr>
+                        <td><code>initialize(self, ...)</code></td>
+                        <td>Tornado's DI hook — the handler's dependencies arrive here.</td>
+                    </tr>
+                    <tr>
+                        <td>A docstring full of <code>responses: 200/400/500</code></td>
+                        <td>Swagger/OpenAPI source — the API contract is documented inline.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout">
+            <div class="ct acc">Use the constants file as an index</div>
+            <p>Stuck on what a field or message is? <code>infra/constants/_string.py</code>, <code>_url.py</code>
+                and <code>_type.py</code> are effectively the project's glossary. Skimming them early pays off.</p>
+        </div>
+
+        <h2 id="run">4 · Run it yourself</h2>
+        <p>Nothing cements understanding like watching it boot. The repo is container-first:</p>
+        <pre><code><span class="c-com"># bring up app + postgres + mongo + minio (+ nginx)</span>
+docker compose up --build
+
+<span class="c-com"># then open the interactive API docs</span>
+<span class="c-com"># Swagger UI is generated from the handler docstrings</span>
+http://localhost:&lt;port&gt;/swagger
+
+<span class="c-com"># run the test pyramid locally</span>
+pytest            <span class="c-com"># unit + integration + e2e</span>
+mypy src          <span class="c-com"># static type checking</span>
+ruff check src    <span class="c-com"># linting</span></code></pre>
+        <div class="callout tip">
+            <div class="ct">A powerful exercise</div>
+            <p>Open Swagger, sign up, sign in, copy the JWT, and create a contact — while watching the logs.
+                You'll see the request-id context, the layer hops, and the status codes you read about in
+                <a href="02_request_lifecycle.html">Chapter 2</a> happen live.
+            </p>
+        </div>
+        <p class="muted">Exact ports, env vars and commands live in the repo's README and compose files —
+            check there, as they may differ from this snapshot.</p>
+
+        <h2 id="quiz">Check yourself</h2>
+        <details class="quiz">
+            <summary>You want to understand "list contacts". What's your first file, and why?</summary>
+            <div class="ans"><code>tornado_app.py</code> to find the route → its handler's <code>get()</code>. Start at
+                the
+                route table and follow the thread inward; don't start by browsing <code>infra/</code>.</div>
+        </details>
+        <details class="quiz">
+            <summary>You hit a class named <code>BaseUserQueryableRequestHandler</code>. What do you do?</summary>
+            <div class="ans">Read the base once to learn the shared skeleton (auth + query-arg validation), then treat
+                every subclass as "that skeleton plus a verb method". You won't re-read the plumbing each time.</div>
+        </details>
+        <details class="quiz">
+            <summary>Where do you look to learn the exact JSON a request expects?</summary>
+            <div class="ans">The marshmallow schema in <code>interfaces/http/tornado/schemas/</code> for that endpoint —
+                and the Swagger docstring on the handler method.</div>
+        </details>
+
+        <div class="pager">
+            <a href="03_design_patterns.html">
+                <span class="dir">← Back</span>
+                <span class="ttl">3 · The Design Patterns</span>
+            </a>
+            <a class="next" href="05_learnings_checklist.html">
+                <span class="dir">Next →</span>
+                <span class="ttl">5 · Learnings &amp; Self-Assessment</span>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p><strong>Personify-Service · Code Reading Guide</strong> — Chapter 4 of 5.</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#e0e7ff',
+                primaryTextColor: '#312e81',
+                primaryBorderColor: '#4338ca',
+                lineColor: '#7c83b8',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

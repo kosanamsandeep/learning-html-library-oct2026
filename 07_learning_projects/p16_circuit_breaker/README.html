@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P16 - Circuit Breaker Explained Simply</title>
+    <style>
+        :root {
+            --bg: #f7f8fb;
+            --paper: #ffffff;
+            --ink: #172033;
+            --muted: #5d6678;
+            --line: #d9deea;
+            --accent: #dc3545;
+            --accent-soft: #fff1f2;
+            --blue-soft: #eff6ff;
+            --green-soft: #ecfdf5;
+            --amber-soft: #fffbeb;
+            --shadow: 0 18px 40px rgba(23, 32, 51, 0.08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+            --mono: "Cascadia Mono", "Consolas", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.65;
+            background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+        }
+
+        .shell {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 2.5rem 1.4rem;
+        }
+
+        header {
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.92);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .brand {
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 750;
+        }
+
+        .brand span {
+            display: inline-grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            margin-right: 0.5rem;
+            border-radius: 6px;
+            color: white;
+            background: var(--accent);
+        }
+
+        .top-links {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .top-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.92rem;
+        }
+
+        .hero {
+            padding: 3rem 0 1.5rem;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 860px;
+            margin: 0.25rem 0 0.75rem;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            line-height: 1.08;
+        }
+
+        h2 {
+            margin: 0 0 0.8rem;
+            font-size: 1.45rem;
+        }
+
+        h3 {
+            margin: 0 0 0.4rem;
+        }
+
+        p {
+            margin: 0 0 0.85rem;
+        }
+
+        .lead {
+            max-width: 800px;
+            color: var(--muted);
+            font-size: 1.08rem;
+        }
+
+        .card {
+            margin: 1rem 0;
+            padding: 1.25rem 1.4rem;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .mini {
+            padding: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fbfcff;
+        }
+
+        .state-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .state {
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--line);
+        }
+
+        .closed {
+            background: var(--green-soft);
+            border-color: #a7f3d0;
+        }
+
+        .open {
+            background: var(--accent-soft);
+            border-color: #fecdd3;
+        }
+
+        .half {
+            background: var(--amber-soft);
+            border-color: #fde68a;
+        }
+
+        .flow {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+            margin: 1rem 0;
+        }
+
+        .step {
+            flex: 1 1 160px;
+            padding: 0.9rem;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: var(--blue-soft);
+            color: #1e3a8a;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .arrow {
+            align-self: center;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .callout {
+            padding: 1rem 1.15rem;
+            border-left: 4px solid var(--accent);
+            background: var(--accent-soft);
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.6rem;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: 0.75rem;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background: #f1f5f9;
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: 0.9em;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            padding: 0.06rem 0.35rem;
+            border-radius: 4px;
+        }
+
+        pre {
+            overflow-x: auto;
+            padding: 1rem;
+            color: #e5e7eb;
+            background: #111827;
+            border-radius: 8px;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+            border: 0;
+        }
+
+        ol,
+        ul {
+            padding-left: 1.2rem;
+        }
+
+        .quiet {
+            color: var(--muted);
+        }
+
+        @media (max-width: 760px) {
+            .state-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../learning_tracker.html"><span>P16</span>Circuit Breaker</a>
+            <nav class="top-links">
+                <a href="../learning_tracker.html">Learning tracker</a>
+                <a href="main.py">main.py</a>
+                <a href="resilience/circuit_breaker.py">circuit_breaker.py</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 16 simplified</p>
+            <h1>Circuit breaker means: stop calling a service that is already failing</h1>
+            <p class="lead">This project looks complex because it teaches four resilience patterns at once. Start
+                with the simplest idea: when an external service is unhealthy, your app should stop hammering it,
+                fail fast, wait a little, then test if it recovered.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Imagine your app calls a payment gateway. On a normal day, every payment request goes through.</p>
+            <p>One day the payment gateway goes down. If your app keeps sending every request to that broken gateway,
+                three bad things happen:</p>
+            <ul>
+                <li>Your users wait longer before seeing an error.</li>
+                <li>Your app wastes threads, connections, and CPU on calls that will fail anyway.</li>
+                <li>The payment gateway gets even more overloaded while it is trying to recover.</li>
+            </ul>
+            <div class="callout">
+                <strong>Circuit breaker solution:</strong> after a few failures, mark the service as unhealthy and
+                reject new calls immediately. After a timeout, allow a small test call. If the test works, resume
+                normal traffic.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The one picture to remember</h2>
+            <div class="state-row">
+                <div class="state closed">
+                    <h3>CLOSED</h3>
+                    <p>The circuit breaker is closed, so traffic can pass through to the service. Calls are allowed.
+                        Failures are counted.</p>
+                </div>
+                <div class="state open">
+                    <h3>OPEN</h3>
+                    <p>The circuit breaker is open, so traffic is blocked. The service looks unhealthy, and calls are
+                        rejected immediately.</p>
+                </div>
+                <div class="state half">
+                    <h3>HALF_OPEN</h3>
+                    <p>The circuit breaker is partly open for recovery testing. Allow a small number of calls to see if
+                        the service is back.</p>
+                </div>
+            </div>
+            <div class="flow" aria-label="Circuit breaker flow">
+                <div class="step">breaker CLOSED: send calls</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">too many failures</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">breaker OPEN: fail fast</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">wait timeout</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">breaker HALF_OPEN: test recovery</div>
+            </div>
+            <div class="callout">
+                <strong>Important:</strong> CLOSED and OPEN describe the circuit breaker, not the payment service.
+                A closed breaker lets requests pass through. An open breaker blocks requests to protect your app.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>What each file does</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Simple meaning</th>
+                        <th>Important class/function</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Runs five demos so you can watch the patterns behave.</td>
+                        <td><code>demo_1_circuit_breaker()</code>, <code>demo_5_combined_resilience()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>resilience/circuit_breaker.py</code></td>
+                        <td>The main idea: CLOSED, OPEN, HALF_OPEN states.</td>
+                        <td><code>CircuitBreaker.call()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>resilience/retry.py</code></td>
+                        <td>Try again when the failure may be temporary.</td>
+                        <td><code>RetryWithBackoff.execute()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>resilience/bulkhead.py</code></td>
+                        <td>Limit how many calls can use one dependency at the same time.</td>
+                        <td><code>Bulkhead.call()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>services/external.py</code></td>
+                        <td>Fake payment, inventory, notification services that sometimes fail.</td>
+                        <td><code>PaymentService</code>, <code>InventoryService</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>The core code, simplified</h2>
+            <p>This is the heart of the circuit breaker. Do not start with every stat and listener. Understand this
+                tiny version first:</p>
+            <pre><code>if state == OPEN:
+    reject_request_fast()
+
+try:
+    result = call_external_service()
+    record_success()
+    return result
+except Exception:
+    record_failure()
+    if failures_reached_threshold:
+        state = OPEN
+    raise</code></pre>
+            <p>In this project, the real version lives in <code>resilience/circuit_breaker.py</code> inside
+                <code>CircuitBreaker.call()</code>, <code>_on_success()</code>, and <code>_on_failure()</code>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>How demo 1 works</h2>
+            <p><code>main.py</code> creates a fake payment service that fails 100% of the time:</p>
+            <pre><code>payment = PaymentService(failure_rate=1.0)</code></pre>
+            <p>Then it creates a circuit breaker that opens after three failures:</p>
+            <pre><code>cb = CircuitBreaker(
+    CircuitBreakerConfig(
+        name="payment-gateway",
+        failure_threshold=3,
+        success_threshold=2,
+        timeout_seconds=2.0,
+    )
+)</code></pre>
+            <p>The behavior is intentionally simple:</p>
+            <ol>
+                <li>Request 1 fails. Failure count = 1. The circuit breaker is still CLOSED, so calls are still
+                    allowed.</li>
+                <li>Request 2 fails. Failure count = 2. The circuit breaker is still CLOSED.</li>
+                <li>Request 3 fails. Failure count = 3. The circuit breaker changes to OPEN.</li>
+                <li>Requests 4, 5, 6, 7, 8 are rejected fast because the circuit breaker is OPEN. They do not call the
+                    payment service.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Retry, bulkhead, fallback: the simple version</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>Retry</h3>
+                    <p><strong>Meaning:</strong> try again because the error may be temporary.</p>
+                    <p><strong>Example:</strong> network blip, temporary timeout, service restart.</p>
+                    <p><strong>Danger:</strong> retrying too aggressively can overload the dependency.</p>
+                </div>
+                <div class="mini">
+                    <h3>Bulkhead</h3>
+                    <p><strong>Meaning:</strong> give each dependency its own limit.</p>
+                    <p><strong>Example:</strong> payment can use 3 slots; inventory can use 5 slots.</p>
+                    <p><strong>Benefit:</strong> payment being slow does not block inventory.</p>
+                </div>
+                <div class="mini">
+                    <h3>Fallback</h3>
+                    <p><strong>Meaning:</strong> return a safe backup response when the ideal response fails.</p>
+                    <p><strong>Example:</strong> show cached inventory or say "payment temporarily unavailable".</p>
+                    <p><strong>Benefit:</strong> the app degrades gracefully instead of fully crashing.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Why the stack order matters</h2>
+            <p>In demo 5, the project combines the patterns like this:</p>
+            <div class="flow" aria-label="Resilience stack order">
+                <div class="step">1. Bulkhead</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">2. Circuit Breaker</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">3. Retry</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">4. Payment Service</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Layer</th>
+                        <th>Question it answers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Bulkhead</td>
+                        <td>Do we even have capacity to try this call?</td>
+                    </tr>
+                    <tr>
+                        <td>Circuit Breaker</td>
+                        <td>Does this service look healthy enough to call?</td>
+                    </tr>
+                    <tr>
+                        <td>Retry</td>
+                        <td>If the first try fails, should we try again gently?</td>
+                    </tr>
+                    <tr>
+                        <td>Service Call</td>
+                        <td>Actually call payment, inventory, email, database, etc.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 07_learning_projects/p16_circuit_breaker
+python main.py</code></pre>
+            <p>You do not need any external API keys. The project uses fake services in
+                <code>services/external.py</code> so the failures are easy to reproduce.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Best reading order</h2>
+            <ol>
+                <li>Read this file first.</li>
+                <li>Open <code>main.py</code> and only read <code>demo_1_circuit_breaker()</code>.</li>
+                <li>Open <code>resilience/circuit_breaker.py</code> and read only <code>call()</code>.</li>
+                <li>Then read <code>_on_success()</code> and <code>_on_failure()</code>.</li>
+                <li>Run <code>python main.py</code> and watch when the state changes from CLOSED to OPEN.</li>
+                <li>Only after that, read retry, bulkhead, and the combined demo.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Interview answer in simple words</h2>
+            <p class="quiet">Use this when someone asks, "What is a circuit breaker?"</p>
+            <div class="callout">
+                A circuit breaker protects my system when another service is failing. It starts CLOSED and allows
+                requests. If too many calls fail, it opens and fails fast without calling the broken service. After a
+                timeout, it becomes HALF_OPEN and sends a test request. If the test succeeds, it closes again. This
+                prevents cascading failures and gives the dependency time to recover.
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

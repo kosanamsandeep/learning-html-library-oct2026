@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 03 — Parallelization</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 03 — Parallelization</h1>
+  <p>Run independent sub-tasks at the same time. Latency drops from sum-of-steps to max-of-steps.</p>
+  <p><span class="tag">Fork-Join</span><span class="tag">asyncio</span><span class="tag">Future</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Identify steps that don't depend on each other. Fire them concurrently. Join their results. Especially powerful when sub-tasks are I/O-bound (LLM calls, web search, database lookups).</p>
+<div class="callout tip"><strong>Mental model:</strong> a kitchen brigade — sauces, vegetables, and meat cook in parallel; the chef plates everything at the end.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart TD
+  Q([User question]) --> F((Fork))
+  F --> A1[Search source A]
+  F --> A2[Search source B]
+  F --> A3[Search source C]
+  A1 --> J((Join))
+  A2 --> J
+  A3 --> J
+  J --> S[Synthesizer LLM]
+  S --> O([Final answer])
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Travel meta-search</h2>
+<div class="callout scenario">
+A user asks an in-app travel agent on a Friday in 2026: "Cheapest Bengaluru → Tokyo flight + 4★ hotel near Shinjuku for next week." A sequential agent (call flights → call hotels → call weather → call visa rules) takes 6 seconds. The parallel agent fans-out four async calls, joins in 1.4 seconds, and the synthesizer drafts the itinerary.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant A as Agent
+  participant F as Flights API
+  participant H as Hotels API
+  participant W as Weather API
+  participant V as Visa API
+  U->>A: ask
+  par Fan-out
+    A->>F: search
+    A->>H: search
+    A->>W: forecast
+    A->>V: rules
+  end
+  F-->>A: results
+  H-->>A: results
+  W-->>A: results
+  V-->>A: results
+  A-->>U: synthesized itinerary (1.4s)
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>Parallel primitive</th></tr>
+  <tr><td>LangChain</td><td><code>RunnableParallel</code> in LCEL.</td></tr>
+  <tr><td>LangGraph</td><td>Multiple edges from one node converge at a join node.</td></tr>
+  <tr><td>Google ADK</td><td><code>ParallelAgent</code>.</td></tr>
+  <tr><td>Plain Python</td><td><code>asyncio.gather</code> / <code>ThreadPoolExecutor</code> (this project).</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Fork-Join</strong></td><td><code>asyncio.gather()</code> fans out and waits.</td></tr>
+  <tr><td><strong>Future / Promise</strong></td><td>Each coroutine returns a future result.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td>Pluggable <code>Source</code> implementations.</td></tr>
+  <tr><td><strong>Aggregator</strong></td><td><code>Synthesizer</code> reduces N results to 1.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py           # asyncio entry
+├── sources.py        # 4 mock async sources (Strategy)
+├── orchestrator.py   # ParallelOrchestrator + Synthesizer
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>Threads vs asyncio for LLM calls?</summary><div>LLM calls are I/O-bound — asyncio is preferred (no thread overhead, easy cancellation). Use threads only when wrapping a sync SDK without an async client.</div></details>
+<details class="qa"><summary>What if one branch fails?</summary><div>Use <code>asyncio.gather(..., return_exceptions=True)</code> and treat missing branches as partial results, or set per-call timeouts and supply a degraded fallback.</div></details>
+</section>
+
+</main>
+<footer>Chapter 03 of 21.</footer>
+</body>
+</html>

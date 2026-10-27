@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W6 · Agents that remember — Claude Workshops</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Workshops hub</a>
+                <a href="../anthropic_building_agents.html">Building Agents</a>
+                <a href="../anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">CWC · Workshop 6</span></p>
+            <h1>Agents that remember: from goldfish to colleague in 45 minutes</h1>
+            <p class="lead">"Arc" is the amnesiac baseline — every session it re-asks who you are. You attach a
+                <em>memory store</em> as a session resource, and the same agent picks up where it left off across
+                runs. Then you run <strong>Dreaming</strong> over past transcripts to consolidate a better store —
+                Claude reads the history offline and writes a more useful memory back.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>1 · What you build</h2>
+            <ul>
+                <li>An amnesiac agent (Arc) so you can see the baseline pain.</li>
+                <li>A memory-store-attached version of the same agent across two sessions, demonstrating continuity.
+                </li>
+                <li>A Dreaming job that reads the memory store + session history and writes a new, distilled store.</li>
+                <li>CLI familiarity: <code>ant beta:memory-stores</code>, <code>ant beta:dreams</code>.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>2 · The stack</h2>
+            <div class="flow">
+                <div class="step">Amnesiac baseline (no memory)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Memory store attached to session</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Dreaming pass over history</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Better memory store, next session</div>
+            </div>
+            <p>The session-create call accepts a <code>resources</code> array of the form
+                <code>{"type":"memory_store","memory_store_id":"$MEM","prompt":"&hellip;","access":"read_write"}</code>.
+                Remember: <strong>resources attach at session-create only</strong>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>3 · Levers the workshop teaches</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>Memory store as a typed resource</h3>
+                    <p>Not a vector DB, not "context". A first-class resource the agent reads and writes through tool
+                        calls.</p>
+                </div>
+                <div class="mini">
+                    <h3>Attach at session-create</h3>
+                    <p>You can't bolt a memory store on mid-session. The constraint forces clean session boundaries.</p>
+                </div>
+                <div class="mini">
+                    <h3>Access mode</h3>
+                    <p><code>read</code> vs <code>read_write</code>. Useful when one agent owns the store and others
+                        only consult it.</p>
+                </div>
+                <div class="mini">
+                    <h3>Memory prompt</h3>
+                    <p>A short string telling the agent how to <em>use</em> this store — e.g. "this is the deal-log;
+                        prefer it over your own recall for client preferences."</p>
+                </div>
+                <div class="mini">
+                    <h3>Dreaming</h3>
+                    <p>An offline pass: read a memory store + past sessions, write a new memory store. Turns episodic
+                        notes into curated knowledge.</p>
+                </div>
+                <div class="mini">
+                    <h3>CLI affordances</h3>
+                    <p><code>ant beta:memory-stores</code> to list / inspect; <code>ant beta:dreams</code> to schedule
+                        and read dream runs.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Use vs don't use — the trade-offs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lever</th>
+                        <th>If you use it</th>
+                        <th>If you skip it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Memory store (vs prompt stuffing)</td>
+                        <td>Persistent, queryable, isolated from the context window. The user feels like the agent
+                            "knows them" without you paying for the history every turn.</td>
+                        <td>You shove everything into the system prompt; latency climbs, tokens climb, the agent
+                            forgets the bottom 30% of it.</td>
+                    </tr>
+                    <tr>
+                        <td>Attach at session-create</td>
+                        <td>Resources are available from event 1. Your UI can show "session is using deal-log v3"
+                            before the first message.</td>
+                        <td>You attempt to attach mid-session, the API refuses, and you ship a workaround that loses
+                            audit trail.</td>
+                    </tr>
+                    <tr>
+                        <td><code>read</code> vs <code>read_write</code></td>
+                        <td>Read-only stores let many sub-agents consult shared knowledge without trampling each other.
+                        </td>
+                        <td>Everything is read_write, sub-agents overwrite each other, and you can't tell who corrupted
+                            what.</td>
+                    </tr>
+                    <tr>
+                        <td>Memory prompt</td>
+                        <td>The agent <em>knows</em> when to prefer the store over its own recall. Hallucinations on
+                            recurring facts drop sharply.</td>
+                        <td>The store exists but the agent doesn't consult it. The memory is a file on disk, not a
+                            tool.</td>
+                    </tr>
+                    <tr>
+                        <td>Dreaming</td>
+                        <td>You turn raw transcripts into curated knowledge offline. The next live session loads
+                            distilled insight, not a transcript pile.</td>
+                        <td>The memory store grows linearly, gets noisy, and the agent's retrieval quality drops over
+                            time.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>The lesson:</strong> memory isn't a vector DB you bolt on — it's a
+                resource the agent's prompt is taught to use, refreshed offline by Dreaming so it stays small and
+                sharp.</div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Adoption playbook for your repo</h2>
+            <ol>
+                <li>Identify the <em>one piece of state</em> your agent re-learns every session (user preferences,
+                    deal context, codebase conventions). That's your memory store candidate.</li>
+                <li>Stand up a memory store with <code>ant beta:memory-stores</code>. Attach it at session-create with a
+                    <em>memory prompt</em> that tells the agent when to read and when to write.
+                </li>
+                <li>Run two sessions a week apart. Confirm the second one starts ahead of the first.</li>
+                <li>Schedule a Dreaming pass over the accumulated sessions. Diff the new store against the old one —
+                    if the new one is shorter and more useful, you've found product fit.</li>
+                <li>Add an audit view (your CLI or UI) so humans can read and prune the store. Memory you can't read
+                    is memory you can't trust.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source"
+                    href="https://github.com/anthropics/cwc-workshops/tree/main/agents-that-remember-workshop"
+                    target="_blank" rel="noopener">cwc-workshops/agents-that-remember-workshop</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/memory" target="_blank"
+                    rel="noopener">CMA — Memory stores</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/dreaming" target="_blank"
+                    rel="noopener">CMA — Dreaming</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/sessions" target="_blank"
+                    rel="noopener">CMA — Sessions and resources</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

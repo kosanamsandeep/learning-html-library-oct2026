@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGen 01 · Quickstart — Single Agent</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="ag">AG</span>AutoGen · 01 Quickstart</div>
+        <div class="links">
+            <a href="index.html">AutoGen Hub</a>
+            <a href="02_two_agent_team.html">Next: 02 →</a>
+        </div>
+    </div>
+
+    <div class="header ag">
+        <p class="badge">Build 01 · Beginner</p>
+        <h1>Your first AutoGen agent</h1>
+        <p class="subtitle">One <code>AssistantAgent</code> wrapping a model client. This is the atom of every
+            AutoGen system — get this running and everything else is composition.</p>
+    </div>
+
+    <div class="container">
+        <div class="section ag">
+            <h2>What this build does</h2>
+            <p>Create a model client (the connection to an LLM), wrap it in an <code>AssistantAgent</code>, and
+                run a single task. AutoGen is async-first, so everything happens inside
+                <code>asyncio</code>.
+            </p>
+            <div class="pill-row">
+                <span class="level beginner">Beginner</span>
+                <span class="tag teal">AssistantAgent</span>
+                <span class="tag teal">OpenAIChatCompletionClient</span>
+                <span class="tag teal">async</span>
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>The structure</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    task["task: 'Say hello'"] --> agent["AssistantAgent"]
+    agent --> client["model client<br/>(OpenAI / Azure / local)"]
+    client --> llm["LLM"]
+    llm --> reply["TextMessage reply"]
+    reply --> agent
+                </pre>
+                <p class="caption">The agent is a thin, reusable wrapper around a model client.</p>
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>The code</h2>
+            <pre><code><span class="c-kw">import</span> asyncio
+<span class="c-kw">from</span> autogen_agentchat.agents <span class="c-kw">import</span> AssistantAgent
+<span class="c-kw">from</span> autogen_ext.models.openai <span class="c-kw">import</span> OpenAIChatCompletionClient
+
+<span class="c-kw">async def</span> <span class="c-fn">main</span>() -> <span class="c-kw">None</span>:
+    <span class="c-com"># 1) A model client = your connection to an LLM.</span>
+    model_client = OpenAIChatCompletionClient(model=<span class="c-str">"gpt-4o"</span>)
+
+    <span class="c-com"># 2) An agent = LLM + a name + (optionally) a system message.</span>
+    agent = AssistantAgent(
+        name=<span class="c-str">"assistant"</span>,
+        model_client=model_client,
+        system_message=<span class="c-str">"You are a concise, helpful assistant."</span>,
+    )
+
+    <span class="c-com"># 3) Run a task. result.messages is the full exchange.</span>
+    result = <span class="c-kw">await</span> agent.run(task=<span class="c-str">"Explain AutoGen in one sentence."</span>)
+    <span class="c-fn">print</span>(result.messages[-<span class="c-cls">1</span>].content)
+
+    <span class="c-kw">await</span> model_client.close()
+
+asyncio.run(main())</code></pre>
+        </div>
+
+        <div class="section ag">
+            <h2>Streaming to the console</h2>
+            <p>For a live, token-by-token experience, stream the agent's run into the built-in
+                <code>Console</code> UI.
+            </p>
+            <pre><code><span class="c-kw">from</span> autogen_agentchat.ui <span class="c-kw">import</span> Console
+
+<span class="c-kw">async def</span> <span class="c-fn">main</span>():
+    model_client = OpenAIChatCompletionClient(model=<span class="c-str">"gpt-4o"</span>)
+    agent = AssistantAgent(<span class="c-str">"assistant"</span>, model_client=model_client)
+
+    <span class="c-com"># run_stream yields events; Console renders them nicely.</span>
+    <span class="c-kw">await</span> Console(agent.run_stream(task=<span class="c-str">"Write a haiku about Python."</span>))
+    <span class="c-kw">await</span> model_client.close()</code></pre>
+        </div>
+
+        <div class="section ag">
+            <h2>Swapping models — the client is the only thing that changes</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Provider</th>
+                        <th>Client</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>OpenAI</td>
+                        <td><code>OpenAIChatCompletionClient(model="gpt-4o")</code></td>
+                    </tr>
+                    <tr>
+                        <td>Azure OpenAI</td>
+                        <td><code>AzureOpenAIChatCompletionClient(...)</code></td>
+                    </tr>
+                    <tr>
+                        <td>Anthropic</td>
+                        <td><code>AnthropicChatCompletionClient(model="claude-3-5-sonnet")</code></td>
+                    </tr>
+                    <tr>
+                        <td>Local / Ollama</td>
+                        <td><code>OpenAIChatCompletionClient(model="llama3", base_url=...)</code></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout teal">
+                <strong>Key idea:</strong> agents are model-agnostic. You write the agent once and switch the
+                model client to move between providers or run locally.
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Always <code>await model_client.close()</code></strong> (or use it as an async
+                    context manager) to release connections.</li>
+                <li><strong>Give every agent a clear <code>system_message</code>.</strong> It defines the
+                    agent's role — critical once you have several.</li>
+                <li><strong>Keep secrets in env vars</strong> (<code>OPENAI_API_KEY</code>), never in code.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="index.html"><span class="dir">Back</span>
+                <div class="ttl">AutoGen Hub</div>
+            </a>
+            <a class="next" href="02_two_agent_team.html"><span class="dir">Next</span>
+                <div class="ttl">02 · Two-agent team →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>AutoGen Projects · 01 of 04</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

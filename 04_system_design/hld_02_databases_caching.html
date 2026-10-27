@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLD 02 — Databases &amp; Caching</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html"><span class="brand-mark">SD</span><span>HLD · 02 DB &amp;
+                    Caching</span></a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="hld_01_fundamentals.html">← Prev</a>
+                <a href="hld_03_distributed.html">Next →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">Where the data lives — and how to keep it fast</p>
+                <h1>Databases &amp; Caching — the storage layer in HLD</h1>
+                <p>Pick the wrong storage and no amount of clever code will save you. Pick the right one and most
+                    of your performance problems disappear. This page covers the four decisions every HLD answer
+                    must address: <strong>SQL vs NoSQL</strong>, <strong>indexes</strong>, <strong>sharding &amp;
+                        replication</strong>, and <strong>caching strategies</strong>.</p>
+            </section>
+
+            <div class="layout">
+                <aside class="toc">
+                    <h3>On this page</h3>
+                    <ol>
+                        <li><a href="#sqlnosql">SQL vs NoSQL</a></li>
+                        <li><a href="#indexes">Indexes</a></li>
+                        <li><a href="#replication">Replication</a></li>
+                        <li><a href="#sharding">Sharding (partitioning)</a></li>
+                        <li><a href="#cache">Caching strategies</a></li>
+                        <li><a href="#cdn">CDN — the edge cache</a></li>
+                        <li><a href="#anti">Anti-patterns</a></li>
+                    </ol>
+                </aside>
+
+                <div>
+                    <section class="concept" id="sqlnosql">
+                        <h2>SQL vs NoSQL — when to pick which</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Trait</th>
+                                    <th>SQL (RDBMS)</th>
+                                    <th>NoSQL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Schema</td>
+                                    <td>Strict, defined upfront</td>
+                                    <td>Flexible, per-row</td>
+                                </tr>
+                                <tr>
+                                    <td>Joins</td>
+                                    <td>First-class</td>
+                                    <td>Rare / discouraged</td>
+                                </tr>
+                                <tr>
+                                    <td>Transactions</td>
+                                    <td>ACID across rows &amp; tables</td>
+                                    <td>Usually single-row only</td>
+                                </tr>
+                                <tr>
+                                    <td>Scaling</td>
+                                    <td>Vertical first; horizontal harder</td>
+                                    <td>Horizontal native</td>
+                                </tr>
+                                <tr>
+                                    <td>Sweet spot</td>
+                                    <td>Money, orders, anything multi-entity with strong invariants</td>
+                                    <td>High write throughput, denormalized read models, flexible JSON</td>
+                                </tr>
+                                <tr>
+                                    <td>Examples</td>
+                                    <td>PostgreSQL, MySQL, SQL Server</td>
+                                    <td>DynamoDB, Cassandra, MongoDB, Redis</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h3>NoSQL sub-types</h3>
+                        <ul>
+                            <li><strong>Key-Value</strong> (Redis, DynamoDB): O(1) get/set by key. Sessions,
+                                caches, leaderboards.</li>
+                            <li><strong>Document</strong> (MongoDB): JSON docs by key, secondary indexes on
+                                fields. Product catalogs, user profiles.</li>
+                            <li><strong>Wide-column</strong> (Cassandra, BigTable): trillions of rows, designed
+                                for time-series / event logs.</li>
+                            <li><strong>Graph</strong> (Neo4j): relationships are first-class. Social graphs,
+                                fraud detection.</li>
+                            <li><strong>Search</strong> (Elasticsearch, OpenSearch): inverted index for full-text
+                                queries.</li>
+                        </ul>
+                        <div class="callout warn"><strong>Industry rule of thumb:</strong> start with PostgreSQL
+                            unless you can articulate a specific reason another store fits better. Most "we need
+                            NoSQL for scale" early decisions become regret stories.</div>
+                    </section>
+
+                    <section class="concept" id="indexes">
+                        <h2>Indexes — the cheapest 100× speedup</h2>
+                        <p>An index is a sorted side-structure (typically a B-tree) that lets the DB find rows
+                            without scanning the whole table.</p>
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>With an index on <code>users.email</code></h4>
+                                <p>Query: <code>WHERE email = 'a@b.com'</code> → O(log n) via B-tree.</p>
+                                <p>10M rows ≈ 23 hops.</p>
+                            </div>
+                            <div class="mini bad">
+                                <h4>Without</h4>
+                                <p>DB does a full table scan: O(n).</p>
+                                <p>10M rows ≈ 10M comparisons → seconds per query → outage at any real traffic.</p>
+                            </div>
+                        </div>
+                        <h3>Costs</h3>
+                        <ul>
+                            <li>Every <code>INSERT/UPDATE/DELETE</code> updates the index too → writes get slower.</li>
+                            <li>Each index uses disk + RAM (the hot pages live in buffer pool).</li>
+                            <li>Composite index on <code>(a, b, c)</code> helps queries filtering by
+                                <code>a</code>, or <code>a + b</code>, or <code>a + b + c</code> — but
+                                <em>not</em> by <code>b</code> alone.
+                            </li>
+                        </ul>
+                        <p>Rule: index every column you frequently filter or join on; drop unused indexes.</p>
+                    </section>
+
+                    <section class="concept" id="replication">
+                        <h2>Replication — fault tolerance + read scaling</h2>
+                        <p>Replication = keep N copies of the data on different nodes.</p>
+                        <h3>Topologies</h3>
+                        <ul>
+                            <li><strong>Single-leader (primary / replica):</strong> all writes go to primary;
+                                async stream to replicas. Most common (Postgres, MySQL).</li>
+                            <li><strong>Multi-leader:</strong> writes accepted on multiple nodes (e.g., multi-DC
+                                active-active). Conflict resolution required.</li>
+                            <li><strong>Leaderless:</strong> any node accepts any write; quorum-based reads
+                                reconcile (Cassandra, DynamoDB).</li>
+                        </ul>
+                        <h3>What it buys you</h3>
+                        <ul>
+                            <li>Fault tolerance: lose a node, others keep serving.</li>
+                            <li>Read scaling: send read queries to replicas. Writes still bottleneck on primary.</li>
+                            <li>Geographic latency: put replicas closer to users.</li>
+                        </ul>
+                        <h3>What it costs</h3>
+                        <ul>
+                            <li><strong>Replication lag.</strong> Replica might be 500 ms behind primary. "I just
+                                wrote a comment and it's not in my feed" — classic bug.</li>
+                            <li>Conflict resolution (multi-leader / leaderless).</li>
+                        </ul>
+                    </section>
+
+                    <section class="concept" id="sharding">
+                        <h2>Sharding — write scaling when one machine isn't enough</h2>
+                        <p>Sharding = split the data <em>horizontally</em> across N machines by a <strong>shard
+                                key</strong>. Each shard owns a slice of the keyspace.</p>
+                        <h3>Shard key strategies</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Strategy</th>
+                                    <th>How</th>
+                                    <th>Watch out</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Hash-based</td>
+                                    <td><code>shard = hash(user_id) % N</code></td>
+                                    <td>Even
+                                        spread; range queries become scatter-gather. Resharding is hard.</td>
+                                </tr>
+                                <tr>
+                                    <td>Range-based</td>
+                                    <td>Users A–F → shard 1, G–M → shard 2…</td>
+                                    <td>Range
+                                        queries are local. Hot ranges create hot shards.</td>
+                                </tr>
+                                <tr>
+                                    <td>Geo-based</td>
+                                    <td>Shard by region</td>
+                                    <td>Latency wins; cross-region
+                                        queries painful.</td>
+                                </tr>
+                                <tr>
+                                    <td>Consistent hashing</td>
+                                    <td>Place shards on a ring; only neighbors
+                                        affected when adding nodes</td>
+                                    <td>Required for cache clusters &amp; many
+                                        NoSQL stores.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="callout danger"><strong>Hot-shard story:</strong> Twitter sharded by user_id.
+                            Then Justin Bieber became 1% of all traffic. His shard burned. Lesson: any time you
+                            have celebrities (or "celebrity keys"), have a strategy: read replicas of that shard,
+                            cache, or split that user across multiple shards.</div>
+                    </section>
+
+                    <section class="concept" id="cache">
+                        <h2>Caching strategies</h2>
+                        <p>A cache is a faster, smaller copy of slower data. Memory is ~200× faster than disk;
+                            a 90% cache hit ratio can reduce backend load by 10×.</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pattern</th>
+                                    <th>How</th>
+                                    <th>Use when</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Cache-aside</strong> (lazy load)</td>
+                                    <td>App checks cache; on miss
+                                        queries DB and writes to cache.</td>
+                                    <td>Default for read-heavy apps.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Read-through</strong></td>
+                                    <td>Cache library transparently loads
+                                        from DB on miss.</td>
+                                    <td>Same as cache-aside but hidden behind a library.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Write-through</strong></td>
+                                    <td>Every write goes to cache <em>and</em>
+                                        DB synchronously.</td>
+                                    <td>Need strong consistency between cache &amp; DB.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Write-behind</strong> (write-back)</td>
+                                    <td>Write to cache; flush to
+                                        DB asynchronously.</td>
+                                    <td>Very write-heavy; tolerate small data loss
+                                        window.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Refresh-ahead</strong></td>
+                                    <td>Cache proactively refreshes hot
+                                        keys before they expire.</td>
+                                    <td>Predictable hot keys; latency-critical.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h3>Eviction policies</h3>
+                        <p><strong>LRU</strong> (least recently used) is the default and works well 90% of the
+                            time. <strong>LFU</strong> (least frequently used) better for skewed access.
+                            <strong>TTL</strong>
+                            (time to live) absolutely necessary on any cached entry that can become stale.</p>
+                        <h3>Cache invalidation — the hard problem</h3>
+                        <div class="story">"There are only two hard things in CS: cache invalidation and naming
+                            things." — Phil Karlton. He wasn't joking.</div>
+                        <ul>
+                            <li>On write: <em>invalidate</em> (delete) the cache entry, don't update it. Update
+                                under concurrency causes stale-vs-new races.</li>
+                            <li>Use short TTLs (~minutes) as a safety net for any cache.</li>
+                            <li>Version your cache keys when the data shape changes — easier than mass-flushing.</li>
+                        </ul>
+                    </section>
+
+                    <section class="concept" id="cdn">
+                        <h2>CDN — caching at the edge</h2>
+                        <p>A CDN (Content Delivery Network) is a globally distributed cache for static assets and
+                            increasingly for API responses. Cloudflare, Akamai, CloudFront.</p>
+                        <p><strong>What if you use a CDN:</strong> users in Mumbai download a JS bundle from
+                            Mumbai (5 ms) instead of Virginia (200 ms). 95% of your image/JS/CSS traffic never
+                            touches your origin.</p>
+                        <p><strong>What if you don't:</strong> every static request hits your servers and your
+                            bandwidth bill. Your latency is dominated by physics (speed of light × half the
+                            globe).</p>
+                    </section>
+
+                    <section class="concept" id="anti">
+                        <h2>Anti-patterns interviewers love to call out</h2>
+                        <ul>
+                            <li><strong>"Just add a cache"</strong> without thinking about invalidation. Stale
+                                data is worse than slow data in finance / healthcare.</li>
+                            <li><strong>Cache stampede</strong>: 1000 clients hit an expired key
+                                simultaneously, all miss, all hammer the DB at once. Fix: <em>request coalescing</em>
+                                or <em>jittered TTL</em>.</li>
+                            <li><strong>N+1 queries:</strong> fetch a list, then one query per item. Pre-join or
+                                batch.</li>
+                            <li><strong>Unbounded query (no LIMIT):</strong> works on dev with 100 rows, falls
+                                over on prod with 100M.</li>
+                            <li><strong>Sharding too early</strong> when a single Postgres would have handled it
+                                for years.</li>
+                        </ul>
+                        <p>👉 Next: <a href="hld_03_distributed.html"><strong>Distributed Systems Building
+                                    Blocks</strong></a>.</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer><a href="index.html">Back to hub</a></footer>
+</body>
+
+</html>

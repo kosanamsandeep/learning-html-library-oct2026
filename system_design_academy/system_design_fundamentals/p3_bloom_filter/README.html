@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P3 · Bloom Filter</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>Fundamentals</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p2_consistent_hashing/README.html">Prev: P2</a><a
+                    href="../p4_idempotent_api/README.html">Next: P4</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">Fundamentals · Project 3</p>
+            <h1>Bloom filter — answer "have I seen this?" in 10 bits per item</h1>
+            <p class="lead">A bloom filter trades a small false positive rate for huge memory savings. Crawlers,
+                key-value stores, and CDNs use them to skip expensive lookups.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You crawl 100 million URLs. Storing them all in a Python set would use gigabytes. A bloom filter sized
+                for that load fits in ~120 MB and answers "have I seen this URL?" in microseconds. The catch: it can say
+                "maybe yes" when the answer is actually no — a false positive. It can never say "no" when the answer is
+                yes.</p>
+        </section>
+
+        <section class="card">
+            <h2>How it works</h2>
+            <div class="flow">
+                <div class="step">k hash functions</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">k bit positions</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">add: set those k bits</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">check: are all k bits set?</div>
+            </div>
+            <p>If any of the k bits is zero, the item is definitely not there. If all are one, it might be there (or
+                another item set the same bits).</p>
+        </section>
+
+        <section class="card">
+            <h2>Choosing size and hash count</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Inputs</th>
+                        <th>Formula</th>
+                        <th>What you control</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>expected items n, target FP rate p</td>
+                        <td>size m = -n·ln(p) / (ln 2)^2</td>
+                        <td>Memory the filter uses.</td>
+                    </tr>
+                    <tr>
+                        <td>m and n</td>
+                        <td>hashes k = (m/n) · ln 2</td>
+                        <td>Lookup speed; usually 5–10.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Code in <code>main.py</code> picks these for you so you only choose n and p.</p>
+        </section>
+
+        <section class="card">
+            <h2>When to use, when to avoid</h2>
+            <div class="grid">
+                <div class="mini good"><strong>Use when</strong> a false positive only costs an extra lookup (cache,
+                    disk, network) and the real check happens after.</div>
+                <div class="mini bad"><strong>Avoid when</strong> a false positive is unsafe — billing, identity,
+                    security checks. A "maybe yes" can never be a final answer.</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/system_design_fundamentals/p3_bloom_filter
+python main.py</code></pre>
+            <p>The demo inserts 5,000 items and then probes 10,000 unseen items, reporting the observed false positive
+                rate against the 1% target.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"I reach for a bloom filter when I need a cheap 'definitely not seen' check in front of
+                an expensive lookup — disk read, network call, or cache. I never use it as the final source of truth
+                because false positives are baked into the design. I size it from the expected item count and target
+                false positive rate using the standard formula."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

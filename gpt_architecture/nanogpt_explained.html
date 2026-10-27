@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nanoGPT Explained — Building a Transformer Step by Step</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-card: #1e293b;
+    --bg-code: #0f172a;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --accent: #38bdf8;
+    --accent2: #a78bfa;
+    --green: #4ade80;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --border: #334155;
+    --gradient-start: #38bdf8;
+    --gradient-end: #a78bfa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+  /* ── Layout ── */
+  .app { display: flex; min-height: 100vh; }
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 300px;
+    flex-shrink: 0;
+    background: #0b1120;
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 0;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  .sidebar h2 {
+    font-size: 1.1rem;
+    padding: 0 1.25rem 1rem;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+  }
+  .sidebar nav a {
+    display: block;
+    padding: 0.5rem 1.25rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.9rem;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .sidebar nav a:hover, .sidebar nav a.active {
+    color: var(--text);
+    background: rgba(56,189,248,0.08);
+    border-left-color: var(--accent);
+  }
+  .sidebar .section-label {
+    padding: 1rem 1.25rem 0.25rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+    font-weight: 600;
+  }
+  /* ── Main ── */
+  .main { flex: 1; max-width: 960px; margin: 0 auto; padding: 2.5rem 2rem 6rem; }
+  /* ── Hero ── */
+  .hero {
+    text-align: center;
+    padding: 3rem 0 2.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+  }
+  .hero h1 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+  }
+  .hero p {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    max-width: 650px;
+    margin: 0 auto;
+  }
+  .hero .badge {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    background: rgba(56,189,248,0.12);
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  /* ── Sections ── */
+  section {
+    margin-bottom: 4rem;
+    scroll-margin-top: 1rem;
+  }
+  section h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  section h2 .step {
+    font-size: 0.9rem;
+    background: var(--accent);
+    color: #0f172a;
+    border-radius: 999px;
+    padding: 0.15rem 0.7rem;
+    font-weight: 600;
+  }
+  section h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.5rem;
+    color: var(--accent);
+  }
+  section p, section li {
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+  }
+  section ul, section ol { padding-left: 1.25rem; }
+  section li { margin-bottom: 0.4rem; }
+  /* ── Cards ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+  }
+  .card-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  /* ── Comparison Grid ── */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin: 1.25rem 0;
+  }
+  .compare-card {
+    border-radius: 10px;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+  }
+  .compare-card.good { background: rgba(74,222,128,0.06); border-color: rgba(74,222,128,0.2); }
+  .compare-card.bad  { background: rgba(248,113,113,0.06); border-color: rgba(248,113,113,0.2); }
+  .compare-card h4 {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .compare-card.good h4 { color: var(--green); }
+  .compare-card.bad h4  { color: var(--red); }
+  .compare-card p { font-size: 0.9rem; margin-bottom: 0; color: var(--text-dim); }
+  /* ── Mermaid containers ── */
+  .mermaid-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem 0.5rem;
+    margin: 1.25rem 0;
+    overflow-x: auto;
+    text-align: center;
+  }
+  /* ── Loss progression ── */
+  .loss-bar-wrap { display: flex; align-items: center; gap: 1rem; margin: 0.5rem 0; }
+  .loss-bar {
+    height: 28px;
+    border-radius: 6px;
+    min-width: 30px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 600; color: #0f172a;
+    transition: width 0.5s;
+  }
+  .loss-label { font-size: 0.85rem; color: var(--text-dim); min-width: 100px; }
+  .loss-val { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; min-width: 45px; }
+  /* ── Code blocks ── */
+  .code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.82rem;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+    color: #e2e8f0;
+  }
+  .code-block .comment { color: #64748b; }
+  .code-block .keyword { color: #38bdf8; }
+  .code-block .func { color: #a78bfa; }
+  .code-block .string { color: #4ade80; }
+  .code-block .number { color: #fbbf24; }
+  /* ── Callout ── */
+  .callout {
+    background: rgba(56,189,248,0.06);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.25rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0;
+  }
+  .callout.warn {
+    background: rgba(251,191,36,0.06);
+    border-left-color: var(--amber);
+  }
+  .callout p { margin-bottom: 0; }
+  /* ── Architecture visualization ── */
+  .arch-flow {
+    display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+    padding: 1.5rem 0;
+  }
+  .arch-node {
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background: var(--bg-card);
+    min-width: 180px;
+    text-align: center;
+  }
+  .arch-node.highlight { border-color: var(--accent); background: rgba(56,189,248,0.06); }
+  .arch-node.new { border-color: var(--accent2); background: rgba(167,139,250,0.08); }
+  .arch-node.good { border-color: var(--green); background: rgba(74,222,128,0.06); }
+  .arch-arrow { color: var(--text-dim); font-size: 1.2rem; }
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); padding: 0.75rem 0; }
+    .sidebar h2 { padding: 0.5rem 1rem; }
+    .sidebar nav a { padding: 0.3rem 1rem; font-size: 0.82rem; }
+    .sidebar .section-label { padding: 0.5rem 1rem 0.1rem; }
+    .main { padding: 1.5rem 1rem 4rem; }
+    .hero h1 { font-size: 1.8rem; }
+    .comparison { grid-template-columns: 1fr; }
+    section h2 { font-size: 1.4rem; }
+  }
+  /* ── Scrollbar ── */
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  /* ── Mermaid overrides ── */
+  .mermaid-box svg { max-width: 100%; height: auto; }
+  .mermaid-box .label { color: var(--text) !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <h2>🧠 nanoGPT · Step by Step</h2>
+    <nav>
+      <div class="section-label">Foundation</div>
+      <a href="#intro">Introduction</a>
+      <a href="#data">Data &amp; Tokenization</a>
+      <a href="#bigram">Stage 0 · Bigram Model</a>
+      <div class="section-label">Building Blocks</div>
+      <a href="#pos-encoding">Stage 1 · Positional Encoding</a>
+      <a href="#self-attention">Stage 2 · Self-Attention</a>
+      <a href="#multi-head">Stage 3 · Multi-Head Attention</a>
+      <a href="#feedforward">Stage 4 · Feed-Forward Layers</a>
+      <div class="section-label">Deepening</div>
+      <a href="#residual">Stage 5 · Residual Connections</a>
+      <a href="#layernorm">Stage 6 · Layer Normalization</a>
+      <a href="#scaled">Stage 7 · Scaled-Up GPT</a>
+      <div class="section-label">The Big Picture</div>
+      <a href="#architecture">Full Architecture</a>
+      <a href="#journey">Loss Journey</a>
+      <a href="#nanogpt-code">nanoGPT Codebase</a>
+      <a href="#core-concepts">⚡ Core Concepts Recap</a>
+      <a href="#to-chatgpt">From nanoGPT → ChatGPT</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <!-- ════════════════════════════════════════════ -->
+    <!-- HERO -->
+    <!-- ════════════════════════════════════════════ -->
+    <div class="hero">
+      <h1>nanoGPT Explained</h1>
+      <p>Building a Transformer language model piece by piece — learning from Andrej Karpathy's legendary lecture, visualized with every block's "why", "what if", and measurable impact.</p>
+      <span class="badge">Based on Karpathy's "Let's build GPT from scratch"</span>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- INTRODUCTION -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="intro">
+      <h2>What is nanoGPT?</h2>
+      <p><strong>nanoGPT</strong> is a minimal implementation of the <strong>GPT (Generative Pre-trained Transformer)</strong> architecture — the same core technology behind ChatGPT. It's just two files of ~300 lines each: one defines the model, one trains it.</p>
+      <p>Andrej Karpathy built it to show that the Transformer isn't magic — it's a series of simple, composable blocks. Each block adds a capability, and you can <em>see</em> the loss drop and the output improve as you add them.</p>
+
+      <div class="callout">
+        <p><strong>💡 The Big Idea:</strong> Start with the dumbest possible language model (just count which character follows which), then add one Transformer ingredient at a time. Watch the validation loss fall from <strong>2.50 → 1.48</strong> and the text go from random garbage to Shakespeare-sounding prose.</p>
+      </div>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Legend[" "]
+        direction LR
+        L1[Existing Block] --> L2[New Block]
+        L3[Better] --> L4[Worse]
+    end
+    style L1 fill:#1e293b,stroke:#334155
+    style L2 fill:#1e293b,stroke:#a78bfa
+    style L3 fill:#1e293b,stroke:#4ade80
+    style L4 fill:#1e293b,stroke:#f87171
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- DATA & TOKENIZATION -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="data">
+      <h2>Data &amp; Tokenization</h2>
+      <p>Before we build anything, we need data. Karpathy uses the <strong>Tiny Shakespeare</strong> dataset — all of Shakespeare's works concatenated into a single ~1 MB file (~1 million characters).</p>
+
+      <h3>Character-Level Tokenization</h3>
+      <p>We map each character → integer (65 unique characters in Shakespeare). This is the simplest possible tokenizer:</p>
+
+      <div class="code-block">
+<span class="comment"># The entire vocabulary of Shakespeare</span><br>
+chars = sorted(list(set(text)))        <span class="comment"># 65 characters</span><br>
+vocab_size = len(chars)                 <span class="comment"># 65</span><br><br>
+stoi = {ch:i <span class="keyword">for</span> i,ch <span class="keyword">in</span> enumerate(chars)} <span class="comment"># char → int</span><br>
+itos = {i:ch <span class="keyword">for</span> i,ch <span class="keyword">in</span> enumerate(chars)} <span class="comment"># int → char</span><br><br>
+encode = <span class="keyword">lambda</span> s: [stoi[c] <span class="keyword">for</span> c <span class="keyword">in</span> s]       <span class="comment"># "hi" → [46, 47]</span><br>
+decode = <span class="keyword">lambda</span> l: ''.join([itos[i] <span class="keyword">for</span> i <span class="keyword">in</span> l]) <span class="comment"># [46, 47] → "hi"</span>
+      </div>
+
+      <h3>How Training Examples Are Packed</h3>
+      <p>We sample random chunks of text (batch size × block size). Crucially, <strong>every prefix is its own training example</strong> — in a chunk of 9 characters there are 8 training examples packed in, from context length 1 to block size.</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid" style="font-size: 14px;">
+flowchart LR
+    subgraph Chunk["Chunk of 9 characters: [18, 47, 56, 57, 58,  1, 15, 47, 58]"]
+        direction LR
+        C1[18] --> C2[47] --> C3[56] --> C4[57] --> C5[58] --> C6[1] --> C7[15] --> C8[47] --> C9[58]
+    end
+    subgraph Examples["8 training examples packed inside"]
+        direction TB
+        E1["x: [18] → y: 47"] --> E2["x: [18, 47] → y: 56"]
+        E2 --> E3["x: [18, 47, 56] → y: 57"]
+        E3 --> E4["x: [18, 47, 56, 57] → y: 58"]
+        E4 --> E5["...continuing..."]
+    end
+    Chunk --> Examples
+        </div>
+      </div>
+
+      <div class="callout">
+        <p><strong>🔑 Key insight:</strong> Training on all prefixes makes the model robust — during generation, it can start with just <em>one</em> character of context and still predict well.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- STAGE 0: BIGRAM MODEL -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="bigram">
+      <h2><span class="step">0</span> The Bigram Model</h2>
+      <p><strong>The simplest possible language model:</strong> predict the next character based only on the <em>current</em> character. No context. No memory. Just "if you see 'q', the next char is probably 'u'".</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Input["Input: idx (B,T)"]
+        direction LR
+        I1[24] --> I2[43] --> I3[58] --> I4[5]
+    end
+    TokenEmbed["Token Embedding<br/>(vocab_size × vocab_size)<br/><i>plucks row for each token</i>"] --> Logits["Logits (B,T,vocab_size)<br/><i>scores for every possible next char</i>"]
+    Input --> TokenEmbed
+    Logits --> Loss["Cross-Entropy Loss<br/><i>how wrong are we?</i>"]
+    style TokenEmbed fill:#1e293b,stroke:#334155
+    style Logits fill:#1e293b,stroke:#334155
+        </div>
+      </div>
+
+      <div class="comparison">
+        <div class="compare-card good">
+          <h4>✅ What it does</h4>
+          <p>Learns that certain characters tend to follow others (e.g. 'q → u', space → capital). Simple, fast, interpretable.</p>
+        </div>
+        <div class="compare-card bad">
+          <h4>❌ What's missing</h4>
+          <p><strong>No context awareness.</strong> Each prediction is blind to everything except the <em>very last</em> character. It cannot know what the sentence is about.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📊 Measured Performance</div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">Validation Loss</span>
+          <div class="loss-bar" style="width:180px;background:var(--red);">2.51</div>
+        </div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">Expected (random)</span>
+          <div class="loss-bar" style="width:170px;background:var(--text-dim);opacity:0.4;">4.17</div>
+        </div>
+        <p style="margin-top:0.75rem;font-size:0.9rem;color:var(--text-dim);">Loss = 2.51 means the model is slightly better than random (4.17 = ln 65), but it's still terrible.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📝 Sample Output (after training)</div>
+        <div style="font-family:'Georgia',serif;font-style:italic;color:var(--text-dim);line-height:1.6;">
+        "Ywher e ctr m ry blf,se m vi s m m n h m p b e s e"<br>
+        <span style="font-size:0.8rem;color:var(--text-dim);">— Almost random characters. No English structure at all beyond adjacent letter pairs.</span>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>⚠️ The problem:</strong> Tokens don't talk to each other. The prediction for position 5 uses only the token at position 5 — positions 1-4 are invisible. This is a <strong>bag-of-words</strong> model with no sequence understanding.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- STAGE 1: POSITIONAL ENCODING -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="pos-encoding">
+      <h2><span class="step">1</span> Positional Encoding</h2>
+      <p>The first upgrade: tell each token <strong>where</strong> it is in the sequence. We add a learnable position embedding to each token's embedding.</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Input[" "]
+        direction LR
+        Tokens["Token IDs<br/>(B,T)"] --> TokenEmb["Token Embedding<br/>(T × n_embd)"]
+        Positions["Position IDs<br/>0,1,2,...,T-1"] --> PosEmb["Position Embedding<br/>(T × n_embd)"]
+    end
+    TokenEmb --> Sum["✚ Element-wise Addition"]
+    PosEmb --> Sum
+    Sum --> Logits["Logits → Loss"]
+    style PosEmb fill:#1e293b,stroke:#a78bfa,stroke-width:2px
+    style Sum fill:#1e293b,stroke:#a78bfa,stroke-width:2px
+        </div>
+      </div>
+
+      <p>Without position info, the model treats "the cat sat" and "sat cat the" identically — it's permutation-invariant. Positional encoding breaks this symmetry.</p>
+
+      <div class="callout">
+        <p><strong>💡 Why this matters for Self-Attention:</strong> Attention operates on <em>sets</em> — it has no built-in notion of order. Positional encoding is the only thing telling the model WHERE each token is. Without it, "I love you" and "you love I" look the same to the attention mechanism.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- STAGE 2: SELF-ATTENTION -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="self-attention">
+      <h2><span class="step">2</span> Single-Head Self-Attention</h2>
+      <p><strong>The core innovation of the Transformer.</strong> Each token looks at all previous tokens and decides how much to listen to each one — in a <strong>data-dependent</strong> way.</p>
+
+      <h3>The Math Trick: Weighted Aggregation with Matrix Multiply</h3>
+      <p>Before implementing attention, Karpathy shows a crucial trick: you can compute averages of previous tokens efficiently using a <strong>lower-triangular matrix</strong> and a single batched matrix multiply.</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph Trick["How Tokens Communicate"]
+        direction TB
+        A["Lower Triangular<br/>Weight Matrix (T×T)<br/>1, 0.5, 0.33..."] --> B["Batched Matrix<br/>Multiply (T×T × T×C)"]
+        B --> C["Each token gets a<br/>weighted avg of<br/>previous tokens"]
+    end
+    style Trick fill:#1e293b,stroke:#38bdf8
+    style A fill:#1e293b,stroke:#a78bfa
+    style C fill:#1e293b,stroke:#4ade80
+        </div>
+      </div>
+
+      <h3>The Self-Attention Mechanism</h3>
+      <p>Instead of uniform averages, each token emits a <strong>Query</strong> ("what am I looking for?"), a <strong>Key</strong> ("what do I contain?"), and a <strong>Value</strong> ("what do I share?"). Affinity = Query · Key, then softmax, then aggregate Values.</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph SingleHead["Single Head of Self-Attention"]
+        direction TB
+        X["x (B,T,C)"] --> Q["Linear → Q (B,T,head_size)<br/>what am I looking for?"]
+        X --> K["Linear → K (B,T,head_size)<br/>what do I contain?"]
+        X --> V["Linear → V (B,T,head_size)<br/>what do I share?"]
+        Q & K --> Aff["Affinity = Q·Kᵀ / √dₖ<br/>(B,T,T) — data-dependent"]
+        Aff --> Mask["Mask future tokens → -∞<br/>(decoder: triangular mask)"]
+        Mask --> Softmax["Softmax → weights sum to 1"]
+        Softmax & V --> Agg["Weighted sum of Values<br/>= aggregated info from past"]
+    end
+    style Q fill:#1e293b,stroke:#a78bfa,stroke-width:2px
+    style K fill:#1e293b,stroke:#a78bfa,stroke-width:2px
+    style V fill:#1e293b,stroke:#a78bfa,stroke-width:2px
+    style Aff fill:#1e293b,stroke:#38bdf8,stroke-width:2px
+    style Mask fill:#1e293b,stroke:#fbbf24
+    style Softmax fill:#1e293b,stroke:#fbbf24
+        </div>
+      </div>
+
+      <div class="comparison">
+        <div class="compare-card good">
+          <h4>✅ With Self-Attention</h4>
+          <p>Tokens can now look at relevant context. A vowel finds nearby consonants. A pronoun finds its referent. Predictions are <strong>context-aware</strong>.</p>
+        </div>
+        <div class="compare-card bad">
+          <h4>❌ Without Self-Attention</h4>
+          <p>Each token predicts in total isolation. The model has no idea what the sentence is about. It's just <strong>bigram statistics</strong> — no better than counting pairs.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📊 Performance Improvement</div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">Bigram (no attention)</span>
+          <div class="loss-bar" style="width:150px;background:var(--red);">2.51</div>
+        </div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">+ Self-Attention (1 head)</span>
+          <div class="loss-bar" style="width:140px;background:#fb923c;">2.41</div>
+        </div>
+        <p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-dim);">↓ -0.10 improvement. Not huge yet — one head can only capture one communication pattern at a time.</p>
+      </div>
+
+      <div class="callout">
+        <p><strong>🔬 Scaled Attention (÷√dₖ):</strong> Without scaling, the dot products grow large with head size, making softmax "too peaky" — each token attends to just one other. Scaling keeps the variance ≈ 1 so attention is diffuse at initialization, letting the model learn which relationships matter.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- STAGE 3: MULTI-HEAD ATTENTION -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="multi-head">
+      <h2><span class="step">3</span> Multi-Head Attention</h2>
+      <p>One attention head can only learn <strong>one</strong> relationship pattern. But tokens need many: "Am I a vowel looking for consonants? Am I a verb looking for a subject? Am I a pronoun looking for a referent?"</p>
+      <p><strong>Solution:</strong> Run <em>multiple</em> attention heads in parallel, each with its own Q, K, V projections. Concatenate their outputs.</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph MHA["Multi-Head Attention"]
+        direction TB
+        X["x (B,T,n_embd)"] --> Split
+        subgraph Split["Split into h heads"]
+            H1["Head 1<br/>(head_size = n_embd/h)"]
+            H2["Head 2<br/>(head_size = n_embd/h)"]
+            HD["..."]
+            HH["Head h"]
+        end
+        H1 & H2 & HD & HH --> Concat["Concat over channels<br/>(B,T,n_embd)"]
+        Concat --> Proj["Linear Projection<br/>back to n_embd"]
+    end
+    style Split fill:#1e293b,stroke:#a78bfa,stroke-width:2px
+    style Concat fill:#1e293b,stroke:#fbbf24
+    style Proj fill:#1e293b,stroke:#38bdf8
+        </div>
+      </div>
+
+      <div class="comparison">
+        <div class="compare-card good">
+          <h4>✅ With Multi-Head (4 heads)</h4>
+          <p>Each head can specialize: Head 1 tracks vowel→consonant patterns, Head 2 tracks article→noun, Head 3 tracks sentence boundaries, etc. The model builds a <strong>rich, multi-faceted</strong> representation.</p>
+        </div>
+        <div class="compare-card bad">
+          <h4>❌ Single Head Only</h4>
+          <p>Only one communication channel. The model must choose: grammar OR syntax OR semantics — it can't do all three. Representations are <strong>impoverished</strong>.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📊 Performance Improvement</div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">Single head</span>
+          <div class="loss-bar" style="width:140px;background:#fb923c;">2.41</div>
+        </div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">+ Multi-head (4 heads)</span>
+          <div class="loss-bar" style="width:133px;background:var(--amber);">2.28</div>
+        </div>
+        <p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-dim);">↓ -0.13 improvement. Multiple communication channels let the model capture more linguistic patterns simultaneously.</p>
+      </div>
+
+      <div class="callout">
+        <p><strong>🎯 Like group convolution:</strong> Instead of one giant attention operation (expensive, hard to train), we split into smaller parallel heads that are computationally efficient and learn diverse features.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- STAGE 4: FEED-FORWARD LAYERS -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="feedforward">
+      <h2><span class="step">4</span> Feed-Forward Networks (Computation)</h2>
+      <p>Attention handles <strong>communication</strong> between tokens. But after gathering information, each token needs to <strong>think</strong> — to process what it learned. That's the Feed-Forward Network (a simple MLP applied to each token independently).</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph Block["One Transformer Block"]
+        direction TB
+        Input["x (B,T,n_embd)"] --> Attn["Multi-Head Self-Attention<br/>⚡ Tokens communicate"]
+        Attn --> FFN["Feed-Forward Network<br/>🧠 Each token thinks"]
+        FFN --> Output["Output"]
+    end
+    subgraph FFNInner["Inside the FFN"]
+        direction LR
+        I["n_embd"] --> L1["Linear 4×n_embd<br/>(expand)"]
+        L1 --> ReLU["ReLU<br/>(non-linearity)"]
+        ReLU --> L2["Linear n_embd<br/>(compress back)"]
+    end
+    style FFN fill:#1e293b,stroke:#a78bfa,stroke-width:2px
+    style FFNInner fill:#1e293b,stroke:#a78bfa
+        </div>
+      </div>
+
+      <div class="comparison">
+        <div class="compare-card good">
+          <h4>✅ With FFN (Computation)</h4>
+          <p>Token gathers info from past, then <strong>processes</strong> it through a non-linear transformation. "Think before you speak." The inner layer is 4× wider, giving the model room to compute rich features.</p>
+        </div>
+        <div class="compare-card bad">
+          <h4>❌ No FFN (Computation-less)</h4>
+          <p>Tokens talk to each other but have <strong>no capacity to process</strong> what they hear. It's like having a meeting where everyone speaks but nobody thinks. The model needs depth of computation, not just breadth of communication.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📊 Performance Improvement</div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">Multi-head only</span>
+          <div class="loss-bar" style="width:133px;background:var(--amber);">2.28</div>
+        </div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">+ Feed-Forward</span>
+          <div class="loss-bar" style="width:130px;background:#22d3ee;">2.24</div>
+        </div>
+        <p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-dim);">↓ -0.04 improvement. Small here, but FFNs become <strong>critical</strong> as models deepen.</p>
+      </div>
+
+      <div class="callout">
+        <p><strong>🔑 Communicate → Compute pattern:</strong> This interleaving of attention (gather) and FFN (process) is the fundamental rhythm of a Transformer. Each block = one round of "talk then think".</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- STAGE 5: RESIDUAL CONNECTIONS -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="residual">
+      <h2><span class="step">5</span> Residual Connections + Stacking Blocks</h2>
+      <p>Now we want to stack multiple Transformer blocks (communication + computation) to build a <strong>deep</strong> network. But deep networks are hard to optimize — gradients vanish as they backprop through many layers.</p>
+
+      <p><strong>Solution: Residual (skip) connections.</strong> Each block forks off from a main "residual pathway", does its computation, and adds back via "+". Gradients flow directly through the additions.</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Deep["Deep Transformer with Residuals"]
+        direction TB
+        Input["x"] --> Add1["✚"]
+        Attn["Multi-Head Attention"] --> Add1
+        Input --> Attn
+        Add1 --> Add2["✚"]
+        FFN["Feed-Forward"] -.-> Add2
+        Add1 --> FFN
+        Add2 --> Output["Output + Gradient Super Highway"]
+    end
+    subgraph Gradient["Gradient Flow"]
+        direction LR
+        Loss --> G1["∂Loss/∂Output"] --> G2["✚ splits gradient equally"]
+        G2 --> G3["to FFN (fork)"]
+        G2 --> G4["to Add1 (main path)"]
+        G4 --> G5["...all the way to Input"]
+    end
+    style Add1 fill:#1e293b,stroke:#4ade80,stroke-width:2px
+    style Add2 fill:#1e293b,stroke:#4ade80,stroke-width:2px
+    style Gradient fill:#1e293b,stroke:#fbbf24
+        </div>
+      </div>
+
+      <div class="comparison">
+        <div class="compare-card good">
+          <h4>✅ With Residual Connections</h4>
+          <p>Gradients flow unimpeded from loss → input via the "super highway" of addition ops. Blocks start near-identity (initialized to contribute almost nothing) and gradually come online during training.</p>
+        </div>
+        <div class="compare-card bad">
+          <h4>❌ Without Residuals (Naive Stacking)</h4>
+          <p>Gradients must pass through every nonlinearity, causing <strong>vanishing gradients</strong> in deep stacks. The first few blocks train, but deeper blocks learn nothing. Loss plateaus.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📊 Performance Improvement</div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">Shallow (1 block)</span>
+          <div class="loss-bar" style="width:130px;background:#22d3ee;">2.24</div>
+        </div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">Deep + Residuals</span>
+          <div class="loss-bar" style="width:120px;background:#4ade80;">2.08</div>
+        </div>
+        <p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-dim);">↓ -0.16 improvement. Residuals unlock depth — stacking 6+ blocks becomes possible.</p>
+      </div>
+
+      <div class="callout">
+        <p><strong>🛣️ The Gradient Super Highway:</strong> Addition distributes gradients equally to both branches. So gradients from the loss can skip all the nonlinear blocks and flow straight to the input — unimpeded. The residual blocks start "off" and gradually turn on during training.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- STAGE 6: LAYER NORMALIZATION -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="layernorm">
+      <h2><span class="step">6</span> Layer Normalization</h2>
+      <p>Layer Norm stabilizes training by normalizing each token's features to have zero mean and unit variance. Unlike Batch Norm (which normalizes across examples), Layer Norm normalizes <strong>across features</strong> for each token independently.</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph LN["Layer Norm"]
+        direction TB
+        Tokens["Batch of tokens<br/>(B,T,n_embd)"]
+        Norm["For each token:<br/>μ = mean(features)<br/>σ = std(features)<br/>normalized = (x-μ)/σ"]
+        Scale["Scale + Shift<br/>γ · normalized + β<br/>(learnable params)"]
+        Tokens --> Norm --> Scale --> Out["Output<br/>(B,T,n_embd)"]
+    end
+    subgraph Compare["What it normalizes"]
+        direction LR
+        BN["Batch Norm: Normalizes<br/>a feature across<br/>all examples in batch"]
+        LNVis["Layer Norm: Normalizes<br/>all features for<br/>each example individually"]
+    end
+    style LN fill:#1e293b,stroke:#a78bfa,stroke-width:2px
+    style Scale fill:#1e293b,stroke:#fbbf24
+    style LNVis fill:#1e293b,stroke:#4ade80
+        </div>
+      </div>
+
+      <div class="comparison">
+        <div class="compare-card good">
+          <h4>✅ With Layer Norm (Pre-Norm)</h4>
+          <p>Applied <strong>before</strong> each sub-layer (attention/FFN) — the "Pre-Norm" formulation. Normalizes inputs, keeping activations well-behaved. Each token's features have controlled scale, preventing exploding activations in deep stacks.</p>
+        </div>
+        <div class="compare-card bad">
+          <h4>❌ Without Layer Norm</h4>
+          <p>As the model deepens, activation magnitudes grow uncontrollably. Training becomes unstable — loss spikes, NaNs. The model <strong>diverges</strong> beyond a few layers.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📊 Performance Improvement</div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">Deep + Residuals (no LN)</span>
+          <div class="loss-bar" style="width:120px;background:#4ade80;">~2.08</div>
+        </div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">+ Layer Norm</span>
+          <div class="loss-bar" style="width:118px;background:var(--green);">2.06</div>
+        </div>
+        <p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-dim);">Modest improvement here, but <strong>essential for stability</strong> at larger scales.</p>
+      </div>
+
+      <div class="callout">
+        <p><strong>📐 Pre-Norm vs Original:</strong> The original "Attention is All You Need" paper applied Norm <em>after</em> each sub-layer (Post-Norm). Modern practice (and nanoGPT) applies it <em>before</em> (Pre-Norm) — it's more stable and allows larger learning rates.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- STAGE 7: SCALED-UP GPT -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="scaled">
+      <h2><span class="step">7</span> Scaled-Up GPT</h2>
+      <p>Now we scale: bigger batch, larger context, more heads, more layers, dropout for regularization. The final nanoGPT on Tiny Shakespeare:</p>
+
+      <div class="card">
+        <div class="card-label">⚙️ Final Hyperparameters</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;padding:0.5rem 0;">
+          <div><strong>Batch size:</strong> 64</div>
+          <div><strong>Block size:</strong> 256</div>
+          <div><strong>n_embd:</strong> 384</div>
+          <div><strong>n_head:</strong> 6</div>
+          <div><strong>n_layer:</strong> 6</div>
+          <div><strong>head_size:</strong> 64 (=384/6)</div>
+          <div><strong>Dropout:</strong> 0.2</div>
+          <div><strong>Parameters:</strong> ~10M</div>
+          <div><strong>Learning rate:</strong> 3e-4</div>
+          <div><strong>Training time:</strong> ~15 min on A100 GPU</div>
+        </div>
+      </div>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph FullGPT["Full Decoder-Only Transformer"]
+        direction TB
+        Tok["Token IDs (B,T)"] --> TokEmb["Token Embedding<br/>(vocab_size → n_embd)"]
+        Pos["Position IDs"] --> PosEmb["Position Embedding<br/>(block_size → n_embd)"]
+        TokEmb & PosEmb --> Add["✚"]
+        Add --> LN1["Layer Norm (Pre)"] --> Blocks
+
+        subgraph Blocks["6× Transformer Blocks"]
+            direction TB
+            B1["Block 1"] --> B2["Block 2"] --> B3["..."] --> B4["Block 6"]
+        end
+
+        subgraph OneBlock["One Block"]
+            direction TB
+            LN_A["Layer Norm"] --> MHA["Multi-Head<br/>Self-Attention (6 heads)"]
+            MHA --> Drop1["Dropout 0.2"]
+            Drop1 --> Res1["✚ Residual"]
+            Res1 --> LN_B["Layer Norm"] --> FFN["Feed-Forward<br/>384 → 1536 → 384"]
+            FFN --> Drop2["Dropout 0.2"]
+            Drop2 --> Res2["✚ Residual"]
+        end
+
+        Blocks --> LN_Final["Final Layer Norm"]
+        LN_Final --> LM_Head["LM Head Linear<br/>(n_embd → vocab_size)"]
+        LM_Head --> Logits["Logits (B,T,vocab_size)"]
+    end
+    style LN1 fill:#1e293b,stroke:#a78bfa
+    style Blocks fill:#1e293b,stroke:#38bdf8
+    style LN_Final fill:#1e293b,stroke:#a78bfa
+    style LM_Head fill:#1e293b,stroke:#4ade80
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📊 Final Performance</div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">Best so far (6 layers)</span>
+          <div class="loss-bar" style="width:88px;background:var(--green);">1.48</div>
+        </div>
+        <div class="loss-bar-wrap">
+          <span class="loss-label">Where we started</span>
+          <div class="loss-bar" style="width:150px;background:var(--red);opacity:0.5;">2.51</div>
+        </div>
+        <p style="margin-top:0.75rem;font-size:0.9rem;color:var(--text-dim);">From <strong>2.51 → 1.48</strong> — a <strong>41% reduction</strong> in loss. The output now reads like Shakespeare (nonsensical but stylistically correct).</p>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📝 Sample Output (10M parameter model)</div>
+        <div style="font-family:'Georgia',serif;font-style:italic;color:var(--text-dim);line-height:1.7;">
+        "verily, my lord, the sights have left the again:<br>
+        the king coming with my curses, with precious pale<br>
+        and then tranos say something else."<br>
+        <span style="font-size:0.8rem;color:var(--text-dim);">— This actually <em>looks</em> like Shakespeare. Capitalization, structure, rhythm. It's nonsense if you read closely, but the <em>form</em> is right.</span>
+        </div>
+      </div>
+
+      <div class="callout">
+        <p><strong>🎯 The key insight from scaling:</strong> Loss dropped from 2.06 → 1.48 just by making the model bigger (6 layers, 384 embedding, 256 context). The architecture didn't change — we just gave it more capacity. This is the <strong>scaling hypothesis</strong> in action.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- LOSS JOURNEY -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="journey">
+      <h2>The Loss Journey</h2>
+      <p>Every architectural addition measurably improved the model. Here's the complete progression:</p>
+
+      <div class="card" style="padding:2rem;">
+        <div class="card-label" style="margin-bottom:1rem;">📉 Validation Loss at Each Stage</div>
+
+        <div class="loss-bar-wrap">
+          <span class="loss-label" style="min-width:120px;">Bigram (baseline)</span>
+          <div class="loss-bar" style="width:152px;background:#f87171;">2.51</div>
+          <span class="loss-val" style="color:#f87171;">▼ 0.0</span>
+        </div>
+
+        <div class="loss-bar-wrap">
+          <span class="loss-label" style="min-width:120px;">+ Self-Attention (1 head)</span>
+          <div class="loss-bar" style="width:146px;background:#fb923c;">2.41</div>
+          <span class="loss-val" style="color:#fb923c;">▼ 0.10</span>
+        </div>
+
+        <div class="loss-bar-wrap">
+          <span class="loss-label" style="min-width:120px;">+ Multi-Head (4 heads)</span>
+          <div class="loss-bar" style="width:138px;background:#fbbf24;">2.28</div>
+          <span class="loss-val" style="color:#fbbf24;">▼ 0.13</span>
+        </div>
+
+        <div class="loss-bar-wrap">
+          <span class="loss-label" style="min-width:120px;">+ Feed-Forward</span>
+          <div class="loss-bar" style="width:135px;background:#22d3ee;">2.24</div>
+          <span class="loss-val" style="color:#22d3ee;">▼ 0.04</span>
+        </div>
+
+        <div class="loss-bar-wrap">
+          <span class="loss-label" style="min-width:120px;">+ Residuals (6 blocks)</span>
+          <div class="loss-bar" style="width:126px;background:#34d399;">2.08</div>
+          <span class="loss-val" style="color:#34d399;">▼ 0.16</span>
+        </div>
+
+        <div class="loss-bar-wrap">
+          <span class="loss-label" style="min-width:120px;">+ Layer Norm</span>
+          <div class="loss-bar" style="width:124px;background:#4ade80;">2.06</div>
+          <span class="loss-val" style="color:#4ade80;">▼ 0.02</span>
+        </div>
+
+        <div class="loss-bar-wrap" style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <span class="loss-label" style="min-width:120px;font-weight:700;color:var(--accent);">Scaled-Up (6L, 384E, 256ctx)</span>
+          <div class="loss-bar" style="width:90px;background:#38bdf8;font-weight:700;">1.48</div>
+          <span class="loss-val" style="color:#38bdf8;font-weight:600;">▼ 1.03 total!</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- FULL ARCHITECTURE -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="architecture">
+      <h2>Complete Decoder-Only Architecture</h2>
+      <p>What we <em>actually</em> built is a <strong>decoder-only</strong> Transformer (GPT-style), not the full encoder-decoder from the original paper. Here's what that means:</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph DecoderOnly["Decoder-Only Transformer (GPT) — What nanoGPT builds"]
+        direction TB
+        Input["Input Tokens"] --> Embed["Embedding + Position"]
+        Embed --> B1
+        subgraph B1["Block 1"]
+            MHA1["Masked Self-Attention<br/>(triangular mask)"]
+            FFN1["Feed-Forward"]
+        end
+        B1 --> B2["... N blocks ..."]
+        B2 --> LN["Layer Norm"]
+        LN --> Head["LM Head"]
+        Head --> Out["Output Logits"]
+    end
+
+    subgraph EncoderDecoder["Encoder-Decoder Transformer (Original Paper) — For Translation"]
+        direction TB
+        Src["Source Text<br/>e.g. French"] --> Encoder["Encoder Blocks<br/>Full Self-Attention<br/>(no mask!)"]
+        Encoder --> Cross["Cross-Attention<br/>Q from decoder<br/>K,V from encoder"]
+        Tgt["Target Text<br/>e.g. English"] --> Decoder["Decoder Blocks<br/>Masked Self-Attention<br/>+ Cross-Attention + FFN"]
+        Cross --> Decoder
+        Decoder --> Out2["Output"]
+    end
+
+    style DecoderOnly fill:#1e293b,stroke:#38bdf8
+    style EncoderDecoder fill:#1e293b,stroke:#a78bfa
+        </div>
+      </div>
+
+      <div class="comparison">
+        <div class="compare-card good">
+          <h4>✅ Decoder-Only (GPT)</h4>
+          <p>Only needs the triangular mask — each token sees only past tokens. Perfect for <strong>language modeling</strong> (predicting what comes next). Simpler architecture, fewer parameters, scales beautifully.</p>
+        </div>
+        <div class="compare-card" style="background:rgba(167,139,250,0.06);border-color:rgba(167,139,250,0.2);">
+          <h4 style="color:#a78bfa;">📐 Encoder-Decoder (Original Paper)</h4>
+          <p>Has an encoder (full attention, no mask) to read source text, and a decoder with cross-attention to attend to it. Designed for <strong>translation</strong>. More complex, more flexible for conditional generation.</p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <p><strong>🧠 Why GPT works without an encoder:</strong> In language modeling, there's no external "source" to condition on — the model just continues the text. The past context IS the conditioning. That's why the decoder-only design is sufficient and has become the dominant architecture.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- nanoGPT CODEBASE -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="nanogpt-code">
+      <h2>The nanoGPT Codebase</h2>
+      <p>Karpathy's actual <a href="https://github.com/karpathy/nanoGPT" style="color:var(--accent);">nanoGPT repository</a> distills everything above into two clean files — the training loop and the model definition — each ~300 lines. Let's see how the model.py maps to what we built:</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph ModelPy["model.py — The Transformer Definition"]
+        direction TB
+
+        subgraph CausalSelfAttention["CausalSelfAttention"]
+            CSA["QKV projections<br/>n_embd → 3 × n_embd"]
+            CSA2["Split into n_head<br/>heads (batched)"]
+            CSA3["Attention scores:<br/>Q·Kᵀ/√dₖ + mask"]
+            CSA4["Softmax + Dropout"]
+            CSA5["Value aggregation"]
+            CSA6["Output projection"]
+        end
+
+        subgraph MLP["MLP (Feed-Forward)"]
+            MLP1["Linear: n_embd → 4×n_embd"]
+            MLP2["GELU activation"]
+            MLP3["Linear: 4×n_embd → n_embd"]
+            MLP4["Dropout"]
+        end
+
+        subgraph Block["Block"]
+            B1["Layer Norm"] --> CSA["CausalSelfAttention"]
+            CSA --> B2["✚ Residual"]
+            B2 --> B3["Layer Norm"]
+            B3 --> MLP["MLP"]
+            MLP --> B4["✚ Residual"]
+        end
+
+        subgraph GPT["GPT"]
+            G1["wte: Token Embedding<br/>(vocab_size × n_embd)"]
+            G2["wpe: Position Embedding<br/>(block_size × n_embd)"]
+            G1 & G2 --> G3["✚"]
+            G3 --> G4["Dropout"]
+            G4 --> Blocks["n_layer × Block"]
+            Blocks --> G5["Layer Norm"]
+            G5 --> G6["lm_head: Linear<br/>n_embd → vocab_size"]
+        end
+    end
+
+    style CausalSelfAttention fill:#1e293b,stroke:#38bdf8
+    style MLP fill:#1e293b,stroke:#a78bfa
+    style Block fill:#1e293b,stroke:#4ade80
+    style GPT fill:#1e293b,stroke:#fbbf24
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📂 Key Files</div>
+        <ul>
+          <li><strong>model.py</strong> — GPT model, CausalSelfAttention, MLP, Block ~300 lines</li>
+          <li><strong>train.py</strong> — Training loop, DDP, checkpointing, LR scheduling ~300 lines</li>
+          <li><strong>sample.py</strong> — Text generation from trained model</li>
+          <li><strong>config/</strong> — YAML-ish configs for different training runs</li>
+          <li><strong>data/</strong> — Dataset preparation scripts (Shakespeare, OpenWebText)</li>
+        </ul>
+        <div class="code-block" style="margin-top:0.75rem;">
+<span class="comment"># Total: ~600 lines of readable PyTorch</span><br>
+<span class="comment"># That's it. That's the whole of a GPT training system.</span>
+        </div>
+      </div>
+
+      <div class="callout">
+        <p><strong>✨ nanoGPT can reproduce GPT-2 (124M)</strong> — When trained on OpenWebText (~9B tokens), the exact same code reproduces GPT-2's performance. The difference is just scale: larger n_embd (768), more layers (12), more heads (12), and vastly more data.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- CORE CONCEPTS RECAP -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="core-concepts">
+      <h2>⚡ Core Concepts Recap</h2>
+      <p>Three essential Transformer ideas that repay re-visiting. Understanding these deeply will make every other LLM paper and implementation click.</p>
+
+      <!-- ── Concept 1: Positional Encoding ── -->
+      <div class="card" style="border-color:var(--accent);">
+        <div class="card-label" style="color:var(--accent);font-size:0.85rem;">Concept 1 · Positional Encoding</div>
+        <h3 style="margin-top:0;font-size:1.2rem;">Why Positional Encoding Is Needed (Even When Data Is an Ordered List)</h3>
+
+        <div class="comparison">
+          <div class="compare-card good">
+            <h4>🧠 The Core Insight</h4>
+            <p>Your <em>dataset</em> is an ordered sequence — <code>[18, 47, 56]</code> has a clear left-to-right meaning. But the internal math of Self-Attention (<code>Q · Kᵀ</code>) treats tokens as an <strong>unordered set</strong>. The dot product between two token vectors is the same number regardless of where they sit in the sequence. This is called <strong>permutation invariance</strong>.</p>
+          </div>
+          <div class="compare-card bad">
+            <h4>🚫 Without Positional Encoding</h4>
+            <p><code>"cat eats fish"</code> and <code>"fish eats cat"</code> produce <strong>identical attention scores</strong> at every position. The model literally cannot tell the difference between subject and object.</p>
+          </div>
+        </div>
+
+        <div class="mermaid-box" style="margin:0.75rem 0;">
+          <div class="mermaid">
+flowchart LR
+    subgraph WithoutPE["Attention Without Position — Permutation Invariant"]
+        direction TB
+        W1["Token A: 'cat'<br/>Token B: 'eats'<br/>Token C: 'fish'"]
+        W2["Q·Kᵀ gives same scores<br/>regardless of order"]
+        W3["'cat eats fish' = 'fish eats cat'<br/>to the attention mechanism ❌"]
+    end
+    subgraph WithPE["With Positional Encoding — Order Matters"]
+        direction TB
+        P1["Token A + Pos₁: 'cat'<br/>Token B + Pos₂: 'eats'<br/>Token C + Pos₃: 'fish'"]
+        P2["Q·Kᵀ now sees:<br/>'cat at pos₁' different from<br/>'cat at pos₃'"]
+        P3["'cat eats fish' ≠ 'fish eats cat' ✅"]
+    end
+    style WithoutPE fill:#1e293b,stroke:#f87171
+    style WithPE fill:#1e293b,stroke:#4ade80
+        </div>
+      </div>
+
+        <div class="callout">
+          <p><strong>💡 The Solution:</strong> We add a learnable position vector (<code>wpe</code>) to each token's embedding vector (<code>wte</code>) right at the input. Now each token carries both <em>what</em> it is and <em>where</em> it is. The attention can distinguish <code>"the dog bit the man"</code> from <code>"the man bit the dog"</code> because the vectors at position 2 and position 4 are different — even if the tokens are the same.</p>
+        </div>
+    </div>
+
+      <!-- ── Concept 2: Weighted Aggregation ── -->
+      <div class="card" style="border-color:var(--amber);">
+        <div class="card-label" style="color:var(--amber);font-size:0.85rem;">Concept 2 · The Lower-Triangular Trick</div>
+        <h3 style="margin-top:0;font-size:1.2rem;">Weighted Aggregation (How Tokens Communicate)</h3>
+
+        <div class="comparison">
+          <div class="compare-card good">
+            <h4>🧠 The Problem</h4>
+            <p>In autoregressive generation, token #5 needs to aggregate information from tokens #1–4 (but NOT #6–8). Doing this with nested <code>for</code> loops is too slow on a GPU. We need a <strong>vectorized</strong> way.</p>
+          </div>
+          <div class="compare-card info">
+            <h4>📐 The Math Trick</h4>
+            <p>Multiply the sequence matrix by a <strong>lower-triangular weight matrix</strong>:<br>
+            • <strong>Zeros in top-right</strong> — block future tokens from peeking ahead<br>
+            • <strong>Rows in lower-left</strong> — assign weights to current + past tokens<br>
+            • One batched matrix multiply does all positions at once.</p>
+          </div>
+        </div>
+
+        <div class="mermaid-box" style="margin:0.75rem 0;">
+          <div class="mermaid">
+flowchart LR
+    subgraph Triangle["The Lower-Triangular Weight Matrix (T × T)"]
+        direction TB
+        M["[1.0   0     0     0   ]<br/>[0.5  0.5   0     0   ]<br/>[0.33 0.33 0.33  0   ]<br/>[0.25 0.25 0.25 0.25]"]
+    end
+    subgraph Agg["What It Does — Row by Row"]
+        direction TB
+        R1["Row 1: token₁ alone"]
+        R2["Row 2: average(token₁, token₂)"]
+        R3["Row 3: average(token₁, token₂, token₃)"]
+        R4["Row 4: average(token₁, token₂, token₃, token₄)"]
+    end
+    M --> Agg
+    style Triangle fill:#1e293b,stroke:#38bdf8
+    style Agg fill:#1e293b,stroke:#fbbf24
+        </div>
+      </div>
+
+        <div class="comparison" style="margin-top:0.75rem;">
+          <div class="compare-card warn">
+            <h4>🔧 Evolution to Self-Attention</h4>
+            <p>This fixed triangular matrix does <strong>uniform averaging</strong> (weights are all the same per row). Self-Attention replaces those static weights with <strong>data-dependent, learned scores</strong> from <code>Q·Kᵀ</code>. Now each token can dynamically decide how much to listen to every other token:</p>
+            <p style="margin-top:0.5rem;"><code>"The fox jumps over the lazy dog"</code> → <strong>"jumps"</strong> might place <strong>60%</strong> of its attention on <strong>"fox"</strong>, 10% on <strong>"dog"</strong>, and 30% spread over the rest.</p>
+          </div>
+          <div class="compare-card bad">
+            <h4>❌ Why Nested Loops Don't Work</h4>
+            <p>A Python <code>for</code> loop over T positions × B batch items would be hundreds of sequential operations. GPUs are designed for <strong>massive matrix multiplications</strong> — the triangular trick turns a sequential aggregation into a single, highly parallel matmul. This is what makes Transformer training at scale possible.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Concept 3: KV Cache ── -->
+      <div class="card" style="border-color:#a78bfa;">
+        <div class="card-label" style="color:#a78bfa;font-size:0.85rem;">Concept 3 · KV Cache</div>
+        <h3 style="margin-top:0;font-size:1.2rem;">Why Only K and V Are Cached (and Q Is Not)</h3>
+
+        <p>During generation, after predicting token <code>t</code>, we slide to token <code>t+1</code>. We don't want to re-compute projections for every past token. The <strong>KV Cache</strong> is the optimization that makes this possible.</p>
+
+        <div class="mermaid-box" style="margin:0.75rem 0;">
+          <div class="mermaid">
+sequenceDiagram
+    participant Gen as Generation Loop
+    participant Cache as KV Cache (GPU VRAM)
+    participant Model as Transformer
+
+    Note over Gen: Generating token #5
+
+    Gen->>Model: "Here is token #5's embedding"
+    Model->>Model: Compute Q₅ (for token #5 only)
+    Model->>Cache: "Give me K₁₋₄ and V₁₋₄"
+    Cache-->>Model: Returns cached K₁₋₄, V₁₋₄
+    Model->>Model: Attention(Q₅, K₁₋₄, V₁₋₄) → output token #5
+
+    Note over Model: Now compute K₅ and V₅ for the cache
+    Model->>Cache: Store K₅, V₅
+    Cache->>Cache: Cache now holds K₁₋₅, V₁₋₅
+
+    Note over Gen: Generating token #6 — repeat with Q₆
+        </div>
+      </div>
+
+        <div class="comparison">
+          <div class="compare-card good">
+            <h4>🧠 Why Only K and V Are Cached</h4>
+            <p><strong>Query (Q):</strong> Belongs <em>only</em> to the brand-new token being generated. Once token <code>t</code> finishes predicting, its Query is discarded — token <code>t+1</code> creates its own new Query from scratch.<br><br>
+            <strong>Keys (K) and Values (V):</strong> Belong to <em>all past tokens</em>. Past tokens never change, so their K and V vectors remain constant for the entire generation session. Cache them once, reuse forever.</p>
+          </div>
+          <div class="compare-card bad">
+            <h4>🔥 The Cost Without KV Cache</h4>
+            <p>Without caching, generating token #100 would re-compute K₁₋₉₉ and V₁₋₉₉ from scratch — 99 unnecessary matrix multiplications. Each new token would cost <strong>O(T²)</strong> instead of <strong>O(T)</strong> in attention computation. For a 4096-token context, that's ~16× more compute per token.</p>
+          </div>
+        </div>
+
+        <div class="callout" style="margin-top:0.75rem;">
+          <p><strong>💾 Storage vs. Memory — A Key Distinction:</strong> The KV Cache lives in <strong>fast, scarce GPU VRAM</strong> during active generation (because every new token needs to read it instantly). Long-term conversation history sits as <strong>lightweight raw text</strong> in standard cloud databases or Redis. The KV cache is a runtime optimization, not a persistence strategy. For a 7B model generating 2048 tokens, the KV cache can consume ~1 GB of GPU memory — that's why managing it (cache pruning, sliding window, etc.) is an active research area.</p>
+        </div>
+
+        <div class="card" style="margin:0.75rem 0;padding:0.75rem 1rem;border-color:var(--border);">
+          <div class="card-label" style="color:var(--text-dim);">💬 Concrete Example</div>
+          <p style="margin-bottom:0;font-size:0.9rem;">
+          User prompt: <code>"What is the capital of France?"</code> → model generates <code>"The capital of France is Paris."</code><br><br>
+          <strong>Without cache:</strong> For the word "Paris", re-run Q/K/V projections for all 7 input tokens + all generated tokens so far from scratch.<br>
+          <strong>With cache:</strong> Only compute Q for the current position. Fetch K and V for all prior positions from the cache. <strong>~4× faster generation</strong> in practice.</p>
+        </div>
+
+        <div class="callout warn">
+          <p><strong>⚡ The operational trade-off:</strong> KV Cache trades <strong>GPU memory</strong> for <strong>generation speed</strong>. It's why you see "context length" limits on LLM APIs — the KV cache for 128K tokens won't fit on most GPUs without optimization (e.g., Multi-Query Attention, grouped-query attention, sliding window, or offloading).</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- FROM nanoGPT TO CHATGPT -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="to-chatgpt">
+      <h2>From nanoGPT → ChatGPT</h2>
+      <p>The architecture you just built, block by block, is <strong>fundamentally identical</strong> to what powers ChatGPT. The difference is <strong>scale</strong> and <strong>training stages</strong>.</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Pretraining["Pre-training (what nanoGPT does)"]
+        direction TB
+        PT1["Train on large text corpus<br/>(Shakespeare / Internet)"]
+        PT2["Objective: predict next token<br/>(language modeling)"]
+        PT3["Result: Document Completer<br/>(babbles like the training data)"]
+    end
+    subgraph Finetuning["Fine-tuning (what makes ChatGPT)"]
+        direction TB
+        FT1["Supervised Fine-Tuning<br/>Train on Q&A pairs<br/>(~thousands of examples)"]
+        FT2["Reward Modeling<br/>Humans rank responses →<br/>train a reward model"]
+        FT3["RLHF (PPO)<br/>Optimize responses<br/>to maximize reward"]
+        FT4["Result: Helpful Assistant<br/>(answers questions, follows instructions)"]
+    end
+    Pretraining --> Finetuning
+
+    style Pretraining fill:#1e293b,stroke:#38bdf8
+    style Finetuning fill:#1e293b,stroke:#a78bfa
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📊 nanoGPT vs GPT-3 vs ChatGPT — The Scale Comparison</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;padding:0.75rem 0;">
+          <div style="text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent);">10M</div>
+            <div style="font-size:0.8rem;color:var(--text-dim);">nanoGPT params</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--amber);">175B</div>
+            <div style="font-size:0.8rem;color:var(--text-dim);">GPT-3 params</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--green);">17,500×</div>
+            <div style="font-size:0.8rem;color:var(--text-dim);">bigger</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;border-top:1px solid var(--border);">
+          <div style="text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent);">300K</div>
+            <div style="font-size:0.8rem;color:var(--text-dim);">nanoGPT training tokens<br/>(Shakespeare)</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--amber);">300B</div>
+            <div style="font-size:0.8rem;color:var(--text-dim);">GPT-3 training tokens<br/>(Internet)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📈 The Pre-training → Assistant Pipeline</div>
+        <ol>
+          <li><strong>Pre-training</strong> (nanoGPT-scale): Train a decoder-only Transformer to predict the next token on a large corpus. Result: a <strong>document completer</strong> that mimics the training data style.</li>
+          <li><strong>Supervised Fine-Tuning (SFT)</strong>: Fine-tune on thousands of high-quality Q&A examples. The model learns the <em>format</em> of being helpful: "question → answer".</li>
+          <li><strong>Reward Modeling (RM)</strong>: Humans compare model outputs and rank them. Train a separate model to predict which response humans prefer.</li>
+          <li><strong>RLHF (PPO)</strong>: Use reinforcement learning to make the model produce responses that score highly on the reward model. This <strong>aligns</strong> the model to be helpful, honest, and harmless.</li>
+        </ol>
+      </div>
+
+      <div class="callout" style="border-left-color:var(--amber);background:rgba(251,191,36,0.04);">
+        <p><strong>🚀 The key takeaway:</strong> The ~600 lines of nanoGPT code you just learned contains the <strong>core architecture</strong> of ChatGPT. The Transformer blocks, the attention mechanism, the residual connections, the layer norms — it's all the same. What differs is the <strong>scale</strong> (10M → 175B+ parameters) and the <strong>training data</strong> (Shakespeare → the internet) and the <strong>alignment stage</strong> (RLHF).<br><br>
+        <em>"We did not talk about any of the fine-tuning stages. But if you're interested in something that's not just language modeling, you have to complete further stages of fine-tuning."</em> — Andrej Karpathy</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- FOOTER -->
+    <!-- ════════════════════════════════════════════ -->
+    <div style="border-top:1px solid var(--border);padding-top:2rem;margin-top:3rem;text-align:center;color:var(--text-dim);font-size:0.85rem;">
+      <p><strong>Based on</strong> Andrej Karpathy's "Let's build GPT from scratch" lecture<br>
+      &amp; the <a href="https://github.com/karpathy/nanoGPT" style="color:var(--accent);">nanoGPT</a> repository &amp; the paper <a href="https://arxiv.org/abs/1706.03762" style="color:var(--accent);">"Attention Is All You Need"</a> (Vaswani et al., 2017)</p>
+      <p style="margin-top:0.5rem;">Built with ❤️ to make Transformers click. 🖱️ <a href="#" onclick="window.print()" style="color:var(--accent);">Print / Save as PDF</a></p>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Initialize Mermaid with dark theme
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1e293b',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#334155',
+      lineColor: '#38bdf8',
+      secondaryColor: '#0f172a',
+      tertiaryColor: '#1e293b',
+      fontSize: '14px'
+    },
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: true,
+      curve: 'basis'
+    },
+    sequence: { showSequenceNumbers: false }
+  });
+
+  // Active sidebar link tracking
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+        const id = entry.target.getAttribute('id');
+        const link = document.querySelector(`.sidebar nav a[href="#${id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+
+  document.querySelectorAll('section[id]').forEach(s => observer.observe(s));
+
+  // Smooth scroll for sidebar links
+  document.querySelectorAll('.sidebar nav a').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

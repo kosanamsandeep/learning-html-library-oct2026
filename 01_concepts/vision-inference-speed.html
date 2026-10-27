@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why Vision Inference Is So Fast</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">F</span>
+                <span>AI Engineer Interview Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="vision-model-evolution.html">Vision Evolution</a>
+                <a href="multimodal-vision-llms.html">Vision LLMs</a>
+                <a href="image-video-generation.html">Image and Video</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#why-fast">Why inference feels fast</a>
+            <a href="#model-side">Model-side reasons</a>
+            <a href="#system-side">System-side reasons</a>
+            <a href="#video">Why video is harder</a>
+            <a href="#tradeoffs">Latency vs quality tradeoffs</a>
+            <a href="#interview">Interview questions</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Deployment and serving</p>
+                    <h1>Why modern vision inference is so fast</h1>
+                    <p>Inference speed comes from more than model architecture. It is the combined result of efficient
+                        backbones, parallel matrix operations on GPUs, optimized runtimes, quantization, batching,
+                        caching, and careful system design around the model.</p>
+                    <p>The short answer is: the model is fast because the <strong>hardware and software stack are built
+                            to execute dense tensor operations extremely efficiently</strong>.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Minimal latency formula</h2>
+                    <p class="formula">Fast inference = efficient architecture + optimized kernels + good hardware +
+                        reduced precision + smart serving</p>
+                </div>
+            </section>
+
+            <section class="section" id="why-fast">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Images are parallel-friendly</h3>
+                        <p>Convolutions and transformer attention over image patches are large matrix operations. GPUs,
+                            TPUs, and inference accelerators are explicitly designed for this type of parallel workload.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>Most product paths do not run the biggest model end to end</h3>
+                        <p>Production systems often use a routing layer, compressed encoder, lower-resolution pass,
+                            candidate filtering, or specialist submodel rather than always running the most expensive
+                            general model on the full input.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="model-side">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Inside the model</p>
+                        <h2>Model-side reasons inference is fast</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Technique</th>
+                                <th>How it helps latency</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Efficient backbones</td>
+                                <td>MobileNet, EfficientNet, ConvNeXt-Tiny, and small ViTs reduce compute without
+                                    destroying accuracy.</td>
+                            </tr>
+                            <tr>
+                                <td>Patch compression / feature pooling</td>
+                                <td>Reduces the number of tokens or feature maps that later blocks must process.</td>
+                            </tr>
+                            <tr>
+                                <td>Quantization</td>
+                                <td>INT8, FP8, and lower-precision inference reduce memory bandwidth and improve
+                                    throughput.</td>
+                            </tr>
+                            <tr>
+                                <td>Pruning and distillation</td>
+                                <td>Smaller student models mimic larger teachers while preserving much of the accuracy.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Compiled execution</td>
+                                <td>TensorRT, ONNX Runtime, TVM, XLA, and similar stacks fuse kernels and remove
+                                    overhead.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="system-side">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Serving layer</p>
+                        <h2>System-side reasons inference is fast</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Smart preprocessing</h3>
+                        <p>Resize images to the minimum useful resolution, normalize once, and avoid repeated decode or
+                            copy steps. Waste in preprocessing can dominate the latency budget if the model itself is
+                            optimized.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Dynamic batching</h3>
+                        <p>Group requests arriving close together so the accelerator processes them in one larger tensor
+                            operation rather than many tiny underutilized ones.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Model placement and caching</h3>
+                        <p>Keep hot models resident in GPU memory, cache embeddings for repeated assets, and route easy
+                            requests to smaller models first.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Optimized kernels and memory layout</h3>
+                        <p>Production runtimes fuse normalization, activation, attention, and matrix operations to cut
+                            memory traffic and kernel launch overhead.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="video">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Why video is harder</p>
+                        <h2>Why image inference is fast but video is more expensive</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Video multiplies the token count</h3>
+                        <p>A video is not one image. It is a long sequence of frames. If one frame already requires
+                            thousands of tokens or feature activations, processing dozens or hundreds of frames makes
+                            the
+                            compute much larger.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Temporal reasoning adds more work</h3>
+                        <p>The model must understand not only what is in each frame, but what changed across time. That
+                            means temporal attention, memory, or clip-level fusion, all of which increase latency.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="tradeoffs">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Engineering tradeoffs</p>
+                        <h2>What teams trade to keep inference responsive</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Choice</th>
+                                <th>Latency benefit</th>
+                                <th>Possible downside</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Lower resolution</td>
+                                <td>Less compute and memory</td>
+                                <td>Can miss small objects and fine details</td>
+                            </tr>
+                            <tr>
+                                <td>Smaller backbone</td>
+                                <td>Faster forward pass</td>
+                                <td>Lower accuracy on hard cases</td>
+                            </tr>
+                            <tr>
+                                <td>Quantization</td>
+                                <td>Higher throughput and lower memory</td>
+                                <td>Potential precision loss</td>
+                            </tr>
+                            <tr>
+                                <td>Frame sampling</td>
+                                <td>Much faster video processing</td>
+                                <td>Can miss short or rare events</td>
+                            </tr>
+                            <tr>
+                                <td>Two-stage routing</td>
+                                <td>Easy cases handled cheaply</td>
+                                <td>More system complexity</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="checkpoint">
+                    <h2>Interview-ready summary</h2>
+                    <p>Inference is fast because tensor hardware is optimized for these operations, and product systems
+                        aggressively reduce unnecessary work through batching, compression, routing, quantization, and
+                        compiled kernels.</p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questions and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why does quantization help inference?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Lower-precision weights and activations reduce memory movement and allow hardware to run
+                                more operations per second. That improves both throughput and often latency.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is a large image model still fast enough for production?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because product systems usually do not serve the raw research model naively. They use
+                                optimized runtimes, batching, routing, lower precision, and carefully chosen
+                                resolutions.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your product must classify shelf images in under 40 ms. What would you optimize first?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>I would check input resolution, model size, preprocessing overhead, quantization options,
+                                and whether a smaller distilled model reaches the accuracy target. In many real systems,
+                                data movement and preprocessing are large parts of latency.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Why is video summarization slower than image captioning?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Because the model must process many frames and preserve temporal relationships. The token
+                                count and memory requirements are much higher than for a single image.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Fast inference is a model-plus-systems achievement, not only an architecture achievement.</p>
+            <div class="mini-links">
+                <a href="vision-model-evolution.html">Vision Evolution</a>
+                <a href="multimodal-vision-llms.html">Vision LLMs</a>
+                <a href="vision-roadmap.html">Roadmap</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

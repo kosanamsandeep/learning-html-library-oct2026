@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 7 - Tool Integration | LangGraph</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0f0f23;
+            color: #e0e0e0;
+            line-height: 1.8;
+        }
+
+        .nav {
+            background: #1a1a2e;
+            padding: 15px 30px;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav a {
+            color: #818cf8;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .nav a:hover {
+            color: #a5b4fc;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a3b2e, #0d4f3c);
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .header .task-num {
+            color: #2dd4bf;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #e0e7ff;
+            margin: 10px 0;
+        }
+
+        .header .subtitle {
+            color: #99f6e4;
+            font-size: 1.2em;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #2dd4bf;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #0d9488;
+        }
+
+        .section h3 {
+            color: #5eead4;
+            font-size: 1.2em;
+            margin: 20px 0 10px;
+        }
+
+        .section p {
+            color: #d1d5db;
+            margin-bottom: 12px;
+        }
+
+        .highlight-box {
+            background: #042f2e;
+            border-left: 4px solid #14b8a6;
+            padding: 20px 25px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .highlight-box p {
+            color: #99f6e4;
+            margin: 0;
+        }
+
+        .code-block {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .tool-flow {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .tool-step {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px;
+            margin: 10px 0;
+            background: #0f0f23;
+            border-radius: 8px;
+            border-left: 3px solid #14b8a6;
+        }
+
+        .tool-step.tool-node {
+            border-left-color: #f59e0b;
+            background: #1a1a0f;
+        }
+
+        .tool-step .step-icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+        }
+
+        .tool-step .step-content {
+            flex: 1;
+        }
+
+        .tool-step .step-content strong {
+            color: #5eead4;
+        }
+
+        .tool-step.tool-node .step-content strong {
+            color: #fbbf24;
+        }
+
+        .tool-step .step-detail {
+            color: #9ca3af;
+            font-size: 0.9em;
+            margin-top: 4px;
+        }
+
+        .before-after {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .before-after .panel {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .before-after .panel h4 {
+            margin-bottom: 10px;
+        }
+
+        .before-after .panel.without h4 {
+            color: #f87171;
+        }
+
+        .before-after .panel.with h4 {
+            color: #34d399;
+        }
+
+        .before-after .panel ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .before-after .panel ul li {
+            padding: 5px 0;
+            color: #9ca3af;
+            font-size: 0.9em;
+        }
+
+        .key-insight {
+            background: linear-gradient(135deg, #1e1b4b, #312e81);
+            border: 1px solid #4338ca;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .key-insight h4 {
+            color: #a5b4fc;
+            margin-bottom: 8px;
+        }
+
+        .key-insight p {
+            color: #c4b5fd;
+            margin: 0;
+        }
+
+        .advantage-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .advantage-list li {
+            padding: 10px 0 10px 30px;
+            position: relative;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .advantage-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #34d399;
+            font-weight: bold;
+        }
+
+        .diff-box {
+            background: #1a1a2e;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .diff-box h4 {
+            color: #2dd4bf;
+            margin-bottom: 10px;
+        }
+
+        .diff-box p {
+            color: #d1d5db;
+        }
+
+        .nav-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #1f2937;
+        }
+
+        .nav-footer a {
+            color: #818cf8;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 1px solid #4338ca;
+            border-radius: 8px;
+        }
+
+        .nav-footer a:hover {
+            background: #312e81;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="nav">
+        <a href="task6.html">← Task 6</a>
+        <a href="index.html">Overview</a>
+        <a href="task8.html">Task 8 →</a>
+    </div>
+
+    <div class="header">
+        <div class="task-num">Task 7</div>
+        <h1>Tool Integration — Real-World Power</h1>
+        <div class="subtitle">Your agent reaches beyond itself — searching the web, calling APIs</div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>🧩 What This Task Teaches</h2>
+            <p>An agent that can only "think" isn't very useful. Task 7 shows how to give your workflow
+                <strong>hands</strong> — the ability to interact with the real world through tools.
+                Here, a DuckDuckGo search node fetches live information from the internet.
+            </p>
+
+            <div class="highlight-box">
+                <p><strong>Core Concept:</strong> A "tool node" is just a regular node that calls an external service
+                    (web search, database, API) instead of just transforming state internally.
+                    The tool's results become part of the state, available to all downstream nodes.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔧 The Tool-Integrated Pipeline</h2>
+            <div class="tool-flow">
+                <div class="tool-step">
+                    <span class="step-icon">🎯</span>
+                    <div class="step-content">
+                        <strong>Enhance Query Node</strong> (LLM-powered)<br>
+                        <span class="step-detail">Takes user query → LLM makes it more specific and searchable</span>
+                    </div>
+                </div>
+                <div class="tool-step tool-node">
+                    <span class="step-icon">🦆</span>
+                    <div class="step-content">
+                        <strong>Search Tool Node</strong> (DuckDuckGo — EXTERNAL TOOL)<br>
+                        <span class="step-detail">Takes enhanced query → Calls DuckDuckGo API → Returns real web
+                            results</span>
+                    </div>
+                </div>
+                <div class="tool-step">
+                    <span class="step-icon">📝</span>
+                    <div class="step-content">
+                        <strong>Summarize Node</strong> (LLM-powered)<br>
+                        <span class="step-detail">Takes search results → LLM creates a concise, useful summary</span>
+                    </div>
+                </div>
+                <div class="tool-step">
+                    <span class="step-icon">📤</span>
+                    <div class="step-content">
+                        <strong>Format Output Node</strong><br>
+                        <span class="step-detail">Presents everything in a clean, readable format</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🌐 Without vs With Tools</h2>
+            <div class="before-after">
+                <div class="panel without">
+                    <h4>❌ Without Tools (Tasks 2-6)</h4>
+                    <ul>
+                        <li>• LLM can only use its training data</li>
+                        <li>• Information is static and may be outdated</li>
+                        <li>• Can't access real-time information</li>
+                        <li>• Can't interact with external systems</li>
+                        <li>• Limited to text transformation</li>
+                    </ul>
+                </div>
+                <div class="panel with">
+                    <h4>✅ With Tools (Task 7+)</h4>
+                    <ul>
+                        <li>• Agent searches the live internet</li>
+                        <li>• Gets current, real-time information</li>
+                        <li>• Can query databases, APIs, files</li>
+                        <li>• Acts on the world (send emails, etc.)</li>
+                        <li>• Truly useful for real tasks</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>💻 The Tool Node Pattern</h2>
+            <div class="code-block">
+                <span style="color:#c084fc">from</span> ddgs <span style="color:#c084fc">import</span> DDGS
+
+                <span style="color:#c084fc">def</span> <span style="color:#60a5fa">search_tool_node</span>(state:
+                ToolState):
+                <span style="color:#6b7280">"""This node calls an EXTERNAL tool — DuckDuckGo"""</span>
+
+                query = state[<span style="color:#34d399">"enhanced_query"</span>]
+
+                <span style="color:#6b7280"># Call the external tool</span>
+                ddgs = DDGS()
+                results = ddgs.text(query, max_results=3)
+
+                <span style="color:#6b7280"># Extract and store results in state</span>
+                search_results = []
+                <span style="color:#c084fc">for</span> result <span style="color:#c084fc">in</span> results:
+                title = result.get(<span style="color:#34d399">'title'</span>, <span style="color:#34d399">''</span>)
+                body = result.get(<span style="color:#34d399">'body'</span>, <span style="color:#34d399">''</span>)
+                search_results.append(f<span style="color:#34d399">"{title}: {body}"</span>)
+
+                <span style="color:#6b7280"># Results now available to ALL downstream nodes</span>
+                <span style="color:#c084fc">return</span> {<span style="color:#34d399">"search_results"</span>:
+                search_results}
+            </div>
+            <p style="color:#9ca3af; font-size:0.9em; margin-top:10px;">
+                Notice: A tool node looks exactly like any other node. It receives state, does work, returns state
+                updates.
+                The only difference is that its "work" involves calling an external service.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>🔀 How Task 7 Differs from Task 6</h2>
+            <div class="diff-box">
+                <h4>Task 6 → Task 7 Evolution</h4>
+                <p><strong>Task 6</strong> loops were powerful but used SIMULATED data (fake search results).<br>
+                    <strong>Task 7</strong> uses REAL external tools — DuckDuckGo search actually hits the internet.
+                    The workflow is no longer a closed system; it interacts with the outside world.
+                    This is what makes AI agents actually USEFUL — they can fetch information you don't already have.
+                </p>
+            </div>
+            <table style="width:100%; border-collapse:collapse; margin:15px 0;">
+                <tr style="background:#0d4f3c;">
+                    <th style="padding:12px; text-align:left; color:#ecfdf5;">Aspect</th>
+                    <th style="padding:12px; text-align:left; color:#ecfdf5;">Task 6</th>
+                    <th style="padding:12px; text-align:left; color:#ecfdf5;">Task 7</th>
+                </tr>
+                <tr style="background:#1a1a2e;">
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Data source</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Simulated/hardcoded results</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Live web search (DuckDuckGo)</td>
+                </tr>
+                <tr style="background:#1a1a2e;">
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">System boundary</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Closed (internal only)</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Open (calls external APIs)</td>
+                </tr>
+                <tr style="background:#1a1a2e;">
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">LLM role</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Summarize at the end</td>
+                    <td style="padding:12px; border-bottom:1px solid #1f2937;">Enhance queries + summarize results</td>
+                </tr>
+                <tr style="background:#1a1a2e;">
+                    <td style="padding:12px;">Usefulness</td>
+                    <td style="padding:12px;">Demo/learning</td>
+                    <td style="padding:12px;">Actually answers real questions!</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>✅ Advantages of This Task</h2>
+            <ul class="advantage-list">
+                <li><strong>Real-world data</strong> — agent gets live, current information from the internet</li>
+                <li><strong>LLM + Tools synergy</strong> — LLM enhances queries AND summarizes results</li>
+                <li><strong>Error handling</strong> — demonstrates graceful degradation when tools fail</li>
+                <li><strong>Extensible pattern</strong> — same approach works for any tool (SQL, APIs, file systems)
+                </li>
+                <li><strong>Query enhancement</strong> — shows LLM making tool usage smarter (better searches)</li>
+            </ul>
+        </div>
+
+        <div class="key-insight">
+            <h4>💡 Key Insight</h4>
+            <p>Tools transform your workflow from a "thinking machine" into an "acting machine".
+                The LLM provides intelligence (query enhancement, summarization), and tools provide
+                information and action capabilities. Together, they form a complete agent.
+                Task 8 adds the final piece: accumulating and remembering everything learned across operations.</p>
+        </div>
+
+        <div class="nav-footer">
+            <a href="task6.html">← Task 6: Loops</a>
+            <a href="task8.html">Next: Task 8 - Memory →</a>
+        </div>
+    </div>
+</body>
+
+</html>

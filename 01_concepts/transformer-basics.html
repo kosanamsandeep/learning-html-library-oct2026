@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer Basics</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="encoder-only.html">Encoder to Encoder</a>
+                <a href="encoder-decoder.html">Encoder Decoder</a>
+                <a href="gpt-level.html">GPT Level</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#big-idea">Big idea</a>
+            <a href="#inputs">What goes in</a>
+            <a href="#attention">Self-attention</a>
+            <a href="#ffn">Feed-forward block</a>
+            <a href="#example">Worked example</a>
+            <a href="#output">What comes out</a>
+            <a href="#why-transformers">Why this approach</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Step 1</p>
+                    <h1>Transformer basics</h1>
+                    <p><strong>Core mental model:</strong> a transformer repeatedly lets each token look at other
+                        tokens, then refines each token with a small neural network. After enough layers, each token
+                        vector contains rich contextual meaning.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Minimal block formula</h2>
+                    <p class="formula">h' = LayerNorm(h + Attention(h))
+                        h'' = LayerNorm(h' + MLP(h'))</p>
+                </div>
+            </section>
+
+            <section class="section" id="big-idea">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Intuition</p>
+                        <h2>The big idea</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Before transformers</h3>
+                        <p>Older sequence models processed tokens one step at a time. That made long-range relationships
+                            hard to model and hard to parallelize.</p>
+                    </div>
+                    <div class="card">
+                        <h3>With transformers</h3>
+                        <p>Every token can directly attend to every relevant token in the same layer. That makes
+                            dependencies easier to learn and training easier to scale.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="inputs">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Input pipeline</p>
+                        <h2>What goes in</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Tokenization</h3>
+                        <p>Text is split into tokens such as whole words, subwords, or byte-pair fragments. GPT-style
+                            models usually work with subword tokens.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Token embedding</h3>
+                        <p>Each token id indexes a learned vector. This converts discrete symbols into dense numeric
+                            features.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Positional information</h3>
+                        <p>Because attention alone does not know sequence order, a positional signal is added so the
+                            model can distinguish "dog bites man" from "man bites dog".</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p class="formula">X = E_token[token_ids] + E_pos[position_ids]</p>
+                </div>
+            </section>
+
+            <section class="section" id="attention">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Main mechanism</p>
+                        <h2>Self-attention</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Query, key, value</h3>
+                        <p>Each token is projected into three vectors. The query asks what this token needs. Keys
+                            describe what each token offers. Values carry the actual information to mix together.</p>
+                        <p class="formula">Attention(Q, K, V) = softmax(QK^T / sqrt(d_k)) V</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why multi-head?</h3>
+                        <p>Different heads can focus on different relations at the same time: syntax, entity identity,
+                            long-range dependencies, or local phrase structure.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Key intuition:</strong> attention is a content-based routing rule. A token decides how
+                        much signal to pull from every other token.</p>
+                </div>
+            </section>
+
+            <section class="section" id="ffn">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Local refinement</p>
+                        <h2>The feed-forward block</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What it does</h3>
+                        <p>After attention mixes information across tokens, the MLP transforms each token independently.
+                            This is where the model can create richer nonlinear features.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why it matters</h3>
+                        <p>If you removed the activation function and used only linear layers, the two projections would
+                            collapse into a single linear map and capacity would drop sharply.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="example">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Worked example</p>
+                        <h2>Simple sentence walk-through</h2>
+                    </div>
+                </div>
+                <div class="example">
+                    <p><strong>Sentence:</strong> "The animal did not cross the road because it was tired."</p>
+                    <p>When the model processes the token "it", self-attention lets that token inspect earlier tokens.
+                        Some heads may focus on "animal", others on "tired", and others on the clause boundary. After
+                        several layers, the hidden state for "it" carries enough context to resolve the reference
+                        correctly.</p>
+                </div>
+            </section>
+
+            <section class="section" id="output">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Task head</p>
+                        <h2>What comes out</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Output unit</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Language modeling</td>
+                                <td>Next-token logits for each position</td>
+                                <td>Predict the next word in a sentence.</td>
+                            </tr>
+                            <tr>
+                                <td>Classification</td>
+                                <td>Class scores from one pooled representation</td>
+                                <td>Spam detection or sentiment classification.</td>
+                            </tr>
+                            <tr>
+                                <td>Token labeling</td>
+                                <td>Per-token tags</td>
+                                <td>Named entity recognition.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="why-transformers">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Why this design</p>
+                        <h2>Why do transformers this way instead of older sequence models?</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Why attention plus residual blocks works</h3>
+                        <ul class="stack-list">
+                            <li>Self-attention gives direct token-to-token interaction instead of forcing information
+                                through a long recurrent chain.</li>
+                            <li>Parallel processing over tokens makes modern large-scale training practical.</li>
+                            <li>Residual paths and normalization make very deep stacks trainable.</li>
+                            <li>The MLP block adds nonlinear feature synthesis after information mixing.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What other approaches fail at</h3>
+                        <ul class="stack-list">
+                            <li>RNNs and LSTMs struggle with very long dependencies because information must travel step
+                                by step.</li>
+                            <li>CNN-based sequence models capture local patterns well but need many layers or dilation
+                                tricks for global context.</li>
+                            <li>Bag-of-words or average embedding methods ignore token interaction structure almost
+                                entirely.</li>
+                            <li>Purely linear blocks cannot express the nonlinear distinctions needed for semantic
+                                reasoning.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenario-based questions</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why can attention replace recurrence for many NLP tasks?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because attention gives each token direct access to every relevant token in a single
+                                layer. Recurrence serializes dependency flow, while attention shortens the path length
+                                between related tokens and is easier to parallelize at training time.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why are residual connections essential?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>They preserve an identity path for gradients and features, which stabilizes optimization.
+                                Without residuals, deep transformer stacks become much harder to train and can lose
+                                useful earlier representations.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your model handles short phrases well but misses long-range dependencies in long documents.
+                            What architectural reason should you inspect first?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Check whether the attention pattern, context length, masking behavior, or positional
+                                handling is constraining long-range interactions. In transformers, long-range failure is
+                                usually not because recurrence is missing, but because the model cannot allocate enough
+                                attention or represent positions robustly across longer spans.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>An interviewer says: “Attention is enough, so why do we need the feed-forward block?”</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Attention mixes information across tokens, but it is mostly a routing mechanism. The
+                                feed-forward network transforms each token state nonlinearly, allowing the model to
+                                build higher-level features after information has been gathered. Without it,
+                                representational power drops sharply.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Next recommended page: encoder-only models.</p>
+            <div class="mini-links">
+                <a href="encoder-only.html">Continue</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

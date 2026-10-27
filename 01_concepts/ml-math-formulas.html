@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Essential Math for ML and Statistics</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">AI</span>
+                <span>AI Engineer Interview Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="statistics-basics.html">Statistics</a>
+                <a href="stochastic-gradient-descent.html">SGD</a>
+                <a href="backpropagation.html">Backpropagation</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#linear-algebra">Linear Algebra</a>
+            <a href="#calculus">Calculus</a>
+            <a href="#probability">Probability</a>
+            <a href="#statistics">Statistics</a>
+            <a href="#optimization">Optimization</a>
+            <a href="#information-theory">Information Theory</a>
+            <a href="#ml-specific">ML-Specific Formulas</a>
+            <a href="#interview">Interview Questions</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Mathematical foundations</p>
+                    <h1>Essential Math for ML and Statistics</h1>
+                    <p>Every ML algorithm is built on a small set of mathematical concepts. This page collects the
+                        core formulas you need to understand, not just memorize. Each formula is explained in the
+                        context of where it appears in ML.</p>
+                    <p>Focus areas: linear algebra for data representation, calculus for optimization, probability
+                        for modeling uncertainty, and statistics for inference.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Why math matters in ML interviews</h2>
+                    <ul>
+                        <li>Interviewers test intuition, not derivation speed</li>
+                        <li>Understanding formulas helps debug model behavior</li>
+                        <li>Math connects concepts across algorithms</li>
+                        <li>Know WHAT each formula does and WHEN it applies</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Linear Algebra -->
+            <section class="section" id="linear-algebra">
+                <h2>Linear Algebra</h2>
+                <p>Data in ML is represented as vectors and matrices. Every layer in a neural network is a matrix
+                    multiplication followed by a nonlinearity.</p>
+
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Dot Product</h3>
+                        <pre>a · b = Σ(a_i * b_i) = |a| * |b| * cos(θ)
+
+Used in: attention scores, similarity computation,
+         neuron activation (W · x + b)</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Measures similarity between vectors. In self-attention, Q·K
+                            computes how relevant each key is to a query. Larger dot product = more similar directions.
+                        </p>
+                    </div>
+                    <div class="code-card">
+                        <h3>Matrix Multiplication</h3>
+                        <pre>C = A × B where C_ij = Σ_k (A_ik * B_kj)
+
+Dimensions: (m×n) × (n×p) = (m×p)
+
+Used in: every neural network layer,
+         transforming representations</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> A neural network layer: output = W × input + bias. The weight
+                            matrix W learns to transform input features into useful representations.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>Euclidean Norm (L2)</h3>
+                        <pre>||x||₂ = √(Σ x_i²)
+
+Used in: regularization, distance metrics,
+         gradient clipping, normalization</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> L2 norm measures vector magnitude. L2 regularization penalizes
+                            ||w||₂² to keep weights small. Gradient clipping limits ||∇||₂ to prevent explosions.
+                        </p>
+                    </div>
+                    <div class="code-card">
+                        <h3>Cosine Similarity</h3>
+                        <pre>cos(θ) = (a · b) / (||a||₂ * ||b||₂)
+
+Range: [-1, 1]
+1 = same direction, 0 = orthogonal, -1 = opposite
+
+Used in: embedding similarity, retrieval, recommendations</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Measures direction similarity independent of magnitude.
+                            Used in RAG to find similar documents. "king - man + woman ≈ queen" works in cosine space.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>Eigendecomposition</h3>
+                        <pre>Av = λv
+
+A = matrix, v = eigenvector, λ = eigenvalue
+
+Used in: PCA, spectral clustering,
+         understanding matrix transformations</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> PCA finds eigenvectors of the covariance matrix. The top-k
+                            eigenvectors (largest eigenvalues) capture the most variance — used for dimensionality
+                            reduction.
+                        </p>
+                    </div>
+                    <div class="code-card">
+                        <h3>Softmax Function</h3>
+                        <pre>softmax(z_i) = e^(z_i) / Σ_j e^(z_j)
+
+Converts raw scores to probabilities (sum to 1)
+
+Used in: attention weights, classification output,
+         temperature sampling in LLMs</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Turns logits into probability distribution. In attention:
+                            softmax(QK^T/√d) normalizes attention scores so they sum to 1 per query position.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calculus -->
+            <section class="section" id="calculus">
+                <h2>Calculus for Optimization</h2>
+                <p>ML training is optimization: finding parameters that minimize a loss function. Calculus gives us
+                    gradients — the direction of steepest descent.</p>
+
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Derivative (Gradient)</h3>
+                        <pre>f'(x) = lim(h→0) [f(x+h) - f(x)] / h
+
+Gradient (multivariate):
+∇f = [∂f/∂x₁, ∂f/∂x₂, ..., ∂f/∂xₙ]
+
+Points in direction of steepest INCREASE</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> To minimize loss, move parameters in the NEGATIVE gradient
+                            direction: θ_new = θ_old - lr * ∇L(θ). This is gradient descent.
+                        </p>
+                    </div>
+                    <div class="code-card">
+                        <h3>Chain Rule</h3>
+                        <pre>If y = f(g(x)), then dy/dx = f'(g(x)) * g'(x)
+
+Multi-layer: ∂L/∂w₁ = ∂L/∂a₃ * ∂a₃/∂a₂ * ∂a₂/∂a₁ * ∂a₁/∂w₁
+
+Used in: backpropagation (THE core algorithm)</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Backpropagation IS the chain rule applied layer by layer.
+                            Each layer computes its local gradient and multiplies by the upstream gradient. This is
+                            how a 100-layer network computes ∂Loss/∂weight for every weight.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>Partial Derivatives</h3>
+                        <pre>∂f/∂x = derivative of f with respect to x,
+         treating all other variables as constants
+
+Example: f(x,y) = x²y + 3y
+∂f/∂x = 2xy
+∂f/∂y = x² + 3
+
+Used in: computing gradients for each parameter</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Every weight gets its own partial derivative. With millions
+                            of parameters, automatic differentiation computes all partials efficiently using the
+                            computation graph.
+                        </p>
+                    </div>
+                    <div class="code-card">
+                        <h3>Jacobian Matrix</h3>
+                        <pre>For f: ℝⁿ → ℝᵐ
+
+J = [∂f₁/∂x₁  ∂f₁/∂x₂  ...  ∂f₁/∂xₙ]
+    [∂f₂/∂x₁  ∂f₂/∂x₂  ...  ∂f₂/∂xₙ]
+    [  ...       ...     ...    ...    ]
+    [∂fₘ/∂x₁  ∂fₘ/∂x₂  ...  ∂fₘ/∂xₙ]
+
+Used in: layer-to-layer gradient flow in networks</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> The gradient of one layer's output with respect to its input
+                            is a Jacobian. In RNNs, the product of Jacobians across time causes vanishing/exploding
+                            gradients.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Probability -->
+            <section class="section" id="probability">
+                <h2>Probability</h2>
+                <p>ML models estimate probability distributions. Understanding Bayes' theorem, conditional probability,
+                    and distributions is essential for reasoning about model predictions.</p>
+
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Bayes' Theorem</h3>
+                        <pre>P(A|B) = P(B|A) * P(A) / P(B)
+
+Posterior = (Likelihood × Prior) / Evidence
+
+Used in: Naive Bayes, Bayesian inference,
+         probabilistic models</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Naive Bayes classifier directly applies this. Also foundational
+                            for understanding generative vs discriminative models. "Given features, what's the
+                            probability of each class?"
+                        </p>
+                    </div>
+                    <div class="code-card">
+                        <h3>Conditional Probability</h3>
+                        <pre>P(A|B) = P(A ∩ B) / P(B)
+
+Chain rule of probability:
+P(A,B,C) = P(A) * P(B|A) * P(C|A,B)
+
+Used in: language models (next token prediction)</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> A language model computes P(next_token | all_previous_tokens).
+                            GPT generates text by sampling from P(w_t | w_1, w_2, ..., w_{t-1}) repeatedly.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>Gaussian (Normal) Distribution</h3>
+                        <pre>f(x) = (1/√(2πσ²)) * e^(-(x-μ)²/(2σ²))
+
+μ = mean (center), σ² = variance (spread)
+
+68-95-99.7 rule: 68% within 1σ, 95% within 2σ
+
+Used in: weight initialization, noise modeling,
+         outlier detection, regression residuals</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Weights are initialized ~ N(0, small σ). Regression assumes
+                            normally distributed residuals. Anomaly detection flags points far from mean.
+                        </p>
+                    </div>
+                    <div class="code-card">
+                        <h3>Expected Value and Variance</h3>
+                        <pre>E[X] = Σ x_i * P(x_i)     (discrete)
+E[X] = ∫ x * f(x) dx      (continuous)
+
+Var(X) = E[(X - μ)²] = E[X²] - (E[X])²
+
+Used in: loss functions (expected loss),
+         bias-variance decomposition</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Training minimizes expected loss over the data distribution.
+                            Bias-variance tradeoff: Error = Bias² + Variance + Irreducible noise.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Statistics -->
+            <section class="section" id="statistics">
+                <h2>Statistics Formulas</h2>
+                <p>Core statistical measures used in data analysis, feature engineering, and model evaluation.</p>
+
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Mean, Median, Mode</h3>
+                        <pre>Mean: x̄ = (Σ x_i) / n
+  → Sensitive to outliers
+
+Median: Middle value when sorted
+  → Robust to outliers
+
+Mode: Most frequent value
+  → Useful for categorical data
+
+Used in: data exploration, imputation,
+         understanding distributions</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Standard Deviation and Variance</h3>
+                        <pre>Variance: σ² = Σ(x_i - x̄)² / n
+Sample:   s² = Σ(x_i - x̄)² / (n-1)  ← Bessel's correction
+
+Std Dev:  σ = √(σ²)
+
+Used in: feature scaling, normalization,
+         understanding data spread, z-scores</pre>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>Correlation (Pearson's r)</h3>
+                        <pre>r = Σ(x_i - x̄)(y_i - ȳ) / √[Σ(x_i - x̄)² * Σ(y_i - ȳ)²]
+
+Range: [-1, 1]
++1 = perfect positive linear, -1 = perfect negative
+0 = no LINEAR relationship (could still be nonlinear!)
+
+Used in: feature selection, multicollinearity check</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Hypothesis Testing (t-test)</h3>
+                        <pre>t = (x̄ - μ₀) / (s / √n)
+
+p-value: probability of seeing this extreme result
+         IF the null hypothesis is true
+
+p < 0.05 → reject null hypothesis (convention)
+
+Used in: A/B testing, feature significance,
+         model comparison</pre>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>Covariance Matrix</h3>
+                        <pre>Cov(X,Y) = E[(X - E[X])(Y - E[Y])]
+
+Covariance matrix Σ:
+Σ_ij = Cov(X_i, X_j)
+
+Diagonal = variances, Off-diagonal = covariances
+
+Used in: PCA, Gaussian mixture models,
+         understanding feature relationships</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Z-Score (Standardization)</h3>
+                        <pre>z = (x - μ) / σ
+
+Transforms data to mean=0, std=1
+
+Used in: feature scaling before ML,
+         outlier detection (|z| > 3),
+         comparing different scales</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Many algorithms (SVM, KNN, neural nets) require standardized
+                            features. Without it, features with large scales dominate distance calculations.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Optimization -->
+            <section class="section" id="optimization">
+                <h2>Optimization</h2>
+                <p>Training a model means minimizing a loss function. These are the formulas that make learning happen.
+                </p>
+
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Gradient Descent Update Rule</h3>
+                        <pre>θ_(t+1) = θ_t - η * ∇L(θ_t)
+
+η = learning rate (step size)
+∇L = gradient of loss with respect to parameters
+
+Variants:
+- Batch GD: ∇L over ALL data (slow, exact)
+- SGD: ∇L over 1 sample (noisy, fast)
+- Mini-batch: ∇L over batch of 32-512 (practical)</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Adam Optimizer</h3>
+                        <pre>m_t = β₁ * m_(t-1) + (1-β₁) * g_t      ← 1st moment (mean)
+v_t = β₂ * v_(t-1) + (1-β₂) * g_t²     ← 2nd moment (variance)
+
+Bias correction:
+m̂_t = m_t / (1 - β₁^t)
+v̂_t = v_t / (1 - β₂^t)
+
+Update: θ_t = θ_(t-1) - η * m̂_t / (√v̂_t + ε)
+
+Default: β₁=0.9, β₂=0.999, ε=1e-8</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Adam adapts learning rate per parameter. Parameters with large
+                            gradients get smaller steps (stabilizes). Parameters with small gradients get larger steps
+                            (escapes plateaus). Most popular optimizer for deep learning.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>Learning Rate Scheduling</h3>
+                        <pre>Step decay: η_t = η₀ * γ^(floor(t/step_size))
+
+Cosine annealing: η_t = η_min + ½(η_max - η_min)(1 + cos(πt/T))
+
+Warmup: η_t = η_max * (t / warmup_steps)  for t < warmup
+
+Used in: transformer training (warmup + decay),
+         preventing divergence early in training</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Regularization Terms</h3>
+                        <pre>L1 (Lasso): Loss + λ * Σ|w_i|
+  → Produces sparse weights (feature selection)
+
+L2 (Ridge):  Loss + λ * Σ(w_i²)
+  → Keeps weights small (prevents overfitting)
+
+Elastic Net: Loss + λ₁*Σ|w_i| + λ₂*Σ(w_i²)
+  → Combines benefits of both
+
+Dropout: randomly zero out neurons with probability p
+  → Prevents co-adaptation of features</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Information Theory -->
+            <section class="section" id="information-theory">
+                <h2>Information Theory</h2>
+                <p>Loss functions in classification are derived from information theory. Understanding entropy and
+                    KL divergence explains WHY we use cross-entropy loss.</p>
+
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Entropy</h3>
+                        <pre>H(X) = -Σ P(x) * log₂(P(x))
+
+Measures uncertainty/randomness in a distribution.
+High entropy = uniform (maximum uncertainty)
+Low entropy = peaked (confident prediction)
+
+Used in: decision tree splitting (information gain),
+         understanding model confidence</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Cross-Entropy Loss</h3>
+                        <pre>H(p, q) = -Σ p(x) * log(q(x))
+
+Binary: L = -[y*log(ŷ) + (1-y)*log(1-ŷ)]
+Multi-class: L = -Σ y_c * log(ŷ_c)
+
+p = true distribution, q = predicted distribution
+
+Used in: classification loss (THE standard loss)</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Cross-entropy measures how different the predicted distribution
+                            is from the true distribution. Minimizing cross-entropy = making predictions match reality.
+                            It's equivalent to maximizing log-likelihood.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>KL Divergence</h3>
+                        <pre>KL(p || q) = Σ p(x) * log(p(x)/q(x))
+
+Properties:
+- KL ≥ 0 always
+- KL = 0 iff p = q
+- NOT symmetric: KL(p||q) ≠ KL(q||p)
+
+Cross-entropy = Entropy + KL divergence:
+H(p,q) = H(p) + KL(p||q)
+
+Used in: VAE loss, knowledge distillation,
+         measuring distribution mismatch</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Information Gain</h3>
+                        <pre>IG(S, A) = H(S) - Σ (|S_v|/|S|) * H(S_v)
+
+S = dataset, A = attribute to split on
+S_v = subset where attribute A = value v
+
+Used in: decision tree construction (ID3/C4.5)
+Gini impurity (CART alternative):
+Gini = 1 - Σ p_i²</pre>
+                        <p style="margin-top: 12px; color: var(--muted);">
+                            <strong>ML context:</strong> Decision trees choose splits that maximize information gain
+                            (or minimize Gini impurity). The split that reduces entropy the most is chosen at each node.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ML-Specific Formulas -->
+            <section class="section" id="ml-specific">
+                <h2>ML-Specific Formulas</h2>
+                <p>Key formulas that appear directly in ML algorithm implementations.</p>
+
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Linear Regression (Closed Form)</h3>
+                        <pre>ŷ = Xw + b
+
+Closed-form solution (Normal Equation):
+w = (X^T X)^(-1) X^T y
+
+Loss (MSE): L = (1/n) * Σ(y_i - ŷ_i)²
+
+Gradient: ∂L/∂w = -(2/n) * X^T(y - Xw)</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Logistic Regression</h3>
+                        <pre>Sigmoid: σ(z) = 1 / (1 + e^(-z))
+
+P(y=1|x) = σ(w^T x + b)
+
+Loss (binary cross-entropy):
+L = -(1/n) Σ [y_i*log(ŷ_i) + (1-y_i)*log(1-ŷ_i)]
+
+Decision boundary: w^T x + b = 0</pre>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>SVM (Support Vector Machine)</h3>
+                        <pre>Objective: minimize (1/2)||w||² + C Σ max(0, 1 - y_i(w·x_i + b))
+
+Margin = 2 / ||w||  (distance between support vectors)
+Larger margin → better generalization
+
+Kernel trick: K(x_i, x_j) = φ(x_i) · φ(x_j)
+  → Compute similarity in high-D without transforming
+
+RBF kernel: K(x,y) = exp(-γ||x-y||²)</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>K-Means Clustering</h3>
+                        <pre>Objective: minimize Σ_k Σ_(x∈C_k) ||x - μ_k||²
+
+Algorithm:
+1. Assign each point to nearest centroid
+2. Recompute centroids: μ_k = (1/|C_k|) Σ_(x∈C_k) x
+3. Repeat until convergence
+
+Inertia = within-cluster sum of squares
+Silhouette = (b - a) / max(a, b)</pre>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>Attention (Transformer Core)</h3>
+                        <pre>Attention(Q, K, V) = softmax(QK^T / √d_k) · V
+
+Q = X * W_Q  (queries)
+K = X * W_K  (keys)
+V = X * W_V  (values)
+
+√d_k scaling prevents softmax saturation
+  (large dot products → extreme softmax → tiny gradients)
+
+Multi-head: Concat(head_1..h) * W_O</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Batch Normalization</h3>
+                        <pre>μ_B = (1/m) Σ x_i           ← batch mean
+σ²_B = (1/m) Σ (x_i - μ_B)²  ← batch variance
+
+x̂_i = (x_i - μ_B) / √(σ²_B + ε)  ← normalize
+
+y_i = γ * x̂_i + β  ← scale and shift (learnable)
+
+Used in: stabilizing training, enabling higher lr,
+         reducing internal covariate shift</pre>
+                    </div>
+                </div>
+
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="code-card">
+                        <h3>Precision, Recall, F1</h3>
+                        <pre>Precision = TP / (TP + FP)
+  "Of predicted positives, how many are correct?"
+
+Recall = TP / (TP + FN)
+  "Of actual positives, how many did we find?"
+
+F1 = 2 * (Precision * Recall) / (Precision + Recall)
+  Harmonic mean — penalizes extreme imbalance
+
+AUC-ROC: Area under TPR vs FPR curve</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Bias-Variance Decomposition</h3>
+                        <pre>Expected Error = Bias² + Variance + Irreducible Noise
+
+Bias = E[ŷ] - y_true
+  High bias → underfitting (model too simple)
+
+Variance = E[(ŷ - E[ŷ])²]
+  High variance → overfitting (model too complex)
+
+Tradeoff: increasing complexity reduces bias
+          but increases variance</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interview Questions -->
+            <section class="section" id="interview">
+                <h2>Interview Questions</h2>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>Why do we divide by √d_k in the attention formula?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>Without scaling, dot products grow proportionally with dimension d_k. Large dot products
+                                push softmax into saturation regions where gradients are near zero. Dividing by √d_k
+                                keeps the variance of scores at ~1 regardless of dimension, maintaining healthy
+                                gradient flow through softmax.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>What's the relationship between cross-entropy and KL divergence?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>Cross-entropy H(p,q) = H(p) + KL(p||q). Since H(p) (entropy of true distribution) is
+                                constant during training, minimizing cross-entropy is identical to minimizing KL
+                                divergence between predicted and true distributions. We're literally making our model's
+                                distribution match reality.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>Why does L1 regularization produce sparse weights but L2 does not?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>L1 gradient is ±λ (constant magnitude regardless of weight value). Even small weights
+                                get pushed toward zero by the same force. L2 gradient is 2λw — the push toward zero is
+                                proportional to weight magnitude. Small weights get tiny pushes, so they shrink but
+                                never reach exactly zero. Geometrically: L1 constraint is a diamond (corners at axes),
+                                L2 is a circle. The diamond's corners touching the loss contour produces zeros.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>Why does Adam work better than vanilla SGD for most deep learning?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>Adam maintains per-parameter adaptive learning rates. Parameters with consistently large
+                                gradients get smaller effective learning rates (prevents overshooting). Parameters with
+                                small or sparse gradients get larger effective rates (helps escape flat regions). The
+                                momentum term smooths noisy gradients and helps navigate ravines. It combines the
+                                benefits of AdaGrad (adaptive rates) and RMSProp (decay of historical gradients).</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Essential math formulas for ML and statistics — from linear algebra to optimization.</p>
+            <div class="mini-links">
+                <a href="index.html">Home</a>
+                <a href="statistics-basics.html">Statistics</a>
+                <a href="stochastic-gradient-descent.html">SGD</a>
+                <a href="backpropagation.html">Backpropagation</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

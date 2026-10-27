@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>LangGraph 03 · Data Analyst Supervisor (async FastAPI)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../../assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <a class="back" href="../../index.html">← Portfolio home</a>
+  <h1><span class="pill adv">Advanced</span> 03 · Data Analyst — Supervisor + Specialists (LangGraph)</h1>
+  <p>A multi-agent team: a Supervisor LLM routes work to a SQL specialist, a Python specialist, and a Critic.</p>
+</header>
+<main>
+
+<h2>📖 Story mode — the trading floor with a Supervisor</h2>
+<div class="callout good">
+<b>The scene.</b> Imagine a trading floor. At the centre stands the <b>Supervisor</b>. Around her sit three specialists:
+<b>SQL Desk</b> (queries the database), <b>Python Desk</b> (runs pandas + draws charts), and the <b>Critic</b> (a senior who checks the answer).
+Every time a specialist finishes, they walk back to the Supervisor with their result. <b>The Supervisor decides who goes next</b> — or whether the work is done and the customer can be billed.
+A <b>janitor</b> (MemorySaver) keeps a folder per <code>thread_id</code> so a returning customer doesn’t restart from zero.
+</div>
+
+<h3>What happens when you press “Ask”</h3>
+<ol>
+<li><b>You type:</b> <code>POST /ask { "question": "…", "thread_id": "raj" }</code>.</li>
+<li><b>Boot:</b> <code>bootstrap.py</code> creates the demo CSV and SQLite if missing.</li>
+<li><b>Supervisor node:</b> LLM with <code>with_structured_output(Router)</code> emits one of <code>sql_agent | python_agent | critic | FINISH</code>.</li>
+<li><b>If sql_agent:</b> a prebuilt ReAct agent with <code>list_tables</code>/<code>describe_table</code>/<code>run_sql</code> tools runs, returns rows → edge back to <b>Supervisor</b>.</li>
+<li><b>If python_agent:</b> another prebuilt ReAct with pandas + matplotlib tools crunches/plots → back to <b>Supervisor</b>.</li>
+<li><b>If critic:</b> a plain LLM node grades the draft — if shaky, the Supervisor re-routes to a specialist; if good, sets <code>next="FINISH"</code>.</li>
+<li><b>Routing function:</b> <code>_route</code> returns <code>END</code> when <code>next == "FINISH"</code> — graph exits.</li>
+<li><b>Output:</b> JSON with answer text + any chart paths. Memory persists for Raj’s next question.</li>
+</ol>
+
+<div class="mermaid">
+flowchart LR
+    Start(["🚪 POST /ask"]) --> Sup["👩\u200d💼 Supervisor<br/>(Router LLM)"]
+    Sup -- sql_agent --> SQL["🗄️ SQL Desk"]
+    Sup -- python_agent --> PY["🐍 Python Desk"]
+    Sup -- critic --> CR["🧐 Critic"]
+    Sup -- FINISH --> End(["🏁 END → JSON"])
+    SQL --> Sup
+    PY --> Sup
+    CR --> Sup
+</div>
+
+<div class="callout warn">
+<b>One-line recall trick:</b> <i>“One Supervisor, three desks, every desk walks back to her.”</i>
+This is the <b>supervisor multi-agent pattern</b> — the LangGraph equivalent of react_agents/03, but with explicit routing instead of one big ReAct loop.
+</div>
+
+<h2>Folder structure</h2>
+<pre>
+03_data_analyst/
+├── agents/
+│   ├── base_agent.py
+│   ├── supervisor_agent.py        # builds the multi-agent graph
+│   └── skills/
+│       ├── sql_skill.py           # @tool list_tables, describe_table, run_sql
+│       └── analysis_skill.py      # @tool run_python, make_chart
+├── core/
+│   ├── config.py
+│   ├── logger.py
+│   └── bootstrap.py               # CSV → SQLite + demo csv
+├── data/
+│   ├── prompts/
+│   │   ├── supervisor.txt
+│   │   ├── sql_agent.txt
+│   │   ├── python_agent.txt
+│   │   └── critic.txt
+│   ├── sales.csv                  # auto-created
+│   ├── _db/analyst.db             # auto-created
+│   └── charts/                    # PNGs
+├── models/model_client.py
+├── workflows/analyst_workflow.py
+├── tests/test_agents.py
+├── main.py                        # FastAPI POST /ask
+├── requirements.txt
+└── .env.example
+</pre>
+
+<h2>The supervisor pattern</h2>
+<p>Inspired by the official <a style="color:#fbbf24" href="https://github.com/langchain-ai/langgraph">langgraph</a>
+"multi-agent supervisor" cookbook. The supervisor LLM emits a structured <code>Router</code>
+choice each turn: which specialist runs next, or FINISH.</p>
+
+<h2>Graph</h2>
+<div class="mermaid">
+flowchart LR
+    Start((start)) --> Sup[supervisor<br/>structured-output LLM]
+    Sup -->|next=sql_agent| SQL[sql_agent<br/>ReAct + sql tools]
+    Sup -->|next=python_agent| Py[python_agent<br/>ReAct + pandas/chart tools]
+    Sup -->|next=critic| Cr[critic<br/>LLM grader]
+    Sup -->|next=FINISH| End((END))
+    SQL --> Sup
+    Py --> Sup
+    Cr --> Sup
+</div>
+
+<h2>Specialist agents</h2>
+<table>
+<tr><th>Specialist</th><th>Tools</th><th>Why it exists</th></tr>
+<tr><td>sql_agent</td><td>list_tables, describe_table, run_sql</td><td>Exact aggregations on SQLite.</td></tr>
+<tr><td>python_agent</td><td>run_python (pandas), make_chart (matplotlib)</td><td>Transforms + visualisation.</td></tr>
+<tr><td>critic</td><td>none (pure LLM)</td><td>Quality gate before FINISH.</td></tr>
+</table>
+
+<h2>Turn-by-turn example</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant U as Client
+    participant Sup as Supervisor
+    participant SQL as sql_agent
+    participant Py as python_agent
+    participant Cr as Critic
+    U->>Sup: "which region has highest revenue and chart it monthly"
+    Sup->>SQL: route
+    SQL-->>Sup: "North, $1.2k"
+    Sup->>Py: route
+    Py-->>Sup: "charts/chart_142315.png"
+    Sup->>Cr: route
+    Cr-->>Sup: "OK"
+    Sup-->>U: FINISH → final consolidated answer
+</div>
+
+<h2>State schema</h2>
+<table>
+<tr><th>Key</th><th>Type</th><th>Purpose</th></tr>
+<tr><td><code>messages</code></td><td><code>list[BaseMessage]</code></td><td>The growing conversation (built on <code>MessagesState</code>).</td></tr>
+<tr><td><code>next</code></td><td>str</td><td>Supervisor's chosen next worker.</td></tr>
+</table>
+
+<h2>Why structured-output for the supervisor?</h2>
+<p>We force the supervisor's reply through a Pydantic schema (<code>Router</code> with a <code>Literal</code>),
+which means the routing decision is <i>always</i> valid — no parsing errors, no infinite loops over typos.</p>
+
+<h2>Run</h2>
+<pre>cd langgraph_agents/03_data_analyst
+pip install -r requirements.txt
+copy .env.example .env
+python main.py
+# POST http://127.0.0.1:8103/ask  body:{"question":"top region by revenue","thread_id":"alice"}</pre>
+
+<h2>Why this beats the ReAct version</h2>
+<table>
+<tr><th>Capability</th><th>ReAct 03</th><th>LangGraph 03</th></tr>
+<tr><td>Multi-agent teamwork</td><td>Single agent juggles all 6 tools</td><td>3 specialists each with focused tool-sets</td></tr>
+<tr><td>Routing safety</td><td>Free-text Thought parsing</td><td>Structured-output router (no parse errors)</td></tr>
+<tr><td>Quality control</td><td>Optional <code>self_critique</code> tool</td><td>Critic node — supervisor must route through it</td></tr>
+<tr><td>Conversation memory</td><td>ConversationBufferMemory per session</td><td><code>MemorySaver</code> checkpointer keyed by thread_id (durable swap to SqliteSaver in prod)</td></tr>
+</table>
+
+<div class="callout good">
+<b>Take-away:</b> the supervisor pattern is the standard production recipe for multi-agent
+workflows — clear separation of concerns, deterministic routing, easy to extend.
+</div>
+
+</main>
+<footer>langgraph_agents · 03_data_analyst</footer>
+</body>
+</html>

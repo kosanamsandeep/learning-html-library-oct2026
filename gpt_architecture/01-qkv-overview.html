@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01 — Q·K·V Overview & The Library Analogy</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h1 em { color: #6c5ce7; font-style: normal; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #00cec9; }
+  h3 { font-size: 1.1rem; margin: 1.25rem 0 0.5rem; color: #e1e4f0; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #6c5ce7; color: #e1e4f0; }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .card h3 { margin-top: 0; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+  .grid-3 > div { background: #232740; border-radius: 10px; padding: 1.25rem; text-align: center; }
+  .grid-3 .emoji { font-size: 2.2rem; margin-bottom: 0.4rem; }
+  .grid-3 h4 { font-size: 1rem; margin-bottom: 0.4rem; }
+  .grid-3 p { font-size: 0.85rem; margin-bottom: 0; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .highlight-box { background: rgba(108,92,231,0.08); border-left: 3px solid #6c5ce7; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .q { color: #6c5ce7; } .k { color: #00cec9; } .v { color: #fd79a8; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #6c5ce7; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="index.html">← Index</a>
+  <a href="02-input-and-projection.html">Next: Projections →</a>
+</div>
+
+<h1>01 · <em>Q</em>·<em>K</em>·<em>V</em> Overview &amp; The Library Analogy</h1>
+
+<p>Before diving into matrices and math, let's understand <strong>why</strong> a Transformer needs three separate roles — Query, Key, Value — and what problem each solves.</p>
+
+<div class="highlight-box">
+  <strong>🎯 The Core Problem:</strong> A word like <code>"sat"</code> in <em>"the cat sat on the mat"</em> needs information from <code>"cat"</code> (the subject) and <code>"the"</code> (the determiner). But those words are far away in the sequence. QKV is the mechanism that lets tokens <strong>dynamically retrieve</strong> information from any earlier token.
+</div>
+
+<h2>📚 The Library Analogy</h2>
+<p>Imagine a library with thousands of books. You (a library visitor) want to find information about <strong>cat behavior</strong>.</p>
+
+<div class="grid-3">
+  <div>
+    <div class="emoji">🔍</div>
+    <h4 style="color:#6c5ce7">Query (Q)</h4>
+    <p><em>"I am looking for books about cat behavior."</em> — That's the <strong>query</strong>. It expresses what you seek. In the Transformer, each token generates a Query vector that asks: <em>"Which earlier tokens have information I need right now?"</em></p>
+  </div>
+  <div>
+    <div class="emoji">🏷️</div>
+    <h4 style="color:#00cec9">Key (K)</h4>
+    <p>Each book has a <strong>dust-jacket summary</strong>: "This book covers feline psychology." That's the <strong>key</strong>. It announces what the book contains. In the Transformer, each token produces a Key vector describing: <em>"Here's what information I carry."</em></p>
+  </div>
+  <div>
+    <div class="emoji">📖</div>
+    <h4 style="color:#fd79a8">Value (V)</h4>
+    <p>The <strong>full text of the book</strong> is the value. Once you match a book (via Q·K), you read its content (V). In the Transformer, the Value carries the <strong>detailed token representation</strong> that gets blended into other tokens' contexts.</p>
+  </div>
+</div>
+
+<h2>🤔 Why Not Just One Vector?</h2>
+<p>Why separate Keys from Values? Couldn't a token use the same representation to announce what it contains <em>and</em> to contribute that content?</p>
+
+<p><strong>No — and here's why:</strong></p>
+<ul style="color:#c8cbe0;padding-left:1.5rem;line-height:2;margin-bottom:1rem;">
+  <li><strong>A token's label (Key)</strong> should be compact — just enough to match against queries. Think of it as a retrieval index.</li>
+  <li><strong>A token's content (Value)</strong> needs to be rich — it carries the full semantic payload another token will absorb.</li>
+  <li>Separating them lets the model <strong>specialize</strong>: Keys optimize for match-ability; Values optimize for information-content.</li>
+</ul>
+
+<div class="card">
+  <h3>💡 A Concrete Example</h3>
+  <p>Consider the sentence: <em>"The cat, which had been sleeping peacefully on the windowsill, <strong>sat</strong> up."</em></p>
+  <p>When the model processes <code>"sat"</code>:</p>
+  <ol style="color:#c8cbe0;padding-left:1.25rem;line-height:2;margin-bottom:0;">
+    <li><span class="q"><strong>Q ("sat"):</strong></span> "What is the subject of this verb? What noun performs this action?"</li>
+    <li><span class="k"><strong>K ("cat"):</strong></span> "I'm a noun, I'm animate, I'm singular, I'm the likely subject." (High match with Q)</li>
+    <li><span class="k"><strong>K ("windowsill"):</strong></span> "I'm a noun, I'm inanimate, I'm a location." (Lower match with Q)</li>
+    <li><span class="v"><strong>V:</strong></span> "cat"'s Value vector carries detailed features — concept of cat, singular agreement, etc. — which gets blended into "sat"'s representation.</li>
+  </ol>
+  <p style="margin-top:0.75rem;">After this attention step, <code>"sat"</code> <strong>knows</strong> that a singular cat performed the sitting action. The model can now confidently predict the next word correctly.</p>
+</div>
+
+<h2>🧩 The Big Picture</h2>
+<div class="card">
+  <p style="font-size:0.95rem;">In the Transformer, every token simultaneously plays <strong>all three roles</strong>:</p>
+  <ul style="color:#c8cbe0;padding-left:1.25rem;line-height:2;margin-bottom:0;">
+    <li>It <span class="q"><strong>queries</strong></span> all <strong>earlier</strong> tokens: "Who has what I need?"</li>
+    <li>It offers a <span class="k"><strong>key</strong></span> to later tokens: "Here's what I contain."</li>
+    <li>It offers a <span class="v"><strong>value</strong></span> to later tokens: "Here's my semantic contribution."</li>
+  </ul>
+  <p style="margin-top:0.75rem;">The Q, K, V vectors are <strong>learned projections</strong> of the same underlying token embedding — each extracted by multiplying the embedding by a different weight matrix (W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>). We'll see exactly how in <a href="02-input-and-projection.html" style="color:#00cec9;">the next file</a>.</p>
+</div>
+
+<div class="highlight-box">
+  <strong>🔑 Key takeaway:</strong> Q = "what I seek" · K = "what I contain" · V = "what I provide". Separating them lets attention be a <strong>learned content-addressable retrieval system</strong>, not just a similarity score.
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

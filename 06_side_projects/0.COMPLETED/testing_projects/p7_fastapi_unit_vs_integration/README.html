@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P7 · FastAPI unit vs integration — TestClient and dependency overrides</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>T</span>Testing Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p6_database_integration/README.html">Prev: P6</a>
+                <a href="../p8_e2e_with_httpx/README.html">Next: P8</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 7 · Advanced</p>
+            <h1>FastAPI — unit tests for the rule, integration tests for the route</h1>
+            <p class="lead">Most teams write only integration tests for their APIs. That works, but it is slow and
+                couples every assertion to JSON. Here you will see the two-layer approach: pure unit tests on the
+                <code>ItemService</code> and HTTP integration tests on the FastAPI route, glued together with
+                <code>app.dependency_overrides</code>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Your API has a rule: prices must be positive, names cannot be blank. You could test that rule by
+                POSTing JSON and checking the response. But the rule has nothing to do with HTTP — testing it
+                through the network is twenty times slower and ten times harder to read. Split the code into a
+                service layer and a route layer, and the tests split naturally too.</p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>FastAPI app with <code>ItemStore</code>, <code>ItemService</code>, and the routes.</td>
+                    </tr>
+                    <tr>
+                        <td><code>conftest.py</code></td>
+                        <td>Fixtures: fresh <code>store</code>, <code>service</code>, and a <code>client</code> with
+                            dependency overrides.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_service_unit.py</code></td>
+                        <td>Pure rule tests, no HTTP.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_api_integration.py</code></td>
+                        <td>HTTP-level tests using TestClient.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>The two layers — and what each test covers</h2>
+            <div class="flow">
+                <div class="step">HTTP request</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">FastAPI route<br><span class="quiet">integration test</span></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">ItemService<br><span class="quiet">unit test</span></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">ItemStore</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test type</th>
+                        <th>What it asserts</th>
+                        <th>What it never asserts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Unit (service)</td>
+                        <td>Rules, rounding, validation, totals.</td>
+                        <td>Status codes, JSON keys.</td>
+                    </tr>
+                    <tr>
+                        <td>Integration (API)</td>
+                        <td>Status code 201, 404, 422, JSON shape, dependency wiring.</td>
+                        <td>Whether prices round correctly — that is already a unit test.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>This split is the single most useful pattern in real-world API testing.</p>
+        </section>
+
+        <section class="card">
+            <h2>FastAPI <code>TestClient</code> in one line</h2>
+            <pre><code>from fastapi.testclient import TestClient
+from main import app
+
+client = TestClient(app)
+response = client.post("/items", json={"name": "Pen", "price": 1.50})
+assert response.status_code == 201</code></pre>
+            <p>No server is started. TestClient calls the app in-process via the ASGI interface. It is fast enough
+                that you can run thousands of these per test suite.</p>
+        </section>
+
+        <section class="card">
+            <h2>Dependency overrides — the secret of clean API tests</h2>
+            <pre><code>@pytest.fixture
+def client(service):
+    app.dependency_overrides[get_service] = lambda: service
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()</code></pre>
+            <p>FastAPI's <code>app.dependency_overrides</code> lets you swap any dependency at test time. In this
+                project we override <code>get_service</code> so every test gets a fresh, empty <code>ItemStore</code>.
+                Tests never share state, even though they all hit the same global <code>app</code>.</p>
+            <div class="callout"><strong>Why this matters:</strong> in production the dependency could return a
+                service wired to Postgres. In tests it returns one wired to an in-memory store. Same routes, two
+                wirings, zero changes to <code>main.py</code>.</div>
+        </section>
+
+        <section class="card">
+            <h2>Compare a unit test and an integration test side by side</h2>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>Unit test</h3>
+                    <pre><code>def test_create_rejects_negative_price(service):
+    with pytest.raises(ValueError):
+        service.create("Pen", -0.01)</code></pre>
+                    <p>Reads as plain Python. Runs in microseconds. Easy to add new cases.</p>
+                </div>
+                <div class="mini good">
+                    <h3>Integration test</h3>
+                    <pre><code>def test_create_with_negative_price_returns_422(client):
+    response = client.post("/items", json={"name": "x", "price": -1})
+    assert response.status_code == 422</code></pre>
+                    <p>Proves the route plus Pydantic validation plus HTTP status all line up.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How to ideate API integration tests</h2>
+            <ol>
+                <li><strong>Status code for each path:</strong> 201 on create, 200 on get, 404 on missing, 204 on
+                    delete.</li>
+                <li><strong>Response shape:</strong> the JSON has exactly the keys the frontend expects.</li>
+                <li><strong>Validation errors:</strong> a bad payload returns 422 with the Pydantic detail.</li>
+                <li><strong>Domain errors:</strong> a business rule violation returns 400/409 with the right detail.
+                </li>
+                <li><strong>Isolation:</strong> each test starts with an empty store (proves the fixture works).</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 06_side_projects/testing_projects/p7_fastapi_unit_vs_integration
+pip install -r requirements.txt
+pytest -v
+
+# Run only unit tests:
+pytest -v test_service_unit.py
+
+# Run only integration tests:
+pytest -v test_api_integration.py</code></pre>
+            <p>Notice how the unit tests finish almost instantly. The integration tests are still very fast because
+                no real server starts.</p>
+        </section>
+
+        <section class="card">
+            <h2>What you should take away from P7</h2>
+            <ul>
+                <li>Split rule code from transport code, and your tests split too.</li>
+                <li>Unit-test the service. Integration-test the route. Do not mix.</li>
+                <li><code>TestClient</code> calls the app in-process — fast and deterministic.</li>
+                <li><code>app.dependency_overrides</code> is how you swap real deps for test ones cleanly.</li>
+            </ul>
+            <div class="callout"><strong>Interview-ready answer:</strong> "I structure FastAPI apps so the business
+                rules live in a service class and the routes are thin wrappers. Unit tests target the service
+                directly. Integration tests use FastAPI's <code>TestClient</code> together with
+                <code>app.dependency_overrides</code> to inject a fresh in-memory store per test, asserting only on
+                HTTP behavior — status codes and JSON shape."
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Reading order</h2>
+            <ol>
+                <li>Read <code>main.py</code> top to bottom and notice the three layers.</li>
+                <li>Read <code>conftest.py</code> to see the dependency override.</li>
+                <li>Read <code>test_service_unit.py</code> — short, plain Python.</li>
+                <li>Read <code>test_api_integration.py</code> — focused on HTTP, not on rules.</li>
+                <li>Run <code>pytest -v</code> and compare the two test files' speed.</li>
+                <li>Continue to <a href="../p8_e2e_with_httpx/README.html">P8 · True end-to-end with httpx</a>.</li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RNN Basics for Interviews</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="backpropagation.html">Backpropagation</a>
+                <a href="transformer-basics.html">Transformers</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What an RNN is</a>
+            <a href="#state">Hidden state</a>
+            <a href="#unroll">Unrolling through time</a>
+            <a href="#training">Training and BPTT</a>
+            <a href="#limits">Why RNNs struggle</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Sequence modeling foundations</p>
+                    <h1>How RNNs work</h1>
+                    <p>A recurrent neural network processes a sequence one step at a time while carrying forward a
+                        hidden state that acts like memory. Each new token or timestep updates that state, and the
+                        updated state influences future outputs.</p>
+                    <p>RNNs were an early standard for text, speech, and time-series modeling before attention and
+                        transformers largely replaced them in many tasks.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>One-line flow</h2>
+                    <p class="formula">x_t + h_(t-1) -> new h_t -> output y_t</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Main idea</h3>
+                        <p>The same recurrent cell is applied at every timestep. That means the model shares parameters
+                            across time rather than learning a separate set of weights for each word position.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why that helped historically</h3>
+                        <p>It gave sequence models an explicit notion of temporal order. Unlike bag-of-words methods,
+                            RNNs naturally cared about the order in which tokens arrived.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="state">
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Hidden state</h3>
+                        <p>The hidden state is the running summary of what the RNN has seen so far. At timestep
+                            <strong>t</strong>, the network combines the current input and the previous hidden state to
+                            compute the new hidden state.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why the state matters</h3>
+                        <p>If the state represents useful prior context, the model can use past information when
+                            predicting the current output. That is how sequence memory is approximated.</p>
+                    </div>
+                </div>
+                <div class="code-card">
+                    <h3>Simple recurrence</h3>
+                    <pre>h_t = activation(W_x * x_t + W_h * h_(t-1) + b)
+y_t = W_y * h_t</pre>
+                </div>
+            </section>
+
+            <section class="section" id="unroll">
+                <div class="card">
+                    <h3>Unrolling through time</h3>
+                    <p>To understand an RNN, people often draw it unrolled across timesteps. The same cell appears
+                        repeatedly for t = 1, 2, 3, and so on. This makes it easier to see that the model is a deep
+                        computation graph across time.</p>
+                </div>
+                <div class="note">
+                    <p><strong>Important detail:</strong> the weights are shared across all timesteps. That is why the
+                        unrolled picture shows repeated copies of the same cell, not different cells with different
+                        parameters.</p>
+                </div>
+            </section>
+
+            <section class="section" id="training">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How training works</h3>
+                        <p>Training still uses backpropagation, but now the graph extends across time. This is called
+                            backpropagation through time, or BPTT.</p>
+                    </div>
+                    <div class="card">
+                        <h3>What BPTT means</h3>
+                        <p>The loss at later timesteps sends gradients backward not just through layers, but through
+                            earlier timesteps as well. That is how early states and weights get credit or blame.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="limits">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>RNN limitation</th>
+                                <th>Why it happens</th>
+                                <th>Why transformers helped</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Difficulty with long-range dependencies</td>
+                                <td>Information must pass through many timesteps, making gradients unstable or weak.
+                                </td>
+                                <td>Attention creates shorter paths between tokens.</td>
+                            </tr>
+                            <tr>
+                                <td>Sequential computation</td>
+                                <td>Each timestep depends on the previous hidden state, so parallelization is limited.
+                                </td>
+                                <td>Transformers process many positions in parallel during training.</td>
+                            </tr>
+                            <tr>
+                                <td>Vanishing or exploding gradients</td>
+                                <td>BPTT repeatedly multiplies derivatives across time.</td>
+                                <td>Transformer optimization usually scales better for long contexts.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="checkpoint">
+                    <h2>Most direct comparison</h2>
+                    <p>RNNs remember by carrying state forward step by step. Transformers relate tokens directly with
+                        attention. That is the practical reason transformers largely displaced vanilla RNNs for many NLP
+                        tasks.</p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What is the hidden state in an RNN?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>It is the running summary of past sequence information that gets updated at each timestep
+                                and passed to the next timestep.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why do vanilla RNNs struggle with long-term dependencies?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because gradients must travel through many recurrent steps during training, which often
+                                causes vanishing or exploding gradients and makes long-range information harder to
+                                preserve.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You need a model for a long document with dependencies across far-apart tokens. Would
+                            vanilla RNN be your first choice?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>No. I would usually prefer a transformer because attention handles long-range
+                                relationships more directly and parallelizes much better.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>How is BPTT different from ordinary backpropagation?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>It is the same basic gradient idea, but the computation graph is unrolled over time, so
+                                gradients propagate backward across timesteps as well as across layers.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>RNN questions in interviews usually test your understanding of hidden state, sequential dependence, and
+                why transformers replaced many recurrent architectures.</p>
+            <div class="mini-links">
+                <a href="transformer-basics.html">Transformers</a>
+                <a href="backpropagation.html">Backpropagation</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

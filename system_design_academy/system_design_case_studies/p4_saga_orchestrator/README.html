@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P4 · Saga Orchestrator</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>Case Studies</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p3_realtime_presence/README.html">Prev: P3</a><a
+                    href="../p5_geo_nearby_drivers/README.html">Next: P5</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">Case Studies · Project 4</p>
+            <h1>Saga pattern — distributed transactions without a distributed transaction</h1>
+            <p class="lead">A booking touches three services: flight, hotel, payment. There is no two-phase commit
+                across them. The saga pattern runs steps forward and undoes them with compensating actions when a later
+                step fails.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Flight reserved. Hotel reserved. Payment fails. Now what? The user did not get the booking, but you are
+                holding a seat and a room. A saga rolls back: refund (no-op here), release hotel, cancel flight. The
+                user sees a clean failure; nothing is stuck reserved.</p>
+        </section>
+
+        <section class="card">
+            <h2>Mental model</h2>
+            <div class="flow">
+                <div class="step">Step A: reserve flight</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Step B: reserve hotel</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Step C: charge card</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">success or compensate in reverse</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Orchestration vs choreography</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Style</th>
+                        <th>How it works</th>
+                        <th>When to pick it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Orchestration (this project)</td>
+                        <td>One coordinator calls each step and tracks state.</td>
+                        <td>Few steps, clear ownership, easy to debug.</td>
+                    </tr>
+                    <tr>
+                        <td>Choreography</td>
+                        <td>Each service publishes events; others react.</td>
+                        <td>Many independently owned services; weaker central coordinator.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Hard truths</h2>
+            <div class="grid">
+                <div class="mini warn"><strong>Compensations can fail.</strong> Refund APIs go down too. Alert humans
+                    when a compensation fails — there is no automatic recovery.</div>
+                <div class="mini warn"><strong>Steps must be idempotent.</strong> Retries are required, so doing a step
+                    twice must equal doing it once.</div>
+                <div class="mini warn"><strong>Order matters.</strong> Always compensate in reverse of forward order.
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/system_design_case_studies/p4_saga_orchestrator
+python main.py</code></pre>
+            <p>You will see the happy path (all three steps succeed) and the payment-failure path (hotel and flight
+                rolled back).</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"I use a saga any time a workflow spans services without a shared transaction —
+                bookings, multi-step checkouts, signup flows. I prefer orchestration when the steps are few and well
+                known, choreography when ownership is spread out. Every step has a compensating action, every step is
+                idempotent, and a failed compensation pages a human because it cannot be auto-fixed."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

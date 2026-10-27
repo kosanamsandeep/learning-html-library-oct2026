@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLD 03 — Distributed Systems Building Blocks</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html"><span class="brand-mark">SD</span><span>HLD · 03 Distributed</span></a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="hld_02_databases_caching.html">← Prev</a>
+                <a href="hld_04_case_studies.html">Next →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">Load balancers, queues, microservices, CAP</p>
+                <h1>Distributed Systems — the moving parts of every modern architecture</h1>
+                <p>Every famous system (Twitter, Uber, YouTube) is just these primitives wired together. Master
+                    the primitives and the case studies write themselves.</p>
+            </section>
+
+            <div class="layout">
+                <aside class="toc">
+                    <h3>On this page</h3>
+                    <ol>
+                        <li><a href="#lb">Load Balancers</a></li>
+                        <li><a href="#mq">Message Queues</a></li>
+                        <li><a href="#microservices">Microservices</a></li>
+                        <li><a href="#gateway">API Gateway</a></li>
+                        <li><a href="#cap">CAP theorem</a></li>
+                        <li><a href="#consistency">Consistency models</a></li>
+                        <li><a href="#observability">Observability</a></li>
+                    </ol>
+                </aside>
+
+                <div>
+                    <section class="concept" id="lb">
+                        <h2>Load Balancers — the front door</h2>
+                        <p>A load balancer sits in front of your service pool and distributes incoming requests
+                            across instances. Without one, you can't scale horizontally.</p>
+                        <h3>L4 vs L7</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Layer</th>
+                                    <th>Sees</th>
+                                    <th>Examples</th>
+                                    <th>When</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>L4 (TCP)</td>
+                                    <td>IPs, ports — no HTTP knowledge</td>
+                                    <td>AWS NLB, HAProxy TCP mode</td>
+                                    <td>Raw TCP services, ultra-low latency.</td>
+                                </tr>
+                                <tr>
+                                    <td>L7 (HTTP)</td>
+                                    <td>URL path, headers, cookies</td>
+                                    <td>NGINX, AWS ALB, Envoy</td>
+                                    <td>Routing by path (<code>/api/orders</code> → orders svc), TLS termination, sticky
+                                        sessions.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h3>Algorithms</h3>
+                        <ul>
+                            <li><strong>Round-robin</strong> — simple, ignores load.</li>
+                            <li><strong>Least connections</strong> — sends to instance with fewest in-flight.
+                                Good default.</li>
+                            <li><strong>Weighted</strong> — for heterogeneous instance sizes.</li>
+                            <li><strong>Consistent hashing</strong> — sticky-by-key (e.g. always send user X to the
+                                same cache node).</li>
+                        </ul>
+                        <div class="callout warn"><strong>The load balancer itself is a SPOF</strong> unless you
+                            run it in active-active with DNS or anycast in front. AWS ALB does this for you;
+                            self-managed setups need it explicit.</div>
+                    </section>
+
+                    <section class="concept" id="mq">
+                        <h2>Message Queues — decoupling producer from consumer</h2>
+                        <p>A queue lets one service produce events and another consume them at its own pace.</p>
+                        <div class="grid-2">
+                            <div class="mini bad">
+                                <h4>Synchronous (no queue)</h4>
+                                <p><code>OrderService.place()</code> calls payment, inventory, email, analytics
+                                    one after another. Total latency = sum of all. Email service down → order
+                                    fails.</p>
+                            </div>
+                            <div class="mini good">
+                                <h4>Async (with queue)</h4>
+                                <p><code>OrderService.place()</code> writes an <code>OrderPlaced</code> event to a
+                                    queue and returns to the user. Email, analytics, warehouse consume
+                                    independently. Email down → message sits in queue, retried later.</p>
+                            </div>
+                        </div>
+                        <h3>Tools by mental model</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tool</th>
+                                    <th>Model</th>
+                                    <th>Use when</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Kafka</td>
+                                    <td>Distributed log; consumers track their own offset; messages
+                                        retained for days</td>
+                                    <td>Event streaming, audit trail, multiple consumers
+                                        need the same events.</td>
+                                </tr>
+                                <tr>
+                                    <td>RabbitMQ</td>
+                                    <td>Classic queue with ack/nack, exchanges, routing</td>
+                                    <td>Task
+                                        queues; rich routing rules.</td>
+                                </tr>
+                                <tr>
+                                    <td>AWS SQS</td>
+                                    <td>Managed queue, FIFO or standard</td>
+                                    <td>Default for AWS
+                                        workloads; no ops.</td>
+                                </tr>
+                                <tr>
+                                    <td>Redis Streams</td>
+                                    <td>Lightweight log inside Redis</td>
+                                    <td>Already using
+                                        Redis; lower scale.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h3>Delivery guarantees</h3>
+                        <ul>
+                            <li><strong>At-most-once</strong>: message may be lost; never duplicated.</li>
+                            <li><strong>At-least-once</strong>: never lost; may be duplicated. → consumers MUST be
+                                <strong>idempotent</strong>.
+                            </li>
+                            <li><strong>Exactly-once</strong>: rare and expensive (transactional outbox + dedup).</li>
+                        </ul>
+                        <div class="callout danger"><strong>Idempotency is non-negotiable</strong> in any async
+                            architecture. Tag each message with an event_id; consumer dedups by storing seen ids.</div>
+                    </section>
+
+                    <section class="concept" id="microservices">
+                        <h2>Microservices — when and when not</h2>
+                        <p>Microservices = split your app into small services, each owning one bounded context,
+                            each deployable independently.</p>
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>When microservices help</h4>
+                                <ul>
+                                    <li>Multiple teams (50+ engineers) — each owns a service.</li>
+                                    <li>Different scaling needs per domain (recommendations is GPU-heavy;
+                                        catalog is read-heavy).</li>
+                                    <li>Different tech stacks per problem (Python ML, Go gateway, Java legacy).</li>
+                                </ul>
+                            </div>
+                            <div class="mini bad">
+                                <h4>When they hurt</h4>
+                                <ul>
+                                    <li>10-person team — coordination overhead exceeds the gain.</li>
+                                    <li>Shared database across services (you've made a "distributed monolith",
+                                        worst of both worlds).</li>
+                                    <li>Synchronous chains of 5+ calls — latency and failure compound.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p><strong>2024 industry pulse:</strong> <em>"Modular monolith first; extract services when
+                                you have a reason"</em>. Many famous teams (Shopify, GitHub) run modular monoliths
+                            successfully at huge scale.</p>
+                    </section>
+
+                    <section class="concept" id="gateway">
+                        <h2>API Gateway — the single front door for microservices</h2>
+                        <p>Sits in front of all internal services. Responsibilities:</p>
+                        <ul>
+                            <li>Authentication / authorization</li>
+                            <li>Rate limiting</li>
+                            <li>Request routing (path-based)</li>
+                            <li>Request/response transformation</li>
+                            <li>Logging, metrics, tracing</li>
+                            <li>SSL termination</li>
+                        </ul>
+                        <p>Examples: Kong, AWS API Gateway, Envoy, NGINX. Without one, every microservice
+                            re-implements auth and rate limits.</p>
+                        <p>See <code>07_learning_projects/p12_api_gateway/</code> for a hands-on example.</p>
+                    </section>
+
+                    <section class="concept" id="cap">
+                        <h2>CAP theorem — pick two (kind of)</h2>
+                        <p>In a distributed system you can guarantee at most two of:</p>
+                        <ul>
+                            <li><strong>C</strong>onsistency — every read sees the latest write.</li>
+                            <li><strong>A</strong>vailability — every request gets a (non-error) response.</li>
+                            <li><strong>P</strong>artition tolerance — the system keeps working if the network
+                                splits.</li>
+                        </ul>
+                        <p>P is not optional — networks fail. So in practice you choose <strong>CP</strong> or
+                            <strong>AP</strong>:
+                        </p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th>Behavior on partition</th>
+                                    <th>Examples</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>CP</td>
+                                    <td>Reject requests rather than return stale data</td>
+                                    <td>HBase,
+                                        MongoDB (with majority writes), ZooKeeper, etcd</td>
+                                </tr>
+                                <tr>
+                                    <td>AP</td>
+                                    <td>Keep accepting requests; reconcile later</td>
+                                    <td>Cassandra,
+                                        DynamoDB (default), CouchDB</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p><strong>How to pick:</strong> ask "<em>which is worse — a wrong answer or no answer?</em>"
+                        </p>
+                        <ul>
+                            <li>Money / inventory / medical → CP (no answer is safer).</li>
+                            <li>Social feed / shopping cart / "people you may know" → AP (some staleness OK).</li>
+                        </ul>
+                    </section>
+
+                    <section class="concept" id="consistency">
+                        <h2>Consistency models — finer than C / not-C</h2>
+                        <ul>
+                            <li><strong>Strong consistency</strong> — reads see the latest committed write.
+                                Expensive coordination.</li>
+                            <li><strong>Eventual consistency</strong> — given no new writes, all replicas
+                                eventually converge.</li>
+                            <li><strong>Read-your-writes</strong> — you always see your own latest write (even if
+                                others don't yet). Cheap UX win.</li>
+                            <li><strong>Monotonic reads</strong> — once you see version N, you never see &lt; N
+                                again.</li>
+                            <li><strong>Causal consistency</strong> — operations causally related to each other
+                                are seen in the same order everywhere.</li>
+                        </ul>
+                        <p>Most user-facing systems use <em>eventual + read-your-writes</em>: cheap, scalable,
+                            users don't notice replication lag because they always see their own actions instantly.</p>
+                    </section>
+
+                    <section class="concept" id="observability">
+                        <h2>Observability — the three pillars</h2>
+                        <ul>
+                            <li><strong>Logs</strong> — discrete events. Structured JSON, searchable
+                                (ELK, Loki).</li>
+                            <li><strong>Metrics</strong> — time-series numbers. RED (Rate, Errors, Duration) for
+                                services; USE (Utilization, Saturation, Errors) for resources. Prometheus +
+                                Grafana.</li>
+                            <li><strong>Traces</strong> — follow one request across services. OpenTelemetry,
+                                Jaeger, Tempo.</li>
+                        </ul>
+                        <p>If your HLD answer doesn't mention these, the interviewer will assume you've never
+                            run a service in production.</p>
+                        <p>👉 Now combine everything: <a href="hld_04_case_studies.html"><strong>HLD Case
+                                    Studies</strong></a>.</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer><a href="index.html">Back to hub</a></footer>
+</body>
+
+</html>

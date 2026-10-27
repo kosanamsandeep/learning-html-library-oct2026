@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LangGraph vs AutoGen vs CrewAI — Agent Framework Comparison</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span>⚔</span>Agent Frameworks Compared</div>
+        <div class="links">
+            <a href="../index.html">Side Projects</a>
+            <a href="../langgraph_projects/projects/index.html">LangGraph</a>
+            <a href="../autogen_projects/index.html">AutoGen</a>
+            <a href="../crewai_projects/index.html">CrewAI</a>
+            <a href="../mcp_projects/index.html">MCP</a>
+        </div>
+    </div>
+
+    <div class="header">
+        <p class="badge">The big picture · which one stands first</p>
+        <h1>LangGraph vs AutoGen vs CrewAI</h1>
+        <p class="subtitle">Three of the most-starred agent frameworks on GitHub, three very different
+            philosophies. This page maps them onto one mental model, compares them feature-by-feature, and tells
+            you which to reach for — with the same "build a research assistant" example in all three.</p>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>One sentence each</h2>
+            <div class="grid-3">
+                <div class="mini lg">
+                    <h3 class="col-lg">🧠 LangGraph</h3>
+                    <p>A <strong>graph</strong> of nodes over shared, durable state. You draw the control flow
+                        explicitly. Maximum control, production-grade.</p>
+                    <div><span class="tag">low-level</span><span class="tag">stateful</span><span class="tag">by
+                            LangChain</span></div>
+                </div>
+                <div class="mini ag">
+                    <h3 class="col-ag">💬 AutoGen</h3>
+                    <p>A set of <strong>conversational agents</strong> that exchange messages on an async
+                        actor runtime. Great for research, code-gen, and distributed teams.</p>
+                    <div><span class="tag teal">conversation</span><span class="tag teal">async</span><span
+                            class="tag teal">by Microsoft</span></div>
+                </div>
+                <div class="mini crew">
+                    <h3 class="col-crew">🚢 CrewAI</h3>
+                    <p>A <strong>crew</strong> of role-playing agents that complete tasks. Declarative,
+                        high-level, fastest to a working prototype.</p>
+                    <div><span class="tag orange">role-based</span><span class="tag orange">declarative</span><span
+                            class="tag orange">by CrewAI Inc</span></div>
+                </div>
+            </div>
+            <div class="callout">
+                <strong>All three are top-tier.</strong> AutoGen and CrewAI each have tens of thousands of
+                GitHub stars; LangGraph is the fastest-growing for production agents. "Best" depends entirely on
+                what you're building — that's what the rest of this page is for.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The same mental model, three abstraction levels</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TB
+    subgraph High["High abstraction — fastest to start"]
+        CR["CrewAI<br/>roles + tasks → crew.kickoff()"]
+    end
+    subgraph Mid["Medium — flexible conversations"]
+        AG["AutoGen<br/>agents + teams → team.run()"]
+    end
+    subgraph Low["Low abstraction — most control"]
+        LG["LangGraph<br/>nodes + edges + state → graph.invoke()"]
+    end
+    CR -->|"you give up control<br/>for speed"| AG
+    AG -->|"you gain control<br/>for complexity"| LG
+                </pre>
+                <p class="caption">Up = less code, more magic. Down = more code, more control. None is "best";
+                    they trade the same dial.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Feature-by-feature</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Dimension</th>
+                        <th class="col-lg">LangGraph</th>
+                        <th class="col-ag">AutoGen (v0.4)</th>
+                        <th class="col-crew">CrewAI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Core abstraction</td>
+                        <td>Graph of nodes + shared state</td>
+                        <td>Async agents exchanging messages</td>
+                        <td>Agents with roles + tasks in a crew</td>
+                    </tr>
+                    <tr>
+                        <td>Abstraction level</td>
+                        <td class="win">Low (most control)</td>
+                        <td>Medium</td>
+                        <td class="win">High (least code)</td>
+                    </tr>
+                    <tr>
+                        <td>Control over flow</td>
+                        <td class="win">Explicit, deterministic</td>
+                        <td>Conversation-driven</td>
+                        <td>Process-driven (sequential/hierarchical)</td>
+                    </tr>
+                    <tr>
+                        <td>State &amp; memory</td>
+                        <td class="win">Checkpointers + Store (first-class)</td>
+                        <td>Team/conversation state</td>
+                        <td>Built-in short/long/entity memory</td>
+                    </tr>
+                    <tr>
+                        <td>Persistence / resume</td>
+                        <td class="win">Durable, time-travel</td>
+                        <td>Save/load team state</td>
+                        <td>Memory persists; flows have state</td>
+                    </tr>
+                    <tr>
+                        <td>Human-in-the-loop</td>
+                        <td class="win"><code>interrupt()</code></td>
+                        <td><code>UserProxyAgent</code></td>
+                        <td><code>human_input=True</code> on task</td>
+                    </tr>
+                    <tr>
+                        <td>Multi-agent</td>
+                        <td>You wire it (supervisor, swarm)</td>
+                        <td class="win">Native (GroupChat, Selector)</td>
+                        <td class="win">Native (crew is multi-agent)</td>
+                    </tr>
+                    <tr>
+                        <td>Async / distributed</td>
+                        <td>Supported</td>
+                        <td class="win">Actor model, cross-language</td>
+                        <td>Supported</td>
+                    </tr>
+                    <tr>
+                        <td>Diagnostics</td>
+                        <td class="win">Stream modes + LangSmith</td>
+                        <td>Console UI + tracing (OTEL)</td>
+                        <td>verbose + AgentOps / events</td>
+                    </tr>
+                    <tr>
+                        <td>Learning curve</td>
+                        <td>Steeper</td>
+                        <td>Medium</td>
+                        <td class="win">Gentle</td>
+                    </tr>
+                    <tr>
+                        <td>Time to first agent</td>
+                        <td>Minutes (more code)</td>
+                        <td>Minutes</td>
+                        <td class="win">Minutes (least code)</td>
+                    </tr>
+                    <tr>
+                        <td>Best fit</td>
+                        <td>Complex, controllable production workflows</td>
+                        <td>Research, code-gen, conversational teams</td>
+                        <td>Business automations, role-based crews</td>
+                    </tr>
+                    <tr>
+                        <td>Maker</td>
+                        <td>LangChain</td>
+                        <td>Microsoft</td>
+                        <td>CrewAI Inc</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="caption">Green cells = where that framework is strongest on that row.</p>
+        </div>
+
+        <div class="section">
+            <h2>Incremental example — the SAME task in all three</h2>
+            <p>Goal: a <strong>researcher</strong> gathers facts, then a <strong>writer</strong> turns them into
+                a short summary. Watch how the philosophies differ.</p>
+
+            <h3 class="col-crew">🚢 CrewAI — describe roles, let the crew run</h3>
+            <pre><code><span class="c-kw">from</span> crewai <span class="c-kw">import</span> Agent, Task, Crew, Process
+
+researcher = Agent(role=<span class="c-str">"Researcher"</span>, goal=<span class="c-str">"Find facts on {topic}"</span>,
+                   backstory=<span class="c-str">"A meticulous analyst."</span>)
+writer = Agent(role=<span class="c-str">"Writer"</span>, goal=<span class="c-str">"Write a crisp summary"</span>,
+               backstory=<span class="c-str">"An award-winning journalist."</span>)
+
+research = Task(description=<span class="c-str">"Research {topic}"</span>, expected_output=<span class="c-str">"5 bullet facts"</span>, agent=researcher)
+write = Task(description=<span class="c-str">"Summarize the facts"</span>, expected_output=<span class="c-str">"A 100-word summary"</span>,
+             agent=writer, context=[research])
+
+crew = Crew(agents=[researcher, writer], tasks=[research, write], process=Process.sequential)
+<span class="c-fn">print</span>(crew.kickoff(inputs={<span class="c-str">"topic"</span>: <span class="c-str">"agentic AI"</span>}).raw)</code></pre>
+            <p class="caption">You describe <em>who</em> and <em>what</em>; the framework decides <em>how</em>.</p>
+
+            <h3 class="col-ag" style="margin-top:1.4rem">💬 AutoGen — two agents that talk until done</h3>
+            <pre><code><span class="c-kw">import</span> asyncio
+<span class="c-kw">from</span> autogen_agentchat.agents <span class="c-kw">import</span> AssistantAgent
+<span class="c-kw">from</span> autogen_agentchat.teams <span class="c-kw">import</span> RoundRobinGroupChat
+<span class="c-kw">from</span> autogen_agentchat.conditions <span class="c-kw">import</span> TextMentionTermination
+<span class="c-kw">from</span> autogen_ext.models.openai <span class="c-kw">import</span> OpenAIChatCompletionClient
+
+client = OpenAIChatCompletionClient(model=<span class="c-str">"gpt-4o"</span>)
+researcher = AssistantAgent(<span class="c-str">"researcher"</span>, client, system_message=<span class="c-str">"Find 5 facts."</span>)
+writer = AssistantAgent(<span class="c-str">"writer"</span>, client,
+    system_message=<span class="c-str">"Write a 100-word summary, then say APPROVE."</span>)
+
+team = RoundRobinGroupChat([researcher, writer],
+    termination_condition=TextMentionTermination(<span class="c-str">"APPROVE"</span>))
+
+asyncio.run(team.run(task=<span class="c-str">"Topic: agentic AI"</span>))</code></pre>
+            <p class="caption">You define agents + a stop condition; they <em>converse</em> to the answer.</p>
+
+            <h3 class="col-lg" style="margin-top:1.4rem">🧠 LangGraph — wire the exact flow yourself</h3>
+            <pre><code><span class="c-kw">from</span> langgraph.graph <span class="c-kw">import</span> StateGraph, MessagesState, START, END
+
+<span class="c-kw">def</span> <span class="c-fn">research</span>(state): <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: [llm.invoke(<span class="c-str">"Find 5 facts: "</span> + state[<span class="c-str">"topic"</span>])]}
+<span class="c-kw">def</span> <span class="c-fn">write</span>(state):    <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: [llm.invoke(<span class="c-str">"Summarize: "</span> + state[<span class="c-str">"messages"</span>][-<span class="c-cls">1</span>].content)]}
+
+b = StateGraph(MessagesState)
+b.add_node(<span class="c-str">"research"</span>, research); b.add_node(<span class="c-str">"write"</span>, write)
+b.add_edge(START, <span class="c-str">"research"</span>); b.add_edge(<span class="c-str">"research"</span>, <span class="c-str">"write"</span>); b.add_edge(<span class="c-str">"write"</span>, END)
+graph = b.compile(checkpointer=checkpointer)   <span class="c-com"># durable state for free</span></code></pre>
+            <p class="caption">You control every edge — and get persistence, time-travel, and interrupts.</p>
+        </div>
+
+        <div class="section">
+            <h2>So… what stands first?</h2>
+            <div class="grid-3">
+                <div class="mini crew">
+                    <h3 class="col-crew">Pick CrewAI when</h3>
+                    <ul>
+                        <li>You want a working multi-agent demo <em>today</em>.</li>
+                        <li>The work maps cleanly to roles (researcher, writer, reviewer).</li>
+                        <li>You value readable, declarative setup over fine control.</li>
+                        <li>Business/process automations.</li>
+                    </ul>
+                    <p><span class="winner">First for speed</span></p>
+                </div>
+                <div class="mini ag">
+                    <h3 class="col-ag">Pick AutoGen when</h3>
+                    <ul>
+                        <li>Agents should <em>converse</em> and negotiate (code review, debate).</li>
+                        <li>You need async, distributed, or cross-language agents.</li>
+                        <li>Research/code-generation loops with a human proxy.</li>
+                        <li>You want Microsoft's actor-model runtime.</li>
+                    </ul>
+                    <p><span class="winner">First for conversation</span></p>
+                </div>
+                <div class="mini lg">
+                    <h3 class="col-lg">Pick LangGraph when</h3>
+                    <ul>
+                        <li>You need deterministic, auditable control flow.</li>
+                        <li>Production reliability: persistence, retries, HITL, tracing.</li>
+                        <li>Complex branching, loops, and self-correction.</li>
+                        <li>You'll maintain it for years.</li>
+                    </ul>
+                    <p><span class="winner">First for production</span></p>
+                </div>
+            </div>
+            <div class="callout green">
+                <strong>The honest verdict:</strong> for <em>learning the fundamentals</em> and
+                <em>production systems</em>, LangGraph "stands first" because it exposes the real machinery
+                (state, edges, memory, checkpoints). For <em>fast prototyping</em>, CrewAI stands first. For
+                <em>conversational/agent-to-agent research</em>, AutoGen stands first. Many teams prototype in
+                CrewAI/AutoGen and harden the final system in LangGraph.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>How they relate to each other</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    LLM["An LLM call"] --> need{"What do you need?"}
+    need -->|"role-based team, fast"| CR["CrewAI"]
+    need -->|"agents that converse"| AG["AutoGen"]
+    need -->|"explicit control + state"| LG["LangGraph"]
+    CR -.->|"outgrow it?"| LG
+    AG -.->|"need determinism?"| LG
+    classDef crew fill:#3a1f0c,stroke:#fb923c,color:#fed7aa
+    classDef ag fill:#0c2a2e,stroke:#2dd4bf,color:#99f6e4
+    classDef lg fill:#1e1b4b,stroke:#6366f1,color:#c7d2fe
+    class CR crew
+    class AG ag
+    class LG lg
+                </pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Explore each framework</h2>
+            <div class="grid-3">
+                <a class="fw-card lg" href="../langgraph_projects/projects/index.html">
+                    <h3 class="col-lg">🧠 LangGraph · 6 projects</h3>
+                    <p style="color:#9ca3af">Stateful chatbot → tool agent → memory → human-in-loop → agentic
+                        RAG → multi-agent supervisor.</p>
+                </a>
+                <a class="fw-card ag" href="../autogen_projects/index.html">
+                    <h3 class="col-ag">💬 AutoGen · 4 builds</h3>
+                    <p style="color:#9ca3af">Single agent → two-agent team → tools → group chat &amp; advanced
+                        patterns.</p>
+                </a>
+                <a class="fw-card crew" href="../crewai_projects/index.html">
+                    <h3 class="col-crew">🚢 CrewAI · 4 builds</h3>
+                    <p style="color:#9ca3af">Agent + task → sequential crew → tools → flows &amp; memory.</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Reference projects (most-starred, recent)</h2>
+            <ul>
+                <li><code>microsoft/autogen</code> — the v0.4 AgentChat / Core rewrite (actor runtime).</li>
+                <li><code>crewAIInc/crewAI</code> — standalone crew + flows framework.</li>
+                <li><code>langchain-ai/langgraph</code> — graph orchestration for stateful agents.</li>
+                <li><code>langchain-ai/langgraph-supervisor</code>, <code>crewAIInc/crewAI-examples</code>,
+                    <code>microsoft/autogen</code> samples — multi-agent patterns.
+                </li>
+            </ul>
+            <div class="callout amber">
+                <strong>API note:</strong> AutoGen code here targets <strong>v0.4+</strong>
+                (<code>autogen-agentchat</code>), which differs significantly from the older
+                <code>v0.2</code> <code>autogen</code> package. CrewAI code targets the modern
+                <code>crewai</code> + <code>crewai-tools</code> packages.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="../index.html"><span class="dir">Back</span>
+                <div class="ttl">Side Projects</div>
+            </a>
+            <a class="next" href="../autogen_projects/index.html"><span class="dir">Start</span>
+                <div class="ttl">AutoGen builds →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Agent Frameworks · LangGraph vs AutoGen vs CrewAI</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

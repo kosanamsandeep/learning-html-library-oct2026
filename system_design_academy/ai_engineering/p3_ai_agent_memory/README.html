@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P3 · Agent Memory</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>AI Engineering</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p2_multi_agent_system/README.html">Prev: P2</a><a
+                    href="../p4_context_engineering/README.html">Next: P4</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">AI Engineering · Project 3</p>
+            <h1>Agent memory — short-term, long-term, episodic</h1>
+            <p class="lead">LLMs forget everything between calls. Real agents fake memory by stitching three things into
+                every prompt: the current chat, durable facts retrieved by similarity, and summaries of past sessions.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>The three memory types</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Stored as</th>
+                        <th>Lives for</th>
+                        <th>Used for</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Short-term</td>
+                        <td>Last N turns in a deque.</td>
+                        <td>The current session.</td>
+                        <td>Coherent conversation, references to "what I just said".</td>
+                    </tr>
+                    <tr>
+                        <td>Long-term</td>
+                        <td>Embedding-indexed facts in a vector DB.</td>
+                        <td>Forever (until you delete).</td>
+                        <td>"Remember that I am vegetarian", user preferences, durable knowledge.</td>
+                    </tr>
+                    <tr>
+                        <td>Episodic</td>
+                        <td>One summary line per past session.</td>
+                        <td>Across sessions.</td>
+                        <td>"Last week we worked on auth"; long-horizon context.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Prompt assembly</h2>
+            <div class="flow">
+                <div class="step">user message</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">recall top-K long-term facts</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">get N recent episodic summaries</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">attach short-term buffer</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">send to LLM</div>
+            </div>
+            <p>The agent never sends "everything it knows" — only what is relevant to this turn. That is what keeps
+                token cost sane.</p>
+        </section>
+
+        <section class="card">
+            <h2>What to write to memory</h2>
+            <div class="grid">
+                <div class="mini good"><strong>Write facts</strong> the user explicitly shares ("I live in Bengaluru",
+                    "my project is X"), or that the agent infers and the user confirms.</div>
+                <div class="mini good"><strong>Write preferences</strong> the user repeats ("short answers please", "no
+                    markdown lists").</div>
+                <div class="mini bad"><strong>Don't write</strong> every chat turn into long-term memory — it just adds
+                    noise. Use periodic summarisation instead.</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/ai_engineering/p3_ai_agent_memory
+python main.py</code></pre>
+            <p>You will see two sessions. The second session starts with no short-term memory but still recalls user
+                facts and the previous session's summary.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"I split agent memory into three layers. Short-term is just the last N chat turns.
+                Long-term is a vector index of durable facts I recall by similarity at each turn. Episodic is one
+                summary line written at the end of each session so the next session can reference it. The prompt is
+                assembled fresh each turn — recall first, then format — which keeps tokens predictable as memory grows."
+            </div>
+        </section>
+
+    </main>
+</body>
+
+</html>

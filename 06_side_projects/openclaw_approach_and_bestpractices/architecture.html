@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw — Architecture Deep Dive</title>
+    <link rel="stylesheet" href="openclaw.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+    <nav class="navbar">
+        <a class="brand" href="index.html"><span>OC</span>OpenClaw</a>
+        <div class="nav-links">
+            <a href="index.html">Overview</a>
+            <a href="architecture.html">Architecture</a>
+            <a href="best-practices.html">Best Practices</a>
+        </div>
+    </nav>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">How OpenClaw works under the hood</p>
+            <h1>Architecture Deep Dive</h1>
+            <p class="subtitle">OpenClaw follows a hub-and-spoke model with a central gateway daemon orchestrating sessions, channels, tools, and events. The codebase spans 235,000+ lines in the agent runtime alone, organised into a layered dependency graph with strict module boundaries.</p>
+        </section>
+
+        <!-- ── HUB AND SPOKE ── -->
+        <div class="card">
+            <h2>🏗️ Hub-and-Spoke Architecture</h2>
+            <p>The <code>gateway</code> module is the central server process orchestrating all subsystems. It exposes multiple API surfaces — WebSocket JSON-RPC for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections.</p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TB
+    subgraph Clients["Client Interfaces"]
+        CLI["CLI / TUI"]
+        HTTP["OpenAI-compatible HTTP API"]
+    end
+
+    subgraph Gateway["🦞 Gateway Server (Express + WebSocket)"]
+        direction TB
+        Router["RPC Router<br/>30+ handlers"]
+        Cron["Cron Service"]
+        Browser["Browser Control"]
+        Nodes["Node Registry"]
+        Auth["Auth / Rate Limiting"]
+        Health["Health Probes<br/> /health /readyz"]
+        ConfigWatch["Config Hot-Reload<br/>chokidar file watcher"]
+    end
+
+    subgraph Core["Core Subsystems"]
+        AutoReply["Auto-Reply Pipeline<br/>~86K lines, 373 files"]
+        Agents["Agent Runtime<br/>~235K lines, 1,074 files"]
+        Memory["Memory System<br/>SQLite + LanceDB"]
+        Sandbox["Sandbox (Docker)"]
+        Skills["Skill Engine"]
+    end
+
+    subgraph Extensions["Plugin Ecosystem"]
+        Channels["22 Channel Plugins<br/>Telegram, Discord, WhatsApp..."]
+        Providers["8 Provider Plugins<br/>Claude, GPT, Gemini..."]
+        Tools["12 Tool/Feature Plugins"]
+    end
+
+    CLI --> Gateway
+    HTTP --> Gateway
+    Gateway --> AutoReply
+    Gateway --> Agents
+    Gateway --> Memory
+    Gateway --> Cron
+    Gateway --> Browser
+    AutoReply --> Agents
+    Agents --> Memory
+    Agents --> Sandbox
+    Agents --> Skills
+    Agents --> Extensions
+
+    style Gateway fill:#ccfbf1,stroke:#0f766e
+    style AutoReply fill:#fef3c7,stroke:#d97706
+    style Agents fill:#e0e7ff,stroke:#4338ca
+    style Extensions fill:#d1fae5,stroke:#047857
+</pre>
+                <div class="caption">High-level architecture — the gateway is the central orchestrator, consuming all core subsystems and being consumed by CLI/command/daemon layers.</div>
+            </div>
+        </div>
+
+        <!-- ── AUTO-REPLY PIPELINE ── -->
+        <div class="card">
+            <h2>📨 Auto-Reply Pipeline</h2>
+            <p>When a message arrives from any channel, it flows through a 9-stage pipeline. Each stage can short-circuit with a reply or pass to the next.</p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    In["📥 Inbound Message"] --> Dispatch["1. Dispatch<br/>dispatchInboundMessage()"]
+    Dispatch --> Route["2. Route Resolution<br/>peer → guild+roles → channel → default"]
+    Route --> Directive["3. Directives<br/>/model, /think, /verbose"]
+    Directive --> Command["4. Slash Commands<br/>/new, /status, /reset"]
+    Command --> Media["5. Media Understanding<br/>image, audio, video"]
+    Media --> Links["6. Link Understanding<br/>extract + summarize URLs"]
+    Links --> AgentRun["7. Agent Run<br/>delegate to agent runtime"]
+    AgentRun --> BlockReply["8. Block Reply Pipeline<br/>coalesce response blocks"]
+    BlockReply --> Deliver["9. Reply Delivery<br/>human delays, formatting"]
+
+    style In fill:#ccfbf1,stroke:#0f766e
+    style AgentRun fill:#fef3c7,stroke:#d97706
+    style Deliver fill:#d1fae5,stroke:#047857
+</pre>
+                <div class="caption">Each stage can short-circuit. Route resolution uses a tiered binding match to determine which agent handles the message.</div>
+            </div>
+        </div>
+
+        <!-- ── AGENT RUNTIME ── -->
+        <div class="card">
+            <h2>🧠 Agent Runtime — The Core Loop</h2>
+            <p>The agent runtime is the largest subsystem (~235K lines). Its key components work together in every agent interaction.</p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+sequenceDiagram
+    participant Pipeline as Auto-Reply Pipeline
+    participant Runtime as Agent Runtime
+    participant Builder as System Prompt Builder
+    participant Provider as LLM Provider<br/>(Claude/GPT/Gemini)
+    participant Tools as Tool Registry (75+)
+    participant Memory as Memory System
+
+    Pipeline->>Runtime: Delegate message to agent
+    Runtime->>Builder: Build system prompt
+    Builder->>Builder: Compose: identity + skills<br/>+ memory + tools + workspace
+
+    Runtime->>Provider: Stream LLM request
+    Provider-->>Runtime: Streaming SSE response
+
+    loop Tool Calls
+        Runtime->>Tools: Tool decision from LLM
+        Tools->>Tools: Lookup → Policy → Execute
+        Tools-->>Runtime: Tool result
+        Runtime->>Provider: Feed result back
+    end
+
+    Runtime->>Memory: Store interaction
+    Runtime-->>Pipeline: Final response
+
+    Note over Runtime,Provider: Model selection cascade:<br/>session override → agent config → defaults → allowlist
+</pre>
+                <div class="caption">The full agent execution flow — system prompt construction, streaming LLM communication, tool call loop, and memory storage.</div>
+            </div>
+
+            <h3>Model Selection Cascade</h3>
+            <p>When the agent needs to pick an LLM, it resolves through this cascade:</p>
+            <pre><code>session override → agent config → defaults → aliases → fuzzy match → allowlist</code></pre>
+            <p>Auth profiles support fallback chains (e.g., DeepSeek → Qwen → OpenRouter) and OAuth flows for providers like GitHub Copilot and Qwen Portal.</p>
+        </div>
+
+        <!-- ── MEMORY SYSTEM ── -->
+        <div class="card">
+            <h2>💾 Memory System</h2>
+            <p>OpenClaw has a dual-layer memory architecture with SQLite for semantic search and LanceDB for long-term vector storage.</p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TD
+    subgraph Session["Session Memory"]
+        History["Chat History<br/>(per-session context)"]
+        Compact["/compact command<br/>compress context"]
+    end
+
+    subgraph LongTerm["Long-Term Memory"]
+        SQLite["SQLite<br/>memory-index.sqlite"]
+        LanceDB["LanceDB Plugin<br/>long-term vectors"]
+        FTS["FTS5<br/>Full-text search"]
+        Vec["sqlite-vec<br/>Vector search"]
+    end
+
+    subgraph Files["File-Based Memory"]
+        Daily["memory/daily/YYYY-MM-DD.md"]
+        Dreaming["memory/dreaming/{phase}/YYYY-MM-DD.md"]
+        Workspace["Workspace files:<br/>AGENTS.md · SOUL.md<br/>TOOLS.md"]
+    end
+
+    Session -->|"on interaction"| LongTerm
+    Session -->|"on dreaming"| Files
+    LongTerm -->|"semantic retrieval"| Session
+    Files -->|"injected as context"| Session
+
+    style SQLite fill:#ccfbf1,stroke:#0f766e
+    style LanceDB fill:#e0e7ff,stroke:#4338ca
+    style Files fill:#fef3c7,stroke:#d97706
+</pre>
+                <div class="caption">Dual-layer memory — SQLite for indexed semantic search, file-based for readable long-term storage. Workspace files act as persistent system prompts.</div>
+            </div>
+
+            <h3>Dreaming Phase</h3>
+            <p>As of v2026.4.15, the dreaming (memory consolidation) phase uses <code>separate</code> storage mode — dreaming blocks go into <code>memory/dreaming/{phase}/YYYY-MM-DD.md</code> instead of polluting daily memory files. This keeps daily logs clean while still capturing reflection.</p>
+        </div>
+
+        <!-- ── TOOL EXECUTION ── -->
+        <div class="card">
+            <h2>🔧 Tool Execution & Sandboxing</h2>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    LLM["LLM decides<br/>to call tool"] --> Registry["🔍 Tool Registry Lookup<br/>SDK · OpenClaw · Plugin"]
+    Registry --> PreHook["Pre-tool hook<br/>typing indicator"]
+    PreHook --> Policy{"Policy Evaluation"}
+    Policy -->|"allow"| Execute["⚡ Execute"]
+    Policy -->|"deny"| Block["🚫 Block"]
+    Policy -->|"ask"| UserPrompt["💬 Prompt user"]
+
+    Execute --> SandboxCheck{"Sandbox<br/>enabled?"}
+    SandboxCheck -->|"Yes"| Docker["🐳 Docker container<br/>isolated execution"]
+    SandboxCheck -->|"No"| Host["💻 Host execution<br/>(main session only)"]
+
+    Docker --> Result["Result truncation"]
+    Host --> Result
+    Result --> Display["Format for user display"]
+
+    style Registry fill:#ccfbf1,stroke:#0f766e
+    style Policy fill:#fef3c7,stroke:#d97706
+    style Docker fill:#e0e7ff,stroke:#4338ca
+</pre>
+                <div class="caption">Tool execution flow with policy-based gating, sandboxing, and result truncation.</div>
+            </div>
+
+            <h3>Sandbox Security Hardening</h3>
+            <ul>
+                <li><strong>Default sandbox backend:</strong> Docker (with SSH and OpenShell alternatives)</li>
+                <li><strong>Bind-mount validation:</strong> Paths checked against traversal and symlink escape attempts</li>
+                <li><strong>Capability dropping:</strong> <code>NET_RAW</code> and <code>NET_ADMIN</code> removed; no-new-privileges enforced</li>
+                <li><strong>Tool allowlist:</strong> Granular per-tool — <code>bash</code>, <code>read</code>, <code>write</code> permitted by default; <code>browser</code>, <code>canvas</code>, <code>cron</code> typically denied in sandbox mode</li>
+                <li><strong>Exec approval modes:</strong> <code>off</code> (no approval), <code>allowlist</code> (auto-approve matched), <code>always</code> (approve everything)</li>
+            </ul>
+        </div>
+
+        <!-- ── PLUGIN ARCHITECTURE ── -->
+        <div class="card">
+            <h2>🧩 Plugin Architecture</h2>
+            <p>OpenClaw discovers extensions from four directories in priority order. Each plugin declares a manifest with its <code>kind</code> — one of <code>channel</code>, <code>provider</code>, <code>tool</code>, or <code>feature</code>.</p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TD
+    subgraph Discovery["Extension Discovery Priority"]
+        P1["1. Config paths<br/>plugins.load.paths"]
+        P2["2. Workspace<br/>agent .openclaw/extensions/"]
+        P3["3. Bundled<br/>shipped extensions/"]
+        P4["4. Global<br/>~/.openclaw/extensions/"]
+    end
+
+    Discovery --> Load["jiti dynamic import"]
+    Load --> Manifest["Read openclaw.plugin.json"]
+    Manifest --> Kind{"Plugin kind?"}
+
+    Kind -->|channel| Channel["Channel Plugin<br/>22 supported"]
+    Kind -->|provider| Provider["Provider Plugin<br/>8 supported"]
+    Kind -->|tool| ToolPlugin["Tool/Feature Plugin<br/>12 supported"]
+    Kind -->|feature| Feature["Feature Plugin"]
+
+    Channel --> Register["registerPlugin()<br/>→ tools, hooks, HTTP routes, CLI"]
+
+    subgraph ChannelInterface["ChannelPlugin Interface (~20 slots)"]
+        Config["config · setup · pairing"]
+        Security["security · groups"]
+        Outbound["outbound · threading"]
+        Streaming["streaming · reactions"]
+    end
+
+    Register --> ChannelInterface
+    Register --> HookSystem["Hook System<br/>priority ordering, error isolation"]
+    HookSystem --> Lifecycle["Lifecycle Events<br/>onLoad, onUnload, onConfigChange"]
+</pre>
+                <div class="caption">Plugin discovery, loading, and registration. The channel plugin interface normalises 24+ protocols into a unified MsgContext.</div>
+            </div>
+        </div>
+
+        <!-- ── CONFIGURATION ── -->
+        <div class="card">
+            <h2>⚙️ Configuration Architecture</h2>
+            <p>Configuration lives in <code>~/.openclaw/openclaw.json</code> (JSON5 format). Loading proceeds as: read → parseConfigJson5() → merge includes → Zod validation → OpenClawConfig object. Key sections cover agents, bindings, session behavior, gateway settings, model definitions, auth profiles, per-channel config, hooks, cron jobs, tools, sandbox, memory, plugins, logging, and approvals. A migration system handles upgrades from older config versions, and env substitution expands <code>${ENV_VAR}</code> references. Config is cached in memory with chokidar-based hot-reload.</p>
+        </div>
+
+        <div class="pager">
+            <a href="index.html" class="prev">
+                <div class="dir">Previous</div>
+                <div class="ttl">Overview</div>
+            </a>
+            <a href="best-practices.html" class="next">
+                <div class="dir">Next →</div>
+                <div class="ttl">Best Practices</div>
+            </a>
+        </div>
+    </main>
+</body>
+</html>

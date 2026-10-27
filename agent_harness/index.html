@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Harness — the scaffold that runs an agent</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        :root {
+            --accent: #6d28d9;
+            --accent-soft: #ede9fe;
+        }
+
+        .tcards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 1rem;
+            margin-top: .4rem;
+        }
+
+        .tcard {
+            display: flex;
+            flex-direction: column;
+            padding: 1.1rem 1.2rem;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, .05);
+            transition: transform .15s, border-color .15s;
+        }
+
+        .tcard:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+
+        .tcard .num {
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+        }
+
+        .tcard h3 {
+            margin: .2rem 0 .4rem;
+        }
+
+        .tcard h3 a {
+            color: var(--ink);
+            text-decoration: none;
+        }
+
+        .tcard h3 a:hover {
+            color: var(--accent);
+        }
+
+        .tcard p {
+            color: var(--muted);
+            font-size: .93rem;
+            flex: 1;
+        }
+
+        .tcard .tags {
+            margin-top: .6rem;
+        }
+
+        .why {
+            border-left-color: #7c3aed;
+            background: #f5f3ff;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>AH</span>Agent Harness</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="what-is-an-agent-harness.html">Concept</a>
+                <a href="anatomy-of-a-harness.html">Anatomy</a>
+                <a href="harness-vs-framework-vs-app.html">Layers</a>
+                <a href="harness-showdown.html">Showdown</a>
+                <a href="build-your-own-harness.html">Build one</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Concept track · model → harness → world</p>
+            <h1>The agent harness — the machinery between your prompt and the real world</h1>
+            <p class="lead">If you've ever wondered what people mean by <strong>"the harness"</strong> — you've been
+                using one every time you run Claude Code. A harness is the software scaffold wrapped around a language
+                model: the <strong>agentic loop</strong>, <strong>tools</strong>, <strong>context management</strong>,
+                <strong>permissions</strong>, and <strong>guardrails</strong> that turn raw intelligence into an agent
+                that can read, write, run, and decide. This track unpacks that scaffold from first principles to a
+                working build.
+            </p>
+        </section>
+
+        <section class="callout why">
+            <strong>Why this matters right now.</strong> The models are commodity — Opus, Sonnet, GPT, Gemini all reason
+            brilliantly. What separates products is increasingly <em>how they're harnessed</em>: what tools the model
+            gets, what loop it runs, how much the operator is trusted. When you hear "X is just a thin wrapper over a
+            model", the speaker is missing that the harness <em>is</em> the product. This track gives you the vocabulary
+            and the mental model to see it clearly.
+        </section>
+
+        <section class="card">
+            <h2>The five pages</h2>
+            <div class="tcards">
+                <article class="tcard">
+                    <span class="num">01 · CONCEPT</span>
+                    <h3><a href="what-is-an-agent-harness.html">What is an agent harness?</a></h3>
+                    <p>The brain-vs-body split. What a raw model API can't do on its own, what the harness adds, and why
+                        "harness" is the right word.</p>
+                    <div class="tags"><span class="tag">Definition</span><span class="tag">Model vs agent</span></div>
+                </article>
+                <article class="tcard">
+                    <span class="num">02 · ANATOMY</span>
+                    <h3><a href="anatomy-of-a-harness.html">Anatomy of a harness</a></h3>
+                    <p>The agentic loop, tools &amp; the agent-computer interface, context management, permissions,
+                        memory, subagents, skills, hooks, MCP — using Claude Code as the worked example.</p>
+                    <div class="tags"><span class="tag">Loop</span><span class="tag">Tools</span><span class="tag">MCP</span></div>
+                </article>
+                <article class="tcard">
+                    <span class="num">03 · LAYERS</span>
+                    <h3><a href="harness-vs-framework-vs-app.html">Harness vs framework vs application</a></h3>
+                    <p>Where Claude Code ends and LangGraph begins. The model → harness → framework → app stack, workflows
+                        vs agents, and when to build vs buy your harness.</p>
+                    <div class="tags"><span class="tag">Layering</span><span class="tag">LangGraph</span></div>
+                </article>
+                <article class="tcard">
+                    <span class="num">04 · SHOWDOWN</span>
+                    <h3><a href="harness-showdown.html">The harness showdown</a></h3>
+                    <p>Claude Code, OpenAI Codex CLI, Gemini CLI, Cursor, GitHub Copilot, and the open-source
+                        contenders — compared on the same axes.</p>
+                    <div class="tags"><span class="tag">Claude Code</span><span class="tag">Codex</span><span class="tag">open</span></div>
+                </article>
+                <article class="tcard">
+                    <span class="num">05 · BUILD</span>
+                    <h3><a href="build-your-own-harness.html">Build your own harness</a></h3>
+                    <p>A ~100-line Python harness you can run today: the loop, tool schemas, an observation step, and a
+                        permission gate — then how to graduate to a real SDK.</p>
+                    <div class="tags"><span class="tag">Python</span><span class="tag">Runnable</span></div>
+                </article>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How this track fits the rest of your workspace</h2>
+            <ul>
+                <li><a href="../industry_standards/anthropic_building_agents.html">industry_standards · Building effective
+                        agents</a> — the <em>policy</em> layer: workflows vs agents, when an autonomous agent is the right
+                    call. The harness is the machinery those patterns run on.</li>
+                <li><a href="../industry_standards/anthropic_tools_and_skills.html">industry_standards · Tools &amp; skills</a>
+                    — how to design the tool surface a harness exposes (the agent-computer interface).</li>
+                <li><a href="../02_comparisons/agentic_frameworks.html">02_comparisons · Agentic frameworks</a> — ReAct,
+                    LangGraph, AutoGen, CrewAI: the <em>libraries</em> you can use to assemble your own harness layer.</li>
+                <li><a href="../02_comparisons/coding_ai_tools.html">02_comparisons · Coding AI tools</a> — the products
+                    built on top of harnesses; page 4 of this track is the harness-level view of that same landscape.</li>
+                <li><a href="../industry_standards/claude_workshops/index.html">industry_standards · Claude workshops</a> —
+                    applied levers (agent decomposition, context, memory) that assume you understand this scaffold.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Read this first</h2>
+            <p>Start with <strong>page 1</strong> — it's the mental model everything else hangs off. If you already use a
+                coding agent daily, <strong>page 2</strong> will feel like a tour of a house you live in; that's the
+                point: you've been inside a harness all along. Pages 3–5 are for the moment you want to <em>build or
+                    choose</em> one deliberately rather than take the default.</p>
+        </section>
+
+        <section class="card">
+            <h2>A note on sources</h2>
+            <p class="quiet">"Harness" is an informal term that has crystallised over 2024–2026. Definitions here are
+                synthesised from Anthropic's engineering writing and Claude Code documentation, and cross-checked against
+                how the word is used by NVIDIA, Docker, and the wider agent tooling ecosystem. Each page lists its source
+                links at the bottom. Treat vendor docs as authoritative — this field moves fast.</p>
+        </section>
+    </main>
+</body>
+
+</html>

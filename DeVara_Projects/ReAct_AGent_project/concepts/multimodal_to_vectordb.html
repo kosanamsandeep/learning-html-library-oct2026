@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Concept · Tables, images &amp; multimodal data → Vector DB</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <a class="back" href="../index.html">← Portfolio home</a>
+  <h1>Pushing tables, images, audio &amp; PDFs to a vector DB — the right way</h1>
+</header>
+<main>
+
+<h2>📖 Story mode — the museum curator and the mixed exhibit</h2>
+<div class="callout good">
+<b>The scene.</b> Curator Anika is unpacking a crate for a new exhibit. Inside: <b>old letters, a few photographs, a sculpture, a printed table of dates, an audio diary on tape, and a short film reel.</b>
+The museum has one rule: <b>every item on display must have a small white catalog card with a barcode</b>, so a visitor with a phone can scan and search anything.
+Problem — letters, photos, tape, and film all look <i>nothing</i> alike. How does she give them all the <b>same kind of card</b>?
+</div>
+
+<p>Her trick: she has <b>different specialists</b> in the back room, each turning their item type into the <i>same shape</i> — a list of 1,536 numbers (an embedding). Once everything is numbers, the barcode printer doesn't care if the item was a tape or a photo.</p>
+
+<ul>
+<li><b>📜 Letters → the linguist.</b> She chunks each letter into paragraph-sized cards (same as Detective Rao with chunking) and hands each to the text embedder.</li>
+<li><b>📸 Photographs → the art historian.</b> She does <i>two</i> things per photo: (a) writes a one-paragraph caption and embeds that as text, and (b) runs the photo through a CLIP model so visitors can search by <i>“sunset over a bridge”</i> even without a caption. <b>One photo → two cards.</b></li>
+<li><b>📊 The table of dates → the archivist.</b> She doesn't embed the whole table as one blob. She turns each row into a sentence — <i>“In 1923, the museum acquired the bronze lion from Lyon.”</i> — and embeds the sentence. <b>One row → one card.</b></li>
+<li><b>🎞️ The film reel → the projectionist.</b> He samples one frame per scene (image embed) and runs the audio through Whisper to get a transcript (text embed). <b>One reel → dozens of cards, timestamped.</b></li>
+<li><b>📼 The audio tape → the same projectionist's friend.</b> Whisper transcript, chunked into ~30-second windows, each window becomes one text card with a <code>t_start</code> on it.</li>
+<li><b>🗿 The sculpture → the docent.</b> She writes a structured description (material, era, dimensions) and embeds <i>that</i>; the physical object stays in its case but its card lives in the same drawer as everything else.</li>
+</ul>
+
+<p><b>Every white catalog card carries the same metadata stamp</b> — <code>{exhibit_id, item_id, modality, page_or_timestamp, parent_id}</code> — so a visitor searching <i>“bronze lion 1923”</i> can pull back the letter that mentions it, the photo of it, the row in the table, <i>and</i> the audio clip where the donor talks about it. All four light up in one search.</p>
+
+<div class="callout warn">
+<b>One-line recall trick:</b> <i>“Different specialists, same white card.”</i>
+Text, images, tables, audio, video — all of them become a vector + a metadata sticker. The vector DB doesn't know (or care) what the original was.
+</div>
+
+<div class="mermaid">
+flowchart LR
+    Crate["📦 Mixed crate"] --> Letter["📜 letters"]
+    Crate --> Photo["📸 photos"]
+    Crate --> Table["📊 table"]
+    Crate --> Audio["📼 tape"]
+    Crate --> Film["🎞️ film"]
+    Letter --> TE["text embedder"]
+    Photo --> CE["caption → text embedder"]
+    Photo --> IE["CLIP image embedder"]
+    Table --> RE["row → sentence → text embedder"]
+    Audio --> WE["Whisper → text embedder"]
+    Film --> FE["frame → image embedder"]
+    Film --> WE
+    TE --> Card["🏷️ white catalog card<br/>vector + metadata"]
+    CE --> Card
+    IE --> Card
+    RE --> Card
+    WE --> Card
+    FE --> Card
+    Card --> DB[("🗄️ vector DB")]
+</div>
+
+<h2>The universal pipeline</h2>
+<div class="mermaid">
+flowchart LR
+    Raw[(Mixed sources<br/>PDF, DOCX, CSV, PNG, MP3, video)] --> Parse[1. Parse / OCR<br/>unstructured, Azure DI, AWS Textract]
+    Parse --> Norm[2. Normalise to typed elements<br/>{text, table, image, code, ...}]
+    Norm --> Chunk[3. Chunk per modality]
+    Chunk --> Embed[4. Embed per modality<br/>text-emb / image-emb / table-emb]
+    Embed --> Enrich[5. Add metadata<br/>doc_id, page, modality, parent_id]
+    Enrich --> Store[(Vector DB<br/>Chroma / Qdrant / pgvector)]
+    Store --> Retr[6. Hybrid retrieval<br/>vector + BM25 + filters]
+    Retr --> LLM[7. Multimodal LLM]
+</div>
+
+<h2>How to treat each data type</h2>
+<table>
+<tr><th>Data type</th><th>Parse with</th><th>Strategy</th><th>Embedding</th><th>Stored as</th></tr>
+<tr><td><b>Plain text / DOCX</b></td><td>unstructured, python-docx</td><td>Recursive chunking</td><td>Text embed (OpenAI <code>text-embedding-3-large</code>, BGE, E5)</td><td>text + metadata</td></tr>
+<tr><td><b>PDF (text-based)</b></td><td>pdfplumber, PyMuPDF</td><td>Per-page or per-section; preserve <code>page</code> metadata</td><td>Text embed</td><td>text + page no.</td></tr>
+<tr><td><b>PDF (scanned)</b></td><td>Tesseract / Azure Document Intelligence / AWS Textract</td><td>OCR per page, then chunk</td><td>Text embed</td><td>text + bbox</td></tr>
+<tr><td><b>Tables</b></td><td>Camelot, Azure DI, unstructured-tables</td><td>(a) Linearise to markdown<br/>(b) Index each row as a chunk<br/>(c) Summarise the table with an LLM &amp; index the summary</td><td>Text embed of summary <i>and</i> of each row</td><td>Both: row chunks + table-summary chunk pointing to original</td></tr>
+<tr><td><b>Images / diagrams</b></td><td>PIL, OpenCV</td><td>(a) Caption with a vision LLM, embed the caption<br/>(b) Also embed the image with CLIP/SigLIP</td><td>Text embed (caption) + image embed (CLIP)</td><td>Two vectors with shared <code>parent_id</code></td></tr>
+<tr><td><b>Charts inside docs</b></td><td>Layout-aware parser (Unstructured, Adobe Extract)</td><td>Same as images, but also extract the <b>underlying data table</b> if available</td><td>Caption text + table rows</td><td>Multi-modal cluster</td></tr>
+<tr><td><b>Audio</b></td><td>Whisper / AssemblyAI</td><td>Transcribe → semantic chunks of ~30s with timestamps</td><td>Text embed</td><td>text + start/end seconds</td></tr>
+<tr><td><b>Video</b></td><td>Whisper (audio) + frame sampling</td><td>Transcript chunks + key-frame captions</td><td>Text + image embeds</td><td>per-segment with <code>video_id, ts</code></td></tr>
+<tr><td><b>Code</b></td><td>tree-sitter</td><td>One chunk per function/class</td><td>Code-specialised embed (e.g. <code>nomic-embed-code</code>)</td><td>code + path, symbol</td></tr>
+</table>
+
+<h2>Tables — the 3 patterns visualised</h2>
+<div class="mermaid">
+flowchart LR
+    T[(Source table)] --> P1[Pattern A<br/>Linearise to markdown<br/>→ 1 chunk]
+    T --> P2[Pattern B<br/>1 chunk per row<br/>→ row-level recall]
+    T --> P3[Pattern C<br/>LLM summary chunk<br/>+ Pattern B rows]
+    P1 --> VDB[(Vector DB)]
+    P2 --> VDB
+    P3 --> VDB
+</div>
+
+<table>
+<tr><th>Pattern</th><th>Recall</th><th>Storage</th><th>When</th></tr>
+<tr><td>A. Linearise full table</td><td>Low for specific rows</td><td>1×</td><td>Small reference tables</td></tr>
+<tr><td>B. Row per chunk</td><td>High</td><td>N×</td><td>Catalogues, product specs</td></tr>
+<tr><td>C. Summary + rows</td><td>Highest</td><td>N+1×</td><td>Big analytical tables (recommended)</td></tr>
+</table>
+
+<h2>Images — text-side vs vector-side</h2>
+<div class="mermaid">
+flowchart LR
+    Img[Image] --> Cap[Vision LLM caption:<br/>"Bar chart of Q1 revenue by region"]
+    Img --> CLIP[CLIP/SigLIP image embedding]
+    Cap --> TEmb[Text embedding]
+    TEmb --> VDB[(Vector DB)]
+    CLIP --> VDB
+    VDB --> R[Hybrid retrieval<br/>text query → text vector<br/>image query → image vector]
+</div>
+
+<p>Keep the same <code>parent_id</code> on both rows so a hit on either modality returns the same source element.</p>
+
+<h2>End-to-end multimodal indexing flow</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant U as Uploader
+    participant P as Parser (unstructured)
+    participant LLM as Caption / summarise LLM
+    participant Emb as Embedder(s)
+    participant V as Vector DB
+    U->>P: file.pdf
+    P-->>U: [TextElement, TableElement, ImageElement, ...]
+    loop per element
+        alt text
+            U->>Emb: embed text
+        else table
+            U->>LLM: summarise table
+            U->>Emb: embed summary + each row
+        else image
+            U->>LLM: caption image
+            U->>Emb: embed caption (and optionally CLIP image)
+        end
+        U->>V: upsert(vector, metadata={doc_id, page, modality, parent_id})
+    end
+</div>
+
+<h2>Metadata schema you'll thank yourself for</h2>
+<table>
+<tr><th>Field</th><th>Type</th><th>Why</th></tr>
+<tr><td><code>doc_id</code></td><td>str</td><td>Group all chunks of one source</td></tr>
+<tr><td><code>parent_id</code></td><td>str</td><td>Link summary↔row, caption↔image</td></tr>
+<tr><td><code>modality</code></td><td>enum{text,table,image,audio,code}</td><td>Filterable at query time</td></tr>
+<tr><td><code>page</code> / <code>ts</code> / <code>bbox</code></td><td>int/float</td><td>Citation back to the source</td></tr>
+<tr><td><code>tenant_id</code></td><td>str</td><td>Multi-tenant isolation</td></tr>
+<tr><td><code>created_at</code></td><td>datetime</td><td>TTL + freshness filters</td></tr>
+<tr><td><code>hash</code></td><td>str</td><td>Idempotent re-indexing</td></tr>
+</table>
+
+<h2>Retrieval that actually works</h2>
+<table>
+<tr><th>Layer</th><th>Tool</th><th>Why</th></tr>
+<tr><td>Vector</td><td>Qdrant / pgvector / Chroma</td><td>Semantic similarity</td></tr>
+<tr><td>Keyword</td><td>BM25 (e.g. via <code>rank_bm25</code> or Elasticsearch)</td><td>Catches exact IDs, codes, names</td></tr>
+<tr><td>Metadata filter</td><td><code>where modality='table' AND tenant='x'</code></td><td>Hard constraints</td></tr>
+<tr><td>Re-ranker</td><td>Cohere Rerank / BGE-reranker / cross-encoder</td><td>Boosts top-50 → top-5 with high precision</td></tr>
+</table>
+
+<h2>Recommended open-source stack</h2>
+<table>
+<tr><th>Step</th><th>Library</th></tr>
+<tr><td>Parsing PDFs/tables/images out of one file</td><td><a style="color:#fbbf24" href="https://github.com/Unstructured-IO/unstructured">unstructured</a></td></tr>
+<tr><td>Layout-aware PDF</td><td>PyMuPDF, pdfplumber</td></tr>
+<tr><td>OCR</td><td>tesseract, paddleocr, Azure DI</td></tr>
+<tr><td>Vision captioning</td><td>GPT-4o / LLaVA / Qwen-VL</td></tr>
+<tr><td>Text embeddings</td><td>OpenAI text-embedding-3, BGE-M3, E5</td></tr>
+<tr><td>Image embeddings</td><td>CLIP, SigLIP</td></tr>
+<tr><td>Vector DB</td><td>Qdrant, Chroma, pgvector, Pinecone, Weaviate</td></tr>
+<tr><td>Re-rank</td><td>Cohere Rerank, bge-reranker-base</td></tr>
+<tr><td>RAG eval</td><td>RAGAS, TruLens</td></tr>
+</table>
+
+<div class="callout good">
+<b>Rule of thumb:</b> store one vector per <i>self-contained idea</i>, in the same vector space when possible.
+Use metadata, not separate indexes, to slice across modality / tenant / time.
+</div>
+
+<h2>Scenario: a 10-page PDF with text + tables + images</h2>
+<p>Same "1 chunk = 1 vector" rule as text-only docs — but each modality produces its own vectors. Let's count:</p>
+
+<div class="mermaid">
+flowchart LR
+    PDF[10-page PDF] --> P[Parser]
+    P --> T[8 pages of text<br/>~50 chunks/page = 400]
+    P --> Tb[3 tables<br/>summary + rows]
+    P --> Im[5 images<br/>caption + CLIP]
+    T -->|400 vectors| DB[(Vector DB)]
+    Tb -->|3 summaries + ~30 rows| DB
+    Im -->|5 captions + 5 CLIP| DB
+</div>
+
+<table>
+<tr><th>Element</th><th>How many</th><th>Vectors produced</th><th>Why that many</th></tr>
+<tr><td>Text body</td><td>8 pages × 50 chunks</td><td>400</td><td>Each chunk = 1 vector. Never one vector per page.</td></tr>
+<tr><td>Tables</td><td>3</td><td>3 summaries + ~30 row vectors = <b>33</b></td><td>Summary catches "what is the table about"; rows catch specific cell queries.</td></tr>
+<tr><td>Images</td><td>5</td><td>5 caption embeddings + 5 CLIP image embeddings = <b>10</b></td><td>Caption serves text queries; CLIP serves image/visual queries. Linked by <code>parent_id</code>.</td></tr>
+<tr><td><b>Total rows in DB</b></td><td></td><td><b>~443</b></td><td>One PDF → ~443 separate vectors, all in one table, filtered by <code>modality</code>.</td></tr>
+</table>
+
+<h3>What goes into ONE row vs many rows</h3>
+<table>
+<tr><th>Question</th><th>Answer</th></tr>
+<tr><td>"Do I embed an entire page of text as one vector?"</td><td>No. Split the page into chunks (say 50), embed each, store 50 rows.</td></tr>
+<tr><td>"Do I embed an entire table as one vector?"</td><td>Optionally yes for the summary, but also embed each row separately so queries like "price of SKU 1234" hit the exact row.</td></tr>
+<tr><td>"Do I embed an image as one vector?"</td><td>Yes — but usually two vectors: one CLIP image vector + one text vector from a vision-LLM caption.</td></tr>
+<tr><td>"Can I put text and image vectors in the same DB?"</td><td>Yes — one collection, metadata field <code>modality</code> tells them apart. Use separate indexes only if the dimensionality differs.</td></tr>
+</table>
+
+<h3>Example rows</h3>
+<pre>// text chunk
+{ id:"docA::p3::c17", vector:[1536 floats], text:"...CEO Sarah Lee...",
+  meta:{ doc_id:"docA", page:3, modality:"text" } }
+
+// table row
+{ id:"docA::t1::r5",  vector:[1536 floats], text:"SKU 1234, $19.99, in stock",
+  meta:{ doc_id:"docA", page:7, modality:"table", parent_id:"docA::t1" } }
+
+// image caption
+{ id:"docA::img2::cap", vector:[1536 floats], text:"Bar chart of Q1 revenue by region",
+  meta:{ doc_id:"docA", page:5, modality:"image", parent_id:"docA::img2" } }
+
+// image CLIP
+{ id:"docA::img2::clip", vector:[768 floats], text:null,
+  meta:{ doc_id:"docA", page:5, modality:"image_clip", parent_id:"docA::img2" } }</pre>
+
+<div class="callout good">
+<b>Same rule, more modalities:</b> 1 chunk (text/row/image) = 1 vector = 1 row.
+Multimodal just means you produce <i>more</i> rows per source — never fewer.
+</div>
+
+</main>
+<footer>concepts · multimodal_to_vectordb</footer>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>08 · Practice tests — become the expert</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span class="mark">◆</span>Redis Mastery</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="07_power_use_cases.html">← Why Redis wins</a>
+                <a href="index.html">Finish →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Chapter 08 · Test yourself</p>
+            <h1>Practice tests — prove you're an expert</h1>
+            <p class="lead">Three graded rounds against the <strong>online-store dataset</strong> from chapter 03.
+                Try each in <code>redis-cli</code> <em>before</em> revealing the answer. Aim to explain
+                <em>which data type</em> and <em>why</em>, not just the command.
+            </p>
+            <div class="callout warn">
+                <strong>Setup:</strong> make sure the dataset from
+                <a href="03_data_types.html">chapter 03</a> is loaded. If results look off, run
+                <code>FLUSHDB</code> and re-paste it.
+            </div>
+        </section>
+
+        <!-- ROUND 1 -->
+        <section class="card">
+            <h2><span class="pill green">Round 1</span> Fundamentals &amp; data types</h2>
+
+            <details class="quiz">
+                <summary><span class="level easy">easy</span> Q1. Get the full hash for
+                    <code>product:1</code>.
+                </summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">HGETALL</span> <span class="c-key">product:1</span></code></pre>
+                    Returns name, price, stock, category for the Laptop.
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level easy">easy</span> Q2. How many keys are in the current database?</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">DBSIZE</span></code></pre>
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level easy">easy</span> Q3. Which data type would you use for a shopping cart,
+                    and why?</summary>
+                <div class="answer">
+                    A <strong>list</strong> — it preserves insertion order and lets you push/pop items and allow
+                    duplicates (e.g. two of the same product). In our dataset <code>cart:2</code> is a list.
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level easy">easy</span> Q4. Get the price field of product 2 without fetching
+                    the whole hash.</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">HGET</span> <span class="c-key">product:2</span> <span class="c-val">price</span></code></pre>
+                    → 800.
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level easy">easy</span> Q5. What's the difference between <code>EXPIRE</code>
+                    and <code>PERSIST</code>?</summary>
+                <div class="answer">
+                    <code>EXPIRE key seconds</code> sets a TTL so the key auto-deletes; <code>PERSIST key</code>
+                    removes that TTL, making the key permanent again.
+                </div>
+            </details>
+        </section>
+
+        <!-- ROUND 2 -->
+        <section class="card">
+            <h2><span class="pill amber">Round 2</span> Commands &amp; structures</h2>
+
+            <details class="quiz">
+                <summary><span class="level med">medium</span> Q6. Sell one Laptop: atomically reduce its stock by 1
+                    and bump its sales counter.</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">MULTI</span>
+<span class="c-kw">HINCRBY</span> <span class="c-key">product:1</span> <span class="c-val">stock</span> -<span class="c-num">1</span>
+<span class="c-kw">INCR</span> <span class="c-key">sales:product:1</span>
+<span class="c-kw">EXEC</span></code></pre>
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level med">medium</span> Q7. Which products are tagged <code>tech</code>
+                    AND <code>bestseller</code>?</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">SINTER</span> <span class="c-key">tag:tech</span> <span class="c-key">tag:bestseller</span></code></pre>
+                    → {"1"} (the Laptop is in both sets).
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level med">medium</span> Q8. Show the best-sellers ranked highest-first with
+                    their scores.</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">ZREVRANGE</span> <span class="c-key">bestsellers</span> <span class="c-num">0</span> -<span class="c-num">1</span> <span class="c-fn">WITHSCORES</span></code></pre>
+                    → product:4 (61), product:2 (52), product:1 (37).
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level med">medium</span> Q9. Add product 3 to Alice's cart
+                    (<code>cart:1</code>) at the end.</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">RPUSH</span> <span class="c-key">cart:1</span> <span class="c-num">3</span></code></pre>
+                    Then <code>LRANGE cart:1 0 -1</code> shows <code>1, 4, 3</code>.
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level med">medium</span> Q10. Cache the string <code>"hot"</code> under
+                    <code>cache:product:1</code> for 60 seconds, only if it doesn't already exist.
+                </summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">SET</span> <span class="c-key">cache:product:1</span> <span class="c-str">"hot"</span> <span class="c-fn">NX</span> <span class="c-fn">EX</span> <span class="c-num">60</span></code></pre>
+                </div>
+            </details>
+        </section>
+
+        <!-- ROUND 3 -->
+        <section class="card">
+            <h2><span class="pill red">Round 3</span> Patterns, performance &amp; judgment</h2>
+
+            <details class="quiz">
+                <summary><span class="level hard">hard</span> Q11. Write a fixed-window rate limiter: max 10 hits
+                    per 60s for <code>user:1</code>.</summary>
+                <div class="answer">
+                    <pre><code><span class="c-kw">INCR</span> <span class="c-key">rate:user:1</span>
+<span class="c-kw">EXPIRE</span> <span class="c-key">rate:user:1</span> <span class="c-num">60</span> <span class="c-fn">NX</span>
+<span class="c-com"># reject the request if the INCR reply is &gt; 10</span></code></pre>
+                    <code>NX</code> anchors the 60s window to the first request so the limit can't be reset by
+                    later hits.
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level hard">hard</span> Q12. Why prefer a Lua script over MULTI/EXEC for that
+                    limiter?</summary>
+                <div class="answer">
+                    The TTL should only be set on the <em>first</em> request (<code>if count == 1</code>).
+                    MULTI/EXEC can't branch on an intermediate result, but a Lua script runs the whole
+                    increment-check-expire atomically on the server with no race.
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level hard">hard</span> Q13. You need a leaderboard of 5 million players with
+                    instant top-10 and "my rank". Which type, and what's the cost?</summary>
+                <div class="answer">
+                    A <strong>sorted set</strong>. <code>ZADD</code>/<code>ZINCRBY</code> are O(log n),
+                    <code>ZREVRANGE 0 9</code> for top-10 is fast, and <code>ZREVRANK member</code> gives a rank
+                    directly — all without re-sorting or a separate index.
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level hard">hard</span> Q14. A teammate wants Redis as the only store for
+                    financial transactions that can never be lost. Good idea?</summary>
+                <div class="answer">
+                    Risky as the <em>sole</em> store. Redis is RAM-first; durability needs careful AOF
+                    (<code>appendfsync always/everysec</code>) and you still accept a small loss window on crash.
+                    For money, keep a relational DB as the source of truth and use Redis as the speed/cache layer.
+                </div>
+            </details>
+
+            <details class="quiz">
+                <summary><span class="level hard">hard</span> Q15. In production you must list all
+                    <code>session:*</code> keys. What do you run — and what do you avoid?
+                </summary>
+                <div class="answer">
+                    Use <code>SCAN 0 MATCH "session:*" COUNT 100</code> and iterate the cursor. <strong>Avoid
+                        <code>KEYS session:*</code></strong> — it blocks the single-threaded server while it sweeps
+                    the whole keyspace.
+                </div>
+            </details>
+        </section>
+
+        <!-- SCORECARD -->
+        <section class="card">
+            <h2>Self-scorecard</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Score</th>
+                        <th>Level</th>
+                        <th>Next step</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0–5</td>
+                        <td>Beginner</td>
+                        <td>Re-read ch. 03–04, redo Round 1 without peeking</td>
+                    </tr>
+                    <tr>
+                        <td>6–10</td>
+                        <td>Comfortable</td>
+                        <td>Drill the data types; build your own dataset</td>
+                    </tr>
+                    <tr>
+                        <td>11–13</td>
+                        <td>Advanced</td>
+                        <td>Implement the ch. 05 patterns end-to-end in code</td>
+                    </tr>
+                    <tr>
+                        <td>14–15</td>
+                        <td>Expert</td>
+                        <td>Tune persistence/eviction; add a Lua limiter & a Stream</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout good">
+                <strong>To truly cement it:</strong> wire Redis into a tiny app — cache a slow endpoint, store
+                sessions, add a leaderboard, and rate-limit an API. Building the four patterns for real is the
+                fastest path from "I know the commands" to "I reach for Redis instinctively."
+            </div>
+        </section>
+
+        <div class="pager">
+            <a href="07_power_use_cases.html">
+                <div class="dir">← Back</div>
+                <div class="ttl">07 · Why Redis wins</div>
+            </a>
+            <a class="next" href="index.html">
+                <div class="dir">Done →</div>
+                <div class="ttl">Back to the hub</div>
+            </a>
+        </div>
+    </main>
+
+    <footer><a href="index.html">← Back to Redis hub</a></footer>
+</body>
+
+</html>

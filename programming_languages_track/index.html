@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programming Languages Track — Go, Rust &amp; the Web (JS/TS/React)</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>PL</span>Programming Languages Track</a>
+            <nav class="top-links">
+                <a href="#bootcamp">Bootcamp</a>
+                <a href="#projects">Parallel projects</a>
+                <a href="#web">Web track</a>
+                <a href="#genai">GenAI angle</a>
+                <a href="../07_learning_projects/learning_tracker.html">Python originals</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Systems languages · Web languages · Python at the centre</p>
+            <h1>Learn new languages by re-building what you already know</h1>
+            <p class="lead">Two directions from your Python base. <strong>Go &amp; Rust</strong> take you toward fast,
+                systems-level backends. The <strong>Web track</strong> (JavaScript &rarr; TypeScript &rarr; React) takes
+                you toward the interfaces people actually use. Both reuse concepts you already have, so each new
+                language
+                lands on familiar ground.</p>
+        </section>
+
+        <section class="card" id="bootcamp">
+            <h2>Stage 1 · Bootcamp (read in this order)</h2>
+            <a class="project" href="bootcamp/why_go_rust.html"><strong>BOOTCAMP · 1</strong>Why learn Go and Rust at
+                all — concrete advantages over Python, when to choose which, and how teams use them in modern GenAI /
+                agentic stacks.</a>
+            <a class="project" href="bootcamp/syntax_python_vs_go.html"><strong>BOOTCAMP · 2</strong>Python ↔ Go syntax
+                in 20 minutes — variables, functions, structs, errors, slices, maps, goroutines.</a>
+            <a class="project" href="bootcamp/syntax_python_vs_rust.html"><strong>BOOTCAMP · 3</strong>Python ↔ Rust
+                syntax in 25 minutes — variables, ownership, traits, enums, <code>Result</code>, iterators, async.</a>
+            <a class="project" href="bootcamp/why_they_are_fast.html"><strong>BOOTCAMP · 4</strong>Why are Go and Rust
+                fast? Compiled vs interpreted, no GIL, value types, monomorphisation, zero-cost abstractions.</a>
+            <a class="project" href="bootcamp/pick_them_fast.html"><strong>BOOTCAMP · 5</strong>Pick-them-fast
+                cheatsheet — the 30-minute starter for each language: install, hello world, build, test, run.</a>
+        </section>
+
+        <section class="card" id="projects">
+            <h2>Stage 2 · 10 parallel projects</h2>
+            <p class="quiet">Each project below mirrors the same-numbered project in <a
+                    href="../07_learning_projects/learning_tracker.html">07_learning_projects</a>. Read the Python
+                version first, then jump into the Go and Rust ports. Each port has a short README, a runnable file, and
+                a "what's different from Python" callout.</p>
+
+            <h3>Go track <span class="tag go">Go</span></h3>
+            <a class="project go" href="go_projects/index.html"><strong>GO · INDEX</strong>The Go track hub with all 10
+                projects in order.</a>
+
+            <h3>Rust track <span class="tag rust">Rust</span></h3>
+            <a class="project rust" href="rust_projects/index.html"><strong>RUST · INDEX</strong>The Rust track hub with
+                all 10 projects in order.</a>
+        </section>
+
+        <section class="card" id="web">
+            <h2>Web track · JavaScript &rarr; TypeScript &rarr; React <span class="tag js">JS</span> <span
+                    class="tag ts">TS</span> <span class="tag react">React</span></h2>
+            <p class="quiet">A separate, interest-first mini-track for the browser side of the stack. You know Python —
+                most of JavaScript is already familiar. These four short reads (with diagrams) get you ready for a
+                JavaScript bootcamp and correct the common myths along the way.</p>
+            <a class="project js" href="js_ts_react/index.html"><strong>WEB · HUB</strong>The Web track hub — start
+                here. Overview of JavaScript, TypeScript, React, the DOM and Node.js, with a learning path.</a>
+            <a class="project js" href="js_ts_react/why_javascript.html"><strong>WEB · 1</strong>Why an AI engineer
+                should learn JS/TS/React, where each one runs, and a when-to-use-what decision guide.</a>
+            <a class="project py" href="js_ts_react/python_vs_javascript.html"><strong>WEB · 2</strong>Python ↔
+                JavaScript side by side — variables, functions, arrays, objects, classes, async.</a>
+            <a class="project ts" href="js_ts_react/javascript_vs_typescript.html"><strong>WEB · 3</strong>JavaScript
+                ↔ TypeScript — what types buy you, what they cost, and when to add TypeScript.</a>
+            <a class="project react" href="js_ts_react/the_dom_explained.html"><strong>WEB · 4</strong>The DOM,
+                explained — it is not a "convention": it is the live object tree the browser builds from your HTML.</a>
+        </section>
+
+        <section class="card" id="genai">
+            <h2>Why this matters for GenAI / agentic systems</h2>
+            <p>Most production GenAI services live behind a small, fast, network-heavy backend. Python is great at the
+                <em>orchestration</em> layer (prompts, agents, evaluations) but it is rarely the layer that actually
+                serves traffic at p99. Three patterns you will see in the wild:
+            </p>
+            <ol>
+                <li><strong>Go for the gateway / proxy / orchestrator.</strong> Tools like Ollama, vLLM's router, MCP
+                    host implementations, GitHub's own Copilot stack, and most modern AI-infra control planes are
+                    written in Go. The reason is operational: one static binary, low memory, predictable GC pauses,
+                    first-class concurrency.</li>
+                <li><strong>Rust for the inference / data path.</strong> Hugging Face's <code>tokenizers</code>,
+                    <code>candle</code>, <code>text-generation-inference</code>, Pinecone's core engine, Qdrant, LanceDB
+                    and many vector indexes are Rust. Tokenisation, vector math, and bytes-on-the-wire are exactly where
+                    Python's overhead stops being acceptable.
+                </li>
+                <li><strong>Python for the brain.</strong> The agent itself, prompt templating, evaluation loops,
+                    notebook research — these stay in Python because the ecosystem is unbeatable. The trick is knowing
+                    which 10% of your stack belongs in Go or Rust to make the other 90% comfortable.</li>
+            </ol>
+            <p>The full story is in <a href="bootcamp/why_go_rust.html">Bootcamp · 1</a>.</p>
+        </section>
+
+        <section class="card">
+            <h2>How to actually use this track</h2>
+            <ol>
+                <li>Read all 5 bootcamp pages. ~90 minutes total.</li>
+                <li>For each numbered project (1 → 10): re-read the Python README, then read the Go README, then the
+                    Rust README. Do <em>not</em> try to memorise — just notice the differences.</li>
+                <li>Pick one of Go or Rust to actually run. Install the toolchain (cheatsheet in <a
+                        href="bootcamp/pick_them_fast.html">Bootcamp · 5</a>), <code>go run main.go</code> or
+                    <code>cargo run</code>, observe.
+                </li>
+                <li>By project 5 you'll naturally start preferring one of the two. Lean into that, finish that side
+                    first, then come back for the other.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Where this track sits in the workspace</h2>
+            <ul>
+                <li><a href="../07_learning_projects/learning_tracker.html">07_learning_projects</a> — the Python
+                    originals. Required reading before this track.</li>
+                <li><a href="../industry_standards/index.html">industry_standards</a> — official best practices for
+                    agents/tools/skills (Anthropic, OpenAI, GitHub).</li>
+                <li><a href="../system_design_academy/index.html">system_design_academy</a> — algorithmic /
+                    distributed-systems builds. Some of those (rate limiter, consistent hashing) ship in Go in
+                    production for the same reasons listed above.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+
+</html>

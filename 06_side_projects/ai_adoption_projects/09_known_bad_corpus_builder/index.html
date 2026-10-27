@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Known-Bad Corpus Builder</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="../"><span>AI</span>Adoption Projects</a>
+      <div class="top-links">
+        <a href="../">Hub</a>
+        <a href="../../index.html">Workspace</a>
+      </div>
+    </div>
+  </header>
+  <main class="shell">
+
+    <!-- ═══════════════════ HERO ═══════════════════ -->
+    <section class="hero">
+      <span class="eyebrow">Project 09 &middot; Beginner</span>
+      <h1>Known-Bad Corpus Builder</h1>
+      <p class="lead">
+        An evaluation framework that transforms real-world bug fixes into a
+        structured, annotated corpus. Use it to benchmark code understanding,
+        bug-localisation, and repair agents against known-bad ground truth.
+      </p>
+    </section>
+
+    <!-- ═══════════════════ PIPELINE FLOW ═══════════════════ -->
+    <div class="card">
+      <h2>Annotation Pipeline</h2>
+      <p>
+        From commit history to a reusable eval dataset &mdash; the pipeline
+        extracts buggy code, applies human or LLM annotation, and produces
+        a structured corpus ready for evaluation.
+      </p>
+
+      <div class="mermaid">
+<pre><code class="language-mermaid">flowchart LR
+    A[("PR / Commit<br/>History")]
+    B["Bug Extraction<br/><i>diff parsing, issue link</i>"]
+    C["Annotation<br/><i>category, severity, root cause</i>"]
+    D[("Structured JSON<br/>Corpus")]
+    E["Evaluation Usage<br/><i>benchmark, regression test</i>"]
+
+    A --&gt; B
+    B --&gt; C
+    C --&gt; D
+    D --&gt; E
+
+    style A fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
+    style B fill:#fef3c7,stroke:#b45309,color:#451a03
+    style C fill:#ccfbf1,stroke:#0f766e,color:#134e4a
+    style D fill:#d1fae5,stroke:#047857,color:#064e3b
+    style E fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
+</code></pre>
+      </div>
+
+      <div class="flow">
+        <div class="step">Commit History</div>
+        <div class="arrow">&rarr;</div>
+        <div class="step">Bug Extraction</div>
+        <div class="arrow">&rarr;</div>
+        <div class="step">Annotation</div>
+        <div class="arrow">&rarr;</div>
+        <div class="step">JSON Corpus</div>
+        <div class="arrow">&rarr;</div>
+        <div class="step">Eval Usage</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ WHAT & WHY ═══════════════════ -->
+    <div class="card">
+      <h2>What &amp; Why</h2>
+      <p>
+        A <em>known-bad corpus</em> is a curated collection of code snippets
+        that contain verifiable bugs. Each entry records the buggy code, the
+        correct fix, metadata about the bug, and the annotation decisions that
+        turned a raw diff into a structured evaluation example.
+      </p>
+
+      <h3>Key Concepts</h3>
+
+      <div class="grid">
+        <div class="grid-item">
+          <div class="tag">Data Annotation</div>
+          <p style="margin-top:0.4rem;">
+            Every bug is labelled with its <strong>category</strong> (logic,
+            security, concurrency, etc.), <strong>severity</strong>, and a
+            human-readable <strong>description</strong>. This turns noisy
+            real-world diffs into clean training or evaluation records.
+          </p>
+        </div>
+
+        <div class="grid-item">
+          <div class="tag">Corpus Structure</div>
+          <p style="margin-top:0.4rem;">
+            A flat collection of JSON objects, each representing one bug.
+            The schema is versioned, self-describing, and designed to be
+            consumed by evaluation harnesses, not humans.
+          </p>
+        </div>
+
+        <div class="grid-item">
+          <div class="tag">Ground Truth</div>
+          <p style="margin-top:0.4rem;">
+            The <strong>fixed code</strong> is the ground-truth answer.
+            An evaluator compares a model&rsquo;s output against the known
+            fix, or checks whether the model can identify the bug location
+            and root cause.
+          </p>
+        </div>
+
+        <div class="grid-item">
+          <div class="tag">Inter-Rater Reliability</div>
+          <p style="margin-top:0.4rem;">
+            When multiple annotators label the same bug, agreement metrics
+            (Cohen&rsquo;s &kappa;, Krippendorff&rsquo;s &alpha;) reveal
+            how subjective the annotation scheme is. Low agreement signals
+            that category definitions need refinement.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ JSON SCHEMA ═══════════════════ -->
+    <div class="card">
+      <h2>Corpus JSON Schema</h2>
+      <p>
+        Every entry in the corpus follows this structure. The schema is kept
+        minimal so it is easy to validate, extend, and consume from any
+        language.
+      </p>
+
+      <pre><code>{
+  "$schema": "https://example.com/kb-corpus-v1.schema.json",
+  "corpus_version": "1.0",
+  "entries": [
+    {
+      "id": "KB-0042",
+      "source": {
+        "repo": "org/repo-name",
+        "commit": "a1b2c3d4e5f6...",
+        "file": "src/payments/validator.py",
+        "line_start": 87,
+        "line_end": 94,
+        "pr_url": "https://github.com/org/repo/pull/142"
+      },
+      "buggy_code": "if user.role != 'admin':\n    return False\nreturn True",
+      "fixed_code": "if user.role not in {'admin', 'moderator'}:\n    return False\nreturn True",
+      "diff_summary": "Added moderator role to the access-control allowlist.",
+      "annotation": {
+        "category": "access-control",
+        "subcategory": "missing-role",
+        "severity": "high",
+        "root_cause": "incomplete allowlist",
+        "description": "The validator only checked for 'admin', missing the 'moderator' role that should also have access. Annotated as a logic-of-authorization bug.",
+        "annotator": "human",
+        "confidence": 0.98,
+        "tags": ["auth", "rbac", "regression"]
+      }
+    }
+  ]
+}</code></pre>
+
+      <div class="callout">
+        <strong>Design rationale.</strong> Separating
+        <code>buggy_code</code>, <code>fixed_code</code>, and
+        <code>annotation</code> into distinct top-level keys allows
+        evaluators to test different capabilities: bug localisation (find
+        the fix location), explanation (describe the bug), or repair
+        (produce the fix) &mdash; all from the same corpus entry.
+      </div>
+    </div>
+
+    <!-- ═══════════════════ PYTHON STARTER ═══════════════════ -->
+    <div class="card">
+      <h2>Python Starter &mdash; Annotation Workflow</h2>
+      <p>
+        The script below shows how to load a known-bad corpus, inspect
+        entries, compute basic corpus statistics, and prepare a sample for
+        use with an eval harness. Use it as the foundation for your own
+        annotation tooling.
+      </p>
+
+      <pre><code>#!/usr/bin/env python3
+"""
+kb_corpus.py  —  Known-Bad Corpus utility
+
+Usage:
+    python kb_corpus.py corpus.json [--stats] [--sample N] [--category CAT]
+"""
+
+import json
+import sys
+import argparse
+from collections import Counter
+from pathlib import Path
+
+
+def load_corpus(path: Path) -> list[dict]:
+    """Load a known-bad corpus JSON file and return its entries."""
+    with open(path, "r") as f:
+        data = json.load(f)
+    entries = data.get("entries", [])
+    print(f"[OK] Loaded corpus v{data.get('corpus_version', '?')} "
+          f"with {len(entries)} entries.")
+    return entries
+
+
+def compute_stats(entries: list[dict]) -> dict:
+    """Aggregate annotation metadata into summary statistics."""
+    cats = Counter()
+    sevs = Counter()
+    anns = Counter()
+    confs = []
+
+    for e in entries:
+        ann = e.get("annotation", {})
+        cats[ann.get("category", "unknown")] += 1
+        sevs[ann.get("severity", "unknown")] += 1
+        anns[ann.get("annotator", "unknown")] += 1
+        if (c := ann.get("confidence")) is not None:
+            confs.append(c)
+
+    return {
+        "categories": dict(cats.most_common()),
+        "severities": dict(sevs.most_common()),
+        "annotators": dict(anns.most_common()),
+        "total": len(entries),
+        "mean_confidence": round(sum(confs) / len(confs), 3) if confs else None,
+    }
+
+
+def filter_by_category(entries: list[dict], category: str) -> list[dict]:
+    """Return only entries whose annotation category matches."""
+    return [e for e in entries
+            if e.get("annotation", {}).get("category") == category]
+
+
+def sample_entries(entries: list[dict], n: int) -> list[dict]:
+    """Return a random sample of n entries (deterministic seed for
+    reproducibility)."""
+    import random
+    random.seed(42)
+    return random.sample(entries, min(n, len(entries)))
+
+
+# ── eval harness interface ─────────────────────────────────────
+
+class KnownBadCorpus:
+    """Thin wrapper so an evaluation harness can iterate over examples."""
+
+    def __init__(self, entries: list[dict]):
+        self._entries = entries
+
+    def __len__(self) -> int:
+        return len(self._entries)
+
+    def __getitem__(self, idx: int) -> dict:
+        return self._entries[idx]
+
+    def as_qa_pairs(self) -> list[dict]:
+        """Yield prompt / gold-answer dicts for an LLM eval harness."""
+        pairs = []
+        for e in self._entries:
+            prompt = (
+                f"The following code contains a bug.\n\n"
+                f"```\n{e['buggy_code']}\n```\n\n"
+                f"File: {e['source']['file']} (line {e['source']['line_start']})\n"
+                f"Category: {e['annotation']['category']}\n\n"
+                f"Describe the bug and provide the corrected code."
+            )
+            pairs.append({
+                "id": e["id"],
+                "prompt": prompt,
+                "gold_answer": e["fixed_code"],
+                "metadata": {
+                    "category": e["annotation"]["category"],
+                    "severity": e["annotation"]["severity"],
+                },
+            })
+        return pairs
+
+
+# ── CLI entry point ────────────────────────────────────────────
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Known-Bad Corpus utilities")
+    parser.add_argument("corpus", type=Path, help="path to corpus JSON")
+    parser.add_argument("--stats", action="store_true",
+                        help="print corpus statistics")
+    parser.add_argument("--sample", type=int, default=0,
+                        help="number of random entries to show")
+    parser.add_argument("--category", type=str, default=None,
+                        help="filter by annotation category")
+    args = parser.parse_args()
+
+    entries = load_corpus(args.corpus)
+
+    if args.category:
+        entries = filter_by_category(entries, args.category)
+        print(f"[FILTER] Kept {len(entries)} entries for category "
+              f"'{args.category}'.")
+
+    if args.stats:
+        stats = compute_stats(entries)
+        print("\n── Corpus Statistics ──")
+        print(f"  Total entries:       {stats['total']}")
+        print(f"  Mean confidence:     {stats['mean_confidence']}")
+        print(f"  Categories:          {stats['categories']}")
+        print(f"  Severities:          {stats['severities']}")
+        print(f"  Annotators:          {stats['annotators']}")
+
+    if args.sample:
+        sample = sample_entries(entries, args.sample)
+        print(f"\n── Random Sample ({len(sample)} entries) ──")
+        for e in sample:
+            print(f"  [{e['id']}] {e['annotation']['category']}: "
+                  f"{e['annotation']['description'][:60]}...")
+
+    # Demonstrate the eval harness wrapper
+    corpus = KnownBadCorpus(entries)
+    qa = corpus.as_qa_pairs()
+    print(f"\n[EVAL] Prepared {len(qa)} Q/A pairs for harness "
+          f"(first prompt: {len(qa[0]['prompt'])} chars)")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+
+      <div class="callout">
+        <strong>Try it.</strong> After you have built a corpus JSON file, run
+        <code>python kb_corpus.py corpus.json --stats --sample 3</code> to
+        verify your data. The <code>KnownBadCorpus.as_qa_pairs()</code>
+        method produces prompts ready for any LLM evaluation harness.
+      </div>
+    </div>
+
+    <!-- ═══════════════════ QUALITY vs QUANTITY ═══════════════════ -->
+    <div class="card">
+      <h2>Annotation Quality &gt; Quantity</h2>
+      <p>
+        A large but noisy corpus erodes trust in evaluation results. Here is
+        why investing in annotation quality pays off.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>High-Quality Corpus</th>
+            <th>Large-but-Noisy Corpus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Ground truth</td>
+            <td>Every fix is verified (reviewed, tested, or confirmed by
+                domain expert)</td>
+            <td>Fixes are extracted automatically; many are partial or
+                incidental refactors, not real bug fixes</td>
+          </tr>
+          <tr>
+            <td>Annotation labels</td>
+            <td>Inter-rater agreement &ge; 0.8; disagreements are
+                adjudicated</td>
+            <td>Labels are noisy or inconsistent; no agreement measurement</td>
+          </tr>
+          <tr>
+            <td>Eval signal</td>
+            <td>Small score differences (&lt; 2%) are meaningful and
+                reproducible</td>
+            <td>Only large differences (&gt; 10%) survive the noise floor</td>
+          </tr>
+          <tr>
+            <td>Debugging</td>
+            <td>When a model fails, you can trace why (clean categories,
+                explicit root cause)</td>
+            <td>Failures are confounded; hard to tell if the model was wrong
+                or the corpus entry is bad</td>
+          </tr>
+          <tr>
+            <td>Maintenance cost</td>
+            <td>Low &mdash; each entry is curated, so removal or update is
+                surgical</td>
+            <td>High &mdash; noisy entries hide in the tail; bulk cleanup
+                requires re-annotation</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <strong>Rule of thumb.</strong> 200&ndash;500 high-quality,
+        manually-curated examples outperform 5 000+ automatically-mined
+        examples for eval purposes. Use a larger pool for training, but
+        always evaluate on a clean, vetted set.
+      </div>
+
+      <h3>Practical Recommendations</h3>
+      <ul style="margin-left:1.4rem; line-height:1.8;">
+        <li>
+          <strong>Start small.</strong> Annotate 50&ndash;100 entries by hand
+          to validate your category taxonomy before scaling.
+        </li>
+        <li>
+          <strong>Double-annotate 10 %.</strong> Randomly assign every tenth
+          entry to a second annotator. Track agreement per category.
+        </li>
+        <li>
+          <strong>Version your corpus.</strong> Use the
+          <code>corpus_version</code> field. When you fix an annotation error,
+          bump the version so eval runs are traceable.
+        </li>
+        <li>
+          <strong>Keep a changelog.</strong> Record why an entry was added,
+          modified, or removed. This turns your corpus into a living artefact
+          rather than a snapshot.
+        </li>
+      </ul>
+    </div>
+
+  </main>
+</body>
+</html>

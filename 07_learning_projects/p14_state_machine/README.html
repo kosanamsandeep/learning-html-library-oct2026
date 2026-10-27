@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P14 - State Machine Order Workflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 40px auto;
+            max-width: 950px;
+            line-height: 1.7;
+            color: #1a1a2e;
+            background: #f8f9fa;
+        }
+
+        h1 {
+            color: #0d6efd;
+            border-bottom: 3px solid #0d6efd;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #0a58ca;
+            margin-top: 35px;
+        }
+
+        h3 {
+            color: #0d6efd;
+        }
+
+        .mermaid {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        code {
+            background: #e0e7ff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .concept-box {
+            background: white;
+            border-left: 4px solid #0d6efd;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .pattern-tag {
+            display: inline-block;
+            background: #0d6efd;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin: 2px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px 14px;
+            text-align: left;
+        }
+
+        th {
+            background: #0d6efd;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f0f4ff;
+        }
+
+        .insight {
+            background: #d1ecf1;
+            border-left: 4px solid #0dcaf0;
+            padding: 12px 18px;
+            margin: 12px 0;
+            border-radius: 0 6px 6px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Project 14: State Machine - E-Commerce Order Workflow</h1>
+
+    <p>
+        <span class="pattern-tag">Finite State Machine</span>
+        <span class="pattern-tag">State Pattern</span>
+        <span class="pattern-tag">Guard Conditions</span>
+        <span class="pattern-tag">Observer Pattern</span>
+        <span class="pattern-tag">Fluent Interface</span>
+    </p>
+
+    <div class="concept-box">
+        <strong>Story:</strong> You're building an e-commerce platform. Orders go through complex
+        lifecycle states (draft, payment, processing, shipping, delivery). A state machine prevents
+        impossible transitions and enforces business rules — no more "shipped but never paid" bugs.
+    </div>
+
+    <h2>State Diagram - Order Lifecycle</h2>
+
+    <div class="mermaid">
+        stateDiagram-v2
+        [*] --> draft
+        draft --> pending_payment: submit [total > 0]
+        draft --> cancelled: cancel
+
+        pending_payment --> paid: pay
+        pending_payment --> payment_failed: payment_fail
+        pending_payment --> cancelled: cancel
+
+        payment_failed --> pending_payment: retry_payment [attempts < 3] payment_failed --> cancelled: cancel
+
+            paid --> processing: start_processing
+            paid --> cancelled: cancel
+            paid --> refunded: refund (100%)
+
+            processing --> shipped: ship [address exists]
+            processing --> cancelled: cancel
+            processing --> refunded: refund (100%)
+
+            shipped --> delivered: deliver
+
+            delivered --> refunded: refund (80%)
+
+            cancelled --> [*]
+            delivered --> [*]
+            refunded --> [*]
+    </div>
+
+    <h2>Guard Conditions (Business Rules)</h2>
+
+    <table>
+        <tr>
+            <th>Transition</th>
+            <th>Guard</th>
+            <th>Business Rule</th>
+        </tr>
+        <tr>
+            <td>draft → pending_payment</td>
+            <td><code>total_amount > 0</code></td>
+            <td>Can't submit empty cart</td>
+        </tr>
+        <tr>
+            <td>processing → shipped</td>
+            <td><code>shipping_address != ""</code></td>
+            <td>Need address to ship</td>
+        </tr>
+        <tr>
+            <td>payment_failed → pending_payment</td>
+            <td><code>payment_attempts < 3</code></td>
+            <td>Max 3 retry attempts</td>
+        </tr>
+        <tr>
+            <td>shipped → cancelled</td>
+            <td>(no transition defined)</td>
+            <td>Can't cancel after shipping</td>
+        </tr>
+    </table>
+
+    <div class="insight">
+        <strong>Why Guards?</strong> Without guards, you rely on scattered if/else checks throughout the codebase.
+        With guards, the state machine itself enforces business rules — it's impossible to reach an invalid state.
+    </div>
+
+    <h2>Transition Sequence (Happy Path)</h2>
+
+    <div class="mermaid">
+        sequenceDiagram
+        participant Customer
+        participant FSM as StateMachine
+        participant State as StateConfig
+        participant Ctx as Context
+
+        Customer->>FSM: send("submit")
+        FSM->>FSM: Find transition (draft, submit)
+        FSM->>FSM: Check guard: total > 0? YES
+        FSM->>State: draft.on_exit(ctx)
+        FSM->>FSM: Execute transition action
+        FSM->>FSM: current_state = pending_payment
+        FSM->>State: pending_payment.on_enter(ctx)
+        FSM->>Ctx: Add audit note
+        FSM-->>Customer: TransitionResult(success=True)
+
+        Customer->>FSM: send("pay")
+        FSM->>FSM: pending_payment → paid
+        FSM->>State: paid.on_enter(ctx)
+        FSM-->>Customer: TransitionResult(success=True)
+
+        Customer->>FSM: send("ship")
+        FSM->>FSM: No transition from "paid" for "ship"
+        FSM-->>Customer: TransitionResult(success=False)
+        Note over FSM: Must go through start_processing first!
+    </div>
+
+    <h2>Class Diagram</h2>
+
+    <div class="mermaid">
+        classDiagram
+        class StateMachine {
+        -current_state: str
+        -states: dict
+        -transitions: list
+        -context: dict
+        -history: list
+        -listeners: list
+        +add_state(config): self
+        +add_transition(t): self
+        +send(event): TransitionResult
+        +can_send(event): bool
+        +available_events(): list
+        +on_transition(listener)
+        +is_in_final_state(): bool
+        }
+
+        class StateConfig {
+        +name: str
+        +on_enter: Callable
+        +on_exit: Callable
+        +is_final: bool
+        }
+
+        class Transition {
+        +from_state: str
+        +event: str
+        +to_state: str
+        +guard: Callable
+        +action: Callable
+        +description: str
+        }
+
+        class TransitionResult {
+        +success: bool
+        +from_state: str
+        +to_state: str
+        +event: str
+        +error: str
+        +guard_failed: bool
+        }
+
+        class Order {
+        +order_id: str
+        +customer_name: str
+        +items: list
+        +total_amount: float
+        +shipping_address: str
+        +notes: list
+        }
+
+        StateMachine --> StateConfig: has many
+        StateMachine --> Transition: has many
+        StateMachine --> TransitionResult: produces
+        StateMachine o-- Order: in context
+    </div>
+
+    <h2>FSM vs If/Else Comparison</h2>
+
+    <table>
+        <tr>
+            <th>Aspect</th>
+            <th>If/Else Approach</th>
+            <th>State Machine</th>
+        </tr>
+        <tr>
+            <td>State tracking</td>
+            <td>String/enum field, checked everywhere</td>
+            <td>Single source of truth</td>
+        </tr>
+        <tr>
+            <td>Valid transitions</td>
+            <td>Scattered checks, easy to miss</td>
+            <td>Centralized, declarative</td>
+        </tr>
+        <tr>
+            <td>Adding new state</td>
+            <td>Hunt for all if/else blocks</td>
+            <td>Add state + transitions</td>
+        </tr>
+        <tr>
+            <td>Documentation</td>
+            <td>Manual, gets outdated</td>
+            <td>Diagram IS the code</td>
+        </tr>
+        <tr>
+            <td>Testing</td>
+            <td>Combinatorial explosion</td>
+            <td>Test each transition</td>
+        </tr>
+        <tr>
+            <td>Business visibility</td>
+            <td>Hidden in code</td>
+            <td>Visual state diagram</td>
+        </tr>
+    </table>
+
+    <h2>Real-World Inspirations</h2>
+
+    <div class="concept-box">
+        <h3>XState (JavaScript)</h3>
+        <p>The gold standard for frontend state machines. Uses statecharts (hierarchical FSM).
+            Powers complex UI workflows, form wizards, and animation states.</p>
+    </div>
+
+    <div class="concept-box">
+        <h3>django-fsm</h3>
+        <p>Adds FSM behavior to Django models. Transitions are decorated methods with guards.
+            Integrates with Django admin for visual state management.</p>
+    </div>
+
+    <div class="concept-box">
+        <h3>AWS Step Functions</h3>
+        <p>Serverless workflow orchestration using state machines (Amazon States Language).
+            Each state can be a Lambda, wait, choice, or parallel execution.</p>
+    </div>
+
+    <h2>File Structure</h2>
+    <pre>
+p14_state_machine/
+├── main.py                         # 5 demos showing full FSM capabilities
+├── machine/
+│   └── fsm.py                      # Generic FSM engine (reusable)
+├── models/
+│   └── order.py                    # Order domain model
+└── workflows/
+    └── order_workflow.py           # Order-specific FSM configuration
+    </pre>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

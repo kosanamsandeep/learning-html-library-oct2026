@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>P12: API Gateway & Rate Limiter</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.7;
+            padding: 2rem
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto
+        }
+
+        h1 {
+            color: #58a6ff;
+            font-size: 2.2rem;
+            margin-bottom: .5rem;
+            border-bottom: 2px solid #21262d;
+            padding-bottom: 1rem
+        }
+
+        h2 {
+            color: #79c0ff;
+            font-size: 1.6rem;
+            margin: 2rem 0 1rem
+        }
+
+        h3 {
+            color: #a5d6ff;
+            font-size: 1.2rem;
+            margin: 1.5rem 0 .5rem
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #8b949e
+        }
+
+        .highlight {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0
+        }
+
+        code {
+            background: #21262d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Cascadia Code', monospace;
+            color: #f0883e
+        }
+
+        pre {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.2rem;
+            overflow-x: auto;
+            margin: 1rem 0
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: #c9d1d9
+        }
+
+        .mermaid {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0
+        }
+
+        .principle {
+            display: inline-block;
+            background: #21262d;
+            border: 1px solid #58a6ff;
+            border-radius: 20px;
+            padding: 4px 12px;
+            margin: 4px;
+            font-size: .85rem;
+            color: #58a6ff
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0
+        }
+
+        th,
+        td {
+            border: 1px solid #30363d;
+            padding: .7rem;
+            text-align: left
+        }
+
+        th {
+            background: #21262d;
+            color: #79c0ff
+        }
+
+        td {
+            color: #8b949e
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>P12: API Gateway & Rate Limiter</h1>
+        <p><span class="principle">Chain of Responsibility</span><span class="principle">Token Bucket</span><span
+                class="principle">Proxy Pattern</span><span class="principle">Decorator Pattern</span></p>
+
+        <h2>Middleware Chain</h2>
+        <div class="mermaid">
+            graph LR
+            REQ[Request] --> AUTH[Auth Middleware]
+            AUTH -->|valid key| RL[Rate Limiter]
+            AUTH -->|no key| R401[401 Unauthorized]
+            RL -->|tokens available| LOG[Logging]
+            RL -->|bucket empty| R429[429 Too Many Requests]
+            LOG --> ROUTER[Router]
+            ROUTER -->|match| HANDLER[Route Handler]
+            ROUTER -->|no match| R404[404 Not Found]
+            HANDLER --> RESP[Response]
+        </div>
+
+        <h2>Token Bucket Algorithm</h2>
+        <div class="mermaid">
+            graph TD
+            A[Request arrives] --> B{Refill tokens}
+            B --> C[tokens += elapsed * rate]
+            C --> D[tokens = min tokens, capacity]
+            D --> E{tokens >= 1?}
+            E -->|Yes| F[tokens -= 1]
+            F --> G[ALLOW request]
+            E -->|No| H[DENY 429]
+        </div>
+
+        <h2>Class Diagram</h2>
+        <div class="mermaid">
+            classDiagram
+            class Middleware {
+            &lt;&lt;abstract&gt;&gt;
+            -_next: Middleware
+            +set_next(middleware) Middleware
+            +handle(request) Response
+            +process(request)* Response
+            }
+            class AuthMiddleware {
+            -_valid_keys: dict
+            +process(request) Response
+            }
+            class RateLimiterMiddleware {
+            -_buckets: dict
+            +process(request) Response
+            }
+            class LoggingMiddleware {
+            +access_log: list
+            +process(request) Response
+            }
+            class Router {
+            -_routes: dict
+            +register(method, path, handler)
+            +process(request) Response
+            }
+            class TokenBucket {
+            +capacity: int
+            +refill_rate: float
+            +tokens: float
+            +consume(n) bool
+            }
+            Middleware <|-- AuthMiddleware Middleware <|-- RateLimiterMiddleware Middleware <|-- LoggingMiddleware
+                Middleware <|-- Router RateLimiterMiddleware --> TokenBucket
+        </div>
+
+        <h2>Real-World Mapping</h2>
+        <div class="highlight">
+            <table>
+                <tr>
+                    <th>This Project</th>
+                    <th>Production Equivalent</th>
+                </tr>
+                <tr>
+                    <td>APIGateway class</td>
+                    <td>Kong, AWS API Gateway, Nginx</td>
+                </tr>
+                <tr>
+                    <td>AuthMiddleware</td>
+                    <td>JWT validation, OAuth2 proxy</td>
+                </tr>
+                <tr>
+                    <td>TokenBucket</td>
+                    <td>Stripe/GitHub API rate limits</td>
+                </tr>
+                <tr>
+                    <td>LoggingMiddleware</td>
+                    <td>Access logs, DataDog, Splunk</td>
+                </tr>
+                <tr>
+                    <td>Router</td>
+                    <td>FastAPI/Flask URL routing</td>
+                </tr>
+            </table>
+        </div>
+
+        <h2>How to Run</h2>
+        <div class="highlight">
+            <pre><code>cd 07_learning_projects/p12_api_gateway
+python main.py</code></pre>
+        </div>
+    </div>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 — Full Fine-Tuning</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #feca57; }
+  h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #ff6b6b; color: #e1e4f0; }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .hl-box { background: rgba(255,107,107,0.08); border-left: 3px solid #ff6b6b; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .hl-yellow { background: rgba(254,202,87,0.08); border-left: 3px solid #feca57; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #ff6b6b; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #feca57; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #ff6b6b; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  ul, ol { color: #c8cbe0; padding-left: 1.25rem; line-height: 2; }
+  .memory-breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  @media (max-width:600px) { .memory-breakdown { grid-template-columns: 1fr; } }
+  .mem-card { background: #232740; border-radius: 8px; padding: 1rem; text-align: center; }
+  .mem-card .mem-val { font-size: 1.5rem; font-weight: 700; }
+  .mem-card .mem-label { font-size: 0.8rem; color: #8b8fa8; }
+  .r { color: #ff6b6b; } .y { color: #feca57; } .g { color: #55efc4; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="01-what-is-finetuning.html">← 01: What Is FT</a>
+  <a href="03-lora-deep-dive.html">Next: LoRA →</a>
+</div>
+
+<h1>02 · Full Fine-Tuning</h1>
+<p>The traditional approach — updating <strong>every parameter</strong> of the pretrained model. Let's understand how it works and why it's so expensive.</p>
+
+<h2>⚙️ How Full Fine-Tuning Works</h2>
+
+<div class="card">
+<p>Full fine-tuning treats the pretrained model as an <strong>initialization</strong> rather than a fixed feature extractor. You take the pretrained weights W<sup>0</sup> and continue training on your task-specific dataset. <strong>Every weight</strong> receives a gradient update.</p>
+
+<div class="math-block">
+<span class="dim">// Pretrained weights (frozen during inference)</span>
+W<sup>0</sup> = [w₁, w₂, ..., w<sub>N</sub>] &nbsp;&nbsp;<span class="dim">// N = total parameters (7B, 13B, 70B...)</span>
+
+<span class="dim">// After fine-tuning</span>
+W<sup>FT</sup> = W<sup>0</sup> - η · ∇<sub>W</sub> ℒ<sub>task</sub>(W<sup>0</sup>)
+
+<span class="dim">// Every single parameter changes (hopefully by a small amount)</span>
+ΔW = W<sup>FT</sup> - W<sup>0</sup> &nbsp;&nbsp;<span class="dim">// ΔW is the same size as the full model</span>
+</div>
+
+<div class="hl-box">
+  <strong>⚠️ Important:</strong> Full fine-tuning doesn't train from scratch — it starts from the pretrained weights. The learning rate is typically much lower (1e-5 vs 3e-4) because the model is already near a good optimum. The goal is a <strong>gentle nudge</strong>, not a wholesale retraining.
+</div>
+</div>
+
+<h2>💰 The Memory Problem</h2>
+
+<div class="card">
+<p>The single biggest obstacle to full fine-tuning is <strong>memory</strong>. During training, you need to store:</p>
+
+<div class="memory-breakdown">
+  <div class="mem-card" style="border:1px solid #ff6b6b;">
+    <div class="mem-label">Weights (FP32)</div>
+    <div class="mem-val r">4× N</div>
+    <div class="mem-label">4 bytes × 7B = 28 GB</div>
+  </div>
+  <div class="mem-card" style="border:1px solid #feca57;">
+    <div class="mem-label">Gradients (FP32)</div>
+    <div class="mem-val y">4× N</div>
+    <div class="mem-label">Another 28 GB</div>
+  </div>
+  <div class="mem-card" style="border:1px solid #feca57;">
+    <div class="mem-label">Optimizer States (Adam)</div>
+    <div class="mem-val y">8× N</div>
+    <div class="mem-label">Moments + variance = 56 GB</div>
+  </div>
+  <div class="mem-card" style="border:1px solid #55efc4;">
+    <div class="mem-label">Activations (variable)</div>
+    <div class="mem-val g">Depends</div>
+    <div class="mem-label">Sequence length × batch size × layers</div>
+  </div>
+</div>
+
+<table>
+  <thead><tr><th>Model Size</th><th>Weights (FP16)</th><th>Full FT (FP32 + Adam)</th><th>LoRA (FP16, frozen base)</th></tr></thead>
+  <tbody>
+    <tr><td>7B (Llama-2)</td><td>14 GB</td><td>~112 GB</td><td>~16 GB</td></tr>
+    <tr><td>13B</td><td>26 GB</td><td>~208 GB</td><td>~28 GB</td></tr>
+    <tr><td>70B</td><td>140 GB</td><td>~1.1 TB</td><td>~150 GB</td></tr>
+  </tbody>
+</table>
+
+<div class="hl-yellow">
+  <strong>🤯 Full FT a 70B model requires ~1.1 TB of GPU memory.</strong> That's 8× A100-80GB GPUs just for the optimizer states — before any activations. This is why full fine-tuning is reserved for well-funded labs, and everyone else uses PEFT.
+</div>
+</div>
+
+<h2>📉 Why So Much Memory?</h2>
+
+<div class="card">
+<p>The optimizer states are the hidden killer. Adam (the standard optimizer) maintains <strong>two</strong> additional values per parameter:</p>
+<ul>
+  <li><strong>First moment</strong> (m): running average of gradients — helps momentum</li>
+  <li><strong>Second moment</strong> (v): running average of squared gradients — helps adaptive learning rates</li>
+</ul>
+<p>Both are stored in FP32 for numerical stability, meaning <strong>8 bytes per parameter</strong> of the full model — even if you're using mixed-precision training.</p>
+
+<div class="math-block">
+<span class="dim">// For a 7B model with Adam in FP32:</span>
+Weights (FP16):  &nbsp; 7B × 2 bytes = 14 GB
+Gradients (FP16): &nbsp; 7B × 2 bytes = 14 GB
+Adam m (FP32):   &nbsp; 7B × 4 bytes = 28 GB
+Adam v (FP32):   &nbsp; 7B × 4 bytes = 28 GB
+<span class="dim">──────────────────────────────</span>
+Total: 84 GB  (+ activations ≈ 112 GB)
+</div>
+</div>
+
+<h2>✅ When Full Fine-Tuning Makes Sense</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Situation</th><th>Why Full FT?</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Domain-adapted foundation model</strong></td><td>You're creating a base model for an entire domain (legal, medical, code) that will be further adapted with PEFT later.</td></tr>
+    <tr><td><strong>Teaching entirely new behavior</strong></td><td>If the task requires the model to change its internal representations fundamentally (e.g., learning a new language or notation system).</td></tr>
+    <tr><td><strong>Maximum possible quality</strong></td><td>When you have the budget and need every fraction of a percent in benchmark scores. Full FT can (theoretically) achieve the lowest loss.</td></tr>
+    <tr><td><strong>Continued pretraining</strong></td><td>Training on a large corpus (billions of tokens) for domain adaptation. This is essentially further pretraining, not task fine-tuning.</td></tr>
+  </tbody>
+</table>
+
+<div class="hl-box">
+  <strong>📌 Reality check:</strong> For <strong>70–90% of practical use cases</strong>, LoRA or QLoRA matches full fine-tuning quality while costing a fraction of the memory. The gap has narrowed dramatically as PEFT methods improved. Always start with LoRA — it's faster to iterate, easier to experiment, and the results often surprise you with how close they are to full FT.
+</div>
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

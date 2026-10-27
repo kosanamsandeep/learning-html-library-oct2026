@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>08 — Cheat Sheet & Quick Reference</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .subtitle { color: #8b8fa8; font-size: 1rem; margin-bottom: 1.5rem; }
+  h2 { font-size: 1.3rem; margin: 2rem 0 0.75rem; color: #ff6b6b; border-bottom: 1px solid #2d3154; padding-bottom: 0.4rem; }
+  h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; color: #feca57; }
+  p { margin-bottom: 0.75rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #ff6b6b; color: #e1e4f0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #ff6b6b; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #feca57; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #ff6b6b; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  tr:hover td { background: rgba(255,107,107,0.03); }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width:600px) { .grid-2 { grid-template-columns: 1fr; } }
+  .r { color: #ff6b6b; } .y { color: #feca57; } .g { color: #55efc4; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="07-practical-guide.html">← 07: Practical Guide</a>
+  <a href="index.html">Index →</a>
+</div>
+
+<h1>08 · Cheat Sheet &amp; Quick Reference</h1>
+<p class="subtitle">All LoRA equations, memory formulas, rank guidance, and method comparison in one place</p>
+
+<h2>📐 The Core LoRA Equation</h2>
+
+<div class="math-block" style="font-size:1rem;text-align:center;padding:1.5rem;">
+  <span style="color:#55efc4;font-weight:700;">W' = W</span> + <span style="color:#ff6b6b;font-weight:700;">BA</span> · (<span style="color:#feca57;">α</span> / r)
+</div>
+
+<table>
+  <thead><tr><th>Symbol</th><th>Meaning</th><th>Typical Value</th></tr></thead>
+  <tbody>
+    <tr><td><strong>W</strong></td><td>Pretrained weight matrix (frozen)</td><td>Shape: (d × k)</td></tr>
+    <tr><td><strong><span style="color:#feca57;">B</span></strong></td><td>Down-projection matrix (trainable)</td><td>Shape: (d × r), initialized to zero</td></tr>
+    <tr><td><strong><span style="color:#feca57;">A</span></strong></td><td>Up-projection matrix (trainable)</td><td>Shape: (r × k), initialized via Kaiming Normal</td></tr>
+    <tr><td><strong>r</strong></td><td>Rank of the adaptation</td><td>8 (default), 16–64 (complex tasks)</td></tr>
+    <tr><td><strong>α</strong></td><td>Scaling factor</td><td>Typically 2× r = 16 for r=8</td></tr>
+  </tbody>
+</table>
+
+<div class="math-block">
+<span class="dim">// Forward pass with LoRA:</span>
+h = Wx + (<span style="color:#feca57;">α</span> / r) · <span style="color:#ff6b6b;">BA</span>x
+
+<span class="dim">// During inference (merged):</span>
+W_merged = W + (<span style="color:#feca57;">α</span> / r) · <span style="color:#ff6b6b;">BA</span>
+h = W_merged · x   <span class="dim">// Same as original model — no extra compute</span>
+</div>
+
+<h2>🧮 Memory Formula</h2>
+
+<div class="card">
+<div class="math-block">
+<span class="dim">// Memory cost of full fine-tuning (FP32 + Adam):</span>
+Mem<sub>full</sub> = N × (4 + 4 + 8) + activations = <span class="r">16N</span> + activations
+<span class="dim">// N = number of parameters
+// Weights (FP16 shadow) + Gradients (FP32) + Adam moments (FP32 × 2)</span>
+
+<span class="dim">// Memory cost of LoRA (FP16 base + FP16 LoRA + FP32 Adam):</span>
+Mem<sub>lora</sub> = N × 2 + 2N<sub>lora</sub> × (2 + 4 + 8) + activations
+<span class="dim">// Base in FP16 + LoRA params in FP16 + Adam for LoRA in FP32</span>
+
+<span class="dim">// Memory cost of QLoRA (4-bit base + FP16 LoRA + FP32 Adam):</span>
+Mem<sub>qlora</sub> = N × 0.5 + 2N<sub>lora</sub> × (2 + 4 + 8) + activations
+</div>
+
+<table>
+  <thead><tr><th>Model</th><th>Full FT (FP32)</th><th>LoRA (FP16 base)</th><th>QLoRA (4-bit)</th></tr></thead>
+  <tbody>
+    <tr><td>1.5B</td><td>~24 GB</td><td>~4 GB</td><td>~3 GB</td></tr>
+    <tr><td>7B</td><td>~112 GB</td><td>~16 GB</td><td>~10 GB</td></tr>
+    <tr><td>13B</td><td>~208 GB</td><td>~28 GB</td><td>~18 GB</td></tr>
+    <tr><td>70B</td><td>~1.1 TB</td><td>~150 GB</td><td>~48 GB</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>📊 Method Comparison (Sorted by Popularity)</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Method</th><th>Year</th><th>Params Added</th><th>Inference Overhead</th><th>Mergeable?</th><th>Memory vs Full FT</th></tr></thead>
+  <tbody>
+    <tr><td><strong>LoRA</strong></td><td>2021</td><td>~0.01–0.1%</td><td>None (merged)</td><td>✅ Yes</td><td>7–15× less</td></tr>
+    <tr><td><strong>QLoRA</strong></td><td>2023</td><td>~0.01–0.1%</td><td>None (merged)</td><td>✅ Yes</td><td>10–25× less</td></tr>
+    <tr><td><strong>DoRA</strong></td><td>2024</td><td>~0.01–0.1% + tiny</td><td>None (merged)</td><td>✅ Yes</td><td>~Same as LoRA</td></tr>
+    <tr><td><strong>Adapter</strong></td><td>2019</td><td>~3–5%</td><td>+10–30%</td><td>❌ No</td><td>3–5× less</td></tr>
+    <tr><td><strong>Prefix Tuning</strong></td><td>2021</td><td>~0.01–0.1%</td><td>+prefix tokens</td><td>❌ No</td><td>~Same as LoRA</td></tr>
+    <tr><td><strong>P-Tuning</strong></td><td>2022</td><td>~0.01–0.1%</td><td>+prefix tokens</td><td>❌ No</td><td>~Same as LoRA</td></tr>
+    <tr><td><strong>IA³</strong></td><td>2022</td><td>~0.001–0.01%</td><td>~0% (scaling)</td><td>⚠️ Partial</td><td>Max efficiency</td></tr>
+    <tr><td><strong>BitFit</strong></td><td>2022</td><td>~0.1%</td><td>None</td><td>✅ Yes</td><td>~Same as LoRA</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>⚙️ Hyperparameter Quick Reference</h2>
+
+<div class="card">
+<h3>LoRA/LoRA-Adjacent Parameters</h3>
+<table>
+  <thead><tr><th>Parameter</th><th>Recommended Start</th><th>Range</th><th>Effect</th></tr></thead>
+  <tbody>
+    <tr><td><code>rank (r)</code></td><td>8</td><td>1–256</td><td>Higher = more expressive, more parameters</td></tr>
+    <tr><td><code>alpha (α)</code></td><td>16</td><td>8–64</td><td>Higher = larger adapter contribution</td></tr>
+    <tr><td><code>dropout</code></td><td>0.05</td><td>0–0.3</td><td>Higher = more regularization (small datasets)</td></tr>
+    <tr><td><code>target_modules</code></td><td>q, k, v, o</td><td>any linear layer</td><td>More modules = more capacity, more memory</td></tr>
+  </tbody>
+</table>
+
+<h3>Training Parameters</h3>
+<table>
+  <thead><tr><th>Parameter</th><th>LoRA</th><th>Full FT</th><th>Reason</th></tr></thead>
+  <tbody>
+    <tr><td>Learning rate</td><td>2e-4</td><td>1e-5</td><td>LoRA can tolerate higher LR (fewer params)</td></tr>
+    <tr><td>Batch size</td><td>4–16</td><td>16–64</td><td>Limited by memory — use gradient accumulation</td></tr>
+    <tr><td>Epochs</td><td>1–5</td><td>1–3</td><td>LoRA needs slightly more epochs (fewer params)</td></tr>
+    <tr><td>Warmup steps</td><td>50–200</td><td>100–1000</td><td>Stabilizes early training</td></tr>
+    <tr><td>LR scheduler</td><td>Cosine / Linear</td><td>Cosine</td><td>Cosine decay works well for both</td></tr>
+    <tr><td>Weight decay</td><td>0.01–0.1</td><td>0.1</td><td>Same range for both</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>🧠 Which Fine-Tuning Method Should I Use?</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>If you have...</th><th>Use</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>A consumer GPU (6–12 GB)</td><td><strong>QLoRA</strong> (4-bit)</td><td>Fits a 7B model in under 10 GB. You can fine-tune on an RTX 3060.</td></tr>
+    <tr><td>A mid-range GPU (16–24 GB)</td><td><strong>LoRA</strong> (FP16) or QLoRA</td><td>You have options. Try LoRA first for quality, fall back to QLoRA if OOM.</td></tr>
+    <tr><td>A high-end GPU (48–80 GB)</td><td><strong>LoRA</strong> (FP16)</td><td>Fine-tune 8B–70B models. Full FT only if you have specific quality needs.</td></tr>
+    <tr><td>Multiple GPUs (cluster)</td><td><strong>Full FT</strong> or LoRA</td><td>You have the budget for full FT. Still consider LoRA for rapid iteration.</td></tr>
+    <tr><td>Very small dataset (&lt;100 examples)</td><td><strong>Prompt engineering</strong> first</td><td>Fine-tuning &lt;100 examples is risky. Use few-shot prompting instead.</td></tr>
+    <tr><td>Huge dataset (1M+ examples)</td><td><strong>Full FT</strong> or high-rank LoRA</td><td>With enough data, full FT can specialize the model more thoroughly.</td></tr>
+    <tr><td>Dynamic/evolving knowledge</td><td><strong>RAG</strong> (not fine-tuning)</td><td>Fine-tuning is for behavior, not facts. Use RAG for knowledge.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>📚 Key Papers</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Paper</th><th>Year</th><th>Key Idea</th></tr></thead>
+  <tbody>
+    <tr><td><a href="https://arxiv.org/abs/1902.00751" style="color:#55efc4;" target="_blank">Adapter Layers</a></td><td>2019</td><td>First major PEFT — small bottleneck layers between Transformer sublayers</td></tr>
+    <tr><td><a href="https://arxiv.org/abs/2106.09685" style="color:#55efc4;" target="_blank">LoRA</a></td><td>2021</td><td>Low-rank decomposition of weight updates — the breakthrough PEFT method</td></tr>
+    <tr><td><a href="https://arxiv.org/abs/2101.00190" style="color:#feca57;" target="_blank">Prefix Tuning</a></td><td>2021</td><td>Learnable continuous prefixes prepended to attention keys/values</td></tr>
+    <tr><td><a href="https://arxiv.org/abs/2103.10385" style="color:#feca57;" target="_blank">P-Tuning</a></td><td>2021</td><td>Learnable prompt embeddings with prompt encoder</td></tr>
+    <tr><td><a href="https://arxiv.org/abs/2205.05638" style="color:#feca57;" target="_blank">IA³</a></td><td>2022</td><td>Scaling vectors on keys, values, and FFN — simplest PEFT method</td></tr>
+    <tr><td><a href="https://arxiv.org/abs/2305.14314" style="color:#ff6b6b;" target="_blank">QLoRA</a></td><td>2023</td><td>4-bit NF4 quantization + LoRA + double quantization = single-GPU 65B fine-tuning</td></tr>
+    <tr><td><a href="https://arxiv.org/abs/2402.09353" style="color:#55efc4;" target="_blank">DoRA</a></td><td>2024</td><td>Weight decomposition (magnitude + direction) + LoRA — outperforms standard LoRA</td></tr>
+  </tbody>
+</table>
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

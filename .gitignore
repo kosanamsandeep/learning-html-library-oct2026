@@ -1,0 +1,21 @@
+# session / editor config (root only — nested .claude/.vscode are study content)
+/.claude/
+/.vscode/
+
+# python junk
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# macOS / OS noise
+.DS_Store
+
+# Windows download-zone markers
+*:Zone.Identifier
+
+# copyrighted or large book content (not for distribution)
+/designing_data_apps/book_text.txt
+/designing_data_apps/data/*.pdf

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backpropagation Explained</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="stochastic-gradient-descent.html">SGD</a>
+                <a href="cnn-basics.html">CNN</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What backpropagation is</a>
+            <a href="#flow">Forward and backward flow</a>
+            <a href="#chain-rule">Chain rule</a>
+            <a href="#layer-view">How gradients move through layers</a>
+            <a href="#problems">Common problems</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Training fundamentals</p>
+                    <h1>How backpropagation works</h1>
+                    <p>Backpropagation is the method used to compute how each model parameter contributed to the final
+                        error. Once those gradients are known, an optimizer such as SGD can update the weights to reduce
+                        the loss.</p>
+                    <p>The simplest mental model is: <strong>forward pass computes predictions and loss</strong>, then
+                        <strong>backward pass distributes blame backward through the network</strong>.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>One-line flow</h2>
+                    <p class="formula">input -> prediction -> loss -> gradients -> parameter update</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What problem it solves</h3>
+                        <p>A deep model may have millions of parameters. Backpropagation gives an efficient way to
+                            compute the gradient of the loss with respect to each parameter without differentiating each
+                            parameter independently from scratch.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why it matters</h3>
+                        <p>Without backpropagation, training deep networks would be too slow or impractical. It is the
+                            reason modern neural networks can learn by gradient-based optimization.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="flow">
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Forward pass</h3>
+                        <p>The input flows through each layer to produce an output or prediction.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Loss computation</h3>
+                        <p>The prediction is compared with the true target using a loss function such as cross-entropy
+                            or mean squared error.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Backward pass</h3>
+                        <p>The model computes how changing each intermediate value would affect the loss.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Gradient accumulation</h3>
+                        <p>Each layer receives a gradient from the layer above and uses local derivatives to compute
+                            parameter gradients.</p>
+                    </div>
+                    <div class="step">
+                        <h3>5. Update step</h3>
+                        <p>The optimizer adjusts the weights using the gradients, usually moving parameters in the
+                            direction that reduces loss.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="chain-rule">
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>The key math idea</h3>
+                        <p>Backpropagation relies on the chain rule from calculus. If one quantity depends on another
+                            quantity, which depends on another, the total derivative becomes the product of local
+                            derivatives along the path.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Why the chain rule is powerful</h3>
+                        <p>Each layer only needs to know two things: the gradient coming from above and the derivative
+                            of its own local computation. That makes deep training modular and efficient.</p>
+                    </div>
+                </div>
+                <div class="code-card">
+                    <h3>Simple intuition</h3>
+                    <pre>loss depends on output
+output depends on hidden state
+hidden state depends on weights
+
+so
+
+d(loss)/d(weights)
+= d(loss)/d(output)
+  * d(output)/d(hidden state)
+  * d(hidden state)/d(weights)</pre>
+                </div>
+            </section>
+
+            <section class="section" id="layer-view">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>For a dense layer</h3>
+                        <p>If a layer computes <strong>z = Wx + b</strong>, then the backward pass computes gradients
+                            for <strong>W</strong>, <strong>b</strong>, and the input <strong>x</strong>. The input
+                            gradient is passed further backward to earlier layers.</p>
+                    </div>
+                    <div class="card">
+                        <h3>For an activation layer</h3>
+                        <p>An activation such as ReLU uses its local derivative to decide how much gradient should pass
+                            through. For negative inputs, ReLU blocks gradient entirely because the derivative is zero
+                            there.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Important engineering point:</strong> frameworks such as PyTorch and TensorFlow build
+                        computation graphs and perform automatic differentiation, but the underlying idea is still
+                        backpropagation with chain-rule-based gradient flow.</p>
+                </div>
+            </section>
+
+            <section class="section" id="problems">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Problem</th>
+                                <th>What happens</th>
+                                <th>Why it matters</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Vanishing gradients</td>
+                                <td>Gradients become extremely small as they move backward.</td>
+                                <td>Early layers learn very slowly, especially in deep or recurrent networks.</td>
+                            </tr>
+                            <tr>
+                                <td>Exploding gradients</td>
+                                <td>Gradients become too large.</td>
+                                <td>Training becomes unstable and parameter updates can blow up.</td>
+                            </tr>
+                            <tr>
+                                <td>Bad initialization</td>
+                                <td>Activations or gradients start in problematic ranges.</td>
+                                <td>Optimization becomes harder from the first iteration.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What is backpropagation in one sentence?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>It is the efficient algorithm that computes gradients of the loss with respect to all
+                                model parameters by propagating error signals backward through the network using the
+                                chain rule.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is the chain rule central to backpropagation?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because a deep network is a composition of functions, and the chain rule tells us how
+                                changes in early parameters affect the final loss through all intermediate computations.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your model loss is not decreasing and gradients in early layers are near zero. What issue do
+                            you suspect?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>I would suspect vanishing gradients, then inspect activation choices, initialization,
+                                normalization, architecture depth, and learning-rate settings.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>What is the difference between backpropagation and gradient descent?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Backpropagation computes gradients. Gradient descent or its variants use those gradients
+                                to update the parameters. One is for derivative computation; the other is for
+                                optimization.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Good interview answers separate the gradient-computation algorithm from the optimizer that uses the
+                gradients.</p>
+            <div class="mini-links">
+                <a href="stochastic-gradient-descent.html">SGD</a>
+                <a href="rnn-basics.html">RNN</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

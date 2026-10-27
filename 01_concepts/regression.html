@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regression Algorithms and Linear Regression Assumptions</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>AI and ML Interview Starter Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="classification.html">Classification</a>
+                <a href="evaluation-metrics.html">Metrics</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What regression is</a>
+            <a href="#linear">Linear regression</a>
+            <a href="#assumptions">Linear regression assumptions</a>
+            <a href="#violations">What happens when assumptions break</a>
+            <a href="#ridge-lasso">Ridge and Lasso</a>
+            <a href="#poly">Polynomial and nonlinear</a>
+            <a href="#tree-reg">Tree-based regression</a>
+            <a href="#bias-variance">Bias-variance tradeoff</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Classical ML</p>
+                    <h1>Regression algorithms and linear regression assumptions</h1>
+                    <p>Regression predicts a continuous numeric output. It is usually the first supervised learning
+                        topic tested in interviews. You need to know the math, the assumptions, what breaks when they
+                        are violated, and when to switch to a more complex model.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core idea</h2>
+                    <p class="formula">y = f(X) + noise
+                        Find f that minimizes prediction error on unseen data</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Regression vs classification</h3>
+                        <p>Regression outputs a continuous value such as price, temperature, or revenue. Classification
+                            outputs a discrete category. The loss functions, evaluation metrics, and model assumptions
+                            differ.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why regression is foundational</h3>
+                        <p>Linear regression introduces concepts used everywhere: loss minimization, closed-form
+                            solution, regularization, bias-variance tradeoff, and feature assumptions. Almost every ML
+                            interview visits it.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="linear">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Starting point</p>
+                        <h2>Linear regression</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How it works</h3>
+                        <p>Linear regression fits a hyperplane to the data by minimizing the sum of squared residuals
+                            between predictions and targets.</p>
+                        <p class="formula">y = w1*x1 + w2*x2 + ... + wn*xn + b</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>How parameters are found</h3>
+                        <ul class="stack-list">
+                            <li><strong>Closed-form (normal equation):</strong> direct matrix solution. Fast for small
+                                data.</li>
+                            <li><strong>Gradient descent:</strong> iterative optimization. Scales better for large data.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="assumptions">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Critical for interviews</p>
+                        <h2>The five key assumptions of linear regression</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Linearity</h3>
+                        <p>The relationship between features and target is linear. If the true relationship is curved, a
+                            linear model will systematically misfit. <strong>Check with:</strong> residual plots,
+                            partial regression plots.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Independence of errors</h3>
+                        <p>The residuals from one observation should not be correlated with residuals from another. This
+                            often fails in time-series data. <strong>Check with:</strong> Durbin-Watson test,
+                            autocorrelation plots.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Homoscedasticity</h3>
+                        <p>The variance of residuals should be roughly constant across all levels of the independent
+                            variable. If variance fans out or contracts, standard errors become unreliable.
+                            <strong>Check with:</strong> residual vs fitted plot, Breusch-Pagan test.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Normality of residuals</h3>
+                        <p>The residuals should be approximately normally distributed. This matters most for inference
+                            such as confidence intervals and hypothesis tests on coefficients. <strong>Check
+                                with:</strong> Q-Q plot, Shapiro-Wilk test.</p>
+                    </div>
+                    <div class="step">
+                        <h3>5. No severe multicollinearity</h3>
+                        <p>Features should not be too highly correlated with each other. If they are, coefficient
+                            estimates become unstable and hard to interpret. <strong>Check with:</strong> VIF (variance
+                            inflation factor), correlation matrix.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="violations">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">What goes wrong</p>
+                        <h2>When assumptions are violated</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Violation</th>
+                                <th>What breaks</th>
+                                <th>Common fix</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Nonlinear relationship</td>
+                                <td>Systematic misfit, biased predictions.</td>
+                                <td>Add polynomial terms, use a nonlinear model, or transform features.</td>
+                            </tr>
+                            <tr>
+                                <td>Correlated errors</td>
+                                <td>Standard errors are wrong, p-values unreliable.</td>
+                                <td>Use time-series models, add lagged features, or use robust standard errors.</td>
+                            </tr>
+                            <tr>
+                                <td>Heteroscedasticity</td>
+                                <td>Coefficient estimates still unbiased but standard errors are inefficient.</td>
+                                <td>Transform the target, use weighted least squares, or robust standard errors.</td>
+                            </tr>
+                            <tr>
+                                <td>Non-normal residuals</td>
+                                <td>Inference on coefficients becomes less reliable for small samples.</td>
+                                <td>Transform the target, use bootstrap methods, or increase sample size.</td>
+                            </tr>
+                            <tr>
+                                <td>Multicollinearity</td>
+                                <td>Coefficients become unstable and interpretability drops.</td>
+                                <td>Drop correlated features, use PCA, or use regularization.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="ridge-lasso">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Regularization</p>
+                        <h2>Ridge and Lasso regression</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Ridge regression (L2)</h3>
+                        <p>Adds a penalty proportional to the sum of squared weights. It shrinks coefficients toward
+                            zero but rarely makes them exactly zero.</p>
+                        <p class="formula">loss = MSE + lambda * sum(w_i^2)</p>
+                        <p><strong>Best for:</strong> multicollinearity, when you want to keep all features but reduce
+                            overfitting.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Lasso regression (L1)</h3>
+                        <p>Adds a penalty proportional to the sum of absolute weights. It can shrink some coefficients
+                            all the way to zero, performing feature selection.</p>
+                        <p class="formula">loss = MSE + lambda * sum(|w_i|)</p>
+                        <p><strong>Best for:</strong> when you suspect many features are irrelevant and want automatic
+                            selection.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Elastic Net</strong> combines both L1 and L2 penalties. It is useful when there are many
+                        correlated features and you want both shrinkage and selection.</p>
+                </div>
+            </section>
+
+            <section class="section" id="poly">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Polynomial regression</h3>
+                        <p>Extends linear regression by adding squared or higher-order terms as new features. The model
+                            is still linear in parameters even though the decision boundary is curved.</p>
+                    </div>
+                    <div class="card">
+                        <h3>When to move beyond linear</h3>
+                        <p>If residual plots show clear patterns, the true relationship is nonlinear. You can try
+                            polynomial features, splines, or switch to decision trees, random forests, or gradient
+                            boosting.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="tree-reg">
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Decision tree regression</h3>
+                        <p>Splits the feature space into regions and predicts the mean target value in each region. No
+                            linearity assumption, but prone to overfitting on deep trees.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Random forest and gradient boosting regression</h3>
+                        <p>Random Forest averages many decorrelated trees. Gradient Boosting builds trees sequentially,
+                            each correcting errors of the previous. Both handle nonlinearity and interactions well.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="bias-variance">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Fundamental tradeoff</p>
+                        <h2>Bias-variance tradeoff</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Bias</h3>
+                        <p>Error from wrong assumptions in the model. A model that is too simple underfits and has high
+                            bias. It cannot capture the real relationship.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Variance</h3>
+                        <p>Error from sensitivity to small fluctuations in the training set. A model that is too complex
+                            overfits and has high variance. It memorizes noise.</p>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>The goal</h2>
+                    <p>Find the sweet spot where total error (bias squared plus variance plus irreducible noise) is
+                        minimized. Regularization, cross-validation, and ensemble methods are practical tools for
+                        managing this balance.</p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What are the key assumptions of linear regression?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Linearity, independence of errors, homoscedasticity, normality of residuals, and no
+                                severe multicollinearity. Each has specific diagnostic checks and fixes.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why would you pick Lasso over Ridge?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>When I expect many features to be irrelevant and want automatic feature selection. Lasso
+                                can push coefficients to exactly zero. Ridge shrinks but keeps all features.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your linear regression has a high training score but a much lower test score. What do you
+                            suspect?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Overfitting. I would check for too many features, add regularization, use
+                                cross-validation, or try a simpler model.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your residual plot shows a funnel shape. What does it tell you?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>That is heteroscedasticity. The variance of errors changes with the predicted value. I
+                                would consider a log transform on the target, weighted least squares, or robust errors.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Regression interviews test whether you know the assumptions, not just the formula.</p>
+            <div class="mini-links">
+                <a href="classification.html">Classification</a>
+                <a href="evaluation-metrics.html">Evaluation Metrics</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fine-Tuning LLMs — Deep Dive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.6; padding: 2rem; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 2.5rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #ff6b6b, #feca57); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .subtitle { color: #8b8fa8; font-size: 1.1rem; margin-bottom: 2rem; }
+  .course-map { display: flex; flex-direction: column; gap: 0.5rem; margin: 2rem 0; }
+  .course-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; text-decoration: none; color: #e1e4f0; transition: all 0.2s; }
+  .course-item:hover { border-color: #ff6b6b; background: #1e2040; transform: translateX(4px); }
+  .course-num { font-size: 1.5rem; font-weight: 700; color: #ff6b6b; min-width: 2.2rem; text-align: center; }
+  .course-info h3 { font-size: 1.05rem; font-weight: 600; }
+  .course-info p { color: #8b8fa8; font-size: 0.9rem; margin-top: 0.2rem; }
+  .course-tag { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 100px; margin-left: 0.75rem; font-weight: 600; }
+  .tag-core { background: rgba(255,107,107,0.2); color: #ff6b6b; border: 1px solid rgba(255,107,107,0.2); }
+  .tag-adv { background: rgba(254,202,87,0.15); color: #feca57; border: 1px solid rgba(254,202,87,0.2); }
+  .tag-ref { background: rgba(108,92,231,0.15); color: #6c5ce7; border: 1px solid rgba(108,92,231,0.2); }
+  .note { background: rgba(254,202,87,0.08); border-left: 3px solid #feca57; padding: 1rem 1.25rem; border-radius: 0 10px 10px 0; margin: 1.5rem 0; font-size: 0.9rem; color: #c8cbe0; }
+</style>
+</head>
+<body>
+
+<h1>🛠️ Fine-Tuning LLMs</h1>
+<p class="subtitle">A complete walkthrough — from full fine-tuning to LoRA, QLoRA, and every PEFT technique in between</p>
+
+<div class="note">
+  <strong>📖 How to use:</strong> Start at <strong>01</strong> for a high-level overview, then dive into each technique. The later files compare approaches and help you decide which to use. File <strong>08</strong> is a quick-reference cheatsheet.
+</div>
+
+<div class="course-map">
+
+  <a href="01-what-is-finetuning.html" class="course-item">
+    <div class="course-num">01</div>
+    <div class="course-info">
+      <h3>What Is Fine-Tuning? <span class="course-tag tag-core">Core</span></h3>
+      <p>Why adapt a pretrained model? The spectrum from prompt engineering → fine-tuning → training from scratch.</p>
+    </div>
+  </a>
+
+  <a href="02-full-finetuning.html" class="course-item">
+    <div class="course-num">02</div>
+    <div class="course-info">
+      <h3>Full Fine-Tuning <span class="course-tag tag-core">Core</span></h3>
+      <p>The traditional approach: update all parameters. How it works, memory costs, and when you'd actually use it.</p>
+    </div>
+  </a>
+
+  <a href="03-lora-deep-dive.html" class="course-item">
+    <div class="course-num">03</div>
+    <div class="course-info">
+      <h3>LoRA — Low-Rank Adaptation <span class="course-tag tag-core">Core</span></h3>
+      <p>The breakthrough PEFT method. Intuition, matrix math, rank selection, and why low-rank works.</p>
+    </div>
+  </a>
+
+  <a href="04-qlora.html" class="course-item">
+    <div class="course-num">04</div>
+    <div class="course-info">
+      <h3>QLoRA — Quantized LoRA <span class="course-tag tag-core">Core</span></h3>
+      <p>LoRA + 4-bit quantization = fine-tune a 65B model on a single GPU. NF4 quantization, double quantization, paging.</p>
+    </div>
+  </a>
+
+  <a href="05-other-peft-methods.html" class="course-item">
+    <div class="course-num">05</div>
+    <div class="course-info">
+      <h3>Other PEFT Methods <span class="course-tag tag-adv">Advanced</span></h3>
+      <p>Prefix Tuning, P-Tuning, Adapter layers, IA³, (IA)³ — how they differ from LoRA and when each shines.</p>
+    </div>
+  </a>
+
+  <a href="06-prompt-vs-finetune-vs-rag.html" class="course-item">
+    <div class="course-num">06</div>
+    <div class="course-info">
+      <h3>Prompt Engineering vs Fine-Tuning vs RAG <span class="course-tag tag-adv">Advanced</span></h3>
+      <p>A decision framework: when to use each approach, trade-offs in cost, latency, accuracy, and maintainability.</p>
+    </div>
+  </a>
+
+  <a href="07-practical-guide.html" class="course-item">
+    <div class="course-num">07</div>
+    <div class="course-info">
+      <h3>Practical Guide: Choosing &amp; Running a Fine-Tune <span class="course-tag tag-adv">Advanced</span></h3>
+      <p>Real-world workflow: dataset prep, hyperparameters, tools (Hugging Face PEFT, Axolotl, Unsloth), eval.</p>
+    </div>
+  </a>
+
+  <a href="08-cheatsheet.html" class="course-item">
+    <div class="course-num">08</div>
+    <div class="course-info">
+      <h3>Cheat Sheet &amp; Quick Reference <span class="course-tag tag-ref">Reference</span></h3>
+      <p>All equations, memory formulas, rank guidance, method comparison table in one place.</p>
+    </div>
+  </a>
+
+</div>
+
+</body>
+</html>

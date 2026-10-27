@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Descriptive vs Inferential Statistics</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>AI and ML Interview Starter Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="evaluation-metrics.html">Metrics</a>
+                <a href="regression.html">Regression</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">Why statistics matters</a>
+            <a href="#descriptive">Descriptive statistics</a>
+            <a href="#inferential">Inferential statistics</a>
+            <a href="#comparison">Side-by-side comparison</a>
+            <a href="#why-distributions">Why distributions matter</a>
+            <a href="#distributions">Key distributions</a>
+            <a href="#recognize">How to recognize them</a>
+            <a href="#hypothesis">Hypothesis testing</a>
+            <a href="#pvalue">P-values and significance</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Math and statistics foundations</p>
+                    <h1>Descriptive vs inferential statistics</h1>
+                    <p>Statistics is the backbone of data science. <strong>Descriptive statistics</strong> summarizes
+                        what you already have. <strong>Inferential statistics</strong> uses samples to make claims about
+                        a larger population.</p>
+                    <p>Interviews test whether you know when to describe data versus when to draw conclusions from it,
+                        and whether you understand the assumptions behind both.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core distinction</h2>
+                    <p class="formula">Descriptive = summarize the data you have
+                        Inferential = generalize from a sample to a population</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Why statistics appears in AI interviews</h3>
+                        <p>Every model evaluation, A/B test, feature analysis, and data quality check depends on
+                            statistical thinking. Interviewers want to confirm that you are not just applying formulas
+                            blindly.</p>
+                    </div>
+                    <div class="card">
+                        <h3>The two branches</h3>
+                        <p>Descriptive statistics gives you the shape of the data. Inferential statistics tells you
+                            whether the patterns you see are real or likely due to random variation.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="descriptive">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Branch 1</p>
+                        <h2>Descriptive statistics</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Measure</th>
+                                <th>What it tells you</th>
+                                <th>When to use it</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Mean</td>
+                                <td>The arithmetic average of values.</td>
+                                <td>Useful for roughly symmetric distributions without extreme outliers.</td>
+                            </tr>
+                            <tr>
+                                <td>Median</td>
+                                <td>The middle value when sorted.</td>
+                                <td>Better for skewed distributions or when outliers exist.</td>
+                            </tr>
+                            <tr>
+                                <td>Mode</td>
+                                <td>The most frequent value.</td>
+                                <td>Useful for categorical data or discrete distributions.</td>
+                            </tr>
+                            <tr>
+                                <td>Standard deviation</td>
+                                <td>How spread out values are from the mean.</td>
+                                <td>Primary measure of variability.</td>
+                            </tr>
+                            <tr>
+                                <td>Variance</td>
+                                <td>The square of standard deviation.</td>
+                                <td>Used in many formulas and statistical tests internally.</td>
+                            </tr>
+                            <tr>
+                                <td>Percentiles and IQR</td>
+                                <td>Where data points fall relative to the distribution.</td>
+                                <td>Great for understanding spread and detecting outliers.</td>
+                            </tr>
+                            <tr>
+                                <td>Skewness</td>
+                                <td>Direction and degree of asymmetry in the distribution.</td>
+                                <td>Tells you if the tail is heavier on the left or right.</td>
+                            </tr>
+                            <tr>
+                                <td>Kurtosis</td>
+                                <td>How heavy the tails are relative to a normal distribution.</td>
+                                <td>Useful for understanding extreme-value risk.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Practical rule:</strong> always look at median and IQR alongside mean and standard
+                        deviation. If they disagree significantly, you probably have skew or outliers.</p>
+                </div>
+            </section>
+
+            <section class="section" id="inferential">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Branch 2</p>
+                        <h2>Inferential statistics</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>What inference means</h3>
+                        <p>You observe a sample and want to say something about the population it came from. The sample
+                            mean is your best estimate, but it carries uncertainty. Inferential statistics quantifies
+                            that uncertainty.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Core tools</h3>
+                        <ul class="stack-list">
+                            <li>Confidence intervals: range where the true parameter likely falls.</li>
+                            <li>Hypothesis tests: formal way to test a claim about the population.</li>
+                            <li>P-values: probability of observing data this extreme if the null hypothesis is true.
+                            </li>
+                            <li>Significance level: your pre-set threshold for rejecting the null.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="comparison">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Descriptive</th>
+                                <th>Inferential</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Goal</td>
+                                <td>Summarize and visualize existing data.</td>
+                                <td>Draw conclusions about a population from a sample.</td>
+                            </tr>
+                            <tr>
+                                <td>Uncertainty</td>
+                                <td>No uncertainty statements. You report what you see.</td>
+                                <td>Explicitly quantifies uncertainty with intervals or tests.</td>
+                            </tr>
+                            <tr>
+                                <td>Typical output</td>
+                                <td>Mean, median, standard deviation, histograms, box plots.</td>
+                                <td>P-values, confidence intervals, test statistics.</td>
+                            </tr>
+                            <tr>
+                                <td>Assumptions</td>
+                                <td>Minimal. You are describing what is there.</td>
+                                <td>Requires assumptions about sampling, distribution, independence.</td>
+                            </tr>
+                            <tr>
+                                <td>Example</td>
+                                <td>Average salary of surveyed employees is 85000.</td>
+                                <td>The true population average salary is between 82000 and 88000 with 95% confidence.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="why-distributions">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Modeling intuition</p>
+                        <h2>Why distributions matter at all</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>A distribution is a shape for uncertainty</h3>
+                        <p>A distribution is the mathematical description of <strong>what values are possible</strong>,
+                            <strong>how likely they are</strong>, and <strong>how variable they can be</strong>. It is
+                            the bridge between raw data and statistical decisions.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>Why it is required in practice</h3>
+                        <p>Different data types behave differently. Counts, waiting times, binary events, heavy-tailed
+                            sales, and sampled averages do not follow the same rules. If you force the wrong
+                            distributional assumption, your intervals, tests, forecasts, and business conclusions can
+                            be materially wrong.</p>
+                    </div>
+                </div>
+                <div class="flow" style="margin-top: 18px;">
+                    <div class="step">
+                        <h3>1. The data type decides the starting shortlist</h3>
+                        <p>Binary outcomes suggest Bernoulli or Binomial. Non-negative counts suggest Poisson-like
+                            models. Positive right-skewed magnitudes suggest log-normal, gamma, or Pareto-like
+                            behavior. Sample means often lead back to the normal or t-distribution.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. The distribution controls the tools you can justify</h3>
+                        <p>Confidence intervals, p-values, variance tests, and likelihood-based models are derived from
+                            assumptions about distributional shape. That is why interviews ask not just for a formula,
+                            but for the assumptions behind it.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. The wrong distribution creates the wrong business summary</h3>
+                        <p>When outlet sales are highly skewed, the mean overstates the “typical” outlet. When counts
+                            have more variability than Poisson allows, alerts and confidence bands become too narrow.
+                            Distribution choice is not theory for theory’s sake; it changes decisions.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="distributions">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Must know</p>
+                        <h2>Key distributions and when to apply them</h2>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Mental model:</strong> the normal distribution is important, but it is not the default
+                        shape of raw business data. Raw data is often skewed, zero-heavy, count-based, or heavy-tailed.
+                        Normality often appears only after aggregation, averaging, or transformation.</p>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Distribution</th>
+                                <th>Data pattern</th>
+                                <th>When to use it</th>
+                                <th>Why it exists</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Bernoulli</td>
+                                <td>One yes/no trial, outcome is 0 or 1.</td>
+                                <td>Single conversion, visit happened or not, fraud flag, defect present or not.</td>
+                                <td>It is the simplest distribution for binary uncertainty.</td>
+                            </tr>
+                            <tr>
+                                <td>Binomial</td>
+                                <td>Number of successes in a fixed number of trials.</td>
+                                <td>Orders placed out of 10 calls, successful deliveries out of 40 attempts.</td>
+                                <td>It extends Bernoulli to repeated fixed-count experiments.</td>
+                            </tr>
+                            <tr>
+                                <td>Poisson</td>
+                                <td>Event counts over time, area, or space.</td>
+                                <td>Walk-in customers per hour, defects per batch, incidents per day.</td>
+                                <td>It models independent counts when events are relatively rare and the mean roughly
+                                    matches the variance.</td>
+                            </tr>
+                            <tr>
+                                <td>Negative Binomial</td>
+                                <td>Counts with extra variability compared to Poisson.</td>
+                                <td>Daily complaints, support tickets, or missed deliveries when variance is much
+                                    larger than the mean.</td>
+                                <td>It exists because real count data is often more dispersed than Poisson allows.</td>
+                            </tr>
+                            <tr>
+                                <td>Uniform</td>
+                                <td>All values in a range are equally likely.</td>
+                                <td>Random number generation, unbiased random assignment, lottery-style selection.</td>
+                                <td>It is the neutral distribution when there is no preference for any value in the
+                                    interval.</td>
+                            </tr>
+                            <tr>
+                                <td>Exponential</td>
+                                <td>Positive waiting time until the next event.</td>
+                                <td>Time to next customer arrival, time until machine failure, inter-arrival time.</td>
+                                <td>It models memoryless waiting time: the chance of waiting longer does not depend on
+                                    how long you have already waited.</td>
+                            </tr>
+                            <tr>
+                                <td>Gamma</td>
+                                <td>Positive continuous quantity with right skew.</td>
+                                <td>Total service time, insurance claim size, sum of several waiting times.</td>
+                                <td>It generalizes exponential behavior to more flexible positive skew.</td>
+                            </tr>
+                            <tr>
+                                <td>Log-Normal</td>
+                                <td>Positive data driven by multiplicative growth.</td>
+                                <td>Income, outlet sales, transaction size, delivery times with right skew.</td>
+                                <td>It exists because many business processes compound multiplicatively rather than add
+                                    linearly.</td>
+                            </tr>
+                            <tr>
+                                <td>Pareto</td>
+                                <td>Heavy-tailed positive data where a few observations dominate.</td>
+                                <td>Top outlets generating most revenue, wealth, viral content reach.</td>
+                                <td>It captures “80/20” behavior and extreme inequality better than normal-like models.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Cauchy</td>
+                                <td>Extreme-tailed behavior with unstable averages.</td>
+                                <td>Mostly used as a warning case in modeling and inference.</td>
+                                <td>It shows what breaks when you assume the mean and variance always behave nicely;
+                                    for Cauchy, they do not.</td>
+                            </tr>
+                            <tr>
+                                <td>Normal (Gaussian)</td>
+                                <td>Symmetric continuous data or aggregated averages.</td>
+                                <td>Measurement noise, average process output, residuals under many classical models.
+                                </td>
+                                <td>It matters because the central limit theorem makes averages and many estimators
+                                    approximately normal.</td>
+                            </tr>
+                            <tr>
+                                <td>t-distribution</td>
+                                <td>Small-sample inference for means with unknown variance.</td>
+                                <td>Confidence interval or test for a sample mean with limited data.</td>
+                                <td>It keeps extra uncertainty in the tails when sample size is small.</td>
+                            </tr>
+                            <tr>
+                                <td>Chi-square</td>
+                                <td>Positive distribution built from squared normal variables.</td>
+                                <td>Variance estimation, contingency-table tests, goodness-of-fit tests.</td>
+                                <td>It appears naturally when measuring how far observed values deviate from expected
+                                    values in squared units.</td>
+                            </tr>
+                            <tr>
+                                <td>F-distribution</td>
+                                <td>Ratio of two scaled variances.</td>
+                                <td>ANOVA, comparing model fits, testing whether groups have different means.</td>
+                                <td>It exists because many “compare explained variance vs unexplained variance” tests
+                                    reduce to a variance ratio.</td>
+                            </tr>
+                            <tr>
+                                <td>Mixture distributions</td>
+                                <td>Data with multiple sub-populations or multiple peaks.</td>
+                                <td>Urban vs rural outlet sales, budget vs premium customers, low and high performers.
+                                </td>
+                                <td>They exist because one single distribution is often too simple for heterogeneous
+                                    real populations.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>Retail and sales intuition</h3>
+                        <p>Raw outlet sales are usually <strong>right-skewed</strong>, often with heavy tails. A small
+                            number of outlets contribute a large share of revenue. That makes log-normal and Pareto-like
+                            thinking more realistic than forcing a symmetric normal model.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why the mean can mislead</h3>
+                        <p>If one mega-outlet sells 20 times more than a typical store, the average outlet sales number
+                            stops describing a “typical” outlet. In that situation median, percentiles, and tail-aware
+                            models are usually more honest summaries.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="recognize">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Practical diagnosis</p>
+                        <h2>How to recognize which distribution family fits</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Start with the support of the data</h3>
+                        <p>Ask what values are even possible. Only 0 or 1 suggests Bernoulli. Non-negative integers
+                            suggest count distributions like Poisson or Negative Binomial. Positive continuous values
+                            suggest exponential, gamma, log-normal, or Pareto-like models.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Look at shape, skew, and tails</h3>
+                        <p>Symmetric bell-shaped data may justify normal assumptions. Strong right skew points toward
+                            log-normal or gamma. Very heavy tails with a few dominant observations suggest Pareto-like
+                            behavior. Multiple peaks suggest a mixture rather than one clean distribution.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Compare mean and variance for counts</h3>
+                        <p>If a count variable has variance close to the mean, Poisson may be reasonable. If the
+                            variance is much larger than the mean, Negative Binomial is usually a better candidate.
+                            If there are too many zeros, you may need a zero-inflated model.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Think about the data-generating mechanism</h3>
+                        <p>Waiting until the next arrival suggests exponential. Summing multiple waiting stages suggests
+                            gamma. Multiplicative growth suggests log-normal. Repeated independent yes/no trials suggest
+                            binomial. Distribution choice is strongest when the math matches the business mechanism.</p>
+                    </div>
+                </div>
+                <div class="comparison-table" style="margin-top: 18px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>If the data looks like this</th>
+                                <th>Candidate distribution</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Only 0 or 1</td>
+                                <td>Bernoulli</td>
+                                <td>Single binary outcome.</td>
+                            </tr>
+                            <tr>
+                                <td>Successes out of a fixed number of attempts</td>
+                                <td>Binomial</td>
+                                <td>Repeated yes/no trials with fixed trial count.</td>
+                            </tr>
+                            <tr>
+                                <td>0, 1, 2, 3... event counts over time</td>
+                                <td>Poisson</td>
+                                <td>Classic count process with mean close to variance.</td>
+                            </tr>
+                            <tr>
+                                <td>Count data with many spikes and variance much larger than mean</td>
+                                <td>Negative Binomial</td>
+                                <td>Handles over-dispersion common in real operations data.</td>
+                            </tr>
+                            <tr>
+                                <td>Positive waiting time until next event</td>
+                                <td>Exponential</td>
+                                <td>Memoryless waiting-time model.</td>
+                            </tr>
+                            <tr>
+                                <td>Positive, right-skewed totals or durations</td>
+                                <td>Gamma</td>
+                                <td>Flexible positive skew, often from accumulation of stages.</td>
+                            </tr>
+                            <tr>
+                                <td>Positive business values with a long right tail</td>
+                                <td>Log-Normal</td>
+                                <td>Multiplicative growth creates this shape naturally.</td>
+                            </tr>
+                            <tr>
+                                <td>Few observations dominate overall value</td>
+                                <td>Pareto</td>
+                                <td>Captures strong inequality and heavy tails.</td>
+                            </tr>
+                            <tr>
+                                <td>Roughly symmetric with no severe outliers</td>
+                                <td>Normal</td>
+                                <td>Classical approximation for measurements and averages.</td>
+                            </tr>
+                            <tr>
+                                <td>Small-sample mean inference</td>
+                                <td>t-distribution</td>
+                                <td>Same basic shape as normal, but wider tails for uncertainty.</td>
+                            </tr>
+                            <tr>
+                                <td>Several visible clusters or peaks</td>
+                                <td>Mixture model</td>
+                                <td>One population assumption is too simple.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Practical workflow:</strong> start with a histogram or box plot, check whether values are
+                        binary, counts, or continuous, compare mean vs median, compare mean vs variance for counts, and
+                        ask whether the business mechanism is additive, multiplicative, or event-based.</p>
+                </div>
+                <div class="checkpoint">
+                    <h2>Interview-ready summary</h2>
+                    <p>Do not say “everything is normal.” Say: first I inspect the support, skew, tail behavior,
+                        outliers, and the data-generating process. Then I shortlist a reasonable family and validate it
+                        against plots and summary statistics.</p>
+                </div>
+            </section>
+
+            <section class="section" id="hypothesis">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Inference in action</p>
+                        <h2>Hypothesis testing</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. State the null hypothesis H0</h3>
+                        <p>The default assumption, usually that there is no effect or no difference.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. State the alternative hypothesis H1</h3>
+                        <p>What you are trying to show, usually that an effect or difference exists.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Compute the test statistic</h3>
+                        <p>A number that measures how far your sample result is from what H0 predicts.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Compute the p-value</h3>
+                        <p>The probability of seeing a result at least this extreme if H0 is true.</p>
+                    </div>
+                    <div class="step">
+                        <h3>5. Decide</h3>
+                        <p>If the p-value is below the significance level, reject H0. Otherwise, do not reject H0.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="pvalue">
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>What a p-value is</h3>
+                        <p>The probability of observing data at least as extreme as yours, assuming H0 is true. A small
+                            p-value means the data is unlikely under H0.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What a p-value is NOT</h3>
+                        <ul class="stack-list">
+                            <li>It is NOT the probability that H0 is true.</li>
+                            <li>It is NOT the probability that the result happened by chance.</li>
+                            <li>A small p-value does not prove practical significance. Effect size matters.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Interview-ready summary</h2>
+                    <p>Descriptive statistics tells you the shape of what you have. Inferential statistics tells you
+                        what you can reasonably conclude beyond the sample. If you confuse the two, interviewers notice
+                        immediately.</p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>When would you use the median instead of the mean?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>When the data is skewed or has significant outliers. The median is robust to extreme
+                                values while the mean is pulled toward them.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What does a p-value of 0.03 actually mean?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>It means there is a 3% probability of observing data at least this extreme if the null
+                                hypothesis is true. It does not mean there is a 3% chance the null is true.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your A/B test shows a statistically significant result with a tiny effect size. Should you
+                            ship the change?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Statistical significance alone is not enough. I would check the practical effect size,
+                                business impact, and whether the improvement matters at the scale we operate at.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You have 15 data points and want to estimate the population mean. Which distribution should
+                            you use for inference?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>With a small sample size, I would use the t-distribution instead of the normal
+                                distribution because it accounts for the extra uncertainty from estimating the
+                                population standard deviation.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your outlet-level sales data has a median of 18000, a mean of 42000, and a few stores are
+                            far larger than the rest. Would you model it as normal?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>No. The gap between mean and median plus a few dominant observations suggests strong
+                                right skew and heavy tails. I would inspect the histogram, percentiles, and maybe log
+                                transform the data. Log-normal or Pareto-like behavior is more plausible than a normal
+                                model.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You are modeling number of customer complaints per day. The mean is 4.2 but the variance is
+                            17.8. What does that suggest?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>That count data is over-dispersed relative to Poisson, because Poisson expects mean and
+                                variance to be similar. I would consider a Negative Binomial model and also check
+                                whether excess zeros suggest a zero-inflated version.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Statistics shows up in nearly every ML interview round, from data exploration to evaluation to experiment
+                design.</p>
+            <div class="mini-links">
+                <a href="evaluation-metrics.html">Evaluation Metrics</a>
+                <a href="regression.html">Regression</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

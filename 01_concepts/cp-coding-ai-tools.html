@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Coding AI Tools Compared</title>
+</head>
+
+<body>
+<header class="site-header">
+    <div class="shell">
+        <a class="brand" href="index.html">
+            <span class="brand-mark">AI</span>
+            <span>AI Engineer Interview Guide</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </nav>
+    </div>
+</header>
+
+    <main class="cp-container">
+    <div class="cp-hero"><h1>💻 Coding AI Tools Compared</h1>
+        <p>Codex, Claude Code, Copilot, Cursor, and open-source alternatives — the complete coding AI landscape</p></div>
+
+    
+        <div class="section">
+            <h2>The Coding AI Categories</h2>
+            <p>Coding AI tools fall into three categories: <strong>Autocomplete/Inline</strong> (suggest code as you
+                type), <strong>Chat/Agents</strong> (have conversations about code), and <strong>Autonomous Coding
+                    Agents</strong> (implement entire features themselves).</p>
+            <div class="highlight">
+                <p><strong>The landscape in 2026:</strong> We've moved from "AI that completes one line" to "AI that
+                    implements entire features, runs tests, and fixes bugs autonomously." The question isn't IF to use
+                    coding AI, but WHICH approach fits your workflow.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Major Players</h2>
+
+            <div class="category-label">🏢 Commercial IDE-Integrated Tools</div>
+
+            <div class="tool-card" style="--tcolor: #60a5fa;">
+                <h3>GitHub Copilot</h3>
+                <div class="by">By GitHub/Microsoft • Powered by OpenAI models</div>
+                <div class="desc">The original coding AI. Deep VS Code and IDE integration. Inline suggestions, chat,
+                    and now agent mode for multi-file edits.</div>
+                <div class="features">
+                    <div class="feat">Inline autocomplete</div>
+                    <div class="feat">Chat in IDE</div>
+                    <div class="feat">Agent mode (multi-file)</div>
+                    <div class="feat">PR summaries</div>
+                    <div class="feat">Copilot Workspace</div>
+                    <div class="feat">Multi-model (GPT-4o, Claude)</div>
+                </div>
+                <div class="pricing">💰 $10/mo Individual • $19/mo Business • Free for students/OSS</div>
+            </div>
+
+            <div class="tool-card" style="--tcolor: #f59e0b;">
+                <h3>Cursor</h3>
+                <div class="by">By Anysphere • Fork of VS Code with AI-native UX</div>
+                <div class="desc">A complete AI-first IDE (forked from VS Code). Built from the ground up for AI pair
+                    programming. Best codebase-aware context handling.</div>
+                <div class="features">
+                    <div class="feat">Codebase-wide context (@file, @folder)</div>
+                    <div class="feat">Multi-file editing (Composer)</div>
+                    <div class="feat">Model choice (GPT-4, Claude, etc.)</div>
+                    <div class="feat">Terminal integration</div>
+                    <div class="feat">AI-powered search</div>
+                    <div class="feat">Inline diff preview</div>
+                </div>
+                <div class="pricing">💰 $20/mo Pro • $40/mo Business • Free tier available</div>
+            </div>
+
+            <div class="tool-card" style="--tcolor: #f472b6;">
+                <h3>Claude Code (Anthropic)</h3>
+                <div class="by">By Anthropic • Terminal-based agentic coding tool</div>
+                <div class="desc">An autonomous coding agent that runs in your terminal. Can read/write files, run
+                    commands, search codebases, and implement features end-to-end. Best for complex multi-step coding
+                    tasks.</div>
+                <div class="features">
+                    <div class="feat">Terminal-based (any editor)</div>
+                    <div class="feat">Reads entire codebase</div>
+                    <div class="feat">Runs commands & tests</div>
+                    <div class="feat">Git integration</div>
+                    <div class="feat">Extended thinking mode</div>
+                    <div class="feat">Multi-file refactoring</div>
+                </div>
+                <div class="pricing">💰 Pay-per-token via Anthropic API • Uses Claude Opus/Sonnet</div>
+            </div>
+
+            <div class="tool-card" style="--tcolor: #10b981;">
+                <h3>OpenAI Codex (CLI Agent)</h3>
+                <div class="by">By OpenAI • Cloud-sandboxed coding agent</div>
+                <div class="desc">An autonomous coding agent that runs in a cloud sandbox. Reads your repo, executes
+                    code, runs tests. Designed for fire-and-forget tasks like bug fixes and feature implementation.
+                </div>
+                <div class="features">
+                    <div class="feat">Cloud sandboxed execution</div>
+                    <div class="feat">Parallel task execution</div>
+                    <div class="feat">Automatic test running</div>
+                    <div class="feat">GitHub PR integration</div>
+                    <div class="feat">Asynchronous operation</div>
+                    <div class="feat">Full repo understanding</div>
+                </div>
+                <div class="pricing">💰 Included with ChatGPT Pro/Team plans • API-based pricing</div>
+            </div>
+
+            <div class="category-label" style="margin-top:30px;">🔓 Open Source Alternatives</div>
+
+            <div class="tool-card" style="--tcolor: #a78bfa;">
+                <h3>Continue.dev</h3>
+                <div class="by">Open Source • VS Code & JetBrains extension</div>
+                <div class="desc">Open-source AI coding assistant. Connect ANY model (local Llama, Claude, GPT). Full
+                    control over prompts and context.</div>
+                <div class="features">
+                    <div class="feat">Any model (local or cloud)</div>
+                    <div class="feat">Customizable prompts</div>
+                    <div class="feat">Context providers</div>
+                    <div class="feat">Slash commands</div>
+                </div>
+                <div class="pricing">💰 Free (BYOK — bring your own key/model)</div>
+            </div>
+
+            <div class="tool-card" style="--tcolor: #2dd4bf;">
+                <h3>Cody (Sourcegraph)</h3>
+                <div class="by">By Sourcegraph • Enterprise-focused with codebase search</div>
+                <div class="desc">AI assistant backed by Sourcegraph's code intelligence. Understands your ENTIRE
+                    codebase via code graph, not just open files.</div>
+                <div class="features">
+                    <div class="feat">Full codebase context</div>
+                    <div class="feat">Multi-repo search</div>
+                    <div class="feat">Enterprise SSO</div>
+                    <div class="feat">Custom commands</div>
+                </div>
+                <div class="pricing">💰 Free tier • $9/mo Pro • Enterprise pricing</div>
+            </div>
+
+            <div class="tool-card" style="--tcolor: #ef4444;">
+                <h3>Aider</h3>
+                <div class="by">Open Source • Terminal-based pair programming</div>
+                <div class="desc">CLI-based coding assistant. Connects to any LLM, edits files directly, performs git
+                    commits. Excellent for terminal-native developers.</div>
+                <div class="features">
+                    <div class="feat">Terminal-native</div>
+                    <div class="feat">Any LLM backend</div>
+                    <div class="feat">Auto-commits</div>
+                    <div class="feat">Multi-file edits</div>
+                </div>
+                <div class="pricing">💰 Free (open source, BYOK)</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Head-to-Head Comparison</h2>
+            <div style="overflow-x:auto;">
+                <table class="comparison-table">
+                    <tr>
+                        <th>Tool</th>
+                        <th>Type</th>
+                        <th>Autonomy Level</th>
+                        <th>Context Awareness</th>
+                        <th>Multi-File</th>
+                        <th>Open Source</th>
+                        <th>Runs Code</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Copilot</strong></td>
+                        <td>IDE Extension</td>
+                        <td class="mid">Medium (agent mode)</td>
+                        <td class="mid">Open files + workspace</td>
+                        <td class="good">Yes</td>
+                        <td class="low">No</td>
+                        <td class="mid">Limited</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cursor</strong></td>
+                        <td>AI-Native IDE</td>
+                        <td class="good">High (Composer)</td>
+                        <td class="good">Full codebase</td>
+                        <td class="good">Yes</td>
+                        <td class="low">No</td>
+                        <td class="good">Yes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Claude Code</strong></td>
+                        <td>Terminal Agent</td>
+                        <td class="good">Very High</td>
+                        <td class="good">Full repo</td>
+                        <td class="good">Yes</td>
+                        <td class="low">No</td>
+                        <td class="good">Yes (local)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Codex (OpenAI)</strong></td>
+                        <td>Cloud Agent</td>
+                        <td class="good">Very High</td>
+                        <td class="good">Full repo</td>
+                        <td class="good">Yes</td>
+                        <td class="low">No</td>
+                        <td class="good">Yes (sandbox)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Continue.dev</strong></td>
+                        <td>IDE Extension</td>
+                        <td class="mid">Medium</td>
+                        <td class="mid">Configurable</td>
+                        <td class="mid">Partial</td>
+                        <td class="good">Yes</td>
+                        <td class="low">No</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cody</strong></td>
+                        <td>IDE Extension</td>
+                        <td class="mid">Medium</td>
+                        <td class="good">Full codebase (graph)</td>
+                        <td class="mid">Partial</td>
+                        <td class="good">Yes</td>
+                        <td class="low">No</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Aider</strong></td>
+                        <td>Terminal CLI</td>
+                        <td class="good">High</td>
+                        <td class="good">Repo-aware</td>
+                        <td class="good">Yes</td>
+                        <td class="good">Yes</td>
+                        <td class="mid">Manual</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Decision Framework</h2>
+            <div class="decision-box">
+                <h4>Choose based on your workflow:</h4>
+                <p><strong>🖥️ VS Code power user, want seamless inline →</strong> GitHub Copilot</p>
+                <p><strong>🚀 Want full AI-native IDE experience →</strong> Cursor</p>
+                <p><strong>🤖 Need autonomous implementation of complex features →</strong> Claude Code or Codex</p>
+                <p><strong>🔧 Terminal-native, want full control →</strong> Aider (open source)</p>
+                <p><strong>🏢 Enterprise, need full codebase search →</strong> Cody (Sourcegraph)</p>
+                <p><strong>💰 Zero cost, bring your own model →</strong> Continue.dev or Aider</p>
+                <p><strong>🌐 Fire-and-forget, async tasks →</strong> OpenAI Codex (cloud sandbox)</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧠 Pro Thinker Analysis</h2>
+            <div class="highlight">
+                <p><strong>The trend is clear: coding AI is moving from "autocomplete" to "autonomous agent."</strong>
+                    In 2023, Copilot suggested one line. In 2026, Claude Code and Codex implement entire features, run
+                    tests, and create PRs. The next shift is MULTI-AGENT coding — one agent writes code, another reviews
+                    it, another writes tests. The developers who thrive will be those who learn to DIRECT these agents
+                    effectively, not those who refuse to use them. Think of it as going from "writing code" to
+                    "engineering systems that write code."</p>
+            </div>
+        </div>
+
+        <div class="cp-nav-footer">
+            <a href="cp-rag-strategies.html">← RAG Strategies</a>
+            <a href="cp-agentic-frameworks.html">Next: Agentic Frameworks →</a>
+        </div>
+    </div>
+
+    </main>
+
+<footer class="site-footer">
+    <div class="shell">
+        <p>Part of the AI and ML Interview Starter Guide. Open locally in any browser.</p>
+        <div class="mini-links">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </div>
+    </div>
+</footer>
+</body>
+
+</html>

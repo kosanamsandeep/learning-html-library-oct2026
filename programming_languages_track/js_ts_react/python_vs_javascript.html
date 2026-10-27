@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python vs JavaScript — side by side</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>JS</span>Web Track</a>
+            <nav class="top-links">
+                <a href="index.html">Web Hub</a>
+                <a href="why_javascript.html">Why JS</a>
+                <a href="python_vs_javascript.html">Python vs JS</a>
+                <a href="javascript_vs_typescript.html">JS vs TS</a>
+                <a href="the_dom_explained.html">The DOM</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Web Track · 02 of 04</p>
+            <h1>Python vs JavaScript, side by side</h1>
+            <p class="lead">Read the Python column, then glance right. You will notice most of the difference is
+                punctuation: <code>{ }</code> blocks instead of indentation, semicolons, and <code>camelCase</code>
+                instead of <code>snake_case</code>. The <em>ideas</em> are the same.</p>
+        </section>
+
+        <section class="card">
+            <h2>The big-picture differences</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th><span class="tag py">Python</span></th>
+                        <th><span class="tag js">JavaScript</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Blocks</td>
+                        <td>Indentation (whitespace matters)</td>
+                        <td>Curly braces <code>{ }</code>; indentation is cosmetic</td>
+                    </tr>
+                    <tr>
+                        <td>Statement end</td>
+                        <td>Newline</td>
+                        <td>Semicolon <code>;</code> (mostly optional, but use them)</td>
+                    </tr>
+                    <tr>
+                        <td>Naming convention</td>
+                        <td><code>snake_case</code></td>
+                        <td><code>camelCase</code></td>
+                    </tr>
+                    <tr>
+                        <td>Typing</td>
+                        <td>Dynamic, optional hints</td>
+                        <td>Dynamic; add TypeScript for real types</td>
+                    </tr>
+                    <tr>
+                        <td>Runs where</td>
+                        <td>Interpreter (server, scripts, notebooks)</td>
+                        <td>Browser <em>and</em> Node.js (server)</td>
+                    </tr>
+                    <tr>
+                        <td>Equality</td>
+                        <td><code>==</code> compares values</td>
+                        <td>Use <code>===</code> (strict); avoid <code>==</code></td>
+                    </tr>
+                    <tr>
+                        <td>Null-ish</td>
+                        <td><code>None</code></td>
+                        <td><code>null</code> and <code>undefined</code> (two of them)</td>
+                    </tr>
+                    <tr>
+                        <td>Package manager</td>
+                        <td><code>pip</code> / <code>uv</code></td>
+                        <td><code>npm</code> / <code>pnpm</code> / <code>yarn</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Variables</h2>
+            <div class="two-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>name = "Ada"
+count = 3
+PI = 3.14159   # convention: constant
+count += 1</code></pre>
+                </div>
+                <div class="col js">
+                    <h4>JavaScript</h4>
+                    <pre><code>let name = "Ada";
+let count = 3;
+const PI = 3.14159;  // truly constant
+count += 1;</code></pre>
+                </div>
+            </div>
+            <div class="callout js">
+                <strong>Rule:</strong> use <code>const</code> by default, <code>let</code> when you must reassign. Never
+                use the old <code>var</code>.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Functions</h2>
+            <div class="two-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>def greet(name):
+    return f"Hi {name}"
+
+# lambda
+double = lambda x: x * 2</code></pre>
+                </div>
+                <div class="col js">
+                    <h4>JavaScript</h4>
+                    <pre><code>function greet(name) {
+  return `Hi ${name}`;
+}
+
+// arrow function
+const double = (x) => x * 2;</code></pre>
+                </div>
+            </div>
+            <p class="quiet">Note the backticks <code>`...`</code> for f-string-style interpolation, and
+                <code>${ }</code> where Python uses <code>{ }</code>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Lists / Arrays</h2>
+            <div class="two-col">
+                <div class="col py">
+                    <h4>Python — list</h4>
+                    <pre><code>nums = [1, 2, 3]
+nums.append(4)
+doubled = [n * 2 for n in nums]
+total = sum(nums)</code></pre>
+                </div>
+                <div class="col js">
+                    <h4>JavaScript — array</h4>
+                    <pre><code>const nums = [1, 2, 3];
+nums.push(4);
+const doubled = nums.map(n => n * 2);
+const total = nums.reduce((a, b) => a + b, 0);</code></pre>
+                </div>
+            </div>
+            <div class="callout js">
+                <strong>Comprehension &rarr; methods:</strong> Python list comprehensions become
+                <code>.map()</code>, <code>.filter()</code>, and <code>.reduce()</code> chains in JavaScript.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Dicts / Objects</h2>
+            <div class="two-col">
+                <div class="col py">
+                    <h4>Python — dict</h4>
+                    <pre><code>user = {"name": "Ada", "age": 36}
+user["age"] = 37
+for key, val in user.items():
+    print(key, val)</code></pre>
+                </div>
+                <div class="col js">
+                    <h4>JavaScript — object</h4>
+                    <pre><code>const user = { name: "Ada", age: 36 };
+user.age = 37;
+for (const [key, val] of Object.entries(user)) {
+  console.log(key, val);
+}</code></pre>
+                </div>
+            </div>
+            <p class="quiet">In JS, keys usually have no quotes, and you read them with dot notation:
+                <code>user.name</code>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Loops and conditionals</h2>
+            <div class="two-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>for i in range(3):
+    print(i)
+
+if count > 0:
+    print("positive")
+elif count == 0:
+    print("zero")
+else:
+    print("negative")</code></pre>
+                </div>
+                <div class="col js">
+                    <h4>JavaScript</h4>
+                    <pre><code>for (let i = 0; i &lt; 3; i++) {
+  console.log(i);
+}
+
+if (count &gt; 0) {
+  console.log("positive");
+} else if (count === 0) {
+  console.log("zero");
+} else {
+  console.log("negative");
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Classes</h2>
+            <div class="two-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>class Dog:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        return f"{self.name} barks"
+
+d = Dog("Rex")</code></pre>
+                </div>
+                <div class="col js">
+                    <h4>JavaScript</h4>
+                    <pre><code>class Dog {
+  constructor(name) {
+    this.name = name;
+  }
+  speak() {
+    return `${this.name} barks`;
+  }
+}
+const d = new Dog("Rex");</code></pre>
+                </div>
+            </div>
+            <p class="quiet"><code>self</code> becomes <code>this</code>, <code>__init__</code> becomes
+                <code>constructor</code>, and you need the <code>new</code> keyword.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Async / await</h2>
+            <div class="two-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>import httpx
+
+async def get_user(id):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(f"/users/{id}")
+        return r.json()</code></pre>
+                </div>
+                <div class="col js">
+                    <h4>JavaScript</h4>
+                    <pre><code>async function getUser(id) {
+  const r = await fetch(`/users/${id}`);
+  return await r.json();
+}</code></pre>
+                </div>
+            </div>
+            <div class="callout js">
+                <strong>Good news:</strong> <code>async</code>/<code>await</code> works almost identically. If you
+                understand it in Python, you already understand it in JavaScript.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>When to use which</h2>
+            <div class="diagram">
+                <pre class="mermaid">
+flowchart LR
+    A["Data science,<br/>ML training, notebooks"] --> P["Python"]
+    B["Backend API,<br/>model serving"] --> P
+    B --> N["Node.js works too"]
+    C["Anything on a<br/>web page"] --> J["JavaScript / TypeScript"]
+    D["Interactive UI"] --> R["React"]
+    style P fill:#dbeafe,stroke:#3776ab,color:#0f172a
+    style N fill:#e2e8f0,stroke:#1e293b,color:#0f172a
+    style J fill:#fef9c3,stroke:#a16207,color:#0f172a
+    style R fill:#cff4fc,stroke:#0b7285,color:#0f172a
+                </pre>
+            </div>
+            <p class="cap">Python and JavaScript are not rivals here — they cover different halves of the same product.
+            </p>
+        </section>
+
+        <section class="card">
+            <p class="quiet">Next up:
+                <a href="javascript_vs_typescript.html">JavaScript vs TypeScript &rarr;</a>
+            </p>
+        </section>
+    </main>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#fef9c3',
+                primaryTextColor: '#0f172a',
+                primaryBorderColor: '#a16207',
+                lineColor: '#7c83b8',
+                fontFamily: 'Segoe UI, system-ui, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

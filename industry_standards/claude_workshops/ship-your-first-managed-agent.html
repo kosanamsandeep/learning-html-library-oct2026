@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W4 · Ship your first managed agent — Claude Workshops</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Workshops hub</a>
+                <a href="../anthropic_building_agents.html">Building Agents</a>
+                <a href="../anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">CWC · Workshop 4</span></p>
+            <h1>Ship your first managed agent: seven small functions and an SRE that fixes Incident&#8209;2277</h1>
+            <p class="lead">The "hello world" of Claude Managed Agents. You fill in seven thin wrappers over the
+                <code>client.beta.*</code> SDK in one <code>agent.py</code> (~34 lines of meaningful code). The agent
+                greps a 70k-line log inside its sandbox and pins the regression to commit <code>a3f9c21</code> — an
+                N+1 query that pushed p99 from <strong>65 ms to 3600 ms</strong>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>1 · What you build</h2>
+            <ul>
+                <li>A Streamlit chat UI in front of a Managed Agent.</li>
+                <li>An <code>agent.py</code> module with seven functions:
+                    <ol>
+                        <li><code>setup_agent</code> &rarr; <code>client.beta.agents.create(&hellip;)</code></li>
+                        <li><code>setup_environment</code> &rarr; <code>client.beta.environments.create(&hellip;)</code>
+                        </li>
+                        <li><code>upload_log</code> &rarr; <code>client.beta.files.upload(&hellip;)</code></li>
+                        <li><code>start_session</code> &rarr; <code>client.beta.sessions.create(&hellip;)</code></li>
+                        <li><code>stream_reply</code> &rarr; <code>events.stream(&hellip;)</code> +
+                            <code>events.send(&hellip;)</code></li>
+                        <li><code>handle_tool</code> — local handler for the gated tool calls</li>
+                        <li><code>delete_session</code> — cleanup</li>
+                    </ol>
+                </li>
+                <li>The shipped artifact runs the SRE incident end-to-end: log goes in, root-cause commit comes out.
+                </li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>2 · The stack</h2>
+            <div class="flow">
+                <div class="step">Agent (configured once)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Environment (sandbox + files)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Session (one chat)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Events (stream + send)</div>
+            </div>
+            <p>This is the model you re-use in every later workshop. <strong>Agent</strong> is the persistent
+                configuration; <strong>environment</strong> is what the agent can see and run; <strong>session</strong>
+                is a single conversation; <strong>events</strong> are the streaming protocol both sides write to.</p>
+        </section>
+
+        <section class="card">
+            <h2>3 · Levers the workshop teaches</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>Agent = configuration, not state</h3>
+                    <p>Create the agent once; reuse across sessions. Model, system prompt, tool list, default skills
+                        live here.</p>
+                </div>
+                <div class="mini">
+                    <h3>Environment = what the agent sees</h3>
+                    <p>The sandbox filesystem, the uploaded files, the network policy. Everything that needs to outlive
+                        a single chat goes in the environment.</p>
+                </div>
+                <div class="mini">
+                    <h3>Session = one conversation</h3>
+                    <p>Cheap, ephemeral, attached to an environment. Resources (memory store, files) are attached
+                        <em>at session creation</em>, not later.
+                    </p>
+                </div>
+                <div class="mini">
+                    <h3>Events = the streaming protocol</h3>
+                    <p>You <code>send</code> user messages and you <code>stream</code> assistant + tool events back.
+                        Tool confirmations are also events.</p>
+                </div>
+                <div class="mini">
+                    <h3>Files in the sandbox</h3>
+                    <p>The 70k-line log is uploaded once, lives in the environment, and the agent runs
+                        <code>grep</code> / Python inside the sandbox instead of attaching the whole log to the prompt.
+                    </p>
+                </div>
+                <div class="mini">
+                    <h3>Streamlit shell</h3>
+                    <p>Just enough UI to demonstrate the streaming events. The model is "the UI is a renderer over the
+                        event stream".</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Use vs don't use — the trade-offs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lever</th>
+                        <th>If you use it</th>
+                        <th>If you skip it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Claude Managed Agents (vs DIY loop)</td>
+                        <td>Anthropic runs the loop, the sandbox, the tool gateway, the streaming. Your code is seven
+                            small functions.</td>
+                        <td>You write your own retry, sandbox, file storage, event protocol, and tool-confirmation
+                            gating — and re-write it for every project.</td>
+                    </tr>
+                    <tr>
+                        <td>Environment with uploaded files</td>
+                        <td>The 70k-line log is searchable by the agent without ever crossing the context window.
+                            <code>grep "p99"</code> runs inside the sandbox.
+                        </td>
+                        <td>You attach the log to the prompt, blow the context window in one turn, and pay for tokens
+                            on every retry.</td>
+                    </tr>
+                    <tr>
+                        <td>Sessions (vs long-lived chats)</td>
+                        <td>You can spin up parallel sessions for parallel incidents, throw failed ones away, and keep
+                            the agent + environment definition stable.</td>
+                        <td>One long chat accumulates context, slows down, and a bad turn poisons every later one.</td>
+                    </tr>
+                    <tr>
+                        <td>Attach resources at session-create</td>
+                        <td>Memory store and uploaded files are guaranteed available from event 1.</td>
+                        <td>You try to attach mid-session, the API refuses, and you ship a workaround that leaks state.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Streaming events</td>
+                        <td>The UI shows reasoning and tool calls as they happen. You can intercept tool-confirmation
+                            events to add policy.</td>
+                        <td>The chat hangs until the final message, the SRE thinks it's broken, and you have no place
+                            to insert approvals.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>The lesson:</strong> the four-noun mental model (agent &middot;
+                environment &middot; session &middot; events) is the entire CMA surface area. Once you have it, every
+                later workshop is "use the same four nouns with more interesting content."</div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Adoption playbook for your repo</h2>
+            <ol>
+                <li>Pin one operational pain (a real incident, a real triage flow) and write its 70k-line input down as
+                    a file.</li>
+                <li>Build the seven-function <code>agent.py</code>. Don't add anything else until it runs end-to-end.
+                </li>
+                <li>Wrap it in a 50-line Streamlit (or any) UI so non-engineers can use it.</li>
+                <li>Put the agent definition under version control. The system prompt is code now.</li>
+                <li>Only after the loop is healthy: add Skills, sub-agents, memory. The W4 stack is intentionally the
+                    floor.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source"
+                    href="https://github.com/anthropics/cwc-workshops/tree/main/ship-your-first-managed-agent-workshop"
+                    target="_blank" rel="noopener">cwc-workshops/ship-your-first-managed-agent-workshop</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/quickstart" target="_blank"
+                    rel="noopener">CMA — Quickstart</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/agents" target="_blank"
+                    rel="noopener">CMA — Agents</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/environments" target="_blank"
+                    rel="noopener">CMA — Environments</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/sessions" target="_blank"
+                    rel="noopener">CMA — Sessions</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/events" target="_blank"
+                    rel="noopener">CMA — Events</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

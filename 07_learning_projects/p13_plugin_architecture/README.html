@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P13 - Plugin Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 40px auto;
+            max-width: 950px;
+            line-height: 1.7;
+            color: #1a1a2e;
+            background: #f8f9fa;
+        }
+
+        h1 {
+            color: #6a0dad;
+            border-bottom: 3px solid #6a0dad;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #4a0e8f;
+            margin-top: 35px;
+        }
+
+        h3 {
+            color: #7b2ff7;
+        }
+
+        .mermaid {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        code {
+            background: #e8e0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .concept-box {
+            background: white;
+            border-left: 4px solid #6a0dad;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .pattern-tag {
+            display: inline-block;
+            background: #6a0dad;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin: 2px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px 14px;
+            text-align: left;
+        }
+
+        th {
+            background: #6a0dad;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f5f0ff;
+        }
+
+        .insight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px 18px;
+            margin: 12px 0;
+            border-radius: 0 6px 6px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Project 13: Plugin Architecture - Extensible CLI Text Processor</h1>
+
+    <p>
+        <span class="pattern-tag">Plugin System</span>
+        <span class="pattern-tag">Hook/Event System</span>
+        <span class="pattern-tag">Topological Sort</span>
+        <span class="pattern-tag">Dependency Resolution</span>
+        <span class="pattern-tag">Filter Pipeline</span>
+    </p>
+
+    <div class="concept-box">
+        <strong>Story:</strong> You're building a text processing CLI tool. Instead of hardcoding every feature,
+        you design a plugin system where third-party developers can extend functionality by hooking into
+        well-defined extension points — just like VS Code, pytest, or WordPress.
+    </div>
+
+    <h2>Architecture Overview</h2>
+
+    <div class="mermaid">
+        graph TB
+        subgraph Core["Core Application"]
+        APP[TextProcessorApp]
+        HR[HookRegistry]
+        PM[PluginManager]
+        end
+
+        subgraph Hooks["Extension Points (Hooks)"]
+        H1[app.startup - ACTION]
+        H2[text.pre_process - FILTER]
+        H3[text.post_process - FILTER]
+        H4[command.register - ACTION]
+        H5[command.before_execute - ACTION]
+        end
+
+        subgraph Plugins["Plugins"]
+        P1[WordCount]
+        P2[TextTransform]
+        P3[Emoji]
+        P4[Statistics]
+        P5[ProfanityFilter]
+        end
+
+        APP --> HR
+        APP --> PM
+        HR --> H1 & H2 & H3 & H4 & H5
+        PM --> P1 & P2 & P3 & P4 & P5
+        P1 -.->|registers| H4
+        P3 -.->|filters| H2
+        P5 -.->|filters| H3
+        P4 -.->|observes| H5
+    </div>
+
+    <h2>Hook System: Actions vs Filters</h2>
+
+    <table>
+        <tr>
+            <th>Aspect</th>
+            <th>ACTION Hooks</th>
+            <th>FILTER Hooks</th>
+        </tr>
+        <tr>
+            <td>Purpose</td>
+            <td>Side effects (log, notify, track)</td>
+            <td>Transform data through pipeline</td>
+        </tr>
+        <tr>
+            <td>Return value</td>
+            <td>Ignored (fire-and-forget)</td>
+            <td>Passed as input to next filter</td>
+        </tr>
+        <tr>
+            <td>Analogy</td>
+            <td>WordPress <code>do_action()</code></td>
+            <td>WordPress <code>apply_filters()</code></td>
+        </tr>
+        <tr>
+            <td>Example</td>
+            <td><code>command.before_execute</code></td>
+            <td><code>text.pre_process</code></td>
+        </tr>
+        <tr>
+            <td>Data flow</td>
+            <td>Hub: core → all subscribers</td>
+            <td>Pipeline: value → filter1 → filter2 → ...</td>
+        </tr>
+    </table>
+
+    <h2>Plugin Lifecycle & Dependency Resolution</h2>
+
+    <div class="mermaid">
+        stateDiagram-v2
+        [*] --> Discovered: Plugin class found
+        Discovered --> DepsResolved: Dependencies checked
+        DepsResolved --> Activated: activate() called
+        Activated --> Deactivated: deactivate() called
+        DepsResolved --> Error: Missing dependency
+        Activated --> Error: Runtime failure
+    </div>
+
+    <div class="mermaid">
+        graph LR
+        subgraph "Dependency Graph"
+        TT[text_transform]
+        WC[word_count]
+        EM[emoji]
+        PF[profanity_filter]
+        ST[statistics]
+        end
+
+        EM -->|depends on| TT
+        PF -->|depends on| TT
+        ST -->|depends on| WC
+
+        subgraph "Load Order (Topological Sort)"
+        direction LR
+        O1["1. text_transform"] --> O2["2. word_count"]
+        O2 --> O3["3. emoji"]
+        O3 --> O4["4. profanity_filter"]
+        O4 --> O5["5. statistics"]
+        end
+    </div>
+
+    <div class="insight">
+        <strong>Topological Sort (Kahn's Algorithm):</strong> Process nodes with 0 in-degree first,
+        then decrement in-degree of their dependents. This guarantees dependencies load before dependents.
+        If we can't process all nodes, there's a circular dependency!
+    </div>
+
+    <h2>Filter Pipeline Sequence</h2>
+
+    <div class="mermaid">
+        sequenceDiagram
+        participant User
+        participant App as TextProcessorApp
+        participant HR as HookRegistry
+        participant Emoji as EmojiPlugin (priority 5)
+        participant PF as ProfanityFilter (priority 99)
+
+        User->>App: echo ":happy: this is spam"
+        App->>HR: apply_filter("text.pre_process", text)
+        HR->>Emoji: callback(":happy: this is spam")
+        Emoji-->>HR: "[smile] this is spam"
+        HR-->>App: "[smile] this is spam"
+        App->>HR: apply_filter("text.post_process", text)
+        HR->>PF: callback("[smile] this is spam")
+        PF-->>HR: "[smile] this is ****"
+        HR-->>App: "[smile] this is ****"
+        App-->>User: "[smile] this is ****"
+    </div>
+
+    <h2>Class Diagram</h2>
+
+    <div class="mermaid">
+        classDiagram
+        class HookRegistry {
+        -specs: dict
+        -registrations: dict
+        +define_hook(name, type, desc)
+        +register(hook_name, callback, priority)
+        +trigger_action(hook_name, kwargs)
+        +apply_filter(hook_name, value, kwargs)
+        }
+
+        class PluginBase {
+        <<abstract>>
+            #hooks: HookRegistry
+            #state: PluginState
+            +meta: PluginMeta*
+            +activate()*
+            +deactivate()
+            }
+
+            class PluginManager {
+            -plugins: dict
+            -plugin_classes: dict
+            +discover_and_load(classes)
+            +deactivate_all()
+            -resolve_dependencies(): list
+            -activate_plugin(name)
+            }
+
+            class TextProcessorApp {
+            -hooks: HookRegistry
+            -commands: dict
+            +startup()
+            +execute(command_line): str
+            +process_text(text): str
+            +register_command(cmd)
+            }
+
+            class PluginMeta {
+            +name: str
+            +version: str
+            +dependencies: list
+            +provides: list
+            }
+
+            PluginBase --> HookRegistry: uses
+            PluginBase --> PluginMeta: has
+            PluginManager --> PluginBase: manages
+            PluginManager --> HookRegistry: uses
+            TextProcessorApp --> HookRegistry: owns
+            WordCountPlugin --|> PluginBase
+            TextTransformPlugin --|> PluginBase
+            EmojiPlugin --|> PluginBase
+            StatisticsPlugin --|> PluginBase
+            ProfanityFilterPlugin --|> PluginBase
+    </div>
+
+    <h2>Real-World Inspirations</h2>
+
+    <table>
+        <tr>
+            <th>System</th>
+            <th>Hook Mechanism</th>
+            <th>Plugin Registration</th>
+        </tr>
+        <tr>
+            <td>pytest (pluggy)</td>
+            <td><code>@hookimpl</code> / <code>@hookspec</code></td>
+            <td><code>pm.register(plugin)</code></td>
+        </tr>
+        <tr>
+            <td>VS Code</td>
+            <td><code>vscode.commands.registerCommand</code></td>
+            <td><code>package.json</code> contributes</td>
+        </tr>
+        <tr>
+            <td>WordPress</td>
+            <td><code>add_action()</code> / <code>add_filter()</code></td>
+            <td>Plugin headers + activation hook</td>
+        </tr>
+        <tr>
+            <td>Flask</td>
+            <td><code>@app.before_request</code></td>
+            <td><code>init_app()</code> pattern</td>
+        </tr>
+        <tr>
+            <td>Webpack</td>
+            <td>tapable <code>SyncHook</code>, <code>AsyncSeriesHook</code></td>
+            <td><code>compiler.hooks.emit.tap()</code></td>
+        </tr>
+    </table>
+
+    <h2>Key Design Decisions</h2>
+
+    <div class="concept-box">
+        <h3>1. Inversion of Control</h3>
+        <p>The core doesn't call plugins directly. Instead, it defines hooks (extension points) and
+            triggers them at the right time. Plugins register themselves — the core doesn't know what plugins exist.</p>
+    </div>
+
+    <div class="concept-box">
+        <h3>2. Priority-Based Ordering</h3>
+        <p>Multiple plugins can hook into the same point. Priority (lower = earlier) controls execution order.
+            This is critical for filter chains where order matters (emoji substitution must happen before profanity
+            check).</p>
+    </div>
+
+    <div class="concept-box">
+        <h3>3. Dependency Declaration</h3>
+        <p>Plugins declare what they depend on in metadata. The manager resolves this with topological sort
+            (Kahn's algorithm), ensuring correct activation order and detecting circular dependencies.</p>
+    </div>
+
+    <h2>File Structure</h2>
+    <pre>
+p13_plugin_architecture/
+├── main.py                    # 5 demos showing full system
+├── core/
+│   ├── app.py                 # TextProcessorApp (defines hooks)
+│   └── plugin_manager.py      # PluginManager (lifecycle, deps)
+├── hooks/
+│   └── hook_system.py         # HookRegistry (actions & filters)
+└── plugins/
+    ├── word_count.py          # Adds wc, freq commands
+    ├── text_transform.py      # Adds upper, lower, reverse, title
+    ├── emoji_plugin.py        # Filter: emoji substitution
+    ├── statistics_plugin.py   # Action: tracks command usage
+    └── profanity_filter.py    # Filter: censors blocked words
+    </pre>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGen 03 · Tools &amp; Function Calling</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="ag">AG</span>AutoGen · 03 Tools</div>
+        <div class="links">
+            <a href="index.html">AutoGen Hub</a>
+            <a href="02_two_agent_team.html">← 02</a>
+            <a href="04_groupchat_advanced.html">Next: 04 →</a>
+        </div>
+    </div>
+
+    <div class="header ag">
+        <p class="badge">Build 03 · Intermediate</p>
+        <h1>Give your agent tools</h1>
+        <p class="subtitle">An agent that can only talk is limited. Pass plain Python functions as
+            <code>tools</code> and the LLM decides when to call them — fetching weather, querying a DB, hitting
+            an API — then reflects on the result.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section ag">
+            <h2>What this build does</h2>
+            <p>We define ordinary <code>async</code> Python functions, hand them to the agent as
+                <code>tools</code>, and turn on <code>reflect_on_tool_use</code> so the agent turns raw tool
+                output into a natural-language answer.
+            </p>
+            <div class="pill-row">
+                <span class="level intermediate">Intermediate</span>
+                <span class="tag teal">tools=[...]</span>
+                <span class="tag teal">reflect_on_tool_use</span>
+                <span class="tag teal">FunctionTool</span>
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>The tool-calling loop</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    U["User: 'Weather in Paris?'"] --> A["AssistantAgent"]
+    A -->|LLM decides| D{"Need a tool?"}
+    D -->|yes| T["call get_weather('Paris')"]
+    T --> R["tool result: '18°C, sunny'"]
+    R --> A
+    A -->|reflect_on_tool_use| F["'It's 18°C and sunny in Paris.'"]
+    D -->|no| F
+                </pre>
+                <p class="caption">The LLM picks the tool and arguments; AutoGen executes it and feeds the
+                    result back for a final, reflected answer.</p>
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>The code</h2>
+            <pre><code><span class="c-kw">import</span> asyncio
+<span class="c-kw">from</span> autogen_agentchat.agents <span class="c-kw">import</span> AssistantAgent
+<span class="c-kw">from</span> autogen_agentchat.ui <span class="c-kw">import</span> Console
+<span class="c-kw">from</span> autogen_ext.models.openai <span class="c-kw">import</span> OpenAIChatCompletionClient
+
+<span class="c-com"># A tool is just a typed function. The docstring + type hints become</span>
+<span class="c-com"># the schema the LLM sees, so write them clearly.</span>
+<span class="c-kw">async def</span> <span class="c-fn">get_weather</span>(city: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Return the current weather for a given city."""</span>
+    <span class="c-com"># In real life: call a weather API here.</span>
+    <span class="c-kw">return</span> <span class="c-str">f"It's 18°C and sunny in {city}."</span>
+
+<span class="c-kw">async def</span> <span class="c-fn">add</span>(a: <span class="c-cls">int</span>, b: <span class="c-cls">int</span>) -> <span class="c-cls">int</span>:
+    <span class="c-str">"""Add two integers."""</span>
+    <span class="c-kw">return</span> a + b
+
+<span class="c-kw">async def</span> <span class="c-fn">main</span>():
+    client = OpenAIChatCompletionClient(model=<span class="c-str">"gpt-4o"</span>)
+
+    agent = AssistantAgent(
+        <span class="c-str">"assistant"</span>,
+        model_client=client,
+        tools=[get_weather, add],          <span class="c-com"># pass functions directly</span>
+        reflect_on_tool_use=<span class="c-kw">True</span>,         <span class="c-com"># summarise tool output in natural language</span>
+        system_message=<span class="c-str">"Use tools when helpful. Be concise."</span>,
+    )
+
+    <span class="c-kw">await</span> Console(agent.run_stream(task=<span class="c-str">"What's the weather in Paris, and what is 21 + 21?"</span>))
+    <span class="c-kw">await</span> client.close()
+
+asyncio.run(main())</code></pre>
+        </div>
+
+        <div class="section ag">
+            <h2><code>reflect_on_tool_use</code> — on vs off</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th><code>False</code> (default)</th>
+                        <th><code>True</code></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Agent returns…</td>
+                        <td>The raw tool result as the final message.</td>
+                        <td>An LLM-written summary of the tool result.</td>
+                    </tr>
+                    <tr>
+                        <td>Best for…</td>
+                        <td>Structured output you parse yourself.</td>
+                        <td>Chat / conversational answers.</td>
+                    </tr>
+                    <tr>
+                        <td>Extra cost</td>
+                        <td>None.</td>
+                        <td>One more LLM call to reflect.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section ag">
+            <h2>Wrapping a tool explicitly with <code>FunctionTool</code></h2>
+            <p>Passing a bare function is the shortcut. Wrap it in <code>FunctionTool</code> when you want a
+                custom name or description shown to the LLM.</p>
+            <pre><code><span class="c-kw">from</span> autogen_core.tools <span class="c-kw">import</span> FunctionTool
+
+weather_tool = FunctionTool(
+    get_weather,
+    description=<span class="c-str">"Get the current weather for a city by name."</span>,
+)
+agent = AssistantAgent(<span class="c-str">"assistant"</span>, model_client=client, tools=[weather_tool])</code></pre>
+            <div class="callout teal">
+                <strong>MCP &amp; built-in tools:</strong> AutoGen also ships adapters so agents can use
+                <strong>Model Context Protocol</strong> servers and prebuilt tools (code execution, web
+                browsing) from <code>autogen-ext</code> — same <code>tools=[...]</code> slot.
+            </div>
+        </div>
+
+        <div class="section ag">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Type hints + docstrings are the API.</strong> The LLM only knows what the signature
+                    and docstring tell it. Be explicit.</li>
+                <li><strong>Keep tools small and single-purpose.</strong> One function = one capability is
+                    easier for the model to choose correctly.</li>
+                <li><strong>Validate inputs inside the tool.</strong> The LLM can pass odd arguments; never
+                    trust them blindly (especially for DB or shell access).</li>
+                <li><strong>Return strings or JSON-serialisable values</strong> so the result is easy to feed
+                    back into the conversation.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="02_two_agent_team.html"><span class="dir">Previous</span>
+                <div class="ttl">← 02 · Two-agent team</div>
+            </a>
+            <a class="next" href="04_groupchat_advanced.html"><span class="dir">Next</span>
+                <div class="ttl">04 · GroupChat &amp; advanced →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>AutoGen Projects · 03 of 04</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

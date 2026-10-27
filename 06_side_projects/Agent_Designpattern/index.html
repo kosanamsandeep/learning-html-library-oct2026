@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Agentic Design Patterns — Interview Prep Hub</title>
+<link rel="stylesheet" href="assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <h1>Agentic Design Patterns — Interview Prep Hub</h1>
+  <p>Source: <em>Agentic Design Patterns</em> (Gulli) — 21 chapters distilled into mental models, 2026 scenarios, framework tables, and production-grade Python OOP projects.</p>
+  <p><span class="tag">Python</span><span class="tag">OOP</span><span class="tag">Design Patterns</span><span class="tag">LangGraph</span><span class="tag">CrewAI</span><span class="tag">ADK</span><span class="tag">MCP / A2A</span></p>
+</header>
+
+<main>
+
+<section>
+<h2>How to use this hub</h2>
+<ol>
+  <li>Open any chapter card to read a <strong>simple explanation</strong>, see <strong>mermaid diagrams</strong>, study a <strong>2026 real-time scenario</strong>, and review the <strong>framework comparison table</strong>.</li>
+  <li>Each chapter has a <code>project/</code> folder — a small, <strong>production-grade Python OOP</strong> implementation that demonstrates the pattern using GoF / architectural design patterns.</li>
+  <li>Run any project: <code>cd NN_chapter/project &amp;&amp; pip install -r requirements.txt &amp;&amp; python main.py</code>. All projects use a mock LLM by default — no API keys needed.</li>
+</ol>
+</section>
+
+<section>
+<h2>Pattern map — how the 21 chapters connect</h2>
+<div class="mermaid">
+flowchart TB
+  subgraph CORE["Core Orchestration"]
+    A1[1. Prompt Chaining]:::core
+    A2[2. Routing]:::core
+    A3[3. Parallelization]:::core
+    A4[4. Reflection]:::core
+  end
+  subgraph CAPS["Capabilities"]
+    A5[5. Tool Use]:::cap
+    A14[14. Knowledge Retrieval RAG]:::cap
+    A10[10. MCP]:::cap
+    A15[15. A2A Communication]:::cap
+  end
+  subgraph COG["Cognition"]
+    A6[6. Planning]:::cog
+    A8[8. Memory]:::cog
+    A9[9. Learning &amp; Adaptation]:::cog
+    A17[17. Reasoning Techniques]:::cog
+    A21[21. Exploration &amp; Discovery]:::cog
+  end
+  subgraph TEAM["Coordination"]
+    A7[7. Multi-Agent Collab]:::team
+    A20[20. Prioritization]:::team
+  end
+  subgraph OPS["Production / Safety"]
+    A11[11. Goal Setting &amp; Monitoring]:::ops
+    A12[12. Exception Handling]:::ops
+    A13[13. Human-in-the-Loop]:::ops
+    A16[16. Resource-Aware]:::ops
+    A18[18. Guardrails]:::ops
+    A19[19. Evaluation &amp; Monitoring]:::ops
+  end
+  CORE --> CAPS --> COG --> TEAM --> OPS
+  classDef core fill:#dbeafe,stroke:#1e3a8a;
+  classDef cap fill:#dcfce7,stroke:#14532d;
+  classDef cog fill:#fef3c7,stroke:#78350f;
+  classDef team fill:#fce7f3,stroke:#831843;
+  classDef ops fill:#ede9fe,stroke:#4c1d95;
+</div>
+</section>
+
+<section>
+<h2>All 21 chapters</h2>
+<div class="grid">
+  <a class="card" href="01_prompt_chaining/README.html"><div class="num">CHAPTER 01</div><h3>Prompt Chaining</h3><p>Pipeline pattern. Break a big task into ordered prompts whose outputs feed the next.</p></a>
+  <a class="card" href="02_routing/README.html"><div class="num">CHAPTER 02</div><h3>Routing</h3><p>Conditional dispatch. Classify the request and route to the right handler.</p></a>
+  <a class="card" href="03_parallelization/README.html"><div class="num">CHAPTER 03</div><h3>Parallelization</h3><p>Run independent sub-tasks concurrently to cut latency.</p></a>
+  <a class="card" href="04_reflection/README.html"><div class="num">CHAPTER 04</div><h3>Reflection</h3><p>Self-critique loop. Generator + Critic iterate until quality is met.</p></a>
+  <a class="card" href="05_tool_use/README.html"><div class="num">CHAPTER 05</div><h3>Tool Use (Function Calling)</h3><p>LLM picks an external function to call with typed arguments.</p></a>
+  <a class="card" href="06_planning/README.html"><div class="num">CHAPTER 06</div><h3>Planning</h3><p>Generate a multi-step plan from a goal, then execute &amp; replan.</p></a>
+  <a class="card" href="07_multi_agent/README.html"><div class="num">CHAPTER 07</div><h3>Multi-Agent Collaboration</h3><p>Specialist agents cooperating under a coordinator.</p></a>
+  <a class="card" href="08_memory/README.html"><div class="num">CHAPTER 08</div><h3>Memory Management</h3><p>Short-term context + long-term vector / episodic memory.</p></a>
+  <a class="card" href="09_learning_adaptation/README.html"><div class="num">CHAPTER 09</div><h3>Learning &amp; Adaptation</h3><p>Improve from feedback — RL, supervised, few-shot, fine-tuning.</p></a>
+  <a class="card" href="10_mcp/README.html"><div class="num">CHAPTER 10</div><h3>Model Context Protocol</h3><p>Universal adapter for LLM ↔ tools / data / prompts.</p></a>
+  <a class="card" href="11_goal_setting/README.html"><div class="num">CHAPTER 11</div><h3>Goal Setting &amp; Monitoring</h3><p>SMART goals + progress tracking + success criteria.</p></a>
+  <a class="card" href="12_exception_handling/README.html"><div class="num">CHAPTER 12</div><h3>Exception Handling &amp; Recovery</h3><p>Retries, circuit breakers, fallbacks for resilient agents.</p></a>
+  <a class="card" href="13_human_in_loop/README.html"><div class="num">CHAPTER 13</div><h3>Human-in-the-Loop</h3><p>Approval gates, escalation, on-the-fly correction.</p></a>
+  <a class="card" href="14_rag/README.html"><div class="num">CHAPTER 14</div><h3>Knowledge Retrieval (RAG)</h3><p>Retrieve relevant chunks, then generate grounded answers.</p></a>
+  <a class="card" href="15_a2a/README.html"><div class="num">CHAPTER 15</div><h3>Inter-Agent Communication (A2A)</h3><p>Open standard for cross-framework agent collaboration.</p></a>
+  <a class="card" href="16_resource_aware/README.html"><div class="num">CHAPTER 16</div><h3>Resource-Aware Optimization</h3><p>Pick model/strategy that meets cost &amp; latency budget.</p></a>
+  <a class="card" href="17_reasoning/README.html"><div class="num">CHAPTER 17</div><h3>Reasoning Techniques</h3><p>CoT, ToT, ReAct, Self-Consistency — explicit thinking.</p></a>
+  <a class="card" href="18_guardrails/README.html"><div class="num">CHAPTER 18</div><h3>Guardrails / Safety</h3><p>Input/output filters, behavioral constraints, moderation.</p></a>
+  <a class="card" href="19_evaluation/README.html"><div class="num">CHAPTER 19</div><h3>Evaluation &amp; Monitoring</h3><p>Metrics, traces, A/B tests, drift detection in production.</p></a>
+  <a class="card" href="20_prioritization/README.html"><div class="num">CHAPTER 20</div><h3>Prioritization</h3><p>Rank tasks by urgency, importance, dependencies.</p></a>
+  <a class="card" href="21_exploration/README.html"><div class="num">CHAPTER 21</div><h3>Exploration &amp; Discovery</h3><p>Curiosity-driven search for unknown unknowns.</p></a>
+</div>
+</section>
+
+<section>
+<h2>Capstone projects — 4 production-grade FastAPI services</h2>
+<p>The 21 patterns consolidated into <strong>4 deployable services</strong> instead of 21 toy scripts. Each capstone is a real 2026 use case that composes several patterns end-to-end through an HTTP API, with a Dockerfile and a shared <code>core/</code> package (LLM, Tracer, Guardrails). Open the <a href="capstones/README.html"><strong>capstones hub</strong></a> for architecture, pattern map, and curl examples.</p>
+<div class="grid">
+  <a class="card" href="capstones/README.html"><div class="num">SERVICE 1 · :8001</div><h3>support_copilot</h3><p>Customer-support chat copilot. Patterns: prompt chaining, routing, RAG, tool use, reflection, memory, guardrails, evaluation.</p></a>
+  <a class="card" href="capstones/README.html"><div class="num">SERVICE 2 · :8002</div><h3>research_workbench</h3><p>Async multi-agent research worker with SSE streaming. Patterns: planning, parallelization, multi-agent, A2A, goal setting, evaluation.</p></a>
+  <a class="card" href="capstones/README.html"><div class="num">SERVICE 3 · :8003</div><h3>mcp_devops_agent</h3><p>On-call DevOps agent with MCP tools and human-in-the-loop. Patterns: MCP, exception handling (CB+retry), HITL, resource-aware, prioritization.</p></a>
+  <a class="card" href="capstones/README.html"><div class="num">SERVICE 4 · :8004</div><h3>adaptive_recommender</h3><p>Learning content recommender. Patterns: long-term memory, learning &amp; adaptation, exploration (epsilon-greedy / UCB1), prioritization, evaluation.</p></a>
+</div>
+</section>
+
+<section>
+<h2>Frameworks at a glance (2026)</h2>
+<table>
+  <tr><th>Framework</th><th>Strength</th><th>Best for</th><th>Owner</th></tr>
+  <tr><td><strong>LangChain</strong></td><td>Largest ecosystem of integrations, chains.</td><td>Quick RAG, tool use, prototyping.</td><td>LangChain Inc.</td></tr>
+  <tr><td><strong>LangGraph</strong></td><td>Explicit graph + state machine, cycles, durable runs.</td><td>Stateful, controllable agentic workflows.</td><td>LangChain Inc.</td></tr>
+  <tr><td><strong>Google ADK</strong></td><td>First-class A2A &amp; MCP, Vertex deployment.</td><td>Multi-agent on Google Cloud.</td><td>Google</td></tr>
+  <tr><td><strong>CrewAI</strong></td><td>Role-based crews, simple mental model.</td><td>Multi-agent collaboration demos.</td><td>CrewAI Inc.</td></tr>
+  <tr><td><strong>AutoGen</strong></td><td>Conversational multi-agent, code execution.</td><td>Code-writing crews, research.</td><td>Microsoft</td></tr>
+  <tr><td><strong>Semantic Kernel</strong></td><td>Plugin-first, planner, .NET + Python.</td><td>Enterprise &amp; Microsoft stack.</td><td>Microsoft</td></tr>
+  <tr><td><strong>OpenAI Agents SDK</strong></td><td>Native function calling, Assistants API.</td><td>OpenAI-only stacks.</td><td>OpenAI</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Interview cheat-sheet — all 21 patterns (2026)</h2>
+<p>One-line elevator pitch + the question most likely to be asked. Open the chapter card for full depth.</p>
+<table>
+  <tr><th style="width:3rem;">#</th><th>Pattern</th><th>One-line answer</th><th>Likely interview question</th></tr>
+
+  <tr><td>01</td><td><strong>Prompt Chaining</strong></td>
+    <td>Pipeline of prompts where each step's output is the next step's input — solves complex tasks by decomposition.</td>
+    <td>"How is prompt chaining different from a single big prompt? When does each step need its own LLM call?"</td></tr>
+
+  <tr><td>02</td><td><strong>Routing</strong></td>
+    <td>Classify the request, then dispatch to the right handler/agent/model — cheaper and more accurate than one giant prompt.</td>
+    <td>"Design a router for a support bot with billing / technical / sales intents. How do you handle ambiguous inputs?"</td></tr>
+
+  <tr><td>03</td><td><strong>Parallelization</strong></td>
+    <td>Run independent sub-tasks concurrently (asyncio / fan-out-fan-in) to cut latency.</td>
+    <td>"You have 5 sub-queries to answer. How do you parallelize them safely with rate limits and partial failures?"</td></tr>
+
+  <tr><td>04</td><td><strong>Reflection</strong></td>
+    <td>Generator + Critic loop — the agent reviews its own draft and revises until quality criteria are met.</td>
+    <td>"How do you stop a reflection loop from going on forever? What's a good stopping criterion?"</td></tr>
+
+  <tr><td>05</td><td><strong>Tool Use (Function Calling)</strong></td>
+    <td>LLM emits a structured call (JSON schema) for an external function; runtime validates, executes, returns the result.</td>
+    <td>"How do you validate tool arguments and handle a tool that fails or returns garbage?"</td></tr>
+
+  <tr><td>06</td><td><strong>Planning</strong></td>
+    <td>Generate an explicit multi-step plan from a goal, then execute and replan on failure.</td>
+    <td>"When should the planner be a separate LLM call vs inlined into the agent? Show a re-plan trigger."</td></tr>
+
+  <tr><td>07</td><td><strong>Multi-Agent Collaboration</strong></td>
+    <td>Specialist agents (researcher / critic / synthesizer / coder) cooperating, usually under an orchestrator.</td>
+    <td>"Orchestrator-worker vs autonomous swarm — when do you pick which?"</td></tr>
+
+  <tr><td>08</td><td><strong>Memory Management</strong></td>
+    <td>Short-term context window + long-term episodic / vector memory + summarization to bridge them.</td>
+    <td>"How do you keep a 6-month chat history accessible without blowing the context window?"</td></tr>
+
+  <tr><td>09</td><td><strong>Learning &amp; Adaptation</strong></td>
+    <td>Improve from feedback — RLHF, supervised fine-tuning, few-shot updates, bandits.</td>
+    <td>"Online vs offline learning for an agent. How do you avoid catastrophic forgetting?"</td></tr>
+
+  <tr><td>10</td><td><strong>Model Context Protocol (MCP)</strong></td>
+    <td>Open standard ("USB-C for LLMs") for tools / resources / prompts so any client and any server can talk.</td>
+    <td>"Why MCP instead of bespoke function calling? What does an MCP server expose?"</td></tr>
+
+  <tr><td>11</td><td><strong>Goal Setting &amp; Monitoring</strong></td>
+    <td>Make the agent's objective explicit (SMART) and measure progress against success criteria.</td>
+    <td>"How does an agent know it's <em>done</em>? Difference between completion and success."</td></tr>
+
+  <tr><td>12</td><td><strong>Exception Handling &amp; Recovery</strong></td>
+    <td>Retries with backoff, circuit breakers, fallbacks, dead-letter queues — keep the agent useful when tools fail.</td>
+    <td>"Walk through your retry policy for a flaky third-party API. When do you open a circuit breaker?"</td></tr>
+
+  <tr><td>13</td><td><strong>Human-in-the-Loop</strong></td>
+    <td>Approval gates for high-impact / irreversible actions; escalation when confidence is low.</td>
+    <td>"Design a HITL gate for a bot that can refund money. What state machine and audit trail do you need?"</td></tr>
+
+  <tr><td>14</td><td><strong>Knowledge Retrieval (RAG)</strong></td>
+    <td>Retrieve relevant chunks from an external store, then generate a grounded, citeable answer.</td>
+    <td>"RAG vs fine-tuning — pick one and defend it. How do you evaluate retrieval quality (recall@k, MRR)?"</td></tr>
+
+  <tr><td>15</td><td><strong>Inter-Agent Communication (A2A)</strong></td>
+    <td>Open protocol for cross-framework agent collaboration — message bus, capabilities, identity.</td>
+    <td>"Why a wire protocol instead of just shared Python objects? When is A2A overkill?"</td></tr>
+
+  <tr><td>16</td><td><strong>Resource-Aware Optimization</strong></td>
+    <td>Pick the cheapest model / strategy that meets the quality, latency, and cost budget — tier picker per request.</td>
+    <td>"How do you decide between gpt-5-nano and a frontier model for a given query? Show a routing rule."</td></tr>
+
+  <tr><td>17</td><td><strong>Reasoning Techniques</strong></td>
+    <td>Explicit thinking — Chain-of-Thought, Tree-of-Thoughts, ReAct, Self-Consistency.</td>
+    <td>"When does ReAct beat plain CoT? What's a real example where Self-Consistency matters?"</td></tr>
+
+  <tr><td>18</td><td><strong>Guardrails / Safety</strong></td>
+    <td>Input filters (PII, prompt injection) + output filters (toxicity, policy) + behavioral constraints.</td>
+    <td>"How do you defend against prompt injection from a retrieved document? Layered defenses."</td></tr>
+
+  <tr><td>19</td><td><strong>Evaluation &amp; Monitoring</strong></td>
+    <td>Offline golden sets + online metrics (latency, cost, success-rate) + traces + drift detection + A/B tests.</td>
+    <td>"How do you evaluate a non-deterministic agent? Build me a golden set + scoring rubric."</td></tr>
+
+  <tr><td>20</td><td><strong>Prioritization</strong></td>
+    <td>Rank tasks / candidates by urgency, importance, expected value, dependencies — classic example: WSJF.</td>
+    <td>"Inbox of 50 incidents — what scoring function picks the next one to work on?"</td></tr>
+
+  <tr><td>21</td><td><strong>Exploration &amp; Discovery</strong></td>
+    <td>Curiosity-driven search for unknown unknowns — epsilon-greedy, UCB1, Thompson sampling, novelty bonuses.</td>
+    <td>"Exploit-vs-explore in an agent that recommends content. Pick a strategy and justify it."</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Top 8 patterns asked in 2026 interviews</h2>
+<ol>
+  <li><strong>RAG vs fine-tuning</strong> — when to choose which (Ch.14, 9).</li>
+  <li><strong>Tool use &amp; function calling</strong> — JSON schema, validation, error handling (Ch.5, 12).</li>
+  <li><strong>Reflection / Reasoning</strong> — CoT, ToT, ReAct, Self-Consistency (Ch.4, 17).</li>
+  <li><strong>Memory architectures</strong> — context window, summarization, vector memory (Ch.8).</li>
+  <li><strong>Multi-agent &amp; A2A</strong> — orchestrator-worker, shared state, message passing (Ch.7, 15).</li>
+  <li><strong>Guardrails &amp; HITL</strong> — input sanitization, output filtering, approval gates (Ch.18, 13).</li>
+  <li><strong>Evaluation &amp; monitoring</strong> — offline evals, online metrics, traces (Ch.19).</li>
+  <li><strong>MCP</strong> — what it is, why it matters (Ch.10).</li>
+</ol>
+</section>
+
+</main>
+
+<footer>
+  Distilled from <em>Agentic Design Patterns</em> by Antonio Gulli — for personal interview preparation.
+</footer>
+</body>
+</html>

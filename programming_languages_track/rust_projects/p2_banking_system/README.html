@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust P2 — Banking System</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Rust projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p2_banking_system/README.html">Python p2</a>
+                <a href="../../go_projects/p2_banking_system/README.html">Go p2</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust · P2</span></p>
+            <h1>Banking System — traits + trait objects</h1>
+            <p class="lead">Python's inheritance becomes a <code>trait Account</code> with two implementations. To keep
+                a heterogeneous collection (savings + checking in one slice), we wrap each in
+                <code>Box&lt;dyn Account&gt;</code> — the same idea as a Java interface reference, only built on a
+                vtable the compiler set up.</p>
+        </section>
+
+        <section class="card">
+            <h2>Two flavours of polymorphism in Rust</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Form</th>
+                        <th>Cost</th>
+                        <th>When</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Static (generics): <code>fn f&lt;A: Account&gt;(a: &amp;A)</code></td>
+                        <td>Zero — monomorphised.</td>
+                        <td>You know the concrete type at the call site.</td>
+                    </tr>
+                    <tr>
+                        <td>Dynamic (trait object): <code>Box&lt;dyn Account&gt;</code></td>
+                        <td>One vtable lookup per call.</td>
+                        <td>You need a heterogeneous collection.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>This project uses the dynamic form because <code>Vec&lt;Box&lt;dyn Account&gt;&gt;</code> can hold both
+                <code>Savings</code> and <code>Checking</code> in the same slice.</p>
+        </section>
+
+        <section class="card">
+            <h2>What you gain over Go and Python</h2>
+            <ul>
+                <li><strong>The compiler enforces the contract.</strong> Forget to implement one of the trait methods
+                    and the build fails.</li>
+                <li><strong>No accidental float money.</strong> <code>i64</code> for cents — typed, not by convention.
+                </li>
+                <li><strong>Errors must be handled.</strong> <code>.unwrap()</code> in the demo is the loud version; the
+                    <code>?</code> operator is the quiet version. Either way, you can't ignore them.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd rust_projects/p2_banking_system
+cargo run</code></pre>
+            <p>Files: <a href="src/main.rs">src/main.rs</a> · <a href="Cargo.toml">Cargo.toml</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

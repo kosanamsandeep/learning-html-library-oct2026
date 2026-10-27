@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Typing Cheat Sheet — every annotation with examples</title>
+    <link rel="stylesheet" href="../handle_requests/styles.css">
+    <style>
+        /* small tweaks on top of the shared stylesheet */
+        .recipe {
+            background: #0f172a;
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: var(--mono);
+            font-size: .88rem;
+        }
+
+        .ann {
+            display: inline-block;
+            padding: .1rem .5rem;
+            border-radius: 5px;
+            background: #eef2ff;
+            color: #1e3a8a;
+            border: 1px solid #c7d2fe;
+            font-family: var(--mono);
+            font-size: .82rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span class="mark">T</span>Typing Cheat Sheet</a>
+            <nav class="top-links">
+                <a href="../index.html">Side Projects</a>
+                <a href="../handle_requests/index.html">Handle Requests</a>
+                <a href="../../README.html">Workspace</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Python 3.10+ · the practical reference</p>
+            <h1>Every type annotation you'll meet — with an example you can copy</h1>
+            <p class="lead">Type hints are <em>just labels</em>. They don't change runtime behavior, but they
+                let your editor, mypy/pyright, FastAPI, Pydantic, and your teammates understand your code.
+                This page lists every common annotation, why it exists, and how to remember it.</p>
+            <div class="toc">
+                <a href="#mental">Mental model</a>
+                <a href="#primitives">Primitives</a>
+                <a href="#containers">Containers</a>
+                <a href="#optional">Optional / Union</a>
+                <a href="#callable">Callable, Iterable, Iterator</a>
+                <a href="#generics">Generics + TypeVar</a>
+                <a href="#literal">Literal, Final, ClassVar</a>
+                <a href="#typed">TypedDict, NamedTuple, dataclass, Protocol</a>
+                <a href="#advanced">Annotated, NewType, Self, override</a>
+                <a href="#async">Async types</a>
+                <a href="#memory">Memory tricks</a>
+                <a href="#practice">Practice quiz</a>
+            </div>
+        </section>
+
+        <section class="card" id="mental">
+            <h2>1. The mental model — three buckets</h2>
+            <p>Every annotation in Python is one of these three things. Once you see it that way, the long
+                <code>typing</code> import list stops being scary.
+            </p>
+
+            <div class="grid">
+                <div class="mini good">
+                    <h3>🟢 "What kind of thing?"</h3>
+                    <p>Built-in primitives: <code>int</code>, <code>str</code>, <code>bool</code>,
+                        <code>float</code>, <code>bytes</code>, <code>None</code>.
+                    </p>
+                </div>
+                <div class="mini info">
+                    <h3>🔵 "A container of what?"</h3>
+                    <p><code>list[str]</code>, <code>dict[str, int]</code>, <code>tuple[int, str]</code>,
+                        <code>set[float]</code>.
+                    </p>
+                </div>
+                <div class="mini note">
+                    <h3>🟣 "A description, not a type"</h3>
+                    <p><code>Optional</code>, <code>Union</code>, <code>Literal</code>, <code>Callable</code>,
+                        <code>Annotated</code>, <code>TypeVar</code>, <code>Protocol</code> — these qualify
+                        other types.
+                    </p>
+                </div>
+            </div>
+
+            <div class="callout">
+                <strong>Python 3.10+ rule:</strong> you almost never need to import from <code>typing</code> for
+                the basics anymore. Use the built-ins.
+                <table style="margin-top:.6rem">
+                    <thead>
+                        <tr>
+                            <th>Old (Python 3.8)</th>
+                            <th>Modern (3.10+)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>List[int]</code></td>
+                            <td><code>list[int]</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>Dict[str, int]</code></td>
+                            <td><code>dict[str, int]</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>Tuple[int, str]</code></td>
+                            <td><code>tuple[int, str]</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>Set[str]</code></td>
+                            <td><code>set[str]</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>Optional[int]</code></td>
+                            <td><code>int | None</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>Union[int, str]</code></td>
+                            <td><code>int | str</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card" id="primitives">
+            <h2>2. Primitives — no imports needed</h2>
+            <pre><code>name: str = "Aria"
+age: int = 30
+height: float = 1.72
+is_active: bool = True
+raw: bytes = b"\x00\x01"
+nothing: None = None        # rarely written; usually appears as `-> None`
+
+def greet(name: str) -> None:
+    print(f"Hello {name}")</code></pre>
+            <p class="quiet">A function with no return value is annotated <code>-&gt; None</code>.</p>
+        </section>
+
+        <section class="card" id="containers">
+            <h2>3. Containers — "a box of what?"</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Annotation</th>
+                        <th>Means</th>
+                        <th>Example value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="ann">list[int]</span></td>
+                        <td>A list whose items are ints</td>
+                        <td><code>[1, 2, 3]</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="ann">dict[str, int]</span></td>
+                        <td>Dict with str keys, int values</td>
+                        <td><code>{"a": 1}</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="ann">set[str]</span></td>
+                        <td>A set of strings</td>
+                        <td><code>{"a", "b"}</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="ann">tuple[int, str]</span></td>
+                        <td>Exactly two items: int, then str (<em>fixed length, mixed types</em>)</td>
+                        <td><code>(42, "ok")</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="ann">tuple[int, ...]</span></td>
+                        <td>Any number of ints (<em>variable length, same type</em>)</td>
+                        <td><code>(1, 2, 3, 4)</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="ann">frozenset[str]</span></td>
+                        <td>Immutable set</td>
+                        <td><code>frozenset({"a"})</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 style="margin-top:1rem">Real examples</h3>
+            <pre><code>def average(numbers: list[float]) -> float:
+    return sum(numbers) / len(numbers)
+
+def word_counts(words: list[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for w in words:
+        counts[w] = counts.get(w, 0) + 1
+    return counts
+
+def split_name(full: str) -> tuple[str, str]:
+    first, _, last = full.partition(" ")
+    return first, last
+
+def unique_tags(posts: list[dict[str, str]]) -> set[str]:
+    return {tag for p in posts for tag in p["tags"].split(",")}</code></pre>
+        </section>
+
+        <section class="card" id="optional">
+            <h2>4. <code>Optional</code> and <code>Union</code> — "maybe" and "either"</h2>
+
+            <div class="grid-2">
+                <div class="mini info">
+                    <h3>Optional = "this or None"</h3>
+                    <pre><code>from typing import Optional
+
+def find_user(uid: int) -> Optional[dict]:
+    ...
+
+# Modern equivalent (3.10+):
+def find_user(uid: int) -> dict | None:
+    ...</code></pre>
+                </div>
+                <div class="mini note">
+                    <h3>Union = "any of these"</h3>
+                    <pre><code>from typing import Union
+
+def parse(x: Union[int, str]) -> int:
+    ...
+
+# Modern equivalent:
+def parse(x: int | str) -> int:
+    ...</code></pre>
+                </div>
+            </div>
+
+            <div class="callout">
+                <strong>Mnemonic:</strong> <code>Optional[X]</code> = <code>X | None</code>. Nothing more.
+                <em>Don't</em> use <code>Optional</code> to mean "the parameter is optional" — use a default
+                value for that.
+            </div>
+
+            <pre><code># Wrong meaning:
+def page(size: Optional[int]):   # implies "int OR None"
+    ...
+
+# Right meaning of "optional parameter":
+def page(size: int = 10):        # has a default, so caller can skip
+    ...</code></pre>
+        </section>
+
+        <section class="card" id="callable">
+            <h2>5. <code>Callable</code>, <code>Iterable</code>, <code>Iterator</code>, <code>Sequence</code>,
+                <code>Mapping</code></h2>
+            <p>Use the most <em>general</em> type your function actually needs. <code>list</code> is too narrow
+                when any iterable will do.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Annotation</th>
+                        <th>Meaning</th>
+                        <th>Use when…</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Iterable[X]</code></td>
+                        <td>Anything you can <code>for</code> over once</td>
+                        <td>You only loop.</td>
+                    </tr>
+                    <tr>
+                        <td><code>Iterator[X]</code></td>
+                        <td>Iterable that also supports <code>next()</code></td>
+                        <td>You hand-roll iteration / generators.</td>
+                    </tr>
+                    <tr>
+                        <td><code>Sequence[X]</code></td>
+                        <td>Indexable + length (<code>list</code>, <code>tuple</code>, <code>str</code>)</td>
+                        <td>You need <code>obj[0]</code> and <code>len(obj)</code> but don't mutate.</td>
+                    </tr>
+                    <tr>
+                        <td><code>Mapping[K, V]</code></td>
+                        <td>Read-only dict-like</td>
+                        <td>You only look things up.</td>
+                    </tr>
+                    <tr>
+                        <td><code>MutableMapping[K, V]</code></td>
+                        <td>Dict-like and writable</td>
+                        <td>You insert/delete keys.</td>
+                    </tr>
+                    <tr>
+                        <td><code>Callable[[A, B], R]</code></td>
+                        <td>Function taking <code>A</code>, <code>B</code>, returning <code>R</code></td>
+                        <td>You accept a function/callback.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <pre><code>from typing import Iterable, Callable, Mapping, Iterator
+
+def first_match(items: Iterable[int], pred: Callable[[int], bool]) -> int | None:
+    for x in items:
+        if pred(x):
+            return x
+    return None
+
+def count_keys(data: Mapping[str, object]) -> int:
+    return len(data)
+
+def evens_up_to(n: int) -> Iterator[int]:
+    for i in range(n):
+        if i % 2 == 0:
+            yield i</code></pre>
+
+            <div class="callout warn">
+                <strong>Library-design tip:</strong> in function inputs, prefer abstract types
+                (<code>Iterable</code>, <code>Mapping</code>). In outputs, return concrete types
+                (<code>list</code>, <code>dict</code>). Callers should give you the least and you should give
+                them the most.
+            </div>
+        </section>
+
+        <section class="card" id="generics">
+            <h2>6. Generics — <code>TypeVar</code> and <code>Generic</code></h2>
+            <p>"Generic" = a function/class that works for <em>many</em> types but keeps them <em>consistent</em>.
+            </p>
+
+            <pre><code>from typing import TypeVar
+
+T = TypeVar("T")
+
+def first(items: list[T]) -> T:
+    return items[0]
+
+x: int = first([1, 2, 3])    # T inferred as int
+y: str = first(["a", "b"])    # T inferred as str</code></pre>
+
+            <p><strong>Why it matters:</strong> without <code>T</code>, you'd write
+                <code>def first(items: list) -&gt; object</code>, and the caller would lose all type info on
+                the return value.
+            </p>
+
+            <h3>Bounded TypeVar</h3>
+            <pre><code>from typing import TypeVar
+
+Number = TypeVar("Number", int, float)   # only these two allowed
+
+def double(x: Number) -> Number:
+    return x * 2
+
+double(3)      # int -> int
+double(3.5)    # float -> float
+# double("a")  # mypy error</code></pre>
+
+            <h3>Python 3.12+ shorter syntax</h3>
+            <pre><code>def first[T](items: list[T]) -> T:
+    return items[0]
+
+class Stack[T]:
+    def push(self, x: T) -> None: ...
+    def pop(self) -> T: ...</code></pre>
+        </section>
+
+        <section class="card" id="literal">
+            <h2>7. <code>Literal</code>, <code>Final</code>, <code>ClassVar</code></h2>
+
+            <div class="grid-2">
+                <div class="mini good">
+                    <h3><code>Literal</code> — "must be one of these exact values"</h3>
+                    <pre><code>from typing import Literal
+
+def set_mode(m: Literal["read", "write", "append"]) -> None:
+    ...
+
+set_mode("read")    # ok
+set_mode("execute") # mypy error</code></pre>
+                </div>
+                <div class="mini warn">
+                    <h3><code>Final</code> — "never reassign me"</h3>
+                    <pre><code>from typing import Final
+
+API_URL: Final = "https://api.com"
+# API_URL = "..."  # mypy error</code></pre>
+                </div>
+                <div class="mini info">
+                    <h3><code>ClassVar</code> — class attribute, not instance</h3>
+                    <pre><code>from typing import ClassVar
+
+class Counter:
+    instances: ClassVar[int] = 0   # shared across all Counter()s
+    value: int                     # per-instance</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" id="typed">
+            <h2>8. Shaping data — <code>TypedDict</code>, <code>NamedTuple</code>, <code>dataclass</code>,
+                <code>Protocol</code></h2>
+
+            <h3><code>TypedDict</code> — a dict with known keys</h3>
+            <pre><code>from typing import TypedDict
+
+class User(TypedDict):
+    id: int
+    name: str
+    email: str
+
+def send_welcome(u: User) -> None:
+    print(u["name"], u["email"])
+
+send_welcome({"id": 1, "name": "Aria", "email": "a@b.com"})  # ok
+# Missing/extra/wrong-typed keys -> mypy error</code></pre>
+
+            <h3><code>NamedTuple</code> — fast, immutable, indexable</h3>
+            <pre><code>from typing import NamedTuple
+
+class Point(NamedTuple):
+    x: float
+    y: float
+
+p = Point(1.0, 2.0)
+p.x, p[0]   # both work</code></pre>
+
+            <h3><code>@dataclass</code> — the modern default for "a record"</h3>
+            <pre><code>from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Money:
+    amount: float
+    currency: str = "USD"
+
+m = Money(9.99)
+# m.amount = 1  # error, frozen</code></pre>
+
+            <h3><code>Protocol</code> — structural typing ("duck typing with hints")</h3>
+            <pre><code>from typing import Protocol
+
+class HasArea(Protocol):
+    def area(self) -> float: ...
+
+def describe(shape: HasArea) -> str:
+    return f"area is {shape.area()}"
+
+class Square:                # no inheritance from HasArea!
+    def __init__(self, side: float):
+        self.side = side
+    def area(self) -> float:
+        return self.side ** 2
+
+describe(Square(3))   # ok — Square structurally matches HasArea</code></pre>
+
+            <table style="margin-top:1rem">
+                <thead>
+                    <tr>
+                        <th>You want…</th>
+                        <th>Use</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Dict-shaped data from JSON</td>
+                        <td><code>TypedDict</code></td>
+                    </tr>
+                    <tr>
+                        <td>Lightweight immutable record, tuple-friendly</td>
+                        <td><code>NamedTuple</code></td>
+                    </tr>
+                    <tr>
+                        <td>Object with methods, defaults, validation</td>
+                        <td><code>@dataclass</code> or Pydantic</td>
+                    </tr>
+                    <tr>
+                        <td>"Anything that has these methods"</td>
+                        <td><code>Protocol</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card" id="advanced">
+            <h2>9. Advanced but useful</h2>
+
+            <h3><code>Annotated</code> — attach metadata for libraries (FastAPI/Pydantic love this)</h3>
+            <pre><code>from typing import Annotated
+from fastapi import Query
+
+def search(
+    q: Annotated[str, Query(min_length=3, max_length=50)],
+) -> list[str]:
+    ...</code></pre>
+            <p>The type checker sees <code>str</code>. The library reads the metadata for validation/docs.</p>
+
+            <h3><code>NewType</code> — distinct type for ID-style values</h3>
+            <pre><code>from typing import NewType
+
+UserId = NewType("UserId", int)
+ProductId = NewType("ProductId", int)
+
+def get_user(uid: UserId) -> dict: ...
+
+uid = UserId(42)
+get_user(uid)              # ok
+# get_user(42)             # mypy error — plain int rejected
+# get_user(ProductId(1))   # mypy error — wrong kind of id</code></pre>
+
+            <h3><code>Self</code> — "instance of my own class" (Python 3.11+)</h3>
+            <pre><code>from typing import Self
+
+class Builder:
+    def with_name(self, n: str) -> Self:
+        self.name = n
+        return self
+    def with_age(self, a: int) -> Self:
+        self.age = a
+        return self</code></pre>
+
+            <h3><code>Any</code> — escape hatch, use sparingly</h3>
+            <pre><code>from typing import Any
+
+def parse_json(s: str) -> Any:
+    import json
+    return json.loads(s)   # could be anything</code></pre>
+            <div class="callout warn">
+                Every <code>Any</code> turns off type checking for that value. It's contagious — try
+                <code>object</code> or a <code>TypedDict</code> first.
+            </div>
+
+            <h3><code>cast</code> — "trust me, mypy"</h3>
+            <pre><code>from typing import cast
+
+raw: object = get_thing()
+n = cast(int, raw)   # no runtime check, just a hint to the checker</code></pre>
+
+            <h3><code>@override</code> (Python 3.12+) — catch typos in subclasses</h3>
+            <pre><code>from typing import override
+
+class Base:
+    def run(self) -> None: ...
+
+class Child(Base):
+    @override
+    def run(self) -> None: ...   # error if Base.run is renamed/removed</code></pre>
+        </section>
+
+        <section class="card" id="async">
+            <h2>10. Async types</h2>
+            <pre><code>from typing import Awaitable, AsyncIterable, AsyncIterator, Coroutine
+
+async def fetch(url: str) -> str:           # returns a Coroutine[Any, Any, str]
+    ...
+
+def schedule(task: Awaitable[int]) -> None: # accept any awaitable
+    ...
+
+async def stream() -> AsyncIterator[bytes]:
+    for chunk in [b"a", b"b"]:
+        yield chunk</code></pre>
+            <p>For most code you just write <code>async def foo() -&gt; X</code>. The fancy types matter when
+                you accept user-provided awaitables.</p>
+        </section>
+
+        <section class="card" id="memory">
+            <h2>11. Memory tricks</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>If you want to say…</th>
+                        <th>Reach for…</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>"a list of X"</td>
+                        <td><code>list[X]</code></td>
+                    </tr>
+                    <tr>
+                        <td>"a dict from K to V"</td>
+                        <td><code>dict[K, V]</code></td>
+                    </tr>
+                    <tr>
+                        <td>"X or nothing"</td>
+                        <td><code>X | None</code> (or <code>Optional[X]</code>)</td>
+                    </tr>
+                    <tr>
+                        <td>"X or Y"</td>
+                        <td><code>X | Y</code> (or <code>Union[X, Y]</code>)</td>
+                    </tr>
+                    <tr>
+                        <td>"a function taking A,B returning R"</td>
+                        <td><code>Callable[[A, B], R]</code></td>
+                    </tr>
+                    <tr>
+                        <td>"any iterable"</td>
+                        <td><code>Iterable[X]</code></td>
+                    </tr>
+                    <tr>
+                        <td>"a dict with known keys"</td>
+                        <td><code>TypedDict</code></td>
+                    </tr>
+                    <tr>
+                        <td>"just one of these literal strings"</td>
+                        <td><code>Literal["a", "b"]</code></td>
+                    </tr>
+                    <tr>
+                        <td>"a generic container"</td>
+                        <td><code>TypeVar</code> + <code>Generic</code></td>
+                    </tr>
+                    <tr>
+                        <td>"any object with method <code>.foo()</code>"</td>
+                        <td><code>Protocol</code></td>
+                    </tr>
+                    <tr>
+                        <td>"this constant never changes"</td>
+                        <td><code>Final</code></td>
+                    </tr>
+                    <tr>
+                        <td>"this is a class attribute"</td>
+                        <td><code>ClassVar</code></td>
+                    </tr>
+                    <tr>
+                        <td>"a return that's the same type as <code>self</code>"</td>
+                        <td><code>Self</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout good">
+                <strong>The 3-question rule:</strong>
+                <ol>
+                    <li>Is it a primitive? → use <code>int/str/bool/...</code></li>
+                    <li>Is it a container of one type? → use <code>list[X] / dict[K,V] / set[X]</code></li>
+                    <li>Is it "X or something else"? → use <code>X | Y</code> or <code>X | None</code></li>
+                </ol>
+                That covers 80% of real-world code.
+            </div>
+        </section>
+
+        <section class="card" id="practice">
+            <h2>12. Look-at-it practice — annotate these in your head</h2>
+            <p>For each unannotated function, write the type hint in your head, then check the answer.</p>
+
+            <ol>
+                <li>
+                    <pre><code>def square(n):
+    return n * n</code></pre>
+                    <details>
+                        <summary>Answer</summary>
+                        <pre><code>def square(n: int) -> int:
+    return n * n</code></pre>
+                    </details>
+                </li>
+
+                <li>
+                    <pre><code>def make_user(name, age=None):
+    return {"name": name, "age": age}</code></pre>
+                    <details>
+                        <summary>Answer</summary>
+                        <pre><code>def make_user(name: str, age: int | None = None) -> dict[str, str | int | None]:
+    return {"name": name, "age": age}</code></pre>
+                    </details>
+                </li>
+
+                <li>
+                    <pre><code>def get_or_default(d, key, default):
+    return d[key] if key in d else default</code></pre>
+                    <details>
+                        <summary>Answer</summary>
+                        <pre><code>from typing import TypeVar, Mapping
+K = TypeVar("K")
+V = TypeVar("V")
+
+def get_or_default(d: Mapping[K, V], key: K, default: V) -> V:
+    return d[key] if key in d else default</code></pre>
+                    </details>
+                </li>
+
+                <li>
+                    <pre><code>def first_even(items):
+    for x in items:
+        if x % 2 == 0:
+            return x
+    return None</code></pre>
+                    <details>
+                        <summary>Answer</summary>
+                        <pre><code>from typing import Iterable
+
+def first_even(items: Iterable[int]) -> int | None:
+    for x in items:
+        if x % 2 == 0:
+            return x
+    return None</code></pre>
+                    </details>
+                </li>
+
+                <li>
+                    <pre><code>def apply(fn, value):
+    return fn(value)</code></pre>
+                    <details>
+                        <summary>Answer</summary>
+                        <pre><code>from typing import Callable, TypeVar
+T = TypeVar("T")
+R = TypeVar("R")
+
+def apply(fn: Callable[[T], R], value: T) -> R:
+    return fn(value)</code></pre>
+                    </details>
+                </li>
+
+                <li>
+                    <pre><code>def send_email(to, subject, body, cc=None, bcc=None):
+    ...</code></pre>
+                    <details>
+                        <summary>Answer</summary>
+                        <pre><code>def send_email(
+    to: str,
+    subject: str,
+    body: str,
+    cc: list[str] | None = None,
+    bcc: list[str] | None = None,
+) -> None:
+    ...</code></pre>
+                    </details>
+                </li>
+
+                <li>
+                    <pre><code>def log_level(name):
+    # name must be one of these
+    return {"info": 20, "warn": 30, "error": 40}[name]</code></pre>
+                    <details>
+                        <summary>Answer</summary>
+                        <pre><code>from typing import Literal
+
+def log_level(name: Literal["info", "warn", "error"]) -> int:
+    return {"info": 20, "warn": 30, "error": 40}[name]</code></pre>
+                    </details>
+                </li>
+
+                <li>
+                    <pre><code>class Box:
+    def __init__(self, value):
+        self.value = value
+    def replace(self, new):
+        self.value = new
+        return self</code></pre>
+                    <details>
+                        <summary>Answer</summary>
+                        <pre><code>from typing import Generic, TypeVar, Self
+T = TypeVar("T")
+
+class Box(Generic[T]):
+    def __init__(self, value: T) -> None:
+        self.value = value
+    def replace(self, new: T) -> Self:
+        self.value = new
+        return self</code></pre>
+                    </details>
+                </li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>13. The one import line you'll actually use</h2>
+            <pre><code>from typing import (
+    Optional, Union, Any,
+    Iterable, Iterator, Callable, Sequence, Mapping,
+    TypeVar, Generic, Protocol,
+    Literal, Final, ClassVar,
+    TypedDict, NamedTuple, NewType, Annotated, Self, cast,
+)</code></pre>
+            <p>You don't need all of them at once — but having this list in front of you while annotating a
+                tricky function is the fastest way to learn.</p>
+        </section>
+
+        <section class="card">
+            <h2>14. Running the type checker</h2>
+            <pre><code># pick one and stick with it per project
+pip install mypy        # the original
+pip install pyright     # what Pylance uses, faster
+
+mypy your_module.py
+pyright your_module.py</code></pre>
+            <p>Type hints with no checker is just documentation. Hook the checker into pre-commit or CI to make
+                them real.</p>
+        </section>
+    </main>
+
+    <footer><a href="../index.html">← Back to Side Projects</a></footer>
+</body>
+
+</html>

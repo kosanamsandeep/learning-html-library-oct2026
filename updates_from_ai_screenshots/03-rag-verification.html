@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 — Advanced RAG + Verification Loops</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0b0e14; --surface:#11151d; --surface2:#161b26; --border:#232a38; --text:#e6e8ee; --dim:#8a93a6; --mute:#5c6575; --accent:#4fd1c5; --accent2:#7aa2f7; --amber:#e9b949; --rose:#e06c75; --green:#98c379; --violet:#a78bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .tag{ display:inline-block; font-size:0.65rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:0.25em 0.7em; border-radius:100px; margin-right:0.4em; vertical-align:middle; }
+  .tag-v{ background:rgba(152,219,121,0.12); color:var(--green); border:1px solid rgba(152,219,121,0.25); }
+  .tag-h{ background:rgba(167,139,250,0.12); color:var(--violet); border:1px solid rgba(167,139,250,0.25); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(79,209,197,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(233,185,73,0.06); }
+  .callout.danger{ border-left-color:var(--rose); background:rgba(224,108,117,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; } @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+  pre{ background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:1.1rem; overflow-x:auto; font-family:'JetBrains Mono',monospace; font-size:0.8rem; line-height:1.6; color:var(--dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← AI Industry Radar</a> · Module 03</div>
+  <h1>Advanced RAG + <em style="color:var(--green);font-style:normal;">Verification Loops</em></h1>
+  <p><span class="tag tag-h">High value</span> The pattern that turns a plain RAG pipeline into a self-checking system — plus the tools (graph databases, AST code indexing, context engineering) that make retrieval both smarter and cheaper.</p>
+
+  <h2>THINK / KNOW / ANSWER / JUDGE / LEARN</h2>
+  <p>A clean, practitioner-proven RAG architecture with an evaluation loop. If you're building a RAG pipeline with retry logic, this is the formal reference to design against — each stage is independently testable, and JUDGE gives the system a bounded self-correction mechanism.</p>
+
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph TB
+      Q["User Query"] --> T["THINK<br/>Supervisor — understand intent"]
+      T --> K["KNOW<br/>Retriever — find evidence"]
+      K --> A["ANSWER<br/>LLM — generate using evidence"]
+      A --> J["JUDGE<br/>Evaluator — pass/fail"]
+      J -->|"fail"| K
+      J -->|"pass"| OUT["Final answer"]
+      A --> L["LEARN<br/>Learning Engine —<br/>remember what worked"]
+      L -.-> T
+  </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Stage</th><th>Component</th><th>Job</th></tr></thead>
+    <tbody>
+      <tr><td><strong>THINK</strong></td><td>Supervisor / Router</td><td>Classify intent, decide if retrieval is even needed</td></tr>
+      <tr><td><strong>KNOW</strong></td><td>Retriever</td><td>Find candidate evidence (hybrid search, rerank)</td></tr>
+      <tr><td><strong>ANSWER</strong></td><td>Generator LLM</td><td>Produce an answer grounded in the retrieved evidence</td></tr>
+      <tr><td><strong>JUDGE</strong></td><td>Evaluator</td><td>Pass/fail against a rubric (faithfulness, citation validity). Retry or return.</td></tr>
+      <tr><td><strong>LEARN</strong></td><td>Learning engine</td><td>Record what worked → inform future routing/retrieval</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout danger"><strong>Key discipline:</strong> JUDGE must be <em>bounded</em> — a retry budget, not an infinite corrective loop. And LEARN isn't optional: without it, JUDGE failures repeat forever. This is the evaluator-optimiser pattern applied to RAG.</div>
+
+  <h2>Graph Databases — the "Understanding" Layer</h2>
+  <p><span class="tag tag-h">High value</span> The one-liner that frames GraphRAG: <strong>"LLMs generate. Vector DBs find. Graph DBs understand how things are connected."</strong></p>
+  <div class="card">
+    <h3>Taxonomy vs Ontology (the key distinction)</h3>
+    <table>
+      <thead><tr><th></th><th>Taxonomy</th><th>Ontology</th></tr></thead>
+      <tbody>
+        <tr><td><strong>What</strong></td><td>A hierarchy of categories</td><td>Entities + their relationships + rules</td></tr>
+        <tr><td><strong>Example</strong></td><td>Product → Electronics → Smartphone</td><td><em>Smartphone</em> <code>compatible_with</code> <em>Charger</em>; <em>Employee</em> <code>works_at</code> <em>Dept</em></td></tr>
+        <tr><td><strong>Answers</strong></td><td>"Is X a kind of Y?"</td><td>"How is X connected to Y?" — multi-hop</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:0.8rem;">In a 5-stage agentic architecture, the knowledge layer is <strong>LLM + VectorDB + GraphDB together</strong> — vector similarity for "find," graph traversal (Cypher) for "understand how things connect." Popular engines: Neo4j, Amazon Neptune, TigerGraph, JanusGraph.</p>
+    <div class="callout"><strong>Relevance:</strong> You already use Neo4j + APOC. This is the conceptual map for that exact work — and why a graph query can answer "which policies mention a penalty tied to this clause" that pure vector search can't.</div>
+  </div>
+
+  <h2>codebase-memory-mcp — AST Knowledge Graphs <span class="tag tag-v">Verified</span></h2>
+  <p><strong>Verified via arXiv:2603.27277.</strong> The tool indexes an entire codebase (28M lines of Linux kernel in 3 minutes) into an AST knowledge graph so the agent doesn't re-read files.</p>
+  <div class="card">
+    <h3>Facts (corrected from the tweet's overclaim)</h3>
+    <ul>
+      <li>Uses <strong>tree-sitter</strong> for AST parsing — supports 158 languages, runs 100% locally as a single static C binary (no Docker / Ollama / API keys).</li>
+      <li>Stores the graph in SQLite; exposes 11–14 MCP tools.</li>
+      <li>Evaluated across 31 real-world repos: <strong>83% answer quality</strong> vs 92% for file-exploration, at roughly <strong>10× fewer tokens</strong>.</li>
+      <li>The tweet's "99% token reduction" overstates the paper's real <strong>"10× fewer tokens"</strong> figure — but the core value is real and peer-reviewed.</li>
+      <li>Works with Claude Code, Cursor, Aider, Gemini CLI.</li>
+    </ul>
+    <div class="callout warn"><strong>Why this is your single most actionable find:</strong> you were already investigating codebase-memory-mcp as RAG for code structure to fight context bloat with Aider + local LLMs. It's real, published, and directly solves that exact problem. Install and test it against a large repo.</div>
+  </div>
+
+  <h2>Context Engineering &amp; Token Savings</h2>
+  <p>A family of practical techniques that reduce the tokens the model has to re-read every call. If your chatbot's context is bloating, these are the industry answers:</p>
+  <table>
+    <thead><tr><th>Technique</th><th>What it does</th><th>Token impact</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Compact context files</strong></td><td>Generate 5 dense markdown files (routes.md, pages.md, lib.md, schema.md, components.md) so the agent skips the 10–20-tool-call exploration phase</td><td>Claims 30–50K token savings per session</td></tr>
+      <tr><td><strong>Graphify</strong></td><td>Local codebase knowledge graph so the agent doesn't re-read unchanged files</td><td>~60K★ project; big context reduction</td></tr>
+      <tr><td><strong>RTK (run-time compression)</strong></td><td>Compresses terminal output 60–90% before it enters context</td><td>~60K★ project</td></tr>
+      <tr><td><strong>"Caveman Claude" style</strong></td><td>Minimal-style replies to the agent's own reasoning</td><td>~75% token savings on reasoning</td></tr>
+      <tr><td><strong>Karpathy's skills repo</strong></td><td>Stops wrong assumptions / file edits by giving the agent explicit skills</td><td>Prevents wasted tool calls</td></tr>
+      <tr><td><strong>Obsidian skills</strong></td><td>Same idea applied to your notes</td><td>Context reduction for note-RAG</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><strong>The reliable pattern:</strong> every tool here solves the same root problem — <em>the agent re-reads what it already knows.</em> Any of them is a 20-minute win for a token-heavy project.</div>
+
+  <h2>Chunking &amp; Retrieval — the discipline that compounds</h2>
+  <div class="card">
+    <p>From the same thread of practitioner knowledge (and consistent with your chatbot design doc):</p>
+    <ul>
+      <li><strong>Chunking is experimental, not fixed.</strong> Recursive (multiple sizes: 256/32 … 1024/128), semantic (embedding-based boundaries), structure-aware (PDF/Markdown/code), parent-child. Evaluate each against Recall@K and downstream faithfulness.</li>
+      <li><strong>Retrieval is a pipeline, not a single call.</strong> Dense + sparse → RRF fusion → cross-encoder rerank → context builder (dedup → merge → token budget → order → provenance).</li>
+      <li><strong>Query transformation</strong> — standalone query, rewrite, multi-query, decomposition, HyDE, step-back. Route per query type; never enable all globally.</li>
+    </ul>
+    <div class="callout"><strong>Why this module's pattern matters together:</strong> RAG quality = retrieval quality × grounding enforcement × context budget. THINK/KNOW/ANSWER/JUDGE/LEARN gives you the <em>enforcement</em>; graph DBs and AST graphs give you <em>smarter</em> retrieval; context engineering gives you <em>cheaper</em> retrieval. All three are needed for a production system.</div>
+  </div>
+
+  <a class="prev" href="02-production-runtime.html">← Back: Production Runtime</a>
+  <a class="next" href="04-inference-serving.html">Next: Inference &amp; Serving at Scale →</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#11151d',primaryColor:'#161b26',primaryBorderColor:'#4fd1c5',primaryTextColor:'#e6e8ee',lineColor:'#4fd1c5',secondaryColor:'#0b0e14'}});</script>
+</body>
+</html>

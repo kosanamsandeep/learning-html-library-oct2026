@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Project 1: Student Management System - Architecture Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1100px;
+            margin: auto;
+            padding: 30px;
+            line-height: 1.7;
+            color: #333;
+            background: #fafafa
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px
+        }
+
+        h2 {
+            color: #2980b9;
+            margin-top: 40px
+        }
+
+        h3 {
+            color: #27ae60
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05)
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .concept {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Fira Code', monospace
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto
+        }
+
+        .folder-tree {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace
+        }
+
+        .mermaid {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left
+        }
+
+        th {
+            background: #3498db;
+            color: #fff
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 12px;
+            border-bottom: 2px solid #3498db;
+            z-index: 100
+        }
+
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #2980b9;
+            font-weight: bold
+        }
+
+        nav a:hover {
+            color: #e74c3c
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🎓 Project 1: Student Management System</h1>
+    <p><strong>Level:</strong> Beginner | <strong>Focus:</strong> Basic OOP Building Blocks</p>
+
+    <nav>
+        <a href="#overview">Overview</a>
+        <a href="#concepts">Concepts</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#class-diagram">Class Diagram</a>
+        <a href="#sequence">Sequence</a>
+        <a href="#folder">Folder Structure</a>
+        <a href="#solid">SOLID</a>
+        <a href="#debug">Debug Exercises</a>
+    </nav>
+
+    <!-- ================================================================== -->
+    <div id="overview" class="card">
+        <h2>📋 Problem Statement</h2>
+        <p>Build a system that manages student enrollment, tracks grades, and generates academic reports. The system
+            should support adding students, recording grades, calculating averages, and identifying students who need
+            help.</p>
+
+        <h3>Business Use Cases</h3>
+        <ol>
+            <li>Enroll a new student with unique ID</li>
+            <li>Record grades for a student (validated 0-100)</li>
+            <li>Calculate individual student averages</li>
+            <li>Determine pass/fail status</li>
+            <li>Generate class-wide reports</li>
+            <li>Find top performers and struggling students</li>
+        </ol>
+    </div>
+
+    <!-- ================================================================== -->
+    <div id="concepts">
+        <h2>🧠 Core Concepts You're Learning</h2>
+
+        <div class="concept">
+            <h3>1. CLASS = Blueprint</h3>
+            <p>A class is like an architect's drawing. It defines WHAT a thing is and WHAT it can do, but it's not a
+                real thing yet.</p>
+            <p><code>class Student:</code> → defines the template for all students</p>
+        </div>
+
+        <div class="concept">
+            <h3>2. OBJECT = Real Instance</h3>
+            <p>An object is the actual building made from the blueprint. You can have many buildings from one blueprint.
+            </p>
+            <p><code>alice = Student("S001", "Alice", 20)</code> → creates a REAL student from the template</p>
+        </div>
+
+        <div class="concept">
+            <h3>3. CONSTRUCTOR (__init__) = Birth Certificate</h3>
+            <p>Runs automatically when creating an object. Sets up the initial state.</p>
+            <p>Every student MUST have an ID, name, and age from the moment they exist.</p>
+        </div>
+
+        <div class="concept">
+            <h3>4. ENCAPSULATION = Protective Shell</h3>
+            <p>Hide internal details, expose only what's needed. Like a vending machine - you press buttons (methods),
+                you don't reach inside (direct attribute access).</p>
+            <p><code>_grades</code> is private → use <code>add_grade()</code> method to add grades safely</p>
+        </div>
+
+        <div class="concept">
+            <h3>5. METHODS = Actions/Behaviors</h3>
+            <p>Things an object can DO. A student can calculate average, check pass status, etc.</p>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <div id="architecture">
+        <h2>🏗️ Architecture Overview</h2>
+
+        <div class="mermaid">
+            graph TD
+            A[main.py<br />Entry Point] --> B[StudentService<br />Business Logic]
+            B --> C[Student Model<br />Data + Behavior]
+
+            style A fill:#e74c3c,color:#fff
+            style B fill:#f39c12,color:#fff
+            style C fill:#27ae60,color:#fff
+
+            D[User/Console] --> A
+
+            subgraph "What Each Layer Does"
+            E["main.py → Orchestrates the demo/UI"]
+            F["StudentService → Business rules, validation, operations on MANY students"]
+            G["Student → Represents ONE student, knows its own data and behaviors"]
+            end
+        </div>
+
+        <div class="highlight">
+            <h3>🔑 Key Insight: Why Layers?</h3>
+            <p>Imagine your system grows 10x:</p>
+            <ul>
+                <li><strong>Without layers:</strong> One massive file with 5000 lines. Change one thing → break
+                    everything.</li>
+                <li><strong>With layers:</strong> Change the Student model? Only test Student tests. Change business
+                    rules? Only touch the service. Swap UI from console to web? Only change main.py.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <div id="class-diagram">
+        <h2>📐 Class Diagram</h2>
+
+        <div class="mermaid">
+            classDiagram
+            class Student {
+            +str student_id
+            +str name
+            +int age
+            -list~float~ _grades
+            +add_grade(grade: float) bool
+            +get_average() float
+            +is_passing(passing_grade: float) bool
+            +get_grade_count() int
+            +get_highest_grade() float
+            +get_lowest_grade() float
+            +__str__() str
+            }
+
+            class StudentService {
+            -dict _students
+            +add_student(id, name, age) Student
+            +get_student(id) Student
+            +get_all_students() list
+            +remove_student(id) bool
+            +add_grade_to_student(id, grade) bool
+            +get_top_students(count) list
+            +get_failing_students(passing_grade) list
+            +get_class_average() float
+            +get_student_count() int
+            }
+
+            StudentService "1" --> "*" Student : manages
+        </div>
+
+        <div class="card">
+            <h3>Reading the Diagram</h3>
+            <table>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Meaning</th>
+                    <th>Example</th>
+                </tr>
+                <tr>
+                    <td><code>+</code></td>
+                    <td>Public (anyone can access)</td>
+                    <td><code>+name</code></td>
+                </tr>
+                <tr>
+                    <td><code>-</code></td>
+                    <td>Private (internal only)</td>
+                    <td><code>-_grades</code></td>
+                </tr>
+                <tr>
+                    <td><code>1 --> *</code></td>
+                    <td>One-to-many relationship</td>
+                    <td>One service manages many students</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <div id="sequence">
+        <h2>🔄 Sequence Diagram: Adding a Grade</h2>
+
+        <div class="mermaid">
+            sequenceDiagram
+            participant User
+            participant Main as main.py
+            participant Service as StudentService
+            participant Student as Student
+
+            User->>Main: Run program
+            Main->>Service: add_student("S001", "Alice", 20)
+            Service->>Service: Validate (unique ID, valid age, non-empty name)
+            Service->>Student: Create Student object
+            Student-->>Service: Return new Student
+            Service-->>Main: Return Student reference
+
+            Main->>Service: add_grade_to_student("S001", 85)
+            Service->>Service: Find student by ID
+            Service->>Student: add_grade(85)
+            Student->>Student: Validate (0 ≤ 85 ≤ 100) ✓
+            Student->>Student: Append to _grades list
+            Student-->>Service: Return True
+            Service-->>Main: Return True
+
+            Main->>Service: get_class_average()
+            Service->>Student: get_average() for each student
+            Student-->>Service: Return individual averages
+            Service->>Service: Calculate overall average
+            Service-->>Main: Return class average
+        </div>
+
+        <div class="highlight">
+            <h3>🔑 Notice the Flow Pattern</h3>
+            <p>Data flows DOWN through layers (Main → Service → Model) and results flow UP. Each layer only talks to the
+                layer directly below it. Main NEVER talks to Student directly for operations that need business rules.
+            </p>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <div id="folder">
+        <h2>📁 Folder Structure Explained</h2>
+
+        <div class="folder-tree">
+            p1_student_management/
+            ├── main.py ← Entry point (the "front door")
+            ├── models/ ← WHAT things ARE (data + behavior)
+            │ ├── __init__.py ← Makes it a package, exports Student
+            │ └── student.py ← Student class definition
+            ├── services/ ← WHAT we can DO (business logic)
+            │ ├── __init__.py ← Makes it a package, exports StudentService
+            │ └── student_service.py ← Operations on collections of students
+            └── tests/ ← PROOF it works (automated verification)
+            └── test_student.py ← Unit tests for model and service
+        </div>
+
+        <div class="card">
+            <h3>Why This Structure?</h3>
+            <table>
+                <tr>
+                    <th>Folder</th>
+                    <th>Responsibility</th>
+                    <th>Analogy</th>
+                </tr>
+                <tr>
+                    <td><code>models/</code></td>
+                    <td>Define domain objects</td>
+                    <td>The "nouns" of your system</td>
+                </tr>
+                <tr>
+                    <td><code>services/</code></td>
+                    <td>Business operations</td>
+                    <td>The "verbs" of your system</td>
+                </tr>
+                <tr>
+                    <td><code>tests/</code></td>
+                    <td>Verify correctness</td>
+                    <td>The "quality inspector"</td>
+                </tr>
+                <tr>
+                    <td><code>main.py</code></td>
+                    <td>Wire everything together</td>
+                    <td>The "conductor" of the orchestra</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <div id="solid">
+        <h2>⚖️ SOLID Principles Analysis</h2>
+
+        <div class="card">
+            <h3>S - Single Responsibility ✅</h3>
+            <p><strong>Student class:</strong> Only knows about ONE student's data and calculations.</p>
+            <p><strong>StudentService:</strong> Only handles business operations on student collections.</p>
+            <p><strong>main.py:</strong> Only handles user interaction and output.</p>
+            <p>Each has ONE reason to change.</p>
+        </div>
+
+        <div class="card">
+            <h3>O - Open/Closed (Partially Applied)</h3>
+            <p>We could add new report types without modifying existing code. But for this beginner project, we haven't
+                used interfaces yet (that comes in Project 8!).</p>
+        </div>
+
+        <div class="card">
+            <h3>E - Encapsulation (OOP Fundamental)</h3>
+            <p><code>_grades</code> is private → forces use of <code>add_grade()</code> → guarantees validation always
+                runs.</p>
+            <p>If grades were public, anyone could do <code>student._grades.append(999)</code> and corrupt data!</p>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <div id="debug">
+        <h2>🐛 Debugging Exercises</h2>
+
+        <div class="warning">
+            <h3>Exercise 1: The Phantom Grade</h3>
+            <p>A student has an average of 150. That's impossible! Where's the bug?</p>
+            <pre>student = Student("S001", "Alice", 20)
+student._grades.append(200)  # BYPASSED validation!
+print(student.get_average())  # 200.0 ← BUG!</pre>
+            <p><strong>Lesson:</strong> This is why encapsulation matters. If someone accesses <code>_grades</code>
+                directly, they bypass our validation. In languages like Java, we'd use <code>private</code> keyword to
+                truly prevent this.</p>
+        </div>
+
+        <div class="warning">
+            <h3>Exercise 2: Division by Zero</h3>
+            <p>What happens if you call <code>get_average()</code> on a student with no grades?</p>
+            <p><strong>Our Solution:</strong> We check <code>if not self._grades: return 0.0</code></p>
+            <p><strong>Lesson:</strong> Always consider edge cases. What if the list is empty? What if the input is
+                None?</p>
+        </div>
+
+        <div class="warning">
+            <h3>Exercise 3: The Duplicate Student</h3>
+            <p>Try adding two students with the same ID. What should happen?</p>
+            <p><strong>Answer:</strong> Our service raises <code>ValueError</code>. Business rule: IDs must be unique.
+            </p>
+        </div>
+
+        <h2>🔧 Refactoring Exercises</h2>
+
+        <div class="card">
+            <h3>Exercise: Add Grade Categories</h3>
+            <p>Current: Grades are just numbers. <br>Refactor: Add a method <code>get_letter_grade()</code> that returns
+                A/B/C/D/F based on average.</p>
+            <p>Where should this go? In the <code>Student</code> model (it's about ONE student's data).</p>
+        </div>
+
+        <div class="card">
+            <h3>Exercise: Add Persistence</h3>
+            <p>Currently all data is lost when the program exits. How would you save to a file?</p>
+            <p>Don't put file operations in Student or StudentService! Create a new <code>repositories/</code> folder
+                (you'll learn this properly in Project 6).</p>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <div class="card" style="margin-top:40px;background:#eaf2f8">
+        <h2>🎯 Key Takeaways</h2>
+        <ol>
+            <li><strong>Class = Blueprint, Object = Reality</strong> - You define once, create many</li>
+            <li><strong>Encapsulation = Protection</strong> - Hide internals, expose safe methods</li>
+            <li><strong>Separation of Concerns</strong> - Each file/class has ONE job</li>
+            <li><strong>Validate at boundaries</strong> - Don't trust incoming data</li>
+            <li><strong>Think in layers</strong> - UI → Service → Model (data flows down, results flow up)</li>
+        </ol>
+        <p><strong>Next Up:</strong> Project 2 explores INHERITANCE - what happens when objects share common traits?
+            (SavingsAccount IS-A Account)</p>
+    </div>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

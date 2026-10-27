@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P21 - Distributed Transactions & the Saga Pattern Explained Simply</title>
+    <style>
+        :root {
+            --bg: #f5f3ff;
+            --paper: #ffffff;
+            --ink: #1f2937;
+            --muted: #5f6878;
+            --line: #ddd6fe;
+            --accent: #6d28d9;
+            --soft: #ede9fe;
+            --blue-soft: #eff6ff;
+            --amber-soft: #fffbeb;
+            --red-soft: #fff1f2;
+            --green-soft: #ecfdf5;
+            --shadow: 0 18px 40px rgba(31, 41, 55, .08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+            --mono: "Cascadia Mono", "Consolas", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.65;
+            background: linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+        }
+
+        .shell {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 2.5rem 1.4rem;
+        }
+
+        header {
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, .92);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .brand {
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 750;
+        }
+
+        .brand span {
+            display: inline-grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            margin-right: .5rem;
+            border-radius: 6px;
+            color: white;
+            background: var(--accent);
+        }
+
+        .top-links {
+            display: flex;
+            gap: .8rem;
+            flex-wrap: wrap;
+        }
+
+        .top-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .92rem;
+        }
+
+        .hero {
+            padding: 3rem 0 1.5rem;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 860px;
+            margin: .25rem 0 .75rem;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            line-height: 1.08;
+        }
+
+        h2 {
+            margin: 0 0 .8rem;
+            font-size: 1.45rem;
+        }
+
+        h3 {
+            margin: 0 0 .4rem;
+        }
+
+        p {
+            margin: 0 0 .85rem;
+        }
+
+        .lead {
+            max-width: 810px;
+            color: var(--muted);
+            font-size: 1.08rem;
+        }
+
+        .card {
+            margin: 1rem 0;
+            padding: 1.25rem 1.4rem;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .mini {
+            padding: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fffdfb;
+        }
+
+        .good {
+            background: var(--green-soft);
+            border-color: #a7f3d0;
+        }
+
+        .warn {
+            background: var(--amber-soft);
+            border-color: #fde68a;
+        }
+
+        .bad {
+            background: var(--red-soft);
+            border-color: #fecdd3;
+        }
+
+        .flow {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+            margin: 1rem 0;
+        }
+
+        .step {
+            flex: 1 1 150px;
+            padding: .9rem;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: var(--soft);
+            color: #4c1d95;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .arrow {
+            align-self: center;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .callout {
+            padding: 1rem 1.15rem;
+            border-left: 4px solid var(--accent);
+            background: var(--soft);
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: .6rem;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: .75rem;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background: var(--soft);
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .9em;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            padding: .06rem .35rem;
+            border-radius: 4px;
+        }
+
+        pre {
+            overflow-x: auto;
+            padding: 1rem;
+            color: #e5e7eb;
+            background: #111827;
+            border-radius: 8px;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+            border: 0;
+        }
+
+        ol,
+        ul {
+            padding-left: 1.2rem;
+        }
+
+        .quiet {
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../learning_tracker.html"><span>P21</span>Distributed Transactions / Saga</a>
+            <nav class="top-links">
+                <a href="../learning_tracker.html">Learning tracker</a>
+                <a href="main.py">main.py</a>
+                <a href="saga/choreography.py">choreography.py</a>
+                <a href="saga/orchestrator.py">orchestrator.py</a>
+                <a href="saga/outbox.py">outbox.py</a>
+                <a href="saga/idempotency.py">idempotency.py</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 21 simplified</p>
+            <h1>A saga keeps many services consistent without one giant transaction</h1>
+            <p class="lead">One order touches the order service, the payment service, the inventory service, and the
+                shipping service. If any one of them fails, you cannot roll back the others with a single database
+                transaction. The Saga pattern coordinates the steps and compensates what already ran.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You book a flight: <em>hold a seat</em>, <em>charge the card</em>, <em>issue the ticket</em>. These are
+                separate microservices, each with its own database. What happens if the seat is held and the card is
+                charged, but the ticket printer is down?</p>
+            <div class="grid">
+                <div class="mini bad">
+                    <h3>Without a saga</h3>
+                    <p>The card is charged, the seat is held forever, and no ticket exists. The customer is angry and
+                        the data is inconsistent.</p>
+                </div>
+                <div class="mini good">
+                    <h3>With a saga</h3>
+                    <p>The saga notices the failure and runs compensating actions: <em>release the seat</em> and
+                        <em>refund the card</em>. The system is back to a consistent state.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The mental model</h2>
+            <div class="flow">
+                <div class="step">step 1</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">step 2</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">step 3</div>
+                <div class="arrow">&#9888;</div>
+                <div class="step">fail</div>
+                <div class="arrow">&larr;</div>
+                <div class="step">undo 2</div>
+                <div class="arrow">&larr;</div>
+                <div class="step">undo 1</div>
+            </div>
+            <div class="callout"><strong>Key idea:</strong> you cannot roll back remote services together, but you can
+                run <em>compensating actions</em> in reverse order until the system is consistent again.</div>
+        </section>
+
+        <section class="card">
+            <h2>Why not just use a distributed transaction?</h2>
+            <p>A two-phase commit (2PC) tries to lock all participants until everyone agrees. That works for two
+                databases, but breaks down across services:</p>
+            <ul>
+                <li>Locks are held across the network, so latency and lock contention explode.</li>
+                <li>A participant can crash while waiting to commit, blocking everyone.</li>
+                <li>Third-party services (Stripe, Twilio) never join your 2PC.</li>
+            </ul>
+            <p>So modern systems say: <strong>don't try to be atomic</strong> — accept the temporary inconsistency and
+                <em>guarantee you can fix it</em>. That is the Saga pattern.</p>
+        </section>
+
+        <section class="card">
+            <h2>Two ways to drive a saga</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Style</th>
+                        <th>Who decides the next step?</th>
+                        <th>Trade-off</th>
+                        <th>This project</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Choreography</strong></td>
+                        <td>No one. Each service reacts to the previous service's event.</td>
+                        <td>Fewer moving parts, but the flow is spread across many handlers and hard to see.</td>
+                        <td><code>saga/choreography.py</code> + Demo 1</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Orchestration</strong></td>
+                        <td>A central orchestrator calls each service in order and handles failures.</td>
+                        <td>One place to read the whole flow, but the orchestrator can become a bottleneck.</td>
+                        <td><code>saga/orchestrator.py</code> + Demo 2</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>What each file does</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Simple meaning</th>
+                        <th>Focus on</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Runs the five demos: choreography, orchestration, outbox, idempotency, state machine.</td>
+                        <td>All five demo functions</td>
+                    </tr>
+                    <tr>
+                        <td><code>saga/choreography.py</code></td>
+                        <td>An event bus plus a <code>Service</code> wrapper for reacting to events and compensating.</td>
+                        <td><code>EventBus</code>, <code>Service.subscribe_forward()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>saga/orchestrator.py</code></td>
+                        <td>A central <code>OrchestratedSaga</code> that runs steps and undoes them in reverse on failure.</td>
+                        <td><code>OrchestratedSaga.run()</code>, <code>_compensate()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>saga/outbox.py</code></td>
+                        <td>Stores business state change and its event in one table; a dispatcher publishes rows safely.</td>
+                        <td><code>OutboxStore.atomic_write()</code>, <code>OutboxDispatcher.poll()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>saga/idempotency.py</code></td>
+                        <td>Replays the stored result for a repeated key instead of re-running the operation.</td>
+                        <td><code>IdempotencyStore.execute()</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Choreography in plain English</h2>
+            <p>Nobody calls the next service. The order service publishes <code>ORDER_PLACED</code>. The payment service
+                listens, charges, and publishes <code>PAYMENT_CHARGED</code>. The inventory service listens, reserves,
+                and so on. The compensation chain works the same way:</p>
+            <pre><code>inventory fails -> publishes INVENTORY_RESERVED_FAILED
+payment listens -> refunds, publishes PAYMENT_REFUNDED
+order listens    -> cancels, publishes ORDER_CANCELLED</code></pre>
+            <p>Every step both <em>does work</em> and <em>publishes its result</em>. Other services just react.</p>
+        </section>
+
+        <section class="card">
+            <h2>Orchestration in plain English</h2>
+            <p>One object — the saga — holds the list of steps. It calls them in order. If a step fails, it walks the
+                completed steps backward and runs each one's compensating action:</p>
+            <pre><code>saga.add_step("reserve_inventory", do_reserve, undo_reserve)
+saga.add_step("charge_card",       do_charge,   undo_charge)
+saga.add_step("confirm_shipment",  do_ship,     undo_ship)</code></pre>
+            <p>If <code>confirm_shipment</code> fails, compensation runs <code>undo_charge</code> first, then
+                <code>undo_reserve</code> — the exact reverse of execution.</p>
+        </section>
+
+        <section class="card">
+            <h2>The outbox in plain English</h2>
+            <p>When an order is created, two things must happen: the order row is written <em>and</em> an event is
+                emitted. If you write the row first and the process crashes before emitting, the event is lost forever.</p>
+            <div class="flow">
+                <div class="step">business row</div>
+                <div class="arrow">+</div>
+                <div class="step">outbox row</div>
+                <div class="arrow">=</div>
+                <div class="step">ONE commit</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">dispatcher publishes</div>
+            </div>
+            <p>The outbox row lives in the same local transaction as the business change, so both succeed or both fail.
+                A background dispatcher then publishes pending rows. If it crashes halfway, a restarted dispatcher picks
+                up where it left off — no events lost, none duplicated.</p>
+        </section>
+
+        <section class="card">
+            <h2>Idempotency in plain English</h2>
+            <p>A network timeout makes the client retry a charge. Without protection the customer is charged twice. The
+                client sends an <em>idempotency key</em> with the logical payment; the server remembers the key and
+                returns the first result for any retry.</p>
+            <pre><code>result, replayed = store.execute("idem-PAY-ORD-200", charge)</code></pre>
+            <p>First call runs <code>charge</code> and stores the result. A retry with the same key is <code>replayed</code>
+                and never runs <code>charge</code> again.</p>
+        </section>
+
+        <section class="card">
+            <h2>The saga state machine</h2>
+            <p>A saga is always in exactly one state, and only certain transitions are allowed:</p>
+            <div class="flow">
+                <div class="step">PENDING</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">RUNNING</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">COMPLETED</div>
+            </div>
+            <div class="flow">
+                <div class="step">PENDING</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">RUNNING</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">COMPENSATING</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">FAILED</div>
+            </div>
+            <div class="callout"><strong>Guarantee:</strong> compensation only touches steps that actually completed, each
+                exactly once, in strict reverse order. That is what makes the saga trustworthy enough to run in
+                production.</div>
+        </section>
+
+        <section class="card">
+            <h2>What each demo teaches</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Demo</th>
+                        <th>What to watch</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>demo_1_choreographed_saga()</code></td>
+                        <td>Events cascade forward; a failure event cascades backward as refund + cancellation.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_2_orchestrated_saga()</code></td>
+                        <td>The orchestrator runs steps, then undoes completed steps in exact reverse order.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_3_transactional_outbox()</code></td>
+                        <td>Writes and events commit together; a crash mid-dispatch loses nothing.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_4_idempotency_keys()</code></td>
+                        <td>A retried charge with the same key is replayed, never re-run.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_5_saga_state_machine()</code></td>
+                        <td>Status sequence for success vs failure, and compensation guarantees.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 07_learning_projects/p21_distributed_transactions_saga
+python main.py</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Best reading order</h2>
+            <ol>
+                <li>Read this file first.</li>
+                <li>Open <code>saga/orchestrator.py</code> and read <code>run()</code> and <code>_compensate()</code>.</li>
+                <li>Open <code>saga/choreography.py</code> and compare it with orchestration.</li>
+                <li>Open <code>saga/outbox.py</code> and <code>saga/idempotency.py</code>.</li>
+                <li>Run <code>python main.py</code> and follow one demo at a time.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Interview answer in simple words</h2>
+            <p class="quiet">Use this when someone asks, "How do you keep multiple services consistent?"</p>
+            <div class="callout">A saga coordinates a business process across services without a distributed transaction.
+                Each step runs a local transaction; if a later step fails, previously completed steps are compensated in
+                reverse order. Sagas can be choreographed — services react to each other's events — or orchestrated — one
+                coordinator drives every step. Reliability comes from a transactional outbox so no event is lost, and
+                idempotency keys so retries never apply an action twice.</div>
+        </section>
+    </main>
+</body>
+
+</html>

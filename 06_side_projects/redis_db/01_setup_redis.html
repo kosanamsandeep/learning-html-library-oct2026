@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>01 · Install Redis locally (free)</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span class="mark">◆</span>Redis Mastery</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="02_redis_thinking.html">Next: Think in Redis →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Chapter 01 · Setup</p>
+            <h1>Install Redis on your machine — free, in minutes</h1>
+            <p class="lead">Redis is open-source and free. Pick the path that matches your OS. The fastest and most
+                reproducible is <strong>Docker</strong>; on Windows the cleanest native route is <strong>WSL2</strong>.
+                You'll finish with a running server and a <code>redis-cli</code> prompt.</p>
+        </section>
+
+        <section class="card">
+            <h2>Option A · Docker (recommended, any OS)</h2>
+            <p>One command gives you a clean, isolated Redis server. Requires Docker Desktop.</p>
+            <pre><code><span class="c-com"># Pull and run Redis, mapping the default port 6379</span>
+<span class="c-kw">docker</span> run --name redis -p <span class="c-num">6379</span>:<span class="c-num">6379</span> -d redis:<span class="c-num">7</span>
+
+<span class="c-com"># Open an interactive redis-cli inside the container</span>
+<span class="c-kw">docker</span> exec -it redis redis-cli</code></pre>
+            <p>You'll see the prompt <code>127.0.0.1:6379&gt;</code>. Type <code>PING</code> — Redis replies
+                <code class="c-out">PONG</code>. That's a working database.
+            </p>
+            <div class="callout">
+                <strong>Want persistence + a UI?</strong> The official <code>redis/redis-stack</code> image bundles
+                Redis plus <strong>RedisInsight</strong> (a GUI at <code>http://localhost:8001</code>) and modules
+                like JSON & Search:
+                <pre><code><span class="c-kw">docker</span> run -d --name redis-stack -p <span class="c-num">6379</span>:<span class="c-num">6379</span> -p <span class="c-num">8001</span>:<span class="c-num">8001</span> redis/redis-stack:latest</code></pre>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Option B · Windows (WSL2 or Memurai)</h2>
+            <p>Redis doesn't ship an official native Windows build, so use one of these:</p>
+            <div class="steps">
+                <div class="step">
+                    <h3>WSL2 (recommended on Windows)</h3>
+                    <p>Install a Linux distro, then install Redis inside it:</p>
+                    <pre><code><span class="c-com"># In PowerShell (admin), once:</span>
+<span class="c-kw">wsl</span> --install
+
+<span class="c-com"># Then inside Ubuntu:</span>
+<span class="c-kw">sudo</span> apt update && <span class="c-kw">sudo</span> apt install -y redis-server
+<span class="c-kw">sudo</span> service redis-server start
+redis-cli ping   <span class="c-com"># → PONG</span></code></pre>
+                </div>
+                <div class="step">
+                    <h3>Memurai (native Windows service)</h3>
+                    <p>Memurai is a Redis-compatible server packaged for Windows. Download the free Developer
+                        edition, install it as a service, and connect with its bundled <code>memurai-cli</code>
+                        (same commands as <code>redis-cli</code>).</p>
+                </div>
+            </div>
+            <div class="callout warn">
+                <strong>Honestly?</strong> On Windows, <em>Docker</em> (Option A) or <em>WSL2</em> give the most
+                authentic, up-to-date Redis. Prefer those over old native ports.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Option C · Native Linux / macOS</h2>
+            <pre><code><span class="c-com"># macOS (Homebrew)</span>
+<span class="c-kw">brew</span> install redis
+<span class="c-kw">brew</span> services start redis
+
+<span class="c-com"># Debian / Ubuntu</span>
+<span class="c-kw">sudo</span> apt update && <span class="c-kw">sudo</span> apt install -y redis-server
+<span class="c-kw">sudo</span> systemctl enable --now redis-server
+
+<span class="c-com"># Verify</span>
+redis-cli ping   <span class="c-com"># → PONG</span></code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Option D · Redis Cloud (free tier, no install)</h2>
+            <p>If you can't run anything locally, the managed <strong>Redis Cloud</strong> free tier gives a small
+                hosted database. Create a database, copy its host/port/password, and connect:</p>
+            <pre><code>redis-cli -h <span class="c-key">your-endpoint.redislabs.com</span> -p <span class="c-num">12345</span> -a <span class="c-str">'your-password'</span></code></pre>
+            <div class="callout bad">
+                <strong>Security:</strong> never commit the password. Use an environment variable
+                (<code>REDISCLI_AUTH</code>) or a secrets manager, and don't expose Redis to the public internet
+                without auth + TLS.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Meet redis-cli (your main tool)</h2>
+            <p>The CLI is a REPL: type a command, get a reply instantly. Try these now:</p>
+            <pre><code><span class="c-kw">PING</span>                       <span class="c-com"># → PONG (server is alive)</span>
+<span class="c-kw">SET</span> <span class="c-key">greeting</span> <span class="c-str">"hello redis"</span>   <span class="c-com"># → OK</span>
+<span class="c-kw">GET</span> <span class="c-key">greeting</span>              <span class="c-com"># → "hello redis"</span>
+<span class="c-kw">INCR</span> <span class="c-key">visits</span>               <span class="c-com"># → (integer) 1</span>
+<span class="c-kw">INCR</span> <span class="c-key">visits</span>               <span class="c-com"># → (integer) 2</span>
+<span class="c-kw">DBSIZE</span>                     <span class="c-com"># → number of keys</span>
+<span class="c-kw">KEYS</span> *                     <span class="c-com"># → list keys (dev only — see ch.04)</span>
+<span class="c-kw">FLUSHALL</span>                   <span class="c-com"># → wipe everything (careful!)</span></code></pre>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Handy CLI thing</th>
+                        <th>What it does</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>redis-cli</code></td>
+                        <td>Connect to localhost:6379</td>
+                    </tr>
+                    <tr>
+                        <td><code>redis-cli -n 1</code></td>
+                        <td>Use logical database #1 (0–15 by default)</td>
+                    </tr>
+                    <tr>
+                        <td><code>redis-cli MONITOR</code></td>
+                        <td>Live-stream every command the server runs</td>
+                    </tr>
+                    <tr>
+                        <td><code>redis-cli --stat</code></td>
+                        <td>Live throughput/memory stats</td>
+                    </tr>
+                    <tr>
+                        <td><code>INFO</code></td>
+                        <td>Server stats: memory, clients, persistence</td>
+                    </tr>
+                    <tr>
+                        <td><code>HELP @string</code></td>
+                        <td>List commands in a group</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Connect from Python (optional, for later)</h2>
+            <pre><code><span class="c-com"># pip install redis</span>
+<span class="c-kw">import</span> redis
+
+r = redis.Redis(host=<span class="c-str">"localhost"</span>, port=<span class="c-num">6379</span>, db=<span class="c-num">0</span>, decode_responses=<span class="c-kw">True</span>)
+r.set(<span class="c-str">"greeting"</span>, <span class="c-str">"hello from python"</span>)
+<span class="c-kw">print</span>(r.get(<span class="c-str">"greeting"</span>))   <span class="c-com"># hello from python</span></code></pre>
+            <p class="mini info"><code>decode_responses=True</code> returns Python <code>str</code> instead of
+                raw <code>bytes</code> — convenient while learning.</p>
+        </section>
+
+        <section class="card">
+            <h2>Sanity checklist before moving on</h2>
+            <div class="grid-2">
+                <div class="mini good">✅ <code>redis-cli ping</code> returns <code>PONG</code></div>
+                <div class="mini good">✅ <code>SET</code> then <code>GET</code> round-trips a value</div>
+                <div class="mini good">✅ <code>INCR</code> returns an incrementing integer</div>
+                <div class="mini good">✅ You know how to open the CLI again tomorrow</div>
+            </div>
+        </section>
+
+        <div class="pager">
+            <a href="index.html">
+                <div class="dir">← Back</div>
+                <div class="ttl">Hub</div>
+            </a>
+            <a class="next" href="02_redis_thinking.html">
+                <div class="dir">Next →</div>
+                <div class="ttl">02 · Think in Redis</div>
+            </a>
+        </div>
+    </main>
+
+    <footer><a href="index.html">← Back to Redis hub</a></footer>
+</body>
+
+</html>

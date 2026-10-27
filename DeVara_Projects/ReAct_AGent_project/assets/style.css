@@ -1,0 +1,24 @@
+/* shared styling for all explanation.html and concept pages */
+body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#0f172a;color:#e2e8f0;line-height:1.55}
+header{padding:28px 36px;background:linear-gradient(135deg,#1e293b,#0f172a);border-bottom:1px solid #334155}
+header h1{margin:0 0 6px 0;font-size:26px;color:#f1f5f9}
+header p{margin:0;color:#94a3b8}
+header a.back{color:#fbbf24;text-decoration:none;font-size:13px}
+main{max-width:1100px;margin:24px auto;padding:0 18px 60px 18px}
+h2{margin-top:34px;color:#38bdf8;border-bottom:1px solid #334155;padding-bottom:6px}
+h3{color:#f1f5f9;margin-top:22px}
+code{background:#0b1220;padding:2px 6px;border-radius:4px;color:#fde68a;font-family:Consolas,monospace}
+pre{background:#0b1220;padding:14px;border-radius:8px;border:1px solid #334155;overflow:auto;color:#e2e8f0;font-size:13px}
+table{width:100%;border-collapse:collapse;margin:8px 0;background:#1e293b}
+th,td{border:1px solid #334155;padding:10px;text-align:left;font-size:14px;vertical-align:top}
+th{background:#0f172a;color:#38bdf8}
+.callout{background:#1e293b;border-left:4px solid #38bdf8;padding:12px 16px;border-radius:6px;margin:14px 0}
+.callout.warn{border-left-color:#f59e0b}
+.callout.bad{border-left-color:#f43f5e}
+.callout.good{border-left-color:#22c55e}
+.mermaid{background:#fff;padding:14px;border-radius:8px;margin:12px 0}
+ul.tools li{margin:4px 0}
+.pill{display:inline-block;background:#0ea5e9;color:#001;padding:2px 8px;border-radius:10px;font-size:11px;margin-right:4px}
+.pill.adv{background:#f43f5e;color:#fff}
+.pill.mid{background:#f59e0b;color:#001}
+footer{text-align:center;color:#64748b;font-size:12px;padding:18px}

@@ -1,0 +1,73 @@
+Here's a breakdown of all 19 images — extracted text, a quick validity check, and whether it's worth Sandeep's time given where he already is (Claude Code internals, LangGraph/agentic systems, MCP, AskIt).
+
+## Group 1: "Boris Cherny — graph that writes itself" (Image 1)
+**Text:** Account @Mahaximus_ quotes "Head of Claude Code, Boris Cherny: 'You're not supposed to write code anymore. You're supposed to build a graph that writes itself.'" — video captioned "THE MODEL DRIVES."
+
+**Validation:** Boris Cherny is real (Head of Claude Code, Anthropic). I searched and confirmed he gives frequent talks/threads on this theme — but the *exact wording* varies across accounts recycling his talks ("My job is to write loops," "graph that writes itself," etc.). This specific phrasing isn't independently verifiable as a direct quote — it reads like a paraphrase repackaged for engagement. The underlying idea (moving from writing code → building self-directed agent systems/loops) is real and matches Anthropic's actual public messaging.
+
+**Value:** Medium. The concept (agents-as-graphs, self-verifying loops) is genuinely relevant to your AskIt/LangGraph Supervisor work. But don't trust the "guide" being sold below the video — go straight to Boris Cherny's actual public threads/interviews (Pragmatic Engineer podcast, YC talk) instead of secondhand summaries.
+
+## Group 2: Vaibhav Sisinty's "10 free AI tools" thread (Images 2, 3, 4, 7, 13, 14, 16, 18)
+**Extracted list (numbered thread):**
+1. Awesome-Design-MD — markdown templates for READMEs/docs
+2. (unlabeled slot, likely context tools)
+3. Agency-Agents — multi-agent framework, "production-ready," built-in memory/tools
+4. Meetily — local AI meeting assistant/transcription
+5. OfficeCLI — control Word/Excel/PPT from terminal
+6. OpenWiki — AI-generated codebase docs
+7. OmniRoute — open-source routing engine, "120ms response time, handles billions of requests"
+8. Strix — AI penetration testing tool
+9. Agent-Skills — plug-and-play skills for agents
+10. (final wrap-up post)
+
+Plus a **separate MCP server list** (same account): Power BI MCP (Microsoft), WordPress MCP (Automattic), Context7 MCP (Upstash), Notion MCP (official), Figma MCP (official), Filesystem MCP, Snowflake MCP, Datadog MCP, 1Password MCP (community).
+
+**Validation:**
+- The **MCP server list is real and legitimate** — Context7, Notion, Figma, Snowflake, Datadog, Power BI, WordPress, Filesystem MCPs all genuinely exist and are documented in the MCP ecosystem.
+- The **numbered "10 tools" thread is a classic engagement-farming pattern**: round, suspiciously specific performance stats ("120ms response time, handles billions of requests" for a random GitHub repo), vague "production-ready" claims with no benchmarks/links you can verify from the screenshot, and a "Show more" cutoff on nearly every post (classic X algorithm-bait structure). Several of these (OmniRoute, Strix, Meetily, Agency-Agents) I don't have independent confirmation are widely-used or reputable — could be small/abandoned repos with inflated framing.
+
+**Value:** 
+- MCP list → **Yes, worth 30 min** to connect Context7 (docs-grounding, kills hallucinated code — directly useful for your Claude Code work) and Filesystem/Notion MCP if you use those tools.
+- The "10 tools" thread → **Low priority.** Don't block time on it; if curious, check actual GitHub stars/commit activity yourself before trusting the copy.
+
+## Group 3: "Anthropic engineer: 70% self-improving loops" (Image 10)
+**Text:** @0xMovez claims an unnamed "Anthropic engineer" said "70% of our engineers are using self-improving loops... in 3-6 months we'll all be building graphs." Promotes a 30-min video + article on "graph architect."
+
+**Validation:** Unattributed quote, no named source — can't verify. This is the same content-mill pattern as Image 1, just repackaged by a different account with a vaguer, unverifiable attribution ("an Anthropic engineer" vs. named Boris Cherny). Classic secondary engagement-bait riding on the same underlying story.
+
+**Value:** Low. Skip — same idea covered more credibly in Image 1/17.
+
+## Group 4: Anthropic multi-agent researcher (Image 17)
+**Text:** Describes real multi-agent architecture: "parent agent → delegates to sub-agents (as tools) → sub-agents run in parallel → results roll back up." Also flags a real failure mode: "Overbuilt multi-agent systems spend too much time talking back and forth... not making progress."
+
+**Validation:** This matches Anthropic's actual published research (their "multi-agent research system" blog post describes an orchestrator-worker pattern very close to this). The failure-mode point is a well-known real finding, not hype.
+
+**Value: High.** This is directly relevant to your AskIt LangGraph Supervisor architecture — the orchestrator/sub-agent-as-tool pattern and the "over-communication kills progress" failure mode are worth actually reading Anthropic's original multi-agent blog post for (search "Anthropic How we built our multi-agent research system").
+
+## Group 5: Context-engineering / token-saving thread (Images 9, 11, 15, 19)
+**Text (Image 9/15):** Reddit-sourced list — ccusage (token usage dashboard), RTK (~60k★, compresses terminal output 60-90%), "Caveman Claude" (minimal-style replies, ~75% token savings), Karpathy's "skills" repo (stops wrong assumptions/file edits), Graphify (~60k★, local codebase knowledge graph so Claude doesn't re-read everything), Obsidian skills (same for notes).
+
+**Image 11:** "ai-codex" — generates 5 compact markdown files (routes.md, pages.md, lib.md, schema.md, components.md) so Claude Code skips the 10-20 tool-call exploration phase (claims 30-50k token savings).
+
+**Image 19:** Real, solid recommendation — graph theory/network science reading list (Barabási, Easley/Kleinberg, Diestel, Kleinberg/Tardos, Spielman, Roughgarden, CS224W, NetworkX/PyG). This is legitimate academic content, not hype.
+
+**Validation:** The token-saving repo list is more plausible than the "10 tools" thread — these solve a real, specific pain point (context/token bloat in Claude Code) that you've directly hit yourself (you explored codebase-memory-mcp as RAG for exactly this reason). "Karpathy's skills repo" is a real, well-known reference. Star counts (~60k) for Graphify/RTK are large enough to be checkable — verify via GitHub search before trusting blindly, since I can't confirm exact repo names/URLs from a screenshot alone. Image 19's reading list is genuinely high-quality and unrelated to hype-thread patterns.
+
+**Value: High priority to verify and adopt.** This cluster maps directly onto a problem you've already identified (context bloat, Aider+local LLM RAG). Concretely worth doing:
+1. Search GitHub directly for "Graphify" and "ai-codex" (verify real repo, stars, last commit before installing anything).
+2. The CLAUDE.md "compact reference files" pattern (Image 11) is a good, low-risk practice to try regardless of the specific tool's virality — it's just structured documentation Claude reads first.
+3. Image 19's graph theory reading list — genuinely worth adding to your 6-month AI engineering curriculum, especially given GraphRAG/agent-orchestration relevance.
+
+## Group 6: Unrelated / not relevant to AI engineering
+- **Image 5:** A well-written "contractor" style system-prompt/instruction snippet about investigating before asking questions, producing goal/assumptions/plan before implementing. This is a genuinely good **prompt-engineering pattern** for Claude Code's plan mode — worth stealing for your own CLAUDE.md.
+- **Image 6:** Personal finance / debt-payoff ChatGPT prompt templates — not an AI-engineering topic, no value for this purpose.
+- **Image 8:** Hardware/inference benchmark post (Laguna S 2.1, DGX Station, NVFP4/FP8 KV cache, vLLM serving numbers) — detailed and technical-looking, but from an unverified account with no way to confirm the benchmark is real (no linked repo/paper). Interesting only if you're evaluating self-hosted multi-agent serving infra; otherwise skip.
+- **Image 12:** Screenshot from a "Big Leap" interview video listing interview rounds (DSA, LLD, System Design) — generic interview-prep content, not AI-engineering specific.
+
+## Bottom line — what to actually spend time on:
+1. **High value, do this:** Read Anthropic's actual multi-agent research blog post (Image 17 topic) — directly maps to AskIt's Supervisor pattern.
+2. **High value, do this:** Adopt the "compact context files" pattern (Image 11) and the "investigate-before-asking" plan-mode prompt (Image 5) in your own CLAUDE.md.
+3. **Medium value, verify first:** Connect Context7 MCP (docs grounding) given your GLM/DeepSeek backend work; check Graphify/ai-codex repos on GitHub directly (stars, commits, issues) before installing — screenshots alone don't confirm legitimacy.
+4. **Low value, skip:** The "10 free tools" thread and "Anthropic engineer said 70%..." posts — unverifiable claims, classic engagement-bait structure (round stats, cut-off "Show more," recycled quotes). Don't block real learning time on these.
+
+One general flag: several of these accounts (Vaibhav Sisinty, @0xMovez, @Mahaximus_) show the same content pattern — numbered threads, suspiciously polished repo stats, quotes attributed to real Anthropic people but reworded. Treat them as leads to verify independently (GitHub, official blog), not as sources to trust directly.

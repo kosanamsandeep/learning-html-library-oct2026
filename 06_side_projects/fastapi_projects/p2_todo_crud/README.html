@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2 — Todo CRUD with Pydantic + DI</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="../index.html"><span class="brand-mark">P2</span><span>Todo CRUD</span></a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p1_hello_fastapi/README.html">← P1</a>
+                <a href="../p3_async_database/README.html">Next: P3 →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">Project 2 · Beginner+ · ~100 lines</p>
+                <h1>Todo CRUD — Pydantic models + Dependency Injection done right</h1>
+                <p>A full Create/Read/Update/Delete REST API for todos. The point isn't todos — every tutorial
+                    does todos. The point is the <strong>shape</strong>: separate input/output models, a
+                    repository accessed via <code>Depends()</code>, and routes that are trivially testable
+                    because they don't know where the data lives.</p>
+            </section>
+
+            <section class="concept">
+                <h2>The problem we're solving</h2>
+                <p>Three things almost every real API needs that beginners get wrong:</p>
+                <ol>
+                    <li><strong>Different input vs output shapes.</strong> A <code>TodoCreate</code> doesn't
+                        have an <code>id</code> (the server makes it). A <code>TodoUpdate</code> has all-optional
+                        fields. A <code>TodoOut</code> always has an <code>id</code>. Using one model for all
+                        three leads to "user sent us an id, did we use it? did they get fields back they
+                        shouldn't?" bugs.</li>
+                    <li><strong>Storage is going to change.</strong> Today it's an in-memory dict. Tomorrow
+                        Postgres. Next year Redis cache + Postgres. Your routes should never care.</li>
+                    <li><strong>Tests should not touch the real DB.</strong> The route should accept a
+                        "repo" dependency that can be swapped for a fake.</li>
+                </ol>
+            </section>
+
+            <section class="concept">
+                <h2>How FastAPI solves it</h2>
+
+                <h3>Separate input / update / output models</h3>
+                <pre><code>class TodoBase(BaseModel):
+    title: str = Field(min_length=1, max_length=200, examples=["Buy milk"])
+    done: bool = False
+
+class TodoCreate(TodoBase):
+    pass
+
+class TodoUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    done: bool | None = None
+
+class TodoOut(TodoBase):
+    id: str</code></pre>
+                <p>Now <code>POST /todos</code> takes a <code>TodoCreate</code>;
+                    <code>PATCH /todos/{id}</code> takes a <code>TodoUpdate</code> with everything optional;
+                    every response is locked to <code>TodoOut</code> via <code>response_model=</code>. Field
+                    leaks are impossible.
+                </p>
+
+                <h3>Dependency injection for the repository</h3>
+                <pre><code>def get_repo() -&gt; InMemoryTodoRepo:
+    return _repo_singleton
+
+Repo = Annotated[InMemoryTodoRepo, Depends(get_repo)]
+
+@app.get("/todos", response_model=list[TodoOut])
+def list_todos(repo: Repo) -&gt; list[TodoOut]:
+    return repo.list()</code></pre>
+                <p>The route declares "I need a repo". FastAPI injects it. In tests you write:</p>
+                <pre><code>app.dependency_overrides[get_repo] = lambda: FakeRepo()</code></pre>
+                <p>and every route in the test gets the fake. No monkey-patching, no globals.</p>
+            </section>
+
+            <section class="concept">
+                <h2>What if you DIDN'T do this?</h2>
+                <div class="grid-2">
+                    <div class="mini bad">
+                        <h4>Without separate models</h4>
+                        <ul>
+                            <li>Users submit an <code>id</code> and it accidentally overwrites the server's.</li>
+                            <li>Internal fields like <code>created_by_admin</code> get returned to consumers.</li>
+                            <li>Every PATCH requires the full object — partial updates are awkward.</li>
+                        </ul>
+                    </div>
+                    <div class="mini bad">
+                        <h4>Without DI</h4>
+                        <ul>
+                            <li>Routes call a global <code>db</code> directly.</li>
+                            <li>Tests have to patch globals or spin up a real DB.</li>
+                            <li>You can't swap storage without rewriting routes.</li>
+                            <li>Multi-tenancy / per-request context becomes impossible.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="story"><strong>Real story:</strong> a team built a B2B SaaS where one
+                    <code>WidgetModel</code> was used for input, output, and DB rows. A junior dev added an
+                    <code>internal_cost</code> field for analytics. Two weeks later, customers saw
+                    <code>internal_cost</code> appear in every Widget API response and complained about the
+                    obvious markup. <strong>Cure</strong>: separate input/output models with explicit
+                    fields. Bug class disappeared.
+                </div>
+            </section>
+
+            <section class="concept">
+                <h2>Run it</h2>
+                <pre><code>cd 06_side_projects/fastapi_projects/p2_todo_crud
+python -m venv .venv && .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload
+
+# In a second terminal:
+curl -X POST http://127.0.0.1:8000/todos \
+    -H "Content-Type: application/json" \
+    -d "{\"title\": \"Buy milk\"}"
+
+curl http://127.0.0.1:8000/todos
+curl http://127.0.0.1:8000/todos?done=false
+
+# Open Swagger and explore every endpoint:
+# http://127.0.0.1:8000/docs</code></pre>
+            </section>
+
+            <section class="concept">
+                <h2>Things to try</h2>
+                <ol>
+                    <li>POST with <code>{"title": ""}</code> → see Pydantic's <code>min_length=1</code> error.</li>
+                    <li>POST with no <code>title</code> at all → see the structured 422.</li>
+                    <li>PATCH with just <code>{"done": true}</code>. Title stays the same.</li>
+                    <li>GET a nonexistent id → see the custom 404 message.</li>
+                    <li>Add a <code>created_at: datetime</code> to <code>TodoOut</code>. Set it in the
+                        repository. Watch Swagger UI document the new field automatically.</li>
+                </ol>
+            </section>
+
+            <section class="concept">
+                <h2>What you learned</h2>
+                <ul>
+                    <li>Pydantic input/output split — the safest pattern for REST APIs.</li>
+                    <li>The repository pattern, injected via <code>Depends()</code>.</li>
+                    <li><code>Annotated[…, Depends(…)]</code> — the modern, type-friendly DI syntax.</li>
+                    <li>Custom 404s via <code>HTTPException</code>; 204 No Content on DELETE.</li>
+                </ul>
+                <p>👉 Next: <a href="../p3_async_database/README.html"><strong>P3 — Async database with
+                            SQLAlchemy</strong></a>.</p>
+            </section>
+        </div>
+    </main>
+    <footer><a href="../index.html">Back to hub</a></footer>
+</body>
+
+</html>

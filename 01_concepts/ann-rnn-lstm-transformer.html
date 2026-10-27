@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANN vs RNN vs LSTM vs Transformer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">AI</span>
+                <span>AI Engineer Interview Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="rnn-basics.html">RNN Basics</a>
+                <a href="transformer-basics.html">Transformers</a>
+                <a href="backpropagation.html">Backpropagation</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#overview">Overview</a>
+            <a href="#ann">ANN (Feedforward)</a>
+            <a href="#rnn">RNN</a>
+            <a href="#lstm">LSTM</a>
+            <a href="#transformer">Transformer</a>
+            <a href="#comparison">Side-by-Side Comparison</a>
+            <a href="#problems">Problems and Solutions</a>
+            <a href="#interview">Interview Questions</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Architecture evolution</p>
+                    <h1>ANN vs RNN vs LSTM vs Transformer</h1>
+                    <p>Understanding how neural network architectures evolved from simple feedforward networks to
+                        transformers reveals why each design exists and what problem it solves. Each architecture
+                        addresses limitations of its predecessor.</p>
+                    <p>This page walks through the progression: ANN cannot handle sequences, RNN adds memory but
+                        suffers from vanishing gradients, LSTM gates information flow but is slow, and Transformers
+                        parallelize everything with attention.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Evolution timeline</h2>
+                    <ul>
+                        <li><strong>ANN:</strong> Static input, no sequence awareness</li>
+                        <li><strong>RNN:</strong> Sequential processing with hidden state</li>
+                        <li><strong>LSTM:</strong> Gated memory to handle long dependencies</li>
+                        <li><strong>Transformer:</strong> Parallel attention over all positions</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- ANN Section -->
+            <section class="section" id="ann">
+                <h2>ANN: Artificial Neural Network (Feedforward)</h2>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works</h3>
+                        <p>A feedforward neural network passes input through layers of neurons. Each neuron applies a
+                            weighted sum followed by a nonlinear activation function. Data flows in one direction: input
+                            to hidden layers to output.</p>
+                        <p class="formula">y = activation(W * x + b)</p>
+                    </div>
+                    <div class="card">
+                        <h3>Strengths</h3>
+                        <ul>
+                            <li>Simple to implement and understand</li>
+                            <li>Works well for tabular and fixed-size input</li>
+                            <li>Universal approximation theorem guarantees expressive power</li>
+                            <li>Fast training on structured data</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="warning-card" style="margin-top: 18px;">
+                    <h3>Critical limitation</h3>
+                    <p>ANNs have <strong>no memory</strong>. They process each input independently. If you feed "The cat
+                        sat on the" one word at a time, the network has no idea what came before. It cannot model
+                        sequences, temporal patterns, or context-dependent meaning.</p>
+                    <p><strong>Fixed input size:</strong> The number of input neurons is fixed at design time.
+                        Variable-length
+                        sequences like sentences cannot be handled natively.</p>
+                </div>
+            </section>
+
+            <!-- RNN Section -->
+            <section class="section" id="rnn">
+                <h2>RNN: Recurrent Neural Network</h2>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works</h3>
+                        <p>RNN adds a feedback loop. The hidden state from the previous timestep is fed back as input
+                            alongside the current token. This gives the network a form of memory.</p>
+                        <p class="formula">h_t = tanh(W_xh * x_t + W_hh * h_(t-1) + b_h)
+                            y_t = W_hy * h_t + b_y</p>
+                    </div>
+                    <div class="card">
+                        <h3>What RNN solves over ANN</h3>
+                        <ul>
+                            <li>Handles variable-length sequences</li>
+                            <li>Maintains temporal context via hidden state</li>
+                            <li>Parameter sharing across timesteps (efficient)</li>
+                            <li>Natural fit for text, speech, time-series</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="warning-card" style="margin-top: 18px;">
+                    <h3>Critical limitations of RNN</h3>
+                    <ul>
+                        <li><strong>Vanishing gradients:</strong> During backpropagation through time (BPTT), gradients
+                            are multiplied at each timestep. With tanh or sigmoid, repeated multiplication of values
+                            less than 1
+                            causes gradients to shrink exponentially. After 10-20 steps, gradients are effectively zero.
+                        </li>
+                        <li><strong>Exploding gradients:</strong> Conversely, if weights are large, gradients can grow
+                            exponentially, causing unstable training.</li>
+                        <li><strong>Sequential processing:</strong> Each timestep depends on the previous one. Cannot
+                            be parallelized across the sequence dimension.</li>
+                        <li><strong>Short-term memory:</strong> In practice, RNNs struggle to remember information from
+                            more than 10-20 tokens ago.</li>
+                    </ul>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>Why vanishing gradient happens mathematically</h3>
+                    <pre>∂L/∂h_0 = ∂L/∂h_T * ∏(t=1 to T) ∂h_t/∂h_(t-1)
+
+Each ∂h_t/∂h_(t-1) = diag(tanh'(z_t)) * W_hh
+
+Since |tanh'(x)| ≤ 1 and if ||W_hh|| < 1:
+  The product shrinks exponentially → vanishing gradient
+
+If ||W_hh|| > 1:
+  The product grows exponentially → exploding gradient</pre>
+                </div>
+            </section>
+
+            <!-- LSTM Section -->
+            <section class="section" id="lstm">
+                <h2>LSTM: Long Short-Term Memory</h2>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How it works</h3>
+                        <p>LSTM introduces a <strong>cell state</strong> (long-term memory) and three gates that
+                            control information flow. The cell state runs like a conveyor belt with minimal
+                            transformations, allowing gradients to flow unchanged over many timesteps.</p>
+                    </div>
+                    <div class="card">
+                        <h3>The three gates</h3>
+                        <ul>
+                            <li><strong>Forget gate (f_t):</strong> Decides what to discard from cell state</li>
+                            <li><strong>Input gate (i_t):</strong> Decides what new information to store</li>
+                            <li><strong>Output gate (o_t):</strong> Decides what to output from cell state</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>LSTM equations</h3>
+                    <pre>Forget gate:  f_t = σ(W_f · [h_(t-1), x_t] + b_f)
+Input gate:   i_t = σ(W_i · [h_(t-1), x_t] + b_i)
+Candidate:    C̃_t = tanh(W_C · [h_(t-1), x_t] + b_C)
+Cell update:  C_t = f_t * C_(t-1) + i_t * C̃_t
+Output gate:  o_t = σ(W_o · [h_(t-1), x_t] + b_o)
+Hidden state: h_t = o_t * tanh(C_t)</pre>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>What LSTM solves over RNN</h3>
+                        <ul>
+                            <li><strong>Vanishing gradient:</strong> Cell state provides a highway for gradients.
+                                The forget gate can be close to 1, meaning gradients pass through unchanged.</li>
+                            <li><strong>Long-range dependencies:</strong> Can remember information over 100+ timesteps
+                            </li>
+                            <li><strong>Selective memory:</strong> Gates learn what to keep and what to forget</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Remaining limitations of LSTM</h3>
+                        <ul>
+                            <li><strong>Still sequential:</strong> Must process tokens one by one. Cannot parallelize.
+                            </li>
+                            <li><strong>Slow training:</strong> O(n) sequential steps for sequence length n</li>
+                            <li><strong>Complex architecture:</strong> 4x parameters compared to vanilla RNN</li>
+                            <li><strong>Information bottleneck:</strong> All past context must fit in hidden state
+                                vector</li>
+                            <li><strong>Finite context window:</strong> Even with gates, very long sequences (1000+)
+                                still degrade</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note" style="margin-top: 18px;">
+                    <h3>GRU: A lighter alternative</h3>
+                    <p>GRU (Gated Recurrent Unit) combines forget and input gates into a single update gate, and merges
+                        cell state and hidden state. Fewer parameters, similar performance in most tasks, slightly
+                        faster
+                        training.</p>
+                    <p class="formula">z_t = σ(W_z · [h_(t-1), x_t]) ← update gate
+                        r_t = σ(W_r · [h_(t-1), x_t]) ← reset gate
+                        h̃_t = tanh(W · [r_t * h_(t-1), x_t])
+                        h_t = (1 - z_t) * h_(t-1) + z_t * h̃_t</p>
+                </div>
+            </section>
+
+            <!-- Transformer Section -->
+            <section class="section" id="transformer">
+                <h2>Transformer: Attention Is All You Need</h2>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Core idea</h3>
+                        <p>Instead of processing tokens sequentially, the transformer attends to <strong>all positions
+                                simultaneously</strong> using self-attention. Every token can directly look at every
+                            other
+                            token, regardless of distance.</p>
+                    </div>
+                    <div class="card">
+                        <h3>How self-attention works</h3>
+                        <p>Each token produces Query, Key, and Value vectors. Attention scores are computed as scaled
+                            dot-product between queries and keys, then used to weight values.</p>
+                        <p class="formula">Attention(Q, K, V) = softmax(QK^T / √d_k) · V</p>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>What Transformer solves — every RNN/LSTM problem</h3>
+                    <pre>Problem: Sequential processing (RNN/LSTM)
+Solution: Self-attention processes all positions in parallel → O(1) sequential steps
+
+Problem: Vanishing gradients over long sequences
+Solution: Direct connections between any two positions via attention (path length = 1)
+
+Problem: Information bottleneck (fixed-size hidden state)
+Solution: Attention over all positions — no need to compress history into one vector
+
+Problem: Long-range dependencies degrade
+Solution: Attention score between positions 1 and 1000 is computed just as easily as between 1 and 2
+
+Problem: Slow training
+Solution: Full parallelization over sequence length → massive GPU utilization</pre>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>Multi-head attention</h3>
+                        <p>Instead of one attention function, transformers use multiple heads in parallel. Each head
+                            learns different relationship patterns (syntax, semantics, coreference). Outputs are
+                            concatenated and projected.</p>
+                        <p class="formula">MultiHead(Q,K,V) = Concat(head_1,...,head_h) · W_O
+                            where head_i = Attention(QW_i^Q, KW_i^K, VW_i^V)</p>
+                    </div>
+                    <div class="card">
+                        <h3>Positional encoding</h3>
+                        <p>Since attention is permutation-invariant (order-agnostic), position information must be
+                            injected explicitly. Original paper uses sinusoidal encoding; modern models use learned
+                            or rotary positional embeddings (RoPE).</p>
+                        <p class="formula">PE(pos, 2i) = sin(pos / 10000^(2i/d_model))
+                            PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))</p>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 18px;">
+                    <h3>Transformer advantages summary</h3>
+                    <ul>
+                        <li><strong>Parallelism:</strong> All tokens processed simultaneously during training</li>
+                        <li><strong>Constant path length:</strong> Any two tokens are one attention hop apart</li>
+                        <li><strong>Scalability:</strong> Scales to billions of parameters efficiently on GPUs/TPUs</li>
+                        <li><strong>Flexibility:</strong> Works for text, images, audio, code, proteins</li>
+                        <li><strong>No information bottleneck:</strong> Each token maintains its own representation</li>
+                    </ul>
+                </div>
+                <div class="warning-card" style="margin-top: 18px;">
+                    <h3>Transformer tradeoffs</h3>
+                    <ul>
+                        <li><strong>Quadratic attention cost:</strong> O(n²) memory and compute for sequence length n
+                        </li>
+                        <li><strong>No inherent sequential bias:</strong> Must learn order from positional encodings
+                        </li>
+                        <li><strong>Large data/compute requirement:</strong> Needs more data than RNNs to train
+                            effectively</li>
+                        <li><strong>Context window limit:</strong> Fixed max sequence length (though much longer than
+                            RNNs)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Comparison Table -->
+            <section class="section" id="comparison">
+                <h2>Side-by-side comparison</h2>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>ANN</th>
+                                <th>RNN</th>
+                                <th>LSTM</th>
+                                <th>Transformer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Sequence handling</strong></td>
+                                <td>None</td>
+                                <td>Sequential via hidden state</td>
+                                <td>Sequential with gates</td>
+                                <td>Parallel via attention</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Memory mechanism</strong></td>
+                                <td>None</td>
+                                <td>Hidden state</td>
+                                <td>Cell state + hidden state</td>
+                                <td>Attention over all tokens</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Vanishing gradient</strong></td>
+                                <td>Possible in deep nets</td>
+                                <td>Severe problem</td>
+                                <td>Largely solved</td>
+                                <td>Not an issue (residual + attention)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Long-range deps</strong></td>
+                                <td>N/A</td>
+                                <td>Poor (10-20 tokens)</td>
+                                <td>Better (100+ tokens)</td>
+                                <td>Excellent (thousands of tokens)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Parallelization</strong></td>
+                                <td>Full</td>
+                                <td>None across time</td>
+                                <td>None across time</td>
+                                <td>Full across sequence</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Training speed</strong></td>
+                                <td>Fast</td>
+                                <td>Slow for long sequences</td>
+                                <td>Slower (4x params of RNN)</td>
+                                <td>Fast (GPU-friendly)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Compute complexity</strong></td>
+                                <td>O(1)</td>
+                                <td>O(n) sequential</td>
+                                <td>O(n) sequential</td>
+                                <td>O(n²) parallel</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Parameter count</strong></td>
+                                <td>Low-medium</td>
+                                <td>Low</td>
+                                <td>Medium (4x RNN)</td>
+                                <td>High</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Best for</strong></td>
+                                <td>Tabular data, fixed inputs</td>
+                                <td>Short sequences</td>
+                                <td>Medium sequences, time-series</td>
+                                <td>Any sequence task at scale</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Modern usage</strong></td>
+                                <td>Still used for tabular</td>
+                                <td>Mostly replaced</td>
+                                <td>Still used in edge/embedded</td>
+                                <td>Dominant architecture</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Problems and How Transformer Addresses Them -->
+            <section class="section" id="problems">
+                <h2>How the Transformer addresses every prior limitation</h2>
+                <div class="flow">
+                    <div class="step">
+                        <strong>Problem 1: Sequential bottleneck</strong>
+                        <p>RNN/LSTM must wait for h_(t-1) before computing h_t. Training time scales linearly with
+                            sequence length.</p>
+                        <p><strong>Transformer solution:</strong> Self-attention computes all pairwise relationships in
+                            one matrix multiplication. During training, all positions are processed simultaneously.
+                            GPUs excel at these parallel matrix operations.</p>
+                    </div>
+                    <div class="step">
+                        <strong>Problem 2: Vanishing/exploding gradients</strong>
+                        <p>In BPTT, gradients must flow through T sequential multiplications, degrading signal.</p>
+                        <p><strong>Transformer solution:</strong> Residual connections (x + sublayer(x)) create gradient
+                            highways. Layer normalization stabilizes magnitudes. Attention provides direct gradient
+                            paths between any two positions regardless of distance.</p>
+                    </div>
+                    <div class="step">
+                        <strong>Problem 3: Information compression into fixed-size state</strong>
+                        <p>RNN/LSTM must compress all past information into a single hidden state vector. Information
+                            inevitably gets lost for long sequences.</p>
+                        <p><strong>Transformer solution:</strong> Every token maintains its own representation vector
+                            throughout all layers. Attention allows any token to directly access any other token's
+                            full representation — no compression needed.</p>
+                    </div>
+                    <div class="step">
+                        <strong>Problem 4: Distance-dependent forgetting</strong>
+                        <p>Even LSTM gradually forgets distant information. Token at position 1 is barely remembered
+                            at position 500.</p>
+                        <p><strong>Transformer solution:</strong> Attention weight between positions 1 and 500 is
+                            computed the same way as between positions 499 and 500. The model learns what's relevant,
+                            not what's recent.</p>
+                    </div>
+                    <div class="step">
+                        <strong>Problem 5: Difficulty scaling</strong>
+                        <p>RNN training doesn't scale well on modern hardware (GPUs/TPUs optimize parallel ops).</p>
+                        <p><strong>Transformer solution:</strong> Matrix multiplications in attention and FFN layers
+                            map perfectly to GPU architecture. This enabled scaling from millions to trillions of
+                            parameters (GPT-4, Gemini, Claude).</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interview Questions -->
+            <section class="section" id="interview">
+                <h2>Interview questions</h2>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>Why can't a standard feedforward network handle text classification of variable-length
+                            sentences?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>Feedforward networks require fixed-size input. A sentence with 5 words and one with 50
+                                words cannot use the same architecture without padding/truncation. More fundamentally,
+                                feedforward networks treat each input dimension independently — they have no mechanism
+                                to model the sequential relationship between words.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>Explain the vanishing gradient problem in RNNs with a concrete example.</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>Consider the sentence: "The cat, which was sitting on the mat near the window in the
+                                living room, was hungry." The RNN must remember "cat" (subject) across 12+ words to
+                                correctly predict "was hungry." During backpropagation, the gradient from "hungry" must
+                                flow through 12+ timestep multiplications. With tanh activation (max derivative = 1),
+                                even a 0.9 multiplicative factor gives 0.9^12 ≈ 0.28 — the gradient reaching "cat" is
+                                weak, so the model barely learns this dependency.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>How does LSTM solve the vanishing gradient problem specifically?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>The cell state update is C_t = f_t * C_(t-1) + i_t * C̃_t. When the forget gate f_t
+                                is close to 1 and the input gate i_t is close to 0, C_t ≈ C_(t-1). The gradient
+                                ∂C_t/∂C_(t-1) = f_t, which can be near 1. This means the gradient flows through the
+                                cell state almost unchanged — like a highway with no tolls. The network learns when to
+                                keep the highway open (f_t → 1) for important long-range information.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>Why is the Transformer faster to train than LSTM despite higher theoretical complexity?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>LSTM has O(n) complexity but the operations are <strong>sequential</strong> — each step
+                                must wait for the previous. Transformer has O(n²) complexity but all operations happen
+                                <strong>in parallel</strong>. On modern GPUs optimized for parallel matrix
+                                multiplications,
+                                n² parallel ops can be faster than n sequential ops. A sequence of length 512: LSTM
+                                needs
+                                512 sequential steps; Transformer does one large matrix multiply. Wall-clock time favors
+                                parallelism on modern hardware.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>When might you still choose LSTM over a Transformer?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>1) Edge/embedded devices with limited memory (LSTM is smaller). 2) Streaming/online
+                                inference where you process one token at a time (LSTM naturally processes sequentially).
+                                3) Very small datasets where transformer may overfit. 4) Real-time applications with
+                                strict latency where lightweight models are needed. 5) Time-series forecasting where
+                                the sequential inductive bias helps with limited data.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Q</span>
+                        <p>What is the attention mechanism doing that the hidden state cannot?</p>
+                        <div class="answer-block">
+                            <span class="answer-label">A</span>
+                            <p>The hidden state is a fixed-size vector that must compress ALL sequential history into
+                                one representation. Attention instead creates a dynamic, weighted combination of ALL
+                                position representations specifically tailored for each query position. Token 50 can
+                                directly attend to token 3 without that information passing through tokens 4-49. It's
+                                the difference between passing a note down a line of people (RNN) vs. being able to
+                                look directly at anyone in the room (Transformer).</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>ANN vs RNN vs LSTM vs Transformer — understanding the architecture evolution.</p>
+            <div class="mini-links">
+                <a href="index.html">Home</a>
+                <a href="rnn-basics.html">RNN Basics</a>
+                <a href="transformer-basics.html">Transformers</a>
+                <a href="activation-functions.html">Activations</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

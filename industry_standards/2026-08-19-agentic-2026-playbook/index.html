@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Agentic Engineering Playbook — Dynamic Workflows, Spec-Driven Dev & Verification (Aug 2026)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38;
+    --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575;
+    --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f;
+    --green:#a3e077; --violet:#c09bfa;
+  }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
+  h1{ font-size:2.6rem; font-weight:800; letter-spacing:-0.03em; line-height:1.12; }
+  h1 em{ color:var(--accent); font-style:normal; }
+  h2{ font-size:1.6rem; font-weight:700; margin:2.5rem 0 1rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; }
+  .lead{ font-size:1.15rem; max-width:64ch; }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  a{ color:var(--accent2); text-decoration:none; } a:hover{ text-decoration:underline; }
+  .hero{ padding:3.5rem 0 2rem; border-bottom:1px solid var(--border); margin-bottom:2.5rem; }
+  .hero .kicker{ color:var(--accent); font-size:0.78rem; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:0.9rem; }
+  .hero .src{ margin-top:1rem; font-size:0.85rem; color:var(--mute); }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  .module{ display:flex; gap:1.2rem; align-items:flex-start; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.6rem; margin:1.1rem 0; transition:border-color .2s, transform .2s; }
+  .module:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  .module .num{ font-family:'JetBrains Mono',monospace; font-size:1.5rem; font-weight:600; color:var(--accent); min-width:2.8rem; text-align:center; padding-top:0.2rem; }
+  .module h3{ margin:0 0 0.4rem; font-size:1.2rem; }
+  .module p{ margin:0 0 0.5rem; font-size:0.95rem; }
+  .module .learn{ font-size:0.8rem; color:var(--mute); }
+  .module a{ color:var(--text); } .module a:hover{ color:var(--accent); text-decoration:none; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; } @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .callout.danger{ border-left-color:var(--rose); background:rgba(242,121,127,0.06); }
+  .footer{ margin-top:4rem; padding-top:2rem; border-top:1px solid var(--border); color:var(--mute); font-size:0.85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">Industry Standards · Agentic Engineering · Aug 2026</div>
+    <h1>The Agentic Engineering <em>Playbook</em></h1>
+    <p class="lead">The methodologies that <em>came into the light</em> over mid-2026 and are already paying off: Claude Code <strong>Dynamic Workflows</strong> (Claude writes its own multi-agent harness), <strong>Spec-Driven Development</strong> (the spec is the source of truth, not the prompt), the <strong>80% problem</strong> and context infrastructure, and a cost-ordered <strong>verification funnel</strong>. Plus the Codex-side playbook for the same shift.</p>
+    <div class="src">Compiled 2026-08-19. Sources: claude.com engineering blog (Dynamic Workflows, GA Jun 2026), GitHub Spec Kit / Agent Patterns Catalog (SDD), Sourcegraph · Sogeti Labs · Microsoft Learn (2026 agentic-coding field reports). Links on each module page.</div>
+  </div>
+
+  <div class="callout"><strong>⚡ The one-line thesis:</strong> 2026's winning teams stopped treating the <em>prompt</em> as the product. They treat the <strong>spec</strong>, the <strong>harness</strong>, the <strong>context</strong>, and the <strong>verification environment</strong> as first-class products — and the human's job is steering and auditing, not typing. This module is the concrete playbook for that shift.</div>
+
+  <h2>The Mental Model</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph LR
+    S["Spec-Driven Dev<br/>spec = source of truth<br/>code = generated artifact"] --> P["Dynamic Workflows<br/>Claude writes its own harness<br/>one task, one harness"]
+    P --> C["Context Infrastructure<br/>kill the 80% problem<br/>scope + equip + audit"]
+    C --> V["Verification Funnel<br/>cheapest check first<br/>prove it, don't trust it"]
+    V --> G["Human gates<br/>plan · diff · merge<br/>you own the code"]
+    G --> S
+  </div>
+  </div>
+
+  <h2>Learning Path — 5 Modules</h2>
+
+  <a href="01-dynamic-workflows.html"><div class="module">
+    <div class="num">01</div>
+    <div>
+      <h3>Dynamic Workflows (Anthropic, GA Jun 2026)</h3>
+      <p>Claude Code now writes and orchestrates its own multi-agent JS harness at runtime — <code>ultracode</code> trigger, six core patterns (classify-and-act, fan-out-and-synthesize, adversarial verification, generate-and-filter, tournament, loop-until-done), and the three single-context failure modes it fixes: agentic laziness, self-preferential bias, goal drift.</p>
+      <div class="learn">Learn: the six patterns · static vs dynamic · trigger &amp; budget mechanics · Bun's Zig→Rust rewrite</div>
+    </div>
+  </div></a>
+
+  <a href="02-spec-driven-development.html"><div class="module">
+    <div class="num">02</div>
+    <div>
+      <h3>Spec-Driven Development &amp; GitHub Spec Kit</h3>
+      <p>The "brilliant intern problem": agents fill vague briefs with confident guesses. SDD inverts the order — constitution → specify → clarify → plan → tasks → implement — so the spec, not the prompt, drives the agent. Change the spec and regenerate; never hand-patch generated code.</p>
+      <div class="learn">Learn: six stages · the clarify pass · maturity levels 1→4 · the two failure modes</div>
+    </div>
+  </div></a>
+
+  <a href="03-context-infrastructure.html"><div class="module">
+    <div class="num">03</div>
+    <div>
+      <h3>The 80% Problem &amp; Context Infrastructure</h3>
+      <p>Agents reliably finish the visible 80% of a task and miss the invisible 20% — auth middleware, API DTOs, audit logs, sibling-repo integration tests. Framing it as a <em>context infrastructure</em> problem, not a model problem. The fix: scope → equip → loop → review like a human PR → gate on CI → audit.</p>
+      <div class="learn">Learn: symbol-usage search · senior-scoped tasks · the brute-squad developer role</div>
+    </div>
+  </div></a>
+
+  <a href="04-verification-funnel.html"><div class="module">
+    <div class="num">04</div>
+    <div>
+      <h3>The Verification Funnel</h3>
+      <p>"The skill isn't who writes better — it's who can prove it's right." The Verification Horizon (faithfulness · robustness · scalability), a cost-ordered multi-layer funnel, structured evidence over scores, and Agentic TDD's 8-pass state machine as a working template.</p>
+      <div class="learn">Learn: the 3-axis trade-off · cost-ordered checks · 8-pass agentic TDD · verdicts over scores</div>
+    </div>
+  </div></a>
+
+  <a href="05-codex-playbook.html"><div class="module">
+    <div class="num">05</div>
+    <div>
+      <h3>The Codex &amp; Cross-Tool Playbook</h3>
+      <p>The same 2026 shift on the OpenAI side: plan-first decision rule, git worktrees for parallel sessions, <code>/goal</code> for multi-day tasks, the OMX clarify→plan→own→team layer, CodexLoop's external memory, and AGENTS.md vs Skills vs Subagents.</p>
+      <div class="learn">Learn: the plan-first rule · worktrees · /goal · OMX layers · external memory for long tasks</div>
+    </div>
+  </div></a>
+
+  <h2>Quick Reference — Old Default → New Default</h2>
+  <table style="width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.9rem;">
+    <thead><tr><th style="text-align:left;color:var(--accent2);border-bottom:2px solid var(--border);padding:0.6rem 0.8rem;">Old default (2024–25)</th><th style="text-align:left;color:var(--accent2);border-bottom:2px solid var(--border);padding:0.6rem 0.8rem;">New default (2026)</th></tr></thead>
+    <tbody>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Prompt → code, one context window</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Dynamic workflow harness, many isolated agents</td></tr>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Vague brief handed to agent</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Constitution → spec → clarify → plan → tasks</td></tr>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Trust the agent's "done"</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Verify + search for symbols the agent never opened</td></tr>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">One verifier for everything</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Cost-ordered funnel: compile → lint → types → unit → E2E</td></tr>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Prompt → Code</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Goal → Loop → Review → Iterate → Converge</td></tr>
+      <tr><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Agent owns the output</td><td style="border-bottom:1px solid var(--border);padding:0.6rem 0.8rem;color:var(--dim);">Human owns the code — gates on plan, diff, merge</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn"><strong>⚠️ Cost reality check:</strong> dynamic workflows and deep verification are forms of <em>test-time compute</em> — they deliberately spend tokens to buy reliability. Adversarial verification alone can double or triple a task's token bill. The <em>patterns</em> transfer to any budget; the <em>scale</em> (thousands of agents, 11-day codebase rewrites) needs real spend. Right-size: funnel cheap checks first, use workflows where stakes justify them.</div>
+
+  <div class="callout"><strong>🧭 How this connects to the track:</strong> this module is the <em>concrete, shipped</em> version of the Boris Cherny thesis — see <a href="../2026-08-03-boris-cherny-opus5-elicitation/index.html">The Elicitation Era</a>, especially its module on <a href="../2026-08-03-boris-cherny-opus5-elicitation/03-dynamic-workflows.html">Dynamic Workflows &amp; Massive Orchestration</a>. It also extends the <a href="../anthropic_building_agents.html">five Anthropic workflow patterns</a> and the <a href="../claude_code_loops.html">loops</a> page with what vendors actually shipped in 2026.</div>
+
+  <div class="footer">
+    <p>Agentic Engineering Playbook — compiled 2026-08-19 for the industry-standards learning track. Grounded in official Anthropic / OpenAI / Microsoft / GitHub sources and 2026 field reports; each module page links its sources. Vendors iterate fast — treat linked sources as authoritative.</p>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#10141c',primaryColor:'#161b26',primaryBorderColor:'#6ee7d8',primaryTextColor:'#e7e9f0',lineColor:'#6ee7d8',secondaryColor:'#0a0c10'}});</script>
+</body>
+</html>

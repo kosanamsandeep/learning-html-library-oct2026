@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P1 · Agentic Patterns</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>AI Engineering</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p2_multi_agent_system/README.html">Next: P2</a><a href="../../index.html">Academy</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">AI Engineering · Project 1</p>
+            <h1>Agentic patterns — the four building blocks</h1>
+            <p class="lead">Frameworks like LangGraph, CrewAI, and AutoGen look complicated, but underneath they all
+                reuse the same four patterns: router, planner, ReAct loop, reflector. Build them from scratch once and
+                every framework feels obvious.</p>
+        </section>
+
+        <section class="card">
+            <h2>The four patterns</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>What it does</th>
+                        <th>When to use</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Router</td>
+                        <td>LLM picks which path/tool handles this input.</td>
+                        <td>Multi-skill assistants; cheap classifier for tool selection.</td>
+                    </tr>
+                    <tr>
+                        <td>Planner</td>
+                        <td>Decompose a goal into ordered subtasks.</td>
+                        <td>Complex tasks; lets you parallelise or pause-and-resume.</td>
+                    </tr>
+                    <tr>
+                        <td>ReAct loop</td>
+                        <td>Reason → act (call tool) → observe → repeat.</td>
+                        <td>Any agent that needs to use tools.</td>
+                    </tr>
+                    <tr>
+                        <td>Reflector</td>
+                        <td>Critique the draft answer; iterate when not good enough.</td>
+                        <td>Quality bar; combats hallucination; useful for code generation.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Mental model — combined</h2>
+            <div class="flow">
+                <div class="step">user goal</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Router picks lane</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Planner makes steps</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">ReAct loop executes</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Reflector iterates if needed</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Code skeleton (ReAct)</h2>
+            <pre><code>scratchpad = f"react: thought-1 goal={goal}"
+for _ in range(self.max_steps):
+    response = self.llm.complete(scratchpad)
+    if "Action:" in response:
+        observation = TOOLS[tool](arg)
+        scratchpad = f"react: observation {observation}"
+    elif "Final:" in response:
+        return response.split("Final:")[1].strip()</code></pre>
+            <p>This shape is everywhere: OpenAI function calling, LangChain agents, LlamaIndex agents — they all loop
+                reason → act → observe.</p>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/ai_engineering/p1_agentic_patterns
+python main.py</code></pre>
+            <p>Each pattern runs in isolation so the boundary between them is obvious.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"For an agent I default to a router + ReAct loop. The router keeps the cheap LLM in
+                control of which tool runs; ReAct gives the agent the loop it needs to use tools and observe results. I
+                add a planner when goals are multi-step and a reflector when the cost of a bad answer is higher than the
+                cost of one extra LLM call."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

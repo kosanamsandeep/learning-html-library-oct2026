@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latest Stack — Multimodal, SLMs, Agentic RAG, Fine-tuning, Voice, Eval</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        pre.mermaid {
+            background: #ffffff;
+            color: inherit;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>LS</span>Latest Stack</a>
+            <nav class="top-links">
+                <a href="#topics">Topics</a>
+                <a href="#map">Stack map</a>
+                <a href="../industry_standards/index.html">Industry Standards</a>
+                <a href="../README.html">Workspace</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag">2026 stack</span></p>
+            <h1>Latest stack — what every applied AI engineer should be fluent in by 2026</h1>
+            <p class="lead">Nine focused pages covering the building blocks that show up in every real product
+                today: <strong>multimodal models</strong> (speech, vision), <strong>small language models</strong>
+                for edge and cost, <strong>agentic RAG</strong>, <strong>realtime transports</strong> (WebSockets,
+                WebRTC), <strong>fine-tuning</strong> (full vs LoRA), <strong>voice bots</strong>,
+                <strong>performance optimisation</strong>, <strong>LLM evaluation</strong>, and the new
+                <strong>LitServe</strong> serving framework. Every page links back to an official source.
+            </p>
+        </section>
+
+        <section class="card" id="map">
+            <h2>How the pieces fit together</h2>
+            <pre class="mermaid">
+flowchart LR
+  user([User]):::user
+  mic[Mic / Camera]:::io
+  ws[WebSocket / WebRTC]:::net
+  stt[STT model<br/>Whisper / Deepgram]:::ml
+  llm[LLM or SLM<br/>+ Agentic RAG]:::ml
+  tts[TTS model<br/>ElevenLabs / OpenAI]:::ml
+  vector[(Vector DB)]:::store
+  tools[Tools / MCP / APIs]:::ml
+  ft[Fine-tuned adapter<br/>LoRA / QLoRA]:::ml
+  serve[LitServe / vLLM / TGI]:::infra
+  eval[Eval suite<br/>RAGAS / DeepEval]:::infra
+  gpu[GPU runtime<br/>quantised + batched]:::infra
+
+  user --> mic --> ws
+  ws --> stt --> llm
+  llm <--> vector
+  llm <--> tools
+  ft -.attached.-> llm
+  llm --> tts --> ws --> user
+  serve --> llm
+  gpu --> serve
+  eval -.scores.-> llm
+
+  classDef user fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
+  classDef io fill:#fef3c7,stroke:#b45309,color:#78350f
+  classDef net fill:#ccfbf1,stroke:#0f766e,color:#134e4a
+  classDef ml fill:#ffedd5,stroke:#d97706,color:#7c2d12
+  classDef store fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+  classDef infra fill:#d1fae5,stroke:#047857,color:#064e3b
+            </pre>
+        </section>
+
+        <section class="card" id="topics">
+            <h2>Topics</h2>
+            <a class="project" href="multimodal.html"><strong>01 · MULTIMODAL MODELS</strong>Speech-to-Text (Whisper,
+                Deepgram), Text-to-Speech (OpenAI TTS, ElevenLabs, Coqui), image models (CLIP, Stable Diffusion,
+                SDXL, Flux), and true multimodal LLMs (GPT-4o, Gemini, Claude 3.5). Use cases that actually ship.</a>
+            <a class="project" href="slm.html"><strong>02 · SMALL LANGUAGE MODELS (SLM)</strong>Phi-3, Gemma 2,
+                Qwen 2.5, Llama 3.2-1B/3B, SmolLM2. Why an SLM beats GPT-4 on cost, latency, and privacy for
+                well-scoped tasks — and where it falls over.</a>
+            <a class="project" href="agentic-rag.html"><strong>03 · AGENTIC RAG</strong>Why naive RAG breaks, what
+                an agent loop adds (query rewriting, source routing, self-critique, multi-hop), and the production
+                patterns from LlamaIndex, LangGraph, and Anthropic.</a>
+            <a class="project" href="realtime-comms.html"><strong>04 · WEBSOCKETS &amp; WEBRTC</strong>The two
+                realtime transports every voice or collaborative product picks between. Latency budgets, NAT
+                traversal, when each is the right answer.</a>
+            <a class="project" href="fine-tuning.html"><strong>05 · FINE-TUNING (FULL vs LORA)</strong>Full
+                fine-tuning, LoRA, QLoRA, adapters, DPO. A working Hugging Face PEFT example you can copy. When
+                fine-tuning is the right answer and when it absolutely isn't.</a>
+            <a class="project" href="voice-bots.html"><strong>06 · VOICE BOTS</strong>End-to-end architecture for a
+                sub-800 ms voice agent: streaming STT, interruption handling, LLM streaming, sentence-level TTS
+                chunking, jitter buffers.</a>
+            <a class="project" href="performance.html"><strong>07 · PERFORMANCE OPTIMISATION</strong>Quantisation
+                (INT8, INT4, GPTQ, AWQ), continuous batching (vLLM, TGI), KV-cache reuse, paged attention,
+                speculative decoding, prompt caching, CPU vs GPU trade-offs.</a>
+            <a class="project" href="eval-llm.html"><strong>08 · EVALUATING LLM RESPONSES</strong>Reference-based
+                metrics (BLEU, ROUGE, BERTScore), reference-free judges (G-Eval, RAGAS, DeepEval), HumanEval / MMLU
+                / MT-Bench benchmarks, and how to run a human-eval pass without going broke.</a>
+            <a class="project" href="litserve.html"><strong>09 · LITSERVE</strong>Lightning AI's batteries-included
+                model server. What it gives you over FastAPI (dynamic batching, GPU streaming, multi-model
+                routing), and when plain FastAPI is still the right call.</a>
+        </section>
+
+        <section class="card">
+            <h2>How to read these pages</h2>
+            <ul>
+                <li>Each page opens with a <strong>plain-English definition</strong> and one mermaid diagram.</li>
+                <li>Then a <strong>side-by-side table</strong> of trade-offs (pros, cons, when to use).</li>
+                <li>Then a <strong>code or config example</strong> you can lift into your own repo.</li>
+                <li>Every claim is footnoted to an <strong>official source</strong> (vendor docs, foundational paper,
+                    or W3C spec).</li>
+            </ul>
+            <div class="callout"><strong>Pro tip:</strong> these pages were written to pair with
+                <a href="../industry_standards/index.html">industry_standards</a> (Anthropic / OpenAI / GitHub
+                best-practice guides) and <a
+                    href="../industry_standards/claude_workshops/index.html">claude_workshops</a>
+                (CWC field notes). Use them together.
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P11: Event-Driven Task Queue</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.7;
+            padding: 2rem
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto
+        }
+
+        h1 {
+            color: #58a6ff;
+            font-size: 2.2rem;
+            margin-bottom: .5rem;
+            border-bottom: 2px solid #21262d;
+            padding-bottom: 1rem
+        }
+
+        h2 {
+            color: #79c0ff;
+            font-size: 1.6rem;
+            margin: 2rem 0 1rem
+        }
+
+        h3 {
+            color: #a5d6ff;
+            font-size: 1.2rem;
+            margin: 1.5rem 0 .5rem
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #8b949e
+        }
+
+        .highlight {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0
+        }
+
+        code {
+            background: #21262d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Cascadia Code', monospace;
+            color: #f0883e
+        }
+
+        pre {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.2rem;
+            overflow-x: auto;
+            margin: 1rem 0
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: #c9d1d9
+        }
+
+        .mermaid {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0
+        }
+
+        .principle {
+            display: inline-block;
+            background: #21262d;
+            border: 1px solid #58a6ff;
+            border-radius: 20px;
+            padding: 4px 12px;
+            margin: 4px;
+            font-size: .85rem;
+            color: #58a6ff
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0
+        }
+
+        th,
+        td {
+            border: 1px solid #30363d;
+            padding: .7rem;
+            text-align: left
+        }
+
+        th {
+            background: #21262d;
+            color: #79c0ff
+        }
+
+        td {
+            color: #8b949e
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: .5rem 0;
+            padding: .8rem;
+            background: #161b22;
+            border-radius: 8px
+        }
+
+        .flow-step .number {
+            background: #58a6ff;
+            color: #0d1117;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📡 Project 11: Event-Driven Task Queue</h1>
+        <p>
+            <span class="principle">Observer Pattern</span>
+            <span class="principle">Pub/Sub</span>
+            <span class="principle">Command Pattern</span>
+            <span class="principle">Priority Queue</span>
+            <span class="principle">Dead-Letter Queue</span>
+            <span class="principle">Retry Logic</span>
+        </p>
+
+        <h2>🎯 What You Learn</h2>
+        <div class="highlight">
+            <table>
+                <tr>
+                    <th>Concept</th>
+                    <th>Implementation</th>
+                    <th>Real-World Equivalent</th>
+                </tr>
+                <tr>
+                    <td>Event Bus</td>
+                    <td><code>EventBus</code> class</td>
+                    <td>Django Signals, Node EventEmitter</td>
+                </tr>
+                <tr>
+                    <td>Pub/Sub</td>
+                    <td><code>subscribe()</code> + <code>publish()</code></td>
+                    <td>RabbitMQ, Kafka Topics</td>
+                </tr>
+                <tr>
+                    <td>Task Queue</td>
+                    <td><code>TaskQueue</code> with heapq</td>
+                    <td>Celery, AWS SQS, Bull</td>
+                </tr>
+                <tr>
+                    <td>Workers</td>
+                    <td>Registered functions per task_type</td>
+                    <td>Celery @app.task</td>
+                </tr>
+                <tr>
+                    <td>Retry + DLQ</td>
+                    <td>max_retries + dead_letter list</td>
+                    <td>SQS Dead-Letter Queue</td>
+                </tr>
+            </table>
+        </div>
+
+        <h2>🏗️ Architecture</h2>
+        <div class="mermaid">
+            graph TB
+            subgraph "Event System (Pub/Sub)"
+            PUB[Publisher] -->|emit| BUS[Event Bus]
+            BUS -->|route| H1[Handler 1]
+            BUS -->|route| H2[Handler 2]
+            BUS -->|route| H3[Handler 3]
+            BUS -->|no handler| DL1[Dead Letters]
+            end
+            subgraph "Task System (Command)"
+            H2 -->|create task| Q[Task Queue]
+            Q -->|dispatch| W1[Worker: email]
+            Q -->|dispatch| W2[Worker: payment]
+            Q -->|dispatch| W3[Worker: invoice]
+            W1 -->|fail| RETRY[Retry Queue]
+            RETRY -->|re-enqueue| Q
+            W1 -->|max retries| DL2[Dead Letter]
+            end
+        </div>
+
+        <h2>📊 Event Flow (Sequence)</h2>
+        <div class="mermaid">
+            sequenceDiagram
+            participant S as Service
+            participant B as EventBus
+            participant H1 as OrderHandler
+            participant H2 as NotificationHandler
+            participant H3 as AnalyticsHandler
+
+            S->>B: publish(order.placed)
+            B->>H1: on_order_placed(event)
+            B->>H2: send_confirmation_email(event)
+            B->>H3: track_order(event)
+            Note over B: All handlers called synchronously
+        </div>
+
+        <h2>📋 Task Lifecycle</h2>
+        <div class="mermaid">
+            stateDiagram-v2
+            [*] --> PENDING: enqueue()
+            PENDING --> PROCESSING: worker picks up
+            PROCESSING --> COMPLETED: success
+            PROCESSING --> RETRYING: failure + retries left
+            RETRYING --> PENDING: re-enqueue
+            PROCESSING --> DEAD: failure + no retries
+            DEAD --> [*]
+            COMPLETED --> [*]
+        </div>
+
+        <h2>🆚 Event vs Task</h2>
+        <div class="highlight">
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th>Event</th>
+                    <th>Task</th>
+                </tr>
+                <tr>
+                    <td>Meaning</td>
+                    <td>"Something happened"</td>
+                    <td>"Do this work"</td>
+                </tr>
+                <tr>
+                    <td>Direction</td>
+                    <td>Broadcast (1 → many)</td>
+                    <td>Targeted (1 → 1 worker)</td>
+                </tr>
+                <tr>
+                    <td>Retryable</td>
+                    <td>No (facts are immutable)</td>
+                    <td>Yes (work can be retried)</td>
+                </tr>
+                <tr>
+                    <td>Ordering</td>
+                    <td>Chronological</td>
+                    <td>Priority-based</td>
+                </tr>
+                <tr>
+                    <td>Example</td>
+                    <td>"order.placed"</td>
+                    <td>"send_email"</td>
+                </tr>
+            </table>
+        </div>
+
+        <h2>🏃 How to Run</h2>
+        <div class="highlight">
+            <pre><code>cd 07_learning_projects/p11_event_driven_task_queue
+python main.py</code></pre>
+        </div>
+    </div>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

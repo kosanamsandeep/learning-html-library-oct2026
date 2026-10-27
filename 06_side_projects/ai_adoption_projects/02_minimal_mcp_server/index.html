@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimal MCP Server</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="brand" href="../"><span>AI</span>AI Adoption Projects</a>
+  <div class="nav-links">
+    <a href="../">Hub</a>
+    <a href="../01_context_file_generator/">Context Generator</a>
+    <a href="../03_agent_audit_trail_hook/">Audit Hook</a>
+    <a href="../04_agent_router/">Agent Router</a>
+  </div>
+</nav>
+
+<main class="shell">
+  <section class="hero">
+    <p class="eyebrow">Project 02</p>
+    <h1>Minimal MCP Server</h1>
+    <p class="subtitle">
+      A small Model Context Protocol server that exposes API documentation as a searchable tool.
+      Build it once, connect it to any MCP-compatible agent — Claude Code, Copilot, Cline, or your own.
+    </p>
+  </section>
+
+  <section class="card">
+    <span class="tag">OVERVIEW</span>
+    <h2>What is MCP and why does it matter?</h2>
+    <p>
+      The <strong>Model Context Protocol (MCP)</strong> is an open standard, announced by Anthropic in late 2024,
+      that defines how AI applications connect to external tools and data sources. Think of it as "USB-C for AI" —
+      a single protocol that any AI agent can use to discover and call tools, read resources, and follow prompts,
+      regardless of which model or framework powers it.
+    </p>
+    <p>
+      Before MCP, every integration was bespoke: you wrote a LangChain tool one way, a Copilot extension another
+      way, and a custom agent integration a third way. With MCP, you write <strong>one server</strong> and every
+      MCP-compatible agent can use it out of the box. This project builds the smallest useful MCP server: one that
+      searches a documentation corpus and returns relevant results to the agent.
+    </p>
+    <div class="callout">
+      <strong>Key insight:</strong> An MCP server is just a process that speaks JSON-RPC over stdin/stdout (stdio)
+      or HTTP. The <code>mcp</code> Python SDK handles all the protocol boilerplate — you only write the tools.
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="tag indigo">ARCHITECTURE</span>
+    <h2>Conversation flow</h2>
+
+    <div class="mermaid-wrap">
+<pre class="mermaid">
+sequenceDiagram
+    participant User
+    participant Agent as Claude Code / Any MCP Client
+    participant MCP as MCP Server<br/>(our server)
+    participant Docs as Documentation API<br/>(or local index)
+
+    User->>Agent: "How do I configure CORS in FastAPI?"
+    Agent->>MCP: List Tools (handshake)
+    MCP-->>Agent: Tools: search_docs(query)
+    Agent->>MCP: Call tool: search_docs("fastapi cors configuration")
+    MCP->>Docs: Search documentation index
+    Docs-->>MCP: Relevant docs snippets
+    MCP-->>Agent: Tool result: docs snippets
+    Agent->>User: "Here's how to configure CORS in FastAPI..."
+
+    Note over Agent,MCP: MCP uses JSON-RPC 2.0 over stdio
+    Note over MCP,Docs: The server can wrap any API or local index
+</pre>
+      <div class="caption">Sequence diagram showing the MCP handshake and tool call flow between agent and server.</div>
+    </div>
+
+    <p>The flow has three phases:</p>
+    <ol>
+      <li><strong>Initialization:</strong> The agent (MCP client) sends an <code>initialize</code> request with its protocol version and capabilities. The server responds with its supported version and lists its tools via the <code>tools/list</code> capability.</li>
+      <li><strong>Tool discovery:</strong> The agent calls <code>tools/list</code> to get the available tools, their names, descriptions, and JSON Schema input parameters.</li>
+      <li><strong>Tool invocation:</strong> The agent calls <code>tools/call</code> with the tool name and arguments. The server executes the logic and returns the result. The agent folds the result into its response to the user.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <span class="tag green">STARTER CODE</span>
+    <h2>Python — minimal_mcp_server.py</h2>
+    <p>This server exposes a single <code>search_docs</code> tool that searches either a local JSON index
+    or a remote documentation API. The <code>FastMCP</code> class from the <code>mcp</code> SDK handles
+    all the protocol details — you only decorate a Python function with <code>@mcp.tool()</code>.</p>
+
+<pre><code><span class="c-com">#!/usr/bin/env python3</span>
+<span class="c-com">"""minimal_mcp_server.py — One MCP tool to search documentation."""</span>
+
+<span class="c-kw">import</span> json
+<span class="c-kw">import</span> httpx
+<span class="c-kw">from</span> mcp.server <span class="c-kw">import</span> FastMCP
+
+<span class="c-com"># --- Configuration ---</span>
+DOCS_API_URL = <span class="c-str">"https://docs.example.com/api/search"</span>
+LOCAL_INDEX   = <span class="c-str">"docs_index.json"</span>   <span class="c-com"># fallback local corpus</span>
+
+<span class="c-com"># Create the MCP server — FastMCP handles init, tool listing, and transport</span>
+mcp = FastMCP(
+    name=<span class="c-str">"Docs Search Server"</span>,
+    instructions=<span class="c-str">"Search documentation and return relevant results."</span>,
+)
+
+
+<span class="c-kw">def</span> <span class="c-fn">_search_local</span>(query: <span class="c-kw">str</span>, top_k: <span class="c-kw">int</span> = 5) -&gt; <span class="c-kw">list</span>[<span class="c-kw">dict</span>]:
+    <span class="c-com">"""Simple keyword-search over a local JSON index."""</span>
+    <span class="c-kw">try</span>:
+        <span class="c-kw">with</span> open(LOCAL_INDEX) <span class="c-kw">as</span> f:
+            entries = json.load(f)
+    <span class="c-kw">except</span> FileNotFoundError:
+        <span class="c-kw">return</span> [{<span class="c-str">"title"</span>: <span class="c-str">"Index not found"</span>, <span class="c-str">"content"</span>: <span class="c-str">""</span>}]
+
+    query_lower = query.lower()
+    scored = []
+    <span class="c-kw">for</span> entry <span class="c-kw">in</span> entries:
+        score = entry[<span class="c-str">"title"</span>].lower().count(query_lower) * 3 \
+              + entry[<span class="c-str">"content"</span>].lower().count(query_lower)
+        <span class="c-kw">if</span> score &gt; 0:
+            scored.append((score, entry))
+    scored.sort(key=<span class="c-kw">lambda</span> x: x[0], reverse=<span class="c-kw">True</span>)
+    <span class="c-kw">return</span> [entry <span class="c-kw">for</span> _, entry <span class="c-kw">in</span> scored[:top_k]]
+
+
+<span class="c-kw">async</span> <span class="c-kw">def</span> <span class="c-fn">_search_remote</span>(query: <span class="c-kw">str</span>, top_k: <span class="c-kw">int</span> = 5) -&gt; <span class="c-kw">list</span>[<span class="c-kw">dict</span>]:
+    <span class="c-com">"""Query a remote documentation search API."""</span>
+    <span class="c-kw">async</span> <span class="c-kw">with</span> httpx.AsyncClient(timeout=10) <span class="c-kw">as</span> client:
+        resp = <span class="c-kw">await</span> client.get(DOCS_API_URL, params={<span class="c-str">"q"</span>: query, <span class="c-str">"limit"</span>: top_k})
+        resp.raise_for_status()
+        <span class="c-kw">return</span> resp.json().get(<span class="c-str">"results"</span>, [])
+
+
+<span class="c-kw">@mcp.tool</span>(description=<span class="c-str">"Search project documentation. Returns title + snippet for each match."</span>)
+<span class="c-kw">async</span> <span class="c-kw">def</span> <span class="c-fn">search_docs</span>(
+    query: <span class="c-kw">str</span>,
+    top_k: <span class="c-kw">int</span> = 5
+) -&gt; <span class="c-kw">str</span>:
+    <span class="c-com">"""Search documentation for the given query. Tries remote API first, falls back to local."""</span>
+    <span class="c-kw">try</span>:
+        results = <span class="c-kw">await</span> _search_remote(query, top_k)
+    <span class="c-kw">except</span> Exception:
+        results = _search_local(query, top_k)
+
+    <span class="c-kw">if</span> <span class="c-kw">not</span> results:
+        <span class="c-kw">return</span> <span class="c-str">"No results found."</span>
+
+    lines = [<span class="c-str">f"### {r['title']}\n{r.get('content', r.get('snippet', ''))[:500]}"</span>
+             <span class="c-kw">for</span> r <span class="c-kw">in</span> results]
+    <span class="c-kw">return</span> <span class="c-str">"\n\n---\n\n"</span>.join(lines)
+
+
+<span class="c-com"># --- Entry point ---</span>
+<span class="c-kw">if</span> __name__ == <span class="c-str">"__main__"</span>:
+    <span class="c-com"># Run with stdio transport (default)</span>
+    <span class="c-com"># Connect: claude mcp add docs-server -- python minimal_mcp_server.py</span>
+    mcp.run(transport=<span class="c-str">"stdio"</span>)
+</code></pre>
+
+    <h3>How to connect it</h3>
+    <p>Once the server is running, register it with any MCP-compatible client:</p>
+
+<pre><code><span class="c-com"># Claude Code</span>
+claude mcp add docs-search -- python /path/to/minimal_mcp_server.py
+
+<span class="c-com"># Or in .claude/settings.json</span>
+{
+  <span class="c-str">"mcpServers"</span>: {
+    <span class="c-str">"docs-search"</span>: {
+      <span class="c-str">"command"</span>: <span class="c-str">"python"</span>,
+      <span class="c-str">"args"</span>: [<span class="c-str">"/path/to/minimal_mcp_server.py"</span>]
+    }
+  }
+}
+</code></pre>
+
+    <div class="callout indigo">
+      <strong>Zero config for any agent:</strong> The same server works with Claude Code, GitHub Copilot
+      (via MCP support), Cline, Continue.dev, and any other MCP client. No per-agent adapters needed.
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="tag amber">DEEP DIVE</span>
+    <h2>How one server serves every agent</h2>
+    <p>MCP achieves cross-agent compatibility through three design decisions:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Design element</th>
+          <th>What it does</th>
+          <th>Why it matters</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>JSON-RPC 2.0 transport</strong></td>
+          <td>All messages are JSON-RPC request/response/notification frames over stdio or SSE</td>
+          <td>Any process that can read stdin and write stdout can be an MCP server — no HTTP server, no sockets, no framework lock-in</td>
+        </tr>
+        <tr>
+          <td><strong>Capability negotiation</strong></td>
+          <td>On <code>initialize</code>, client and server exchange their supported protocol version and feature flags</td>
+          <td>A server written for MCP 2024-11-05 works with clients implementing that version; negotiation prevents silent failures</td>
+        </tr>
+        <tr>
+          <td><strong>Tool schema via JSON Schema</strong></td>
+          <td>Tools are described with standard <code>inputSchema</code> (JSON Schema), and the agent introspects them</td>
+          <td>The agent knows exactly what parameters a tool expects and can generate valid calls without pre-configured knowledge</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>MCP vs. other integration patterns</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Pattern</th>
+          <th>Effort per tool</th>
+          <th>Agent lock-in</th>
+          <th>Discoverability</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>MCP Server</strong></td>
+          <td>Write once</td>
+          <td>None — any MCP client works</td>
+          <td>Automatic via <code>tools/list</code></td>
+        </tr>
+        <tr>
+          <td>LangChain Tool</td>
+          <td>Write once</td>
+          <td>LangChain agents only</td>
+          <td>Manual registration</td>
+        </tr>
+        <tr>
+          <td>OpenAI Function Calling</td>
+          <td>Write once per schema</td>
+          <td>OpenAI API only</td>
+          <td>Inline in request</td>
+        </tr>
+        <tr>
+          <td>Custom HTTP endpoint</td>
+          <td>Full API per tool</td>
+          <td>Custom client needed</td>
+          <td>None</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <span class="tag">STEP-BY-STEP</span>
+    <h2>How to adopt this project</h2>
+    <div class="steps">
+      <div class="step-row">
+        <div class="num">1</div>
+        <div><strong>Install the MCP SDK</strong> — <code>pip install mcp httpx</code>. This gives you <code>FastMCP</code>, the high-level server class, plus <code>httpx</code> for async HTTP calls.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">2</div>
+        <div><strong>Define your tools</strong> — decorate async Python functions with <code>@mcp.tool()</code>. Use type annotations for your parameters; the SDK generates JSON Schema from them automatically.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">3</div>
+        <div><strong>Run the server</strong> — call <code>mcp.run(transport="stdio")</code> at the bottom. Test it by piping JSON-RPC messages or using the MCP Inspector: <code>npx @modelcontextprotocol/inspector python server.py</code>.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">4</div>
+        <div><strong>Register with your agent</strong> — add it to Claude Code's MCP config, Copilot's <code>.github/copilot-instructions.md</code> MCP section, or any MCP client's config file.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">5</div>
+        <div><strong>Iterate</strong> — add more tools, resources (files the agent can read), or prompts (reusable prompt templates). The same server grows with your needs.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="tag green">BUILT & RUNNING</span>
+    <h2>Actual code — built and tested</h2>
+    <p>This project has been fully implemented. You can run it right now:</p>
+
+    <table>
+      <tr><th>File</th><th>Purpose</th></tr>
+      <tr>
+        <td><a href="server.py"><code>server.py</code></a></td>
+        <td>Docs search MCP server with <code>search_docs</code>, <code>list_topics</code>, <code>get_topic</code></td>
+      </tr>
+      <tr>
+        <td><a href="examples_server.py"><code>examples_server.py</code></a></td>
+        <td>6 progressive tools: calculator, time, weather, text stats, unit converter, code review</td>
+      </tr>
+      <tr>
+        <td><a href="test_client.py"><code>test_client.py</code></a></td>
+        <td>Test harness that exercises every tool (no Claude Code needed)</td>
+      </tr>
+      <tr>
+        <td><a href="docs_index.json"><code>docs_index.json</code></a></td>
+        <td>Sample documentation index (15 topics on FastAPI, Python, Docker, Git, SQLAlchemy, Pytest)</td>
+      </tr>
+      <tr>
+        <td><a href="README.md"><code>README.md</code></a></td>
+        <td>Full documentation with usage examples and connection guides</td>
+      </tr>
+    </table>
+
+    <div class="callout" style="margin-top:0.75rem;">
+      <strong>Quick test:</strong> <code>source .venv/bin/activate && python test_client.py --server server.py</code>
+    </div>
+  </section>
+
+  <div class="pager">
+    <a href="../01_context_file_generator/" class="prev">
+      <div class="dir">Previous</div>
+      <div class="ttl">Context File Generator</div>
+    </a>
+    <a href="../03_agent_audit_trail_hook/" class="next">
+      <div class="dir">Next Project</div>
+      <div class="ttl">Agent Audit Trail Hook</div>
+    </a>
+  </div>
+</main>
+
+<footer>
+  AI Adoption Projects &mdash; Educational explainers for agentic engineering workflows.
+</footer>
+
+</body>
+</html>

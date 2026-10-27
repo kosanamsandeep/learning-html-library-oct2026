@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2 · ReAct Tool-Calling Agent — LangGraph Projects</title>
+    <link rel="stylesheet" href="projects.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span>LG</span>P2 · ReAct Tool Agent</div>
+        <div class="links">
+            <a href="index.html">Projects Hub</a>
+            <a href="p1_stateful_chatbot.html">← P1</a>
+            <a href="p3_persistence_memory.html">Next: P3 →</a>
+        </div>
+    </div>
+
+    <div class="header">
+        <p class="badge">Project 2 · Beginner+</p>
+        <h1>Give the model hands: the ReAct loop</h1>
+        <p class="subtitle">An agent is just an LLM that can call tools and loop until it's done. You'll build
+            the canonical <strong>reason → act → observe</strong> cycle with <code>bind_tools</code>,
+            <code>ToolNode</code>, and a conditional edge.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>What this project does</h2>
+            <p>The model receives a question. If it needs external data (math, search, a database), it emits a
+                <em>tool call</em> instead of a final answer. A <code>ToolNode</code> runs the tool, appends the
+                result to state, and routes back to the model. The model reads the result and either calls
+                another tool or returns the final answer.
+            </p>
+            <div class="pill-row">
+                <span class="level beginner">Beginner+</span>
+                <span class="tag green">bind_tools</span>
+                <span class="tag">ToolNode</span>
+                <span class="tag">tools_condition</span>
+                <span class="tag">conditional edges</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The graph — note the loop back to the model</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    START((START)) --> agent["agent node<br/>llm_with_tools.invoke(messages)"]
+    agent -->|tools_condition:<br/>has tool_calls?| tools["ToolNode<br/>runs the requested tools"]
+    agent -->|no tool_calls| END((END))
+    tools -->|append ToolMessages| agent
+                </pre>
+                <p class="caption">The single conditional edge after <code>agent</code> is the entire "agent
+                    loop". It keeps cycling until the model stops asking for tools.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The ReAct cycle in words</h2>
+            <div class="steps">
+                <div class="step-row">
+                    <div class="num">1</div>
+                    <div><strong>Reason.</strong> The LLM looks at
+                        the conversation and decides: answer now, or call a tool?</div>
+                </div>
+                <div class="step-row">
+                    <div class="num">2</div>
+                    <div><strong>Act.</strong> If a tool is needed it
+                        emits a structured <code>tool_call</code> (name + arguments).</div>
+                </div>
+                <div class="step-row">
+                    <div class="num">3</div>
+                    <div><strong>Observe.</strong> The
+                        <code>ToolNode</code> executes it and adds a <code>ToolMessage</code> with the result back
+                        into state.
+                    </div>
+                </div>
+                <div class="step-row">
+                    <div class="num">4</div>
+                    <div><strong>Repeat.</strong> Control returns to
+                        the model, now richer by one observation. Loop until it answers.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The code, annotated</h2>
+            <pre><code><span class="c-kw">from</span> langgraph.graph <span class="c-kw">import</span> StateGraph, MessagesState, START, END
+<span class="c-kw">from</span> langgraph.prebuilt <span class="c-kw">import</span> ToolNode, tools_condition
+<span class="c-kw">from</span> langchain.chat_models <span class="c-kw">import</span> init_chat_model
+<span class="c-kw">from</span> langchain_core.tools <span class="c-kw">import</span> tool
+
+<span class="c-com"># 1) TOOLS — any typed Python function becomes a tool with @tool.</span>
+<span class="c-kw">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">multiply</span>(a: <span class="c-kw">int</span>, b: <span class="c-kw">int</span>) -> <span class="c-kw">int</span>:
+    <span class="c-str">"""Multiply two integers."""</span>
+    <span class="c-kw">return</span> a * b
+
+<span class="c-kw">@tool</span>
+<span class="c-kw">def</span> <span class="c-fn">get_weather</span>(city: <span class="c-kw">str</span>) -> <span class="c-kw">str</span>:
+    <span class="c-str">"""Return the current weather for a city."""</span>
+    <span class="c-kw">return</span> <span class="c-str">f"It's 27°C and sunny in {city}."</span>
+
+tools = [multiply, get_weather]
+
+<span class="c-com"># 2) BIND the tool schemas to the model so it knows it can call them.</span>
+llm = init_chat_model(<span class="c-str">"openai:gpt-4o-mini"</span>)
+llm_with_tools = llm.bind_tools(tools)
+
+<span class="c-com"># 3) THE AGENT NODE — just an LLM call; the model decides to call tools or not.</span>
+<span class="c-kw">def</span> <span class="c-fn">agent</span>(state: MessagesState) -> <span class="c-kw">dict</span>:
+    <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: [llm_with_tools.invoke(state[<span class="c-str">"messages"</span>])]}
+
+<span class="c-com"># 4) BUILD: ToolNode runs whatever tools the model asked for.</span>
+builder = StateGraph(MessagesState)
+builder.add_node(<span class="c-str">"agent"</span>, agent)
+builder.add_node(<span class="c-str">"tools"</span>, ToolNode(tools))
+
+builder.add_edge(START, <span class="c-str">"agent"</span>)
+<span class="c-com"># tools_condition: if last msg has tool_calls -> "tools", else -> END</span>
+builder.add_conditional_edges(<span class="c-str">"agent"</span>, tools_condition)
+builder.add_edge(<span class="c-str">"tools"</span>, <span class="c-str">"agent"</span>)   <span class="c-com"># observe -> reason again</span>
+
+graph = builder.compile()
+
+graph.invoke({<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>,
+    <span class="c-str">"content"</span>: <span class="c-str">"What's 23 * 17, and the weather in Pune?"</span>}]})</code></pre>
+            <div class="callout green">
+                <strong>Two prebuilts do the heavy lifting.</strong> <code>ToolNode</code> reads the model's
+                <code>tool_calls</code>, runs the matching Python functions (in parallel if there are several),
+                and writes the results back. <code>tools_condition</code> is the ready-made router that checks
+                "did the model ask for a tool?".
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The shortcut — <code>create_react_agent</code></h2>
+            <p>Everything above is so common that LangGraph ships it as one function. Use the manual graph to
+                <em>understand</em>; use the prebuilt in real code.
+            </p>
+            <pre><code><span class="c-kw">from</span> langgraph.prebuilt <span class="c-kw">import</span> create_react_agent
+
+agent = create_react_agent(
+    model=<span class="c-str">"openai:gpt-4o-mini"</span>,
+    tools=[multiply, get_weather],
+    prompt=<span class="c-str">"You are a concise, helpful assistant."</span>,
+)
+agent.invoke({<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"Weather in Pune?"</span>}]})</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>What the message list looks like mid-loop</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Message type</th>
+                        <th>Content</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0</td>
+                        <td>HumanMessage</td>
+                        <td>"What's 23 * 17, and weather in Pune?"</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>AIMessage</td>
+                        <td><em>tool_calls:</em> multiply(23,17), get_weather("Pune")</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>ToolMessage</td>
+                        <td>391</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>ToolMessage</td>
+                        <td>"It's 27°C and sunny in Pune."</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>AIMessage</td>
+                        <td>"23 × 17 = 391, and it's 27°C and sunny in Pune."</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="caption">The <code>add_messages</code> reducer from P1 is what lets every step append
+                cleanly to this list.</p>
+        </div>
+
+        <div class="section">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Write great docstrings + type hints.</strong> They become the tool schema the model
+                    reads. Vague docstrings = wrong tool calls.</li>
+                <li><strong>Make tools defensive.</strong> Validate inputs and return a clear error string
+                    rather than raising — the model can recover from an error message.</li>
+                <li><strong>Cap the loop.</strong> Set a <code>recursion_limit</code> so a confused model can't
+                    loop forever: <code>graph.invoke(..., {"recursion_limit": 25})</code>.</li>
+                <li><strong>Keep tools small and single-purpose.</strong> Ten focused tools beat one
+                    do-everything tool.</li>
+            </ul>
+            <div class="callout amber">
+                <strong>Diagnostics tip:</strong> stream with <code>stream_mode="updates"</code> to watch each
+                reason/act step, or turn on LangSmith (P4) to see every tool call, its arguments, latency, and
+                token cost.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="p1_stateful_chatbot.html"><span class="dir">Previous</span>
+                <div class="ttl">← P1 · Stateful Chatbot</div>
+            </a>
+            <a class="next" href="p3_persistence_memory.html"><span class="dir">Next</span>
+                <div class="ttl">P3 · Persistence & Memory →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>LangGraph Projects · P2 of 6</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

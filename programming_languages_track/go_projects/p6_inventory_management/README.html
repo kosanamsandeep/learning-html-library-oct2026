@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go P6 — Inventory Management</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Go projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p6_inventory_management/README.html">Python p6</a>
+                <a href="../../rust_projects/p6_inventory_management/README.html">Rust p6</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go · P6</span></p>
+            <h1>Inventory — Repository pattern via tiny Go interfaces</h1>
+            <p class="lead">The Python version uses an abstract base class. In Go, an interface with three methods is
+                enough. <code>InventoryService</code> depends on the interface, not on the concrete store, so swapping
+                memory ↔ file is a one-line change in <code>main</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>The interface trick</h2>
+            <pre><code>type Repository interface {
+    Save(it Item) error
+    Get(sku string) (Item, bool)
+    All() []Item
+}
+
+func NewInventoryService(r Repository) *InventoryService { ... }</code></pre>
+            <p>Both <code>*MemoryRepo</code> and <code>*FileRepo</code> have those three methods, so both satisfy
+                <code>Repository</code> automatically. Go's interfaces are <em>structural</em> — no
+                <code>implements</code> keyword.</p>
+        </section>
+
+        <section class="card">
+            <h2>What you'd write differently in production</h2>
+            <ul>
+                <li>Use a real DB (SQLite, Postgres) and depend on the same interface.</li>
+                <li>Add a <code>context.Context</code> parameter to every repo method — that's the Go convention for
+                    cancellation/timeouts.</li>
+                <li>Wrap the file repo in a mutex if you need concurrent access.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd go_projects/p6_inventory_management
+go run .</code></pre>
+            <p>Files: <a href="main.go">main.go</a> · <a href="go.mod">go.mod</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

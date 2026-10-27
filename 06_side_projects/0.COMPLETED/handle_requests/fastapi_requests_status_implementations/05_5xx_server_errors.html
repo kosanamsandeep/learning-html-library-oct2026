@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>05 · 5xx Server Errors in FastAPI</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span class="mark">H</span>Handle Requests</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="04_4xx_client_errors.html">← 4xx</a>
+                <a href="index.html">Back to hub →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Chapter 05 · <span class="pill red">5xx</span> Server errors</p>
+            <h1>5xx — "the request was fine, <em>I</em> failed"</h1>
+            <p class="lead">5xx means the server couldn't fulfil a valid request. The art here is <strong>failing
+                    safely</strong>: never leak stack traces, always log with a trace id, and signal the right
+                flavour — crashed (500), not implemented (501), or upstream/overloaded (502/503/504).</p>
+        </section>
+
+        <section class="card">
+            <h2>The 5xx you'll deal with</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Meaning</th>
+                        <th>Typical cause</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="pill red">500</span> Internal Server Error</td>
+                        <td>Unhandled exception</td>
+                        <td>A bug — uncaught error in your code</td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill red">501</span> Not Implemented</td>
+                        <td>Feature not built yet</td>
+                        <td>Stub endpoint / unsupported method</td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill red">502</span> Bad Gateway</td>
+                        <td>Bad response from upstream</td>
+                        <td>A dependency returned garbage</td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill red">503</span> Service Unavailable</td>
+                        <td>Temporarily down/overloaded</td>
+                        <td>Maintenance, DB down, shedding load</td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill red">504</span> Gateway Timeout</td>
+                        <td>Upstream too slow</td>
+                        <td>A dependency didn't answer in time</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>500 — catch everything with a global handler</h2>
+            <p>An uncaught exception already produces a 500, but the <strong>default body can leak details</strong>
+                in some setups. Add a global handler that logs the real error server-side and returns a clean,
+                trace-able envelope to the client.</p>
+            <pre><code>from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
+import logging, uuid
+
+app = FastAPI()
+log = logging.getLogger("app")
+
+@app.exception_handler(Exception)
+async def unhandled_handler(request: Request, exc: Exception):
+    trace_id = str(uuid.uuid4())
+    # Full detail to the logs (private); only a correlation id to the client.
+    log.exception("unhandled error", extra={"trace_id": trace_id,
+                                             "path": request.url.path})
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"error": "internal_error", "trace_id": trace_id},
+    )
+
+@app.get("/boom")
+def boom():
+    raise ValueError("something broke internally")   # -> clean 500 + trace_id</code></pre>
+            <div class="callout bad">
+                <strong>Never</strong> return raw exception text or stack traces to clients (info disclosure).
+                Keep <code>debug=False</code> in production and log details privately.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>501 Not Implemented — honest stubs</h2>
+            <p>For endpoints you've declared but not built yet, return 501 so callers know it's coming, not
+                broken.</p>
+            <pre><code>from fastapi import FastAPI, HTTPException, status
+
+app = FastAPI()
+
+@app.post("/export/pdf")
+def export_pdf():
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="PDF export is not available yet",
+    )</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>502 / 504 — when an upstream call fails or times out</h2>
+            <p>If your service calls another API (with <code>httpx</code>/<code>requests</code>) and that call
+                fails or times out, translate it into the right 5xx so clients can react sensibly. A timeout
+                upstream → 504; a bad/garbled response → 502.</p>
+            <pre><code>from fastapi import FastAPI, HTTPException, status
+import httpx
+
+app = FastAPI()
+
+@app.get("/profile/{user_id}")
+async def profile(user_id: int):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(f"https://upstream.example/users/{user_id}")
+    except httpx.TimeoutException:
+        # upstream too slow
+        raise HTTPException(status.HTTP_504_GATEWAY_TIMEOUT,
+                            "profile service timed out")
+    except httpx.RequestError:
+        # couldn't reach / bad connection to upstream
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY,
+                            "profile service unavailable")
+
+    if r.status_code >= 500:
+        # upstream itself errored -> we are a bad gateway to the client
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY,
+                            "profile service returned an error")
+    return r.json()</code></pre>
+            <div class="callout">
+                <strong>Pattern:</strong> your service is a "gateway" to its dependencies. Upstream slow → 504.
+                Upstream unreachable or returns nonsense → 502.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>503 Service Unavailable — maintenance &amp; health-based shedding</h2>
+            <p>503 says "try again later." Always pair it with <code>Retry-After</code>. Two common uses: a
+                maintenance flag, and a readiness/health check that fails when a dependency (DB) is down.</p>
+            <pre><code>from fastapi import FastAPI, Response, status
+
+app = FastAPI()
+MAINTENANCE = False
+
+@app.middleware("http")
+async def maintenance_gate(request, call_next):
+    if MAINTENANCE and not request.url.path.startswith("/health"):
+        return Response(
+            content='{"error":"under maintenance"}',
+            media_type="application/json",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            headers={"Retry-After": "120"},       # come back in 2 minutes
+        )
+    return await call_next(request)
+
+@app.get("/health")
+async def health(response: Response):
+    if not await db_is_up():
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {"status": "degraded", "db": "down"}
+    return {"status": "ok"}</code></pre>
+            <div class="callout good">
+                <strong>Load balancers love 503 on /health:</strong> a readiness probe that returns 503 when the
+                DB is down lets the orchestrator stop routing traffic to a sick instance.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Client-side: how callers should react to 5xx</h2>
+            <p>Closing the loop with the theory page — 5xx are usually <strong>retryable with backoff</strong>,
+                4xx are not.</p>
+            <pre><code>import time, httpx
+
+def get_with_retry(url, attempts=4):
+    for i in range(attempts):
+        r = httpx.get(url, timeout=5)
+        if r.status_code < 500:
+            return r                       # 2xx/3xx/4xx: don't retry 4xx
+        wait = min(2 ** i, 10)             # exponential backoff: 1,2,4,8...
+        retry_after = r.headers.get("Retry-After")
+        time.sleep(int(retry_after) if retry_after else wait)
+    r.raise_for_status()</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Summary</h2>
+            <ul>
+                <li><span class="pill red">500</span> — global <code>Exception</code> handler + trace id, no leaks.</li>
+                <li><span class="pill red">501</span> — honest stub for unbuilt features.</li>
+                <li><span class="pill red">502</span> — upstream unreachable / bad response.</li>
+                <li><span class="pill red">503</span> — maintenance / unhealthy, always + <code>Retry-After</code>.</li>
+                <li><span class="pill red">504</span> — upstream timed out.</li>
+            </ul>
+            <p>🎉 You've now implemented every status family in FastAPI. Back to the
+                <a href="index.html"><strong>hub</strong></a>.
+            </p>
+        </section>
+    </main>
+
+    <footer><a href="index.html">← Back to FastAPI status hub</a></footer>
+</body>
+
+</html>

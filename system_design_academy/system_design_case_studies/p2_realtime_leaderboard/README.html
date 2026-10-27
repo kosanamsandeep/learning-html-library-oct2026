@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2 · Real-time Leaderboard</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>Case Studies</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p1_distributed_counter/README.html">Prev: P1</a><a
+                    href="../p3_realtime_presence/README.html">Next: P3</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">Case Studies · Project 2</p>
+            <h1>Real-time leaderboard — top-N, rank, and "around me"</h1>
+            <p class="lead">Game leaderboards live or die on three operations: update score, top N, rank of one user.
+                Redis ZSET makes all three O(log N). Here we build the same shape in Python so the design choices are
+                visible.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Your mobile game has a million daily players. Every match updates a score. The home screen needs top 10
+                in &lt;50ms, and the profile screen needs "your rank is #28,432" plus the players just above and below
+                you.</p>
+        </section>
+
+        <section class="card">
+            <h2>Three operations, one data structure</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Operation</th>
+                        <th>Why it's tricky</th>
+                        <th>How sorted set solves it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>submit(user, score)</td>
+                        <td>Must remove the old entry to keep order valid.</td>
+                        <td>O(log N) remove + O(log N) insert.</td>
+                    </tr>
+                    <tr>
+                        <td>top(N)</td>
+                        <td>Naive scan is O(total).</td>
+                        <td>Slice first N entries in order.</td>
+                    </tr>
+                    <tr>
+                        <td>rank(user)</td>
+                        <td>Want position without scanning everything.</td>
+                        <td>Skip list indexes; O(log N) in Redis ZSET.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Our Python demo uses <code>bisect.insort</code> for clarity — Redis uses a skip list for the same shape
+                at internet scale.</p>
+        </section>
+
+        <section class="card">
+            <h2>Mental model</h2>
+            <div class="flow">
+                <div class="step">match ends</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">ZADD leaderboard score user</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">ZREVRANGE 0 9 WITHSCORES (top 10)</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">ZREVRANK user (their rank)</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Production notes</h2>
+            <ul>
+                <li>Use one ZSET per leaderboard (global / weekly / friends-only).</li>
+                <li>Cap memory with an expiring weekly key, and snapshot all-time on Sunday.</li>
+                <li>For "around me" use ZREVRANGE rank-window to rank+window — O(log N + 2*window).</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/system_design_case_studies/p2_realtime_leaderboard
+python main.py</code></pre>
+            <p>You will see the top 5, the rank of two players, and a five-line "around you" view.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"I use a Redis sorted set keyed by score. Update score = ZADD, top N = ZREVRANGE,
+                individual rank = ZREVRANK — each O(log N) thanks to the skip list. For multiple boards I keep one ZSET
+                per board, and the 'players near you' view is just ZREVRANGE with a small window around the user's
+                rank."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

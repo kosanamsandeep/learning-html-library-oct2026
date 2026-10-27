@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P18 - Multi-Tenant SaaS Explained Simply</title>
+    <style>
+        :root {
+            --bg: #faf5ff;
+            --paper: #ffffff;
+            --ink: #1f2937;
+            --muted: #5f6878;
+            --line: #dfd4ef;
+            --accent: #7c3aed;
+            --soft: #f3e8ff;
+            --blue-soft: #eff6ff;
+            --green-soft: #ecfdf5;
+            --red-soft: #fff1f2;
+            --shadow: 0 18px 40px rgba(31, 41, 55, .08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+            --mono: "Cascadia Mono", "Consolas", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.65;
+            background: linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+        }
+
+        .shell {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 2.5rem 1.4rem;
+        }
+
+        header {
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, .92);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .brand {
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 750;
+        }
+
+        .brand span {
+            display: inline-grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            margin-right: .5rem;
+            border-radius: 6px;
+            color: white;
+            background: var(--accent);
+        }
+
+        .top-links {
+            display: flex;
+            gap: .8rem;
+            flex-wrap: wrap;
+        }
+
+        .top-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .92rem;
+        }
+
+        .hero {
+            padding: 3rem 0 1.5rem;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 860px;
+            margin: .25rem 0 .75rem;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            line-height: 1.08;
+        }
+
+        h2 {
+            margin: 0 0 .8rem;
+            font-size: 1.45rem;
+        }
+
+        h3 {
+            margin: 0 0 .4rem;
+        }
+
+        p {
+            margin: 0 0 .85rem;
+        }
+
+        .lead {
+            max-width: 810px;
+            color: var(--muted);
+            font-size: 1.08rem;
+        }
+
+        .card {
+            margin: 1rem 0;
+            padding: 1.25rem 1.4rem;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .mini {
+            padding: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fffdfb;
+        }
+
+        .good {
+            background: var(--green-soft);
+            border-color: #a7f3d0;
+        }
+
+        .bad {
+            background: var(--red-soft);
+            border-color: #fecdd3;
+        }
+
+        .flow {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+            margin: 1rem 0;
+        }
+
+        .step {
+            flex: 1 1 150px;
+            padding: .9rem;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: var(--blue-soft);
+            color: #1e3a8a;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .arrow {
+            align-self: center;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .callout {
+            padding: 1rem 1.15rem;
+            border-left: 4px solid var(--accent);
+            background: var(--soft);
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: .6rem;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: .75rem;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background: #f5f3ff;
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .9em;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            padding: .06rem .35rem;
+            border-radius: 4px;
+        }
+
+        pre {
+            overflow-x: auto;
+            padding: 1rem;
+            color: #e5e7eb;
+            background: #111827;
+            border-radius: 8px;
+        }
+
+        pre code {
+            padding: 0;
+            color: inherit;
+            background: transparent;
+            border: 0;
+        }
+
+        ol,
+        ul {
+            padding-left: 1.2rem;
+        }
+
+        .quiet {
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../learning_tracker.html"><span>P18</span>Multi-Tenant SaaS</a>
+            <nav class="top-links">
+                <a href="../learning_tracker.html">Learning tracker</a>
+                <a href="main.py">main.py</a>
+                <a href="tenant/models.py">models.py</a>
+                <a href="storage/tenant_store.py">tenant_store.py</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 18 simplified</p>
+            <h1>Multi-tenant SaaS means: many companies share one app, but data stays separated</h1>
+            <p class="lead">This project models a SaaS product where Acme, Globex, and Wayne Enterprises all use the
+                same code and storage, but each tenant can only see its own records. It also shows plans, limits, and
+                feature flags.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You are building a project management SaaS. Every customer company is a <strong>tenant</strong>. All
+                tenants use the same application, but tenant data must never leak.</p>
+            <div class="grid">
+                <div class="mini bad">
+                    <h3>Without tenant isolation</h3>
+                    <p>A bug in a query can show Globex data to Acme. That is a severe security and trust failure.</p>
+                </div>
+                <div class="mini good">
+                    <h3>With tenant isolation</h3>
+                    <p>The tenant is resolved once per request. The storage layer automatically scopes every insert,
+                        find, count, and delete.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The mental model</h2>
+            <div class="flow">
+                <div class="step">request arrives</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">resolve tenant</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">set TenantContext</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">business logic runs</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">store filters by tenant</div>
+            </div>
+            <div class="callout"><strong>Important:</strong> business code does not manually pass <code>tenant_id</code>
+                everywhere. It asks <code>TenantContext</code> who the current tenant is, and the storage layer uses
+                that automatically.</div>
+        </section>
+
+        <section class="card">
+            <h2>What each file does</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Simple meaning</th>
+                        <th>Focus on</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Runs demos for isolation, plan limits, feature flags, tenant context, and overrides.</td>
+                        <td><code>demo_1_tenant_isolation()</code>, <code>demo_4_tenant_context()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>tenant/models.py</code></td>
+                        <td>Defines tenants, plans, plan limits, users, and current tenant context.</td>
+                        <td><code>Tenant</code>, <code>Plan</code>, <code>TenantContext</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>storage/tenant_store.py</code></td>
+                        <td>In-memory store that tags every record with a tenant and filters reads automatically.</td>
+                        <td><code>insert()</code>, <code>find_all()</code>, <code>delete()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>features/feature_flags.py</code></td>
+                        <td>Controls which tenant sees which feature.</td>
+                        <td><code>FeatureFlagService.is_enabled()</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>The key idea: tenant context</h2>
+            <p><code>TenantContext</code> stores the current tenant for the current request. In a real FastAPI or Django
+                app, middleware would set this from a header, subdomain, token, or route.</p>
+            <pre><code>TenantContext.set_current(acme)
+store.insert("projects", "proj-1", {"name": "Website Redesign"})
+
+TenantContext.set_current(globex)
+store.insert("projects", "proj-1", {"name": "Laser Cannon"})</code></pre>
+            <p>Both tenants can use the same record id <code>proj-1</code>, because the store internally saves records
+                as <code>tenant_id:record_id</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>How storage isolation works</h2>
+            <pre><code>tenant = TenantContext.require_current()
+key = f"{tenant.tenant_id}:{record_id}"
+self._data[collection][key] = record</code></pre>
+            <p>When Acme calls <code>find_all("projects")</code>, the store returns only records where
+                <code>record.tenant_id == "acme"</code>. Globex records exist in the same collection, but Acme cannot
+                see them.</p>
+        </section>
+
+        <section class="card">
+            <h2>Plan limits in plain English</h2>
+            <p>Plans answer: "What is this tenant allowed to use?"</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Plan concept</th>
+                        <th>Example in this project</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Max users</td>
+                        <td>Free plan allows 3 users. Enterprise allows many more.</td>
+                    </tr>
+                    <tr>
+                        <td>Storage</td>
+                        <td>Free gets 100 MB. Professional gets 10 GB.</td>
+                    </tr>
+                    <tr>
+                        <td>API calls</td>
+                        <td>Higher plans get more API calls per day.</td>
+                    </tr>
+                    <tr>
+                        <td>Features</td>
+                        <td>SSO and audit logs are only available in higher plans.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Feature flags in plain English</h2>
+            <p>Feature flags answer: "Should this tenant see this feature right now?"</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Strategy</th>
+                        <th>Meaning</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>BOOLEAN</code></td>
+                        <td>On or off for everyone.</td>
+                        <td>Kill switch for a broken feature.</td>
+                    </tr>
+                    <tr>
+                        <td><code>PLAN_BASED</code></td>
+                        <td>Only certain plans can use it.</td>
+                        <td>AI suggestions for Professional and Enterprise.</td>
+                    </tr>
+                    <tr>
+                        <td><code>PERCENTAGE</code></td>
+                        <td>Roll out to a stable percentage of tenants.</td>
+                        <td>New dashboard for 30% of tenants.</td>
+                    </tr>
+                    <tr>
+                        <td><code>TENANT_LIST</code></td>
+                        <td>Only a whitelist of tenant IDs can use it.</td>
+                        <td>Beta Gantt chart for Acme and Wayne.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout"><strong>Deterministic rollout:</strong> percentage flags use a hash of
+                <code>tenant_id</code>, so the same tenant always gets the same result. The feature will not flicker on
+                and off randomly.</div>
+        </section>
+
+        <section class="card">
+            <h2>What each demo teaches</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Demo</th>
+                        <th>What to watch</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>demo_1_tenant_isolation()</code></td>
+                        <td>Acme, Globex, and Wayne create records in the same store but only see their own records.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_2_plan_limits()</code></td>
+                        <td>Plans define user, storage, API, and feature limits.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_3_feature_flags()</code></td>
+                        <td>Different tenants receive different features based on strategy.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_4_tenant_context()</code></td>
+                        <td>A simulated request resolves tenant, sets context, runs logic, then clears context.</td>
+                    </tr>
+                    <tr>
+                        <td><code>demo_5_tenant_overrides()</code></td>
+                        <td>Overrides can force-enable or force-disable a feature for specific tenants.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 07_learning_projects/p18_multi_tenant_saas
+python main.py</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Best reading order</h2>
+            <ol>
+                <li>Read this file first.</li>
+                <li>Open <code>tenant/models.py</code> and understand <code>Tenant</code>, <code>Plan</code>, and
+                    <code>TenantContext</code>.</li>
+                <li>Open <code>storage/tenant_store.py</code> and read <code>insert()</code> and
+                    <code>find_all()</code>.</li>
+                <li>Open <code>features/feature_flags.py</code> and read <code>is_enabled()</code>.</li>
+                <li>Run <code>python main.py</code> and focus first on demo 1 and demo 4.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Interview answer in simple words</h2>
+            <p class="quiet">Use this when someone asks, "How do you design multi-tenant SaaS?"</p>
+            <div class="callout">In a multi-tenant SaaS app, many customers share the same application, but every
+                request must be scoped to exactly one tenant. I resolve the tenant at request entry, store it in a
+                request-safe context, and make the data layer automatically filter by tenant. Plans and feature flags
+                then control what each tenant is allowed to use without duplicating the application.</div>
+        </section>
+    </main>
+</body>
+
+</html>

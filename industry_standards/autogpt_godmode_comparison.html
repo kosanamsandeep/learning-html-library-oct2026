@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGPT, Godmode &amp; Coding Agents — Full Comparison 2026</title>
+    <link rel="stylesheet" href="_shared.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+    <style>
+        .mermaid-wrap { background:#fff; border:1px solid var(--line); border-radius:10px; padding:1rem; margin:1.25rem 0; text-align:center; overflow-x:auto; box-shadow:var(--shadow); }
+        .mermaid-wrap .caption { color:var(--muted); font-size:.82rem; margin-top:.4rem; }
+        .mermaid { margin:0; text-align:center; }
+        .mermaid svg { max-width:100%; }
+        .tool-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:1rem; margin:1rem 0; }
+        .tool-card { border:1px solid var(--line); border-radius:10px; padding:1.2rem; background:var(--paper); box-shadow:var(--shadow); }
+        .tool-card h3 { margin:0 0 .3rem; font-size:1.05rem; }
+        .tool-card .tag { display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.7rem; font-weight:800; letter-spacing:.04em; }
+        .tag.gen { background:var(--warn-soft); color:var(--warn); }
+        .tag.code { background:var(--accent-soft); color:var(--accent); }
+        .tag.ide { background:var(--gh-soft); color:var(--gh); }
+        .tag.agent { background:#e0e7ff; color:var(--gh); }
+        .two-col { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin:1rem 0; }
+        @media(max-width:700px){ .two-col { grid-template-columns:1fr; } }
+        .flow { display:flex; gap:.5rem; flex-wrap:wrap; align-items:stretch; margin:1rem 0; }
+        .step { flex:1 1 140px; padding:.75rem; border-radius:8px; border:1px solid var(--line); background:var(--accent-soft); color:#134e4a; font-weight:700; text-align:center; font-size:.9rem; }
+        .arrow { align-self:center; color:var(--muted); font-weight:800; font-size:1.2rem; }
+        .yes { color:var(--green); font-weight:700; }
+        .no { color:var(--bad); }
+        .partial { color:var(--warn); }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="anthropic_building_agents.html">Anthropic</a>
+                <a href="openai_agents_sdk.html">OpenAI</a>
+                <a href="claude_code_hooks.html">Hooks</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Agent ecosystem · 2026 landscape</p>
+            <h1>AutoGPT, Godmode &amp; the Coding Agents</h1>
+            <p class="lead">AutoGPT and Godmode are NOT coding assistants — they are <strong>general-purpose autonomous agent platforms</strong> and <strong>agent orchestration layers</strong>. They belong to a different category than Claude Code, Codex CLI, GitHub Copilot, and Cursor. This page explains what each is, how they work, where they overlap, and most importantly: <strong>when to use which</strong>.</p>
+        </section>
+
+        <!-- ── QUICK CLARIFICATION ── -->
+        <section class="card">
+            <h2>The short answer</h2>
+            <div class="two-col">
+                <div>
+                    <h3>❌ No, they are not the same</h3>
+                    <ul>
+                        <li><strong>AutoGPT</strong> is a <em>general-purpose autonomous agent platform</em> — you give it a high-level goal ("build a SaaS business") and it decomposes, plans, and executes using any LLM you configure.</li>
+                        <li><strong>Godmode</strong> (several variants) is an <em>orchestration layer on top of coding agents</em> — it adds structured SDLC workflows, multi-agent teams, and cross-model debates.</li>
+                        <li><strong>Claude Code / Codex CLI / Copilot / Cursor</strong> are <em>coding-specific tools</em> — they write code, review PRs, refactor, debug.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>✅ Yes, they share DNA</h3>
+                    <ul>
+                        <li>All use LLMs as their reasoning engine</li>
+                        <li>All can call tools (search, file ops, APIs)</li>
+                        <li>All can operate in loops (think→act→observe→repeat)</li>
+                        <li>All support some form of API key configuration</li>
+                        <li>AutoGPT's agent loop inspired many of the agentic patterns that coding tools now use</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── WHAT IS AUTOGPT ── -->
+        <section class="card">
+            <h2>What is AutoGPT?</h2>
+            <p><strong>AutoGPT</strong> (170k+ GitHub stars) is an open-source platform for building, deploying, and managing <strong>general-purpose autonomous AI agents</strong>. It was one of the first tools to popularise the <em>think → act → observe → repeat</em> agent loop in early 2023.</p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TB
+    User["User provides a<br/>high-level goal"]
+    User --> Planner["🧠 Planner LLM<br/>Decompose goal into tasks"]
+    Planner --> Executor["⚙️ Executor<br/>Run tasks in sequence"]
+
+    subgraph Loop["Autonomous Agent Loop"]
+        Executor --> Think["Think:<br/>What's the next step?"]
+        Think --> Act["Act:<br/>Call tools / generate text"]
+        Act --> Observe["Observe:<br/>Read tool results / feedback"]
+        Observe --> Decide{"Goal met?"}
+        Decide -->|No| Think
+        Decide -->|Yes| Done["✅ Done"]
+    end
+
+    Executor --> Loop
+
+    subgraph Tools["Tools Available"]
+        Web["🌐 Web Search"]
+        Files["📁 File I/O"]
+        Code["💻 Execute Code"]
+        API["🔌 API Calls"]
+        Memory["🧠 Memory (vector DB)"]
+    end
+
+    Act --> Tools
+</pre>
+                <div class="caption">AutoGPT's core architecture — a goal-driven autonomous loop with tool access and memory.</div>
+            </div>
+
+            <h3>Key characteristics:</h3>
+            <ul>
+                <li><strong>General-purpose:</strong> Not limited to coding. You can ask it to research competitors, write marketing copy, build a website, or manage your calendar.</li>
+                <li><strong>Uses YOUR API key:</strong> When self-hosting, you configure <code>OPENAI_API_KEY</code> (or Anthropic / OpenRouter / Groq / Ollama) in a <code>.env</code> file. The cloud-hosted version at <code>platform.agpt.co</code> provides pre-configured keys for some providers.</li>
+                <li><strong>Block-based workflow editor:</strong> A visual drag-and-drop interface (React Flow) where you connect AI blocks, integration blocks (GitHub, Discord, Slack), data blocks, and control-flow blocks.</li>
+                <li><strong>8+ LLM providers supported:</strong> OpenAI (GPT-5.2, GPT-4.1), Anthropic (Claude 4.6 Opus), OpenRouter (32 models), Groq, AI/ML API, Llama API, Ollama (local models), v0.</li>
+                <li><strong>Architecture:</strong> Python/FastAPI backend, Next.js frontend, RabbitMQ for async execution, PostgreSQL + Prisma, Redis for distributed locking.</li>
+                <li><strong>2026 status:</strong> Still actively developed. Not a major contender in the coding-agent space — the coding world moved to purpose-built agents.</li>
+            </ul>
+        </section>
+
+        <!-- ── WHAT IS GODMODE ── -->
+        <section class="card">
+            <h2>What is Godmode?</h2>
+            <p>"Godmode" (or G0DM0D3) is not one thing — it's <strong>multiple projects sharing the same name</strong>. The most notable variants in 2026:</p>
+
+            <table>
+                <tr><th>Variant</th><th>What it is</th><th>How it uses API keys</th></tr>
+                <tr>
+                    <td><strong>GODMODE (austinbrowne)</strong><br><code>claude-agent-protocol</code></td>
+                    <td>A plugin for Claude Code that adds structured SDLC workflows: <code>/explore → /plan → /implement → /review → /learn → /ship → /loop</code>. 29 skill packages, 24 specialised agents, OWASP Top 10 security checks.</td>
+                    <td>Uses Claude Code's existing Anthropic API key — it's a <strong>plugin layer on top</strong>, not an independent agent.</td>
+                </tr>
+                <tr>
+                    <td><strong>NEURON.ONE GODMODE</strong></td>
+                    <td>An orchestration config for Claude Code that creates a full AI dev team: 1 Orchestrator + dynamic task agents + GPT/Gemini advisors via MCP for cross-model disputes.</td>
+                    <td>Uses Claude Code key + separate keys for GPT/Gemini MCP servers.</td>
+                </tr>
+                <tr>
+                    <td><strong>Pliny's G0DM0D3</strong><br><code>godmod3.ai</code></td>
+                    <td>Multi-model chat evaluation interface. Queries 5-51 models in parallel via OpenRouter, scores responses, returns best. Research/evaluation tool.</td>
+                    <td><strong>Your OpenRouter / provider API key</strong> stored in browser localStorage. No server-side storage. Single HTML file deployable anywhere.</td>
+                </tr>
+                <tr>
+                    <td><strong>Engineering Godmode</strong><br>(blog, 2026)</td>
+                    <td>Plugin for any coding agent (Claude Code, Cursor, Codex, Gemini CLI) that imposes iterative optimisation: atomic edits, auto-rollback on regression, failure learning system with 8 failure categories, 134 cross-domain skills.</td>
+                    <td>Inherits the underlying agent's API key.</td>
+                </tr>
+            </table>
+
+            <div class="callout" style="margin-top:1rem;">
+                <strong>Key insight:</strong> Most "Godmode" variants in 2026 are <strong>orchestration layers or plugins for existing coding agents</strong> (primarily Claude Code). They add structure, multi-agent teams, and discipline — but they don't replace the underlying agent. The original "Godmode" web UI (2023, inspired by AutoGPT) is no longer a major player.
+            </div>
+        </section>
+
+        <!-- ── THE BIG COMPARISON TABLE ── -->
+        <section class="card">
+            <h2>Head-to-head comparison</h2>
+            <p>Six tools across 12 dimensions that matter when choosing.</p>
+
+            <table>
+                <tr>
+                    <th>Dimension</th>
+                    <th>AutoGPT</th>
+                    <th>Godmode (plugins)</th>
+                    <th>Claude Code</th>
+                    <th>Codex CLI</th>
+                    <th>GitHub Copilot</th>
+                    <th>Cursor</th>
+                </tr>
+                <tr>
+                    <td><strong>Category</strong></td>
+                    <td><span class="tag gen">General agent</span></td>
+                    <td><span class="tag agent">Orchestration</span></td>
+                    <td><span class="tag code">Coding agent</span></td>
+                    <td><span class="tag code">Coding agent</span></td>
+                    <td><span class="tag ide">IDE tool</span></td>
+                    <td><span class="tag ide">AI-native IDE</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Primary use</strong></td>
+                    <td>Autonomous goal-achievement</td>
+                    <td>Structured SDLC / multi-agent coding</td>
+                    <td>Terminal-native development</td>
+                    <td>CLI + cloud coding</td>
+                    <td>IDE assistant + PR review</td>
+                    <td>AI-first editor</td>
+                </tr>
+                <tr>
+                    <td><strong>LLM provider(s)</strong></td>
+                    <td>OpenAI, Anthropic, OpenRouter, Groq, Ollama (+8)</td>
+                    <td>Inherits from underlying agent (+ MCP for cross-model)</td>
+                    <td>Anthropic Claude (Opus, Sonnet, Haiku)</td>
+                    <td>OpenAI (GPT-5.5, GPT-4.x)</td>
+                    <td>GitHub's backend (GPT-4o, custom models)</td>
+                    <td>OpenAI, Anthropic, Google (+bring your own key)</td>
+                </tr>
+                <tr>
+                    <td><strong>Uses your API key?</strong></td>
+                    <td><span class="yes">✅ Yes</span> (when self-hosting)</td>
+                    <td><span class="yes">✅ Yes</span> (inherited)</td>
+                    <td><span class="yes">✅ Yes</span> (Anthropic key)</td>
+                    <td><span class="yes">✅ Yes</span> (OpenAI key or subscription)</td>
+                    <td><span class="no">❌ No</span> (subscription-based)</td>
+                    <td><span class="partial">⚠️ BYOK optional</span> (default subscription)</td>
+                </tr>
+                <tr>
+                    <td><strong>Interface</strong></td>
+                    <td>Web UI + API + CLI</td>
+                    <td>CLI plugin (Claude Code)</td>
+                    <td>Terminal CLI + IDE extensions</td>
+                    <td>Terminal CLI + Cloud web UI</td>
+                    <td>IDE extension + CLI + GitHub.com</td>
+                    <td>Fork of VS Code</td>
+                </tr>
+                <tr>
+                    <td><strong>Open source?</strong></td>
+                    <td><span class="yes">✅ Yes</span> (MIT/AGPL)</td>
+                    <td><span class="yes">✅ Yes</span> (various licenses)</td>
+                    <td><span class="no">❌ No</span> (free CLI, closed model)</td>
+                    <td><span class="yes">✅ Yes</span> (Apache 2.0 CLI)</td>
+                    <td><span class="no">❌ No</span> (proprietary)</td>
+                    <td><span class="no">❌ No</span> (proprietary)</td>
+                </tr>
+                <tr>
+                    <td><strong>Context window</strong></td>
+                    <td>Depends on LLM (up to 200K)</td>
+                    <td>200K (inherits from Claude)</td>
+                    <td>200K tokens (Opus 4.x)</td>
+                    <td>128K+ (GPT-5.5)</td>
+                    <td>~128K (backend managed)</td>
+                    <td>Configurable (depends on model)</td>
+                </tr>
+                <tr>
+                    <td><strong>Agent loop</strong></td>
+                    <td><span class="yes">✅ Built-in</span> (think→act→observe)</td>
+                    <td><span class="yes">✅ Built-in</span> (workflow pipeline)</td>
+                    <td><span class="yes">✅ Built-in</span> (autonomous mode)</td>
+                    <td><span class="yes">✅ Built-in</span> (agent mode)</td>
+                    <td><span class="partial">⚠️ Agent mode (limited)</span></td>
+                    <td><span class="yes">✅ Built-in</span> (agent + sub-agent)</td>
+                </tr>
+                <tr>
+                    <td><strong>Multi-agent</strong></td>
+                    <td><span class="partial">⚠️ Via blocks</span></td>
+                    <td><span class="yes">✅ Core feature</span></td>
+                    <td><span class="yes">✅ Subagents, workflows</span></td>
+                    <td><span class="yes">✅ Worktrees, parallel agents</span></td>
+                    <td><span class="no">❌ Single agent</span></td>
+                    <td><span class="yes">✅ Sub-agents</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Tool access</strong></td>
+                    <td>Web, code exec, files APIs</td>
+                    <td>MCP + Claude Code tools</td>
+                    <td>Bash, files, MCP, search</td>
+                    <td>CLI, cloud env, MCP</td>
+                    <td>IDE, GitHub API, MCP</td>
+                    <td>Terminal, MCP, browser</td>
+                </tr>
+                <tr>
+                    <td><strong>Best benchmark</strong></td>
+                    <td>— (general agent)</td>
+                    <td>— (orchestration)</td>
+                    <td>88.6% SWE-bench Verified</td>
+                    <td>83.4% Terminal-Bench</td>
+                    <td>~45-50% SWE-bench (varies)</td>
+                    <td>~55% SWE-bench (varies)</td>
+                </tr>
+                <tr>
+                    <td><strong>Starting price</strong></td>
+                    <td>Free (self-host) / Cloud credits</td>
+                    <td>Free (plugin, plus agent cost)</td>
+                    <td>$20/mo Pro</td>
+                    <td>$8/mo Go</td>
+                    <td>$10/mo Pro</td>
+                    <td>$20/mo Pro</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- ── DECISION FLOW ── -->
+        <section class="card">
+            <h2>Which tool should you use?</h2>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TD
+    Start(["What are you trying to do?"])
+
+    Start --> Q1{"Is it a general<br/>autonomous goal?<br/>(research, manage,<br/>build anything)"}
+    Q1 -->|Yes| AutoGPT["AutoGPT<br/>General-purpose agent<br/>Your API key, any LLM"]
+
+    Q1 -->|No| Q2{"Is it software<br/>development?"}
+    Q2 -->|No| AutoGPT
+
+    Q2 -->|Yes| Q3{"Where do you<br/>want to work?"}
+
+    Q3 -->|Terminal / CLI| Q4{"Which ecosystem<br/>are you in?"}
+
+    Q4 -->|Anthropic| ClaudeCode["Claude Code<br/>Deep refactoring, debugging<br/>hooks, skills, subagents"]
+    Q4 -->|OpenAI| Codex["Codex CLI<br/>Autonomous cloud coding<br/>multi-agent worktrees"]
+
+    Q3 -->|IDE / Editor| Q5{"How much control<br/>do you want?"}
+
+    Q5 -->|"Best in-editor DX"| Cursor["Cursor<br/>AI-native IDE<br/>fast completions, composer"]
+    Q5 -->|"GitHub-native<br/>enterprise"| Copilot["GitHub Copilot<br/>PR review, issue-to-PR<br/>enterprise security"]
+
+    Q3 -->|"I want structured<br/>SDLC workflows"| Godmode["Godmode plugin<br/>(on Claude Code)<br/>explore→plan→implement→review→ship"]
+
+    style AutoGPT fill:#fef3c7,stroke:#d97706
+    style ClaudeCode fill:#ccfbf1,stroke:#0f766e
+    style Codex fill:#ccfbf1,stroke:#0d9488
+    style Cursor fill:#e0e7ff,stroke:#4338ca
+    style Copilot fill:#e0e7ff,stroke:#4338ca
+    style Godmode fill:#f3e8ff,stroke:#9333ea
+</pre>
+                <div class="caption">Decision tree — pick by task type and workflow preference, not by brand.</div>
+            </div>
+        </section>
+
+        <!-- ── ARCHITECTURE COMPARISON ── -->
+        <section class="card">
+            <h2>How each tool connects to an LLM</h2>
+            <p>The critical question: <strong>"does it use my API key or its own subscription?"</strong> Here is the exact flow for each:</p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    subgraph BYOK["Bring Your Own Key"]
+        direction TB
+        A1["AutoGPT<br/>(self-hosted)"] --> A1k["🔑 Your OpenAI /<br/>Anthropic key"]
+        A2["Claude Code"] --> A2k["🔑 Your Anthropic key"]
+        A3["Codex CLI"] --> A3k["🔑 Your OpenAI key<br/>(or subscription)"]
+        A4["Godmode variants"] --> A4k["🔑 Inherits from<br/>underlying agent"]
+        A5["Cursor (BYOK)"] --> A5k["🔑 Optionally your<br/>own provider key"]
+    end
+
+    subgraph Subscription["Subscription-based"]
+        direction TB
+        B1["GitHub Copilot"] --> B1k["💳 GitHub backend<br/>No API key needed"]
+        B2["Cursor (default)"] --> B2k["💳 Cursor servers<br/>OpenAI/Anthropic backend"]
+        B3["AutoGPT Cloud"] --> B3k["💳 Platform-provided<br/>pre-configured keys"]
+    end
+
+    style BYOK fill:#fef3c7,stroke:#d97706
+    style Subscription fill:#ccfbf1,stroke:#0f766e
+</pre>
+                <div class="caption">BYOK vs Subscription — who pays for the LLM tokens?</div>
+            </div>
+
+            <h3>Implications of BYOK vs Subscription</h3>
+            <table>
+                <tr><th>Factor</th><th>BYOK (AutoGPT, Claude Code, Codex)</th><th>Subscription (Copilot, Cursor)</th></tr>
+                <tr><td><strong>Cost control</strong></td><td>You pay per token directly to the provider. Predictable if you cap usage, but can spike.</td><td>Fixed monthly fee. Unlimited usage within fair-use limits. Predictable budgeting.</td></tr>
+                <tr><td><strong>Model choice</strong></td><td>Full control. Switch models any time. Use cheaper models for simple tasks.</td><td>Locked to what the vendor provides. Limited or no model choice.</td></tr>
+                <tr><td><strong>Privacy</strong></td><td>Direct to provider. No intermediary. (But provider still sees your data.)</td><td>Vendor's servers sit between you and the LLM. An additional party sees your data.</td></tr>
+                <tr><td><strong>Rate limits</strong></td><td>Set by your API tier. Can be very high with higher spending.</td><td>Set by vendor's fair-use policy. Opaque limits that can throttle heavy users.</td></tr>
+                <tr><td><strong>Setup friction</strong></td><td>Obtain API key, configure env var, go. Slightly more setup.</td><td>Click "Sign in with GitHub." Zero config, works immediately.</td></tr>
+            </table>
+        </section>
+
+        <!-- ── AGENT LOOP COMPARISON ── -->
+        <section class="card">
+            <h2>The agent loop — how each tool iterates</h2>
+            <p>The "agent loop" is the core pattern they all share. But each implements it differently:</p>
+
+            <div class="mermaid-wrap">
+<pre class="mermaid">
+sequenceDiagram
+    participant User
+    participant Tool as Tool<br/>(AutoGPT / Claude Code / etc.)
+    participant LLM
+    participant Env as Environment<br/>(tools, files, web)
+
+    User->>Tool: "Build a REST API for todos"
+    Tool->>LLM: Think / Plan: "What needs to happen?"
+    LLM-->>Tool: Steps: 1. Create project, 2. Write models, 3. Define routes...
+
+    loop Agent Loop
+        Tool->>LLM: Decide next action
+        LLM-->>Tool: "Run: mkdir todo-api && cd todo-api && npm init"
+        Tool->>Env: Execute tool call
+        Env-->>Tool: Result (stdout, files, etc.)
+        Tool->>LLM: Feed result back
+        LLM-->>Tool: "Good. Next: install express..."
+    end
+
+    Tool-->>User: "✅ REST API built at ./todo-api"
+
+    Note over Tool,LLM: AutoGPT: generic LLM call + tool format<br/>Claude Code: structured tool use + JSON-RPC MCP<br/>Codex: OpenAI function calling<br/>Copilot/Cursor: IDE-specific tool protocol
+</pre>
+                <div class="caption">All six tools share this loop shape — the differences are in the tool protocol, LLM integration depth, and environment access.</div>
+            </div>
+        </section>
+
+        <!-- ── SUMMARY ── -->
+        <section class="card">
+            <h2>Plain-English summary</h2>
+
+            <div class="tool-grid">
+                <div class="tool-card">
+                    <h3>🤖 AutoGPT</h3>
+                    <span class="tag gen">General agent</span>
+                    <p style="margin-top:.5rem;">A platform for building autonomous agents that can do <strong>anything</strong> — research, coding, data analysis, API orchestration. You provide a goal, it figures out the steps. You bring your own LLM key.</p>
+                    <p style="font-size:.85rem;color:var(--muted);">Best for: complex multi-step goals that span beyond coding.</p>
+                </div>
+                <div class="tool-card">
+                    <h3>🧩 Godmode (plugins)</h3>
+                    <span class="tag agent">Orchestration</span>
+                    <p style="margin-top:.5rem;">An <strong>add-on layer</strong> for Claude Code (mainly) that adds structured workflows, multi-agent teams, and engineering discipline. Not a standalone tool — it wraps a coding agent.</p>
+                    <p style="font-size:.85rem;color:var(--muted);">Best for: teams wanting rigorous SDLC process on top of Claude Code.</p>
+                </div>
+                <div class="tool-card">
+                    <h3>🖥️ Claude Code</h3>
+                    <span class="tag code">Coding agent</span>
+                    <p style="margin-top:.5rem;">Anthropic's terminal-native coding agent. Reads repos, runs tests, makes PRs. Deep hooks system, skills, subagents, MCP. Your Anthropic API key.</p>
+                    <p style="font-size:.85rem;color:var(--muted);">Best for: deep codebase work, refactoring, terminal-first developers.</p>
+                </div>
+                <div class="tool-card">
+                    <h3>⌨️ Codex CLI</h3>
+                    <span class="tag code">Coding agent</span>
+                    <p style="margin-top:.5rem;">OpenAI's open-source CLI agent + Codex Cloud for async execution. Multi-agent worktrees, AGENTS.md conventions. Your OpenAI API key or subscription.</p>
+                    <p style="font-size:.85rem;color:var(--muted);">Best for: autonomous cloud coding, multi-agent workflows, OpenAI ecosystem teams.</p>
+                </div>
+                <div class="tool-card">
+                    <h3>🔧 GitHub Copilot</h3>
+                    <span class="tag ide">IDE assistant</span>
+                    <p style="margin-top:.5rem;">GitHub's AI pair programmer. From autocomplete to agent mode, PR review, and issue-to-PR. Enterprise-friendly. Subscription-based, no API key needed.</p>
+                    <p style="font-size:.85rem;color:var(--muted);">Best for: enterprise teams already on GitHub, low-friction onboarding.</p>
+                </div>
+                <div class="tool-card">
+                    <h3>📝 Cursor</h3>
+                    <span class="tag ide">AI-native IDE</span>
+                    <p style="margin-top:.5rem;">An AI-first fork of VS Code. Fast inline completions, multi-file Composer, agent mode, cloud agents in isolated VMs. Subscription or BYOK.</p>
+                    <p style="font-size:.85rem;color:var(--muted);">Best for: individual devs wanting best-in-editor AI without leaving VS Code UX.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── THE BOTTOM LINE ── -->
+        <section class="card">
+            <h2>The bottom line</h2>
+            <div class="two-col">
+                <div>
+                    <h3>Don't confuse categories</h3>
+                    <ul>
+                        <li>AutoGPT is a <strong>general-purpose agent platform</strong> — it competes with frameworks like LangChain, CrewAI, and OpenAI Assistants API, NOT with coding agents.</li>
+                        <li>Godmode (2026 variants) is an <strong>orchestration plugin for coding agents</strong> — it adds structure on top of Claude Code, not a replacement.</li>
+                        <li>Claude Code, Codex, Copilot, Cursor are <strong>coding-specific tools</strong> — they compete with each other, not with AutoGPT.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>API key usage</h3>
+                    <ul>
+                        <li><strong>Bring your own key:</strong> AutoGPT (self-host), Claude Code, Codex CLI, Godmode variants, Cursor (optional)</li>
+                        <li><strong>Subscription / managed:</strong> GitHub Copilot, Cursor (default), AutoGPT Cloud</li>
+                        <li><strong>Neither is "better"</strong> — BYOK gives you model choice and direct provider access. Subscription gives you predictable pricing and zero setup. Pick by your team's risk profile and budget model.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="callout" style="margin-top:1rem;">
+                <strong>Rule of thumb:</strong> If you want an agent to <em>write code</em> → use a coding agent (Claude Code, Codex, Copilot, Cursor). If you want an agent to <em>achieve a complex multi-step goal</em> (that happens to involve coding as one step) → use AutoGPT or build with an agent framework. If you want structured SDLC process on top of a coding agent → add a Godmode-style plugin layer.
+            </div>
+        </section>
+
+        <!-- ── SOURCES ── -->
+        <section class="card" id="sources">
+            <h2>Sources</h2>
+            <ul>
+                <li><a href="https://www.tembo.io/blog/best-ai-for-coding" target="_blank" rel="noopener">Tembo — Best AI for Coding in 2026</a></li>
+                <li><a href="https://www.edenai.co/post/best-coding-agents-which-ai-writes-the-best-code" target="_blank" rel="noopener">Eden AI — Best Coding Agents in 2026</a></li>
+                <li><a href="https://www.faros.ai/blog/best-ai-coding-agents-2026" target="_blank" rel="noopener">Faros — Best AI Coding Agents for 2026</a></li>
+                <li><a href="https://dev.to/nishilbhave/ai-coding-agents-in-2026-5-categories-and-how-to-pick-gmn" target="_blank" rel="noopener">Dev.to — AI Coding Agents in 2026: 5 Categories</a></li>
+                <li><a href="https://www.agpt.co/docs/platform/using-ai-services/aimlapi" target="_blank" rel="noopener">AutoGPT Platform — Using AI Services</a></li>
+                <li><a href="https://github.com/austinbrowne/claude-agent-protocol" target="_blank" rel="noopener">GitHub — claude-agent-protocol (GODMODE)</a></li>
+                <li><a href="https://github.com/neuron-one/GODMODE" target="_blank" rel="noopener">GitHub — NEURON.ONE GODMODE</a></li>
+                <li><a href="https://github.com/elophanto/EloPhanto/commit/f401b76705560aca667a6e752207127f0bced5ad" target="_blank" rel="noopener">GitHub — Pliny's G0DM0D3</a></li>
+                <li><a href="https://mightybot.ai/blog/coding-ai-agents-for-accelerating-engineering-workflows/" target="_blank" rel="noopener">MightyBot — Coding Agents Ranked 2026</a></li>
+                <li><a href="https://northflank.com/blog/agentic-coding-tools" target="_blank" rel="noopener">Northflank — Agentic Coding Tools 2026</a></li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>

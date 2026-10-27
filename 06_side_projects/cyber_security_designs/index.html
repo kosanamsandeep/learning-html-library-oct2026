@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Security Designs — Build Secure Python/FastAPI Apps</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="sec">🛡</span>Cyber Security Designs</div>
+        <div class="links">
+            <a href="../index.html">Side Projects</a>
+            <a href="01_input_validation_injection.html">Injection</a>
+            <a href="02_auth_access_control.html">Auth</a>
+            <a href="06_ethical_hacker_playbook.html">Hacker Playbook</a>
+            <a href="01_input_validation_injection.html">Start →</a>
+        </div>
+    </div>
+
+    <div class="header sec">
+        <p class="badge">Secure by design · Defensive engineering for builders</p>
+        <h1>🛡️ Build best-in-class, low-vulnerability apps</h1>
+        <p class="subtitle">A practical security track for the Python + FastAPI + <code>requests</code> stack
+            you build with. Learn the concepts to be <strong>cautious of</strong>, the areas attackers
+            <strong>probe</strong>, and the <strong>strategies</strong> that make your applications hard to
+            break — all from a <strong>defender's</strong> point of view, with the attacker's mindset as a
+            lens.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section sec">
+            <h2>The one mental shift: assume hostile input</h2>
+            <p>Every value crossing your application's boundary — query params, JSON bodies, headers, cookies,
+                uploaded files, third-party API responses, even your own database rows — is
+                <strong>untrusted until proven otherwise</strong>. Most breaches trace back to trusting input
+                that shouldn't have been trusted.
+            </p>
+            <div class="callout rose">
+                <strong>Security is not a feature you bolt on at the end.</strong> It's a property of how you
+                design every layer. The cheapest vulnerability to fix is the one you never wrote — so we build
+                the habits in from the first line of code.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>The trust boundary — where attackers attack</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    A["🧑‍💻 Attacker"] -->|crafted requests| EDGE["Edge / API gateway"]
+    EDGE --> APP["FastAPI app"]
+    APP --> AUTH["AuthN / AuthZ"]
+    APP --> VAL["Input validation"]
+    APP --> DB[("Database")]
+    APP --> EXT["Outbound requests<br/>(3rd-party APIs)"]
+    APP --> SEC[("Secrets / config")]
+    classDef danger fill:#470d1c,stroke:#f43f5e,color:#fecdd3
+    classDef safe fill:#0c2a22,stroke:#34d399,color:#bbf7d0
+    class A danger
+    class AUTH,VAL safe
+                </pre>
+                <p class="caption">Every arrow crossing into your app is an attack surface. Hardening means
+                    validating, authenticating, and least-privileging at each one.</p>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>The OWASP Top 10 — the canonical risk list</h2>
+            <p>The industry's shared checklist of the most critical web app risks. Each maps to topics in this
+                track:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Risk</th>
+                        <th>Covered in</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>A01</td>
+                        <td>Broken Access Control (IDOR/BOLA)</td>
+                        <td><a href="02_auth_access_control.html">02 · Auth</a></td>
+                    </tr>
+                    <tr>
+                        <td>A02</td>
+                        <td>Cryptographic Failures (weak/none)</td>
+                        <td><a href="03_secrets_transport_data.html">03 · Secrets &amp; data</a></td>
+                    </tr>
+                    <tr>
+                        <td>A03</td>
+                        <td>Injection (SQL, command, NoSQL)</td>
+                        <td><a href="01_input_validation_injection.html">01 · Injection</a></td>
+                    </tr>
+                    <tr>
+                        <td>A04</td>
+                        <td>Insecure Design</td>
+                        <td>This hub + <a href="06_ethical_hacker_playbook.html">06</a></td>
+                    </tr>
+                    <tr>
+                        <td>A05</td>
+                        <td>Security Misconfiguration</td>
+                        <td><a href="03_secrets_transport_data.html">03</a> / <a
+                                href="04_api_hardening_abuse.html">04</a></td>
+                    </tr>
+                    <tr>
+                        <td>A06</td>
+                        <td>Vulnerable &amp; Outdated Components</td>
+                        <td><a href="05_dependencies_supply_chain.html">05 · Supply chain</a></td>
+                    </tr>
+                    <tr>
+                        <td>A07</td>
+                        <td>Identification &amp; Auth Failures</td>
+                        <td><a href="02_auth_access_control.html">02 · Auth</a></td>
+                    </tr>
+                    <tr>
+                        <td>A08</td>
+                        <td>Software &amp; Data Integrity Failures</td>
+                        <td><a href="05_dependencies_supply_chain.html">05</a></td>
+                    </tr>
+                    <tr>
+                        <td>A09</td>
+                        <td>Logging &amp; Monitoring Failures</td>
+                        <td><a href="04_api_hardening_abuse.html">04</a> / <a
+                                href="06_ethical_hacker_playbook.html">06</a></td>
+                    </tr>
+                    <tr>
+                        <td>A10</td>
+                        <td>Server-Side Request Forgery (SSRF)</td>
+                        <td><a href="05_dependencies_supply_chain.html">05 · requests</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section sec">
+            <h2>The track — six defensive disciplines</h2>
+            <div class="grid">
+                <a class="fw-card sec" href="01_input_validation_injection.html">
+                    <span class="level beginner">Core</span>
+                    <h3>01 · Input validation &amp; injection</h3>
+                    <p style="color:#9ca3af">Never trust input. Parameterised queries, Pydantic validation, and
+                        stopping SQL/command/template injection.</p>
+                    <div><span class="tag rose">SQLi</span><span class="tag rose">Pydantic</span><span
+                            class="tag rose">command inj</span></div>
+                </a>
+                <a class="fw-card sec" href="02_auth_access_control.html">
+                    <span class="level beginner">Core</span>
+                    <h3>02 · AuthN &amp; AuthZ</h3>
+                    <p style="color:#9ca3af">Who are you, and what may you do? Password hashing, JWT/OAuth2, and
+                        defeating IDOR/BOLA — the #1 API risk.</p>
+                    <div><span class="tag rose">JWT</span><span class="tag rose">bcrypt</span><span
+                            class="tag rose">IDOR</span></div>
+                </a>
+                <a class="fw-card sec" href="03_secrets_transport_data.html">
+                    <span class="level intermediate">Data</span>
+                    <h3>03 · Secrets, transport &amp; data</h3>
+                    <p style="color:#9ca3af">TLS everywhere, secrets out of code, encryption at rest, CORS, and
+                        security headers done right.</p>
+                    <div><span class="tag rose">TLS</span><span class="tag rose">secrets</span><span
+                            class="tag rose">headers</span></div>
+                </a>
+                <a class="fw-card sec" href="04_api_hardening_abuse.html">
+                    <span class="level intermediate">Scale</span>
+                    <h3>04 · API hardening &amp; abuse</h3>
+                    <p style="color:#9ca3af">Rate limiting, DoS resistance, mass-assignment, safe errors, and
+                        pagination that won't melt your DB.</p>
+                    <div><span class="tag rose">rate limit</span><span class="tag rose">DoS</span><span
+                            class="tag rose">mass assignment</span></div>
+                </a>
+                <a class="fw-card sec" href="05_dependencies_supply_chain.html">
+                    <span class="level advanced">Supply</span>
+                    <h3>05 · Dependencies &amp; requests</h3>
+                    <p style="color:#9ca3af">Vulnerable packages, lockfiles, SBOMs, and hardening outbound
+                        <code>requests</code> against SSRF.
+                    </p>
+                    <div><span class="tag rose">SCA</span><span class="tag rose">SSRF</span><span
+                            class="tag rose">pinning</span></div>
+                </a>
+                <a class="fw-card sec" href="06_ethical_hacker_playbook.html">
+                    <span class="level advanced">Offense→Defense</span>
+                    <h3>06 · Ethical hacker playbook</h3>
+                    <p style="color:#9ca3af">How a pentester probes your app, and the secure-SDLC strategies that
+                        shut each technique down.</p>
+                    <div><span class="tag rose">recon</span><span class="tag rose">threat model</span><span
+                            class="tag rose">SAST/DAST</span></div>
+                </a>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Seven principles to keep in mind on every build</h2>
+            <div class="grid-3">
+                <div class="mini sec">
+                    <h3>① Least privilege</h3>
+                    <p>Every component gets the minimum access it needs — DB roles, tokens, file scopes, cloud IAM.</p>
+                </div>
+                <div class="mini sec">
+                    <h3>② Defense in depth</h3>
+                    <p>Never one control. If one layer fails, the next still protects you.</p>
+                </div>
+                <div class="mini sec">
+                    <h3>③ Fail closed</h3>
+                    <p>On error or doubt, deny. A crash should never default to "access granted".</p>
+                </div>
+                <div class="mini sec">
+                    <h3>④ Validate input, encode output</h3>
+                    <p>Check what comes in; escape what goes out (HTML, SQL, shell, logs).</p>
+                </div>
+                <div class="mini sec">
+                    <h3>⑤ Don't trust the client</h3>
+                    <p>Anything from the browser/app can be forged. Re-check everything server-side.</p>
+                </div>
+                <div class="mini sec">
+                    <h3>⑥ Secure defaults</h3>
+                    <p>The safe path should be the easy/default path. Make insecurity opt-in and loud.</p>
+                </div>
+                <div class="mini sec">
+                    <h3>⑦ Minimise attack surface</h3>
+                    <p>Fewer endpoints, fewer deps, fewer secrets, less exposed = less to attack.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>How to use this track</h2>
+            <p>Read it once end-to-end to build the mindset, then keep it open as a checklist while you build.
+                Each page follows the same shape: <strong>the threat</strong> (what an attacker tries) →
+                <strong>vulnerable vs hardened code</strong> → <strong>the strategy</strong> to adopt →
+                <strong>a checklist</strong> you can paste into a PR review.
+            </p>
+            <div class="callout amber">
+                <strong>Ethics &amp; scope.</strong> This material is for defending systems <em>you own or are
+                    authorised to test</em>. The attacker techniques are described at a conceptual level so you can
+                close the gaps — never to target systems without explicit permission. Unauthorised testing is
+                illegal.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="../index.html"><span class="dir">Back</span>
+                <div class="ttl">Side Projects</div>
+            </a>
+            <a class="next" href="01_input_validation_injection.html"><span class="dir">Start</span>
+                <div class="ttl">01 · Input validation &amp; injection →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Cyber Security Designs · Defensive engineering for Python / FastAPI builders</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

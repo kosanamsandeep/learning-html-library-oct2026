@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P10 · Full test pyramid — mini e-commerce capstone</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>T</span>Testing Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p9_property_based_hypothesis/README.html">Prev: P9</a>
+                <a href="../../index.html">Side projects</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 10 · Capstone</p>
+            <h1>The full test pyramid in one small e-commerce app</h1>
+            <p class="lead">Everything from P1 to P9 comes together here. The same tiny shop is tested at four
+                levels: pure unit tests for the pricing rules, unit-with-mocks for the service, integration tests
+                for the database and the API, and one end-to-end test for the user journey. You will see exactly
+                which kind of test catches which kind of bug — and why the pyramid shape is the right shape.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You are shipping a checkout API. Bugs in pricing cost money. Bugs in stock cost trust. Bugs in the
+                HTTP layer make the frontend crash. Bugs in the boot path bring the whole site down. No single test
+                style catches all of those. The test pyramid says: many cheap tests at the base, fewer expensive
+                tests at the top, and the right shape lets you sleep at night.</p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Layer</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>pricing.py</code></td>
+                        <td>Domain</td>
+                        <td>Pure rules: discount, shipping, total.</td>
+                    </tr>
+                    <tr>
+                        <td><code>repository.py</code></td>
+                        <td>Data</td>
+                        <td>SQLite-backed product store.</td>
+                    </tr>
+                    <tr>
+                        <td><code>service.py</code></td>
+                        <td>Use case</td>
+                        <td><code>CheckoutService</code>: validate stock, reserve, compute totals.</td>
+                    </tr>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>HTTP</td>
+                        <td>FastAPI app with three endpoints.</td>
+                    </tr>
+                    <tr>
+                        <td><code>conftest.py</code></td>
+                        <td>Tests</td>
+                        <td>Fixtures for every layer: mock, real repo, TestClient, live server.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_pricing_unit.py</code></td>
+                        <td>Unit</td>
+                        <td>Pure rule coverage with parametrize.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_service_unit.py</code></td>
+                        <td>Unit + mocks</td>
+                        <td>Service logic with a mocked repository.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_integration.py</code></td>
+                        <td>Integration</td>
+                        <td>Service + repository against a real SQLite file.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_api.py</code></td>
+                        <td>Integration</td>
+                        <td>FastAPI routes via TestClient with dependency overrides.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_e2e.py</code></td>
+                        <td>End-to-end</td>
+                        <td>Real uvicorn process, real HTTP, one journey.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>The pyramid in this project</h2>
+            <div class="state-row">
+                <div class="state red">
+                    <h3>1 E2E test</h3>
+                    <p>The user journey. Slowest, most realistic.</p>
+                </div>
+                <div class="state warn" style="background:#fef3c7;border-color:#fde68a">
+                    <h3>2 integration files</h3>
+                    <p>Service+DB and API layer.</p>
+                </div>
+                <div class="state green">
+                    <h3>2 unit files, many cases</h3>
+                    <p>Pricing rules and service logic. Fast.</p>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Bug</th>
+                        <th>Caught fastest by</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Discount of 50% returns 0.6 instead of 0.5</td>
+                        <td><code>test_pricing_unit.py</code></td>
+                    </tr>
+                    <tr>
+                        <td>Service decrements stock before validating</td>
+                        <td><code>test_service_unit.py</code></td>
+                    </tr>
+                    <tr>
+                        <td>SQL forgets to <code>COMMIT</code></td>
+                        <td><code>test_integration.py</code></td>
+                    </tr>
+                    <tr>
+                        <td>API returns 200 instead of 409 on out-of-stock</td>
+                        <td><code>test_api.py</code></td>
+                    </tr>
+                    <tr>
+                        <td>Server crashes on boot in a clean environment</td>
+                        <td><code>test_e2e.py</code></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout"><strong>The takeaway:</strong> each layer catches a different kind of bug. If you
+                only had one layer, you would miss most of them.</div>
+        </section>
+
+        <section class="card">
+            <h2>Coverage — what it tells you and what it does not</h2>
+            <p>Use <code>pytest-cov</code> to measure what fraction of your code is exercised by tests.</p>
+            <pre><code>pytest --cov=. --cov-report=term-missing</code></pre>
+            <p>Coverage is a great signal for finding untested branches. It is a bad target on its own.</p>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>What 100% coverage proves</h3>
+                    <ul>
+                        <li>Every line ran at least once during the test run.</li>
+                        <li>You touched every <code>if</code>/<code>else</code> branch.</li>
+                    </ul>
+                </div>
+                <div class="mini bad">
+                    <h3>What 100% coverage does NOT prove</h3>
+                    <ul>
+                        <li>The assertions were meaningful. You could "cover" a function with <code>assert True</code>.
+                        </li>
+                        <li>Edge cases were considered.</li>
+                        <li>Integration between modules works.</li>
+                    </ul>
+                </div>
+            </div>
+            <p class="quiet">Pragmatic targets: 80-90% line coverage on business logic, 60-70% overall, plus the four
+                lenses (happy / edge / error / side effects) reviewed in code review.</p>
+        </section>
+
+        <section class="card">
+            <h2>How to ideate tests for a new feature</h2>
+            <ol>
+                <li><strong>What rule is it?</strong> Write that as a pure function and a parametrized unit test.</li>
+                <li><strong>What collaborators does it need?</strong> Inject them; mock them in unit tests.</li>
+                <li><strong>What real I/O does it perform?</strong> Add an integration test for that boundary.</li>
+                <li><strong>What HTTP contract changes?</strong> Add an API integration test (status, JSON).</li>
+                <li><strong>Is this on a critical user journey?</strong> If yes, add or update one E2E test.</li>
+            </ol>
+            <p>Follow that list and you end up with the pyramid shape automatically.</p>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 06_side_projects/testing_projects/p10_test_pyramid_showcase
+pip install -r requirements.txt
+
+# Run everything
+pytest -v
+
+# Run only the fast layers (skip E2E)
+pytest -v --ignore=test_e2e.py
+
+# Coverage report
+pytest --cov=. --cov-report=term-missing</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>What you should take away from P10</h2>
+            <ul>
+                <li>The pyramid is many fast unit tests, some integration tests, a few E2E tests.</li>
+                <li>Each layer catches a different family of bugs. Skipping a layer creates a blind spot.</li>
+                <li>Coverage is a tool, not a goal.</li>
+                <li>When you add a feature, walk the five-step ideation list to decide what tests to write.</li>
+            </ul>
+            <div class="callout"><strong>Interview-ready answer:</strong> "I follow the test pyramid: most of my
+                tests are fast unit tests on pure logic, a smaller layer of integration tests cover the database
+                and HTTP route, and one or two E2E tests cover the critical user journey. I use pytest with
+                fixtures, parametrize, mocks, FastAPI <code>TestClient</code> for integration, and a uvicorn
+                subprocess for true end-to-end. Coverage gives me a signal, not a goal."</div>
+        </section>
+
+        <section class="card">
+            <h2>Reading order</h2>
+            <ol>
+                <li>Read <code>pricing.py</code>, then <code>test_pricing_unit.py</code>.</li>
+                <li>Read <code>service.py</code>, then <code>test_service_unit.py</code> (mocks!).</li>
+                <li>Read <code>repository.py</code>, then <code>test_integration.py</code>.</li>
+                <li>Read <code>main.py</code>, then <code>test_api.py</code>.</li>
+                <li>Read <code>test_e2e.py</code> last — that is the user's story.</li>
+                <li>Return to the <a href="../index.html">testing hub</a> and re-read the "when to use which" section.
+                    It should now feel obvious.</li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

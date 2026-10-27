@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Project 6: Inventory Management - Repository Pattern Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1100px;
+            margin: auto;
+            padding: 30px;
+            line-height: 1.7;
+            color: #333;
+            background: #fafafa
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #2980b9;
+            padding-bottom: 10px
+        }
+
+        h2 {
+            color: #2471a3;
+            margin-top: 40px
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05)
+        }
+
+        .concept {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto
+        }
+
+        .mermaid {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left
+        }
+
+        th {
+            background: #2980b9;
+            color: #fff
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 12px;
+            border-bottom: 2px solid #2980b9;
+            z-index: 100
+        }
+
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #2471a3;
+            font-weight: bold
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>📦 Project 6: Inventory Management</h1>
+    <p><strong>Level:</strong> Intermediate+ | <strong>Focus:</strong> Repository Pattern & Dependency Injection</p>
+
+    <nav>
+        <a href="#pattern">The Pattern</a>
+        <a href="#diagram">Architecture</a>
+        <a href="#swap">Swap Demo</a>
+        <a href="#di">Dependency Injection</a>
+        <a href="#folder">Structure</a>
+    </nav>
+
+    <div id="pattern">
+        <h2>🏪 Repository = Warehouse Clerk</h2>
+
+        <div class="concept">
+            <h3>The Analogy</h3>
+            <p>Your business logic (service) is like a store manager:</p>
+            <ul>
+                <li>"Get me item SKU-123" (doesn't care WHERE it's stored)</li>
+                <li>"Add this new item to inventory" (doesn't care HOW it's stored)</li>
+                <li>"Show me all low-stock items" (doesn't care about the filing system)</li>
+            </ul>
+            <p>The warehouse clerk (repository) knows the storage system. Different clerks may use different systems
+                (filing cabinets, computer, memo book) but they all respond to the same requests.</p>
+        </div>
+    </div>
+
+    <div id="diagram">
+        <h2>📐 Architecture Diagram</h2>
+
+        <div class="mermaid">
+            graph TD
+            A[Service Layer<br />Business Logic] -->|depends on| B[Abstract Repository<br />Interface/Contract]
+            B -->|implemented by| C[Memory Repository<br />Dict in RAM]
+            B -->|implemented by| D[File Repository<br />JSON on disk]
+            B -->|implemented by| E[Database Repository<br />PostgreSQL/SQLite]
+
+            style A fill:#e74c3c,color:#fff
+            style B fill:#f39c12,color:#fff
+            style C fill:#27ae60,color:#fff
+            style D fill:#2980b9,color:#fff
+            style E fill:#8e44ad,color:#fff
+        </div>
+
+        <div class="mermaid">
+            classDiagram
+            class BaseInventoryRepository {
+            <<abstract>>
+                +add(item)* InventoryItem
+                +get_by_id(id)* InventoryItem
+                +get_by_sku(sku)* InventoryItem
+                +get_all()* list
+                +update(item)* InventoryItem
+                +delete(id)* bool
+                +find_by_category(cat)* list
+                +find_low_stock()* list
+                }
+
+                class MemoryInventoryRepository {
+                -dict _storage
+                -dict _sku_index
+                +add(item) InventoryItem
+                +get_by_id(id) InventoryItem
+                ...all methods implemented
+                }
+
+                class FileInventoryRepository {
+                -str _file_path
+                +add(item) InventoryItem
+                +get_by_id(id) InventoryItem
+                ...all methods implemented
+                }
+
+                class InventoryService {
+                -BaseInventoryRepository _repo
+                +add_item(...)
+                +receive_stock(...)
+                +ship_stock(...)
+                +get_low_stock_alerts()
+                }
+
+                BaseInventoryRepository <|-- MemoryInventoryRepository BaseInventoryRepository <|--
+                    FileInventoryRepository InventoryService --> BaseInventoryRepository : uses (injected)
+        </div>
+    </div>
+
+    <div id="swap">
+        <h2>🔄 The Swap Demonstration</h2>
+
+        <div class="highlight">
+            <h3>Same Code, Different Storage</h3>
+            <pre>
+# Production: persist to file
+repo = FileInventoryRepository("warehouse.json")
+service = InventoryService(repo)
+
+# Testing: fast in-memory
+repo = MemoryInventoryRepository()
+service = InventoryService(repo)
+
+# EXACT SAME service code in both cases!
+service.add_item("Laptop", "LAP-001", 25, 10, 1299.99, "Electronics", "A1-B")
+service.ship_stock(item_id, 3)
+service.get_low_stock_alerts()
+</pre>
+        </div>
+
+        <div class="mermaid">
+            sequenceDiagram
+            participant Service
+            participant Repo as Repository (Any Implementation)
+            participant Storage as Actual Storage
+
+            Service->>Repo: add(item)
+
+            alt Memory Repository
+            Repo->>Storage: self._storage[id] = item
+            Note over Storage: Python dict (RAM)
+            else File Repository
+            Repo->>Storage: json.dump(data, file)
+            Note over Storage: JSON file on disk
+            else DB Repository
+            Repo->>Storage: INSERT INTO items...
+            Note over Storage: Database table
+            end
+
+            Repo-->>Service: return item
+            Note over Service: Service doesn't know which one!
+        </div>
+    </div>
+
+    <div id="di">
+        <h2>💉 Dependency Injection</h2>
+
+        <div class="card">
+            <table>
+                <tr>
+                    <th>Without DI (Bad)</th>
+                    <th>With DI (Good)</th>
+                </tr>
+                <tr>
+                    <td>
+                        <pre>class InventoryService:
+    def __init__(self):
+        # HARDCODED! Can't change!
+        self._repo = MemoryRepo()</pre>
+                    </td>
+                    <td>
+                        <pre>class InventoryService:
+    def __init__(self, repo: BaseRepo):
+        # INJECTED! Flexible!
+        self._repo = repo</pre>
+                    </td>
+                </tr>
+                <tr>
+                    <td>❌ Tightly coupled<br>❌ Hard to test<br>❌ Can't swap storage</td>
+                    <td>✅ Loosely coupled<br>✅ Easy to test<br>✅ Swap anytime</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="folder">
+        <h2>📁 Folder Structure</h2>
+        <div class="card" style="font-family:monospace">
+            p6_inventory_management/<br>
+            ├── main.py<br>
+            ├── models/<br>
+            │ &nbsp;&nbsp;└── inventory_item.py<br>
+            ├── <strong>repositories/</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 🆕 DATA ACCESS LAYER<br>
+            │ &nbsp;&nbsp;├── base_repository.py &nbsp;← Abstract interface (contract)<br>
+            │ &nbsp;&nbsp;├── memory_repository.py ← Implementation 1: RAM<br>
+            │ &nbsp;&nbsp;└── file_repository.py &nbsp;&nbsp;← Implementation 2: JSON file<br>
+            └── services/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── inventory_service.py ← Depends on interface only
+        </div>
+
+        <div class="card" style="background:#eaf2f8">
+            <h3>🎯 Key Takeaways</h3>
+            <ol>
+                <li><strong>Repository = Storage abstraction</strong> — hides WHERE data lives</li>
+                <li><strong>Interface/Abstract class</strong> — defines the contract</li>
+                <li><strong>Multiple implementations</strong> — same interface, different backends</li>
+                <li><strong>Dependency Injection</strong> — pass the repo in, don't create inside</li>
+                <li><strong>Next:</strong> Project 7 combines ALL layers (API + DTO + Service + Repository)</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

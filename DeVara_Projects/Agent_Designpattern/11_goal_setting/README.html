@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 11 — Goal Setting &amp; Monitoring</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 11 — Goal Setting &amp; Monitoring</h1>
+  <p>Crystal-clear objectives + measurable success criteria + continuous progress tracking.</p>
+  <p><span class="tag">State</span><span class="tag">Observer</span><span class="tag">SMART</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>An agent without a measurable goal is a wanderer. The pattern wraps any task with: (1) a SMART goal, (2) acceptance criteria, (3) milestones, (4) a monitor that checks progress against criteria each step.</p>
+<div class="callout tip"><strong>Mental model:</strong> a fitness tracker — you set a target, log activity, and the device tells you "60% to go."</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+stateDiagram-v2
+  [*] --> NotStarted
+  NotStarted --> InProgress: kick off
+  InProgress --> InProgress: log progress
+  InProgress --> AtRisk: KPI off-track
+  AtRisk --> InProgress: corrective action
+  InProgress --> Achieved: criteria met
+  AtRisk --> Failed: deadline missed
+  Achieved --> [*]
+  Failed --> [*]
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Personal fitness coach</h2>
+<div class="callout scenario">
+A user sets: "Run 100 km in June 2026." The agent breaks it into weekly milestones (~25 km/week), logs each run from the watch, and on June 18 says "you're at 52 km / 100 km — pace = on-track" or escalates with a reminder if behind. The state machine drives reminders.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant Coach as Coach
+  participant Watch as Watch
+  U->>Coach: "100 km in June"
+  Coach->>Coach: derive weekly milestone (25 km/wk)
+  loop each day
+    Watch->>Coach: today_km
+    Coach->>Coach: update progress, evaluate state
+  end
+  Coach-->>U: "On-track 52/100" or "AT RISK — add a 5km tomorrow"
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>Goal/monitoring support</th></tr>
+  <tr><td>LangGraph</td><td>Shared state holds goal + KPIs; conditional edges check thresholds.</td></tr>
+  <tr><td>CrewAI</td><td>Task <code>expected_output</code> + custom callbacks.</td></tr>
+  <tr><td>Custom</td><td>State machine + Observer (this project).</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>State</strong></td><td><code>GoalStatus</code> transitions: NotStarted → InProgress → AtRisk → Achieved/Failed.</td></tr>
+  <tr><td><strong>Observer</strong></td><td>Listeners subscribe to state changes (notify, log, escalate).</td></tr>
+  <tr><td><strong>Strategy</strong></td><td>Different success-criteria evaluators (numeric, deadline, KPI).</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── goal.py        # Goal + GoalStatus (State) + ProgressEvent
+├── monitor.py     # GoalMonitor + Observers (Observer)
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>What makes a SMART goal for an agent?</summary><div>Specific, Measurable, Achievable, Relevant, Time-bound. The "Measurable" part is essential — encode it as a number the agent can read each step.</div></details>
+<details class="qa"><summary>How does monitoring relate to evaluation (Ch. 19)?</summary><div>Monitoring = live, per-task progress. Evaluation = aggregate, cross-task quality. They share metrics but operate at different cadences.</div></details>
+</section>
+
+</main>
+<footer>Chapter 11 of 21.</footer>
+</body>
+</html>

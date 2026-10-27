@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Practice Lab · Architecture Thinking Scenarios · Personify-Service</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <div class="shell">
+        <nav class="nav">
+            <a class="brand" href="index.html">
+                <span class="mark">P</span> Personify-Service · Reading Guide
+            </a>
+            <span class="spacer"></span>
+            <a class="link" href="01_architecture.html">Architecture</a>
+            <a class="link" href="03_design_patterns.html">Patterns</a>
+            <a class="link" href="06_scenarios.html">Practice</a>
+            <a class="link" href="../index.html">↩ Side Projects</a>
+        </nav>
+
+        <header class="hero">
+            <span class="eyebrow">Practice Lab · Think Like an Architect</span>
+            <h1>Architecture Thinking Scenarios</h1>
+            <p class="lead">
+                Seventy real-world situations — ten per concept — drawn from many domains (banking, e-commerce,
+                IoT, healthcare, social, logistics). For each, decide <strong>where the logic belongs</strong> and
+                <strong>which pattern applies</strong> before you reveal the answer. The goal: make the right
+                architectural call instinctive.
+            </p>
+        </header>
+
+        <div class="howto">
+            <div class="ht">How to practise</div>
+            <p style="margin:0;">
+                Read each scenario and answer out loud (or on paper): <em>Which layer? Which pattern? Why?</em>
+                Only then click <strong>“Reveal the answer”</strong> to cross-check. If you disagree, re-read the
+                relevant chapter — disagreeing well is itself progress. Don’t rush; reasoning beats recall.
+            </p>
+        </div>
+
+        <div class="toc">
+            <div class="tt">Concepts (10 scenarios each)</div>
+            <ol>
+                <li><a href="#domain">Domain Models</a></li>
+                <li><a href="#services">Services / Use-cases</a></li>
+                <li><a href="#repos">Repositories</a></li>
+                <li><a href="#uow">Unit of Work</a></li>
+                <li><a href="#factories">Factories</a></li>
+                <li><a href="#adapters">Adapters</a></li>
+                <li><a href="#interfaces">Interfaces · DI · Validation</a></li>
+            </ol>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- 1 · DOMAIN MODELS -->
+        <!-- ============================================================= -->
+        <div class="concept-head" id="domain">
+            <span class="cn">1</span>
+            <div>
+                <h2>Domain Models</h2>
+                <span class="meta">Pure data + invariants · no infrastructure · the heart of the system</span>
+            </div>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">1</span><span class="s-tag">Banking</span></div>
+            <p class="s-body">An <code>Account</code> must never hold a negative balance.
+                <span class="ask">Where do you enforce “balance ≥ 0” — model, service, or repository?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Domain model</span>
+                    <p>An <strong>invariant</strong> — a rule that must <em>always</em> hold — belongs with the data it
+                        protects. The model should refuse to enter an invalid state (raise on a debit that would go
+                        negative). The service orchestrates the operation; the repository only persists.</p>
+                    <p class="why"><strong>Principle:</strong> a model guards its own consistency, so no caller can
+                        create an illegal object.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">2</span><span class="s-tag">E-commerce</span></div>
+            <p class="s-body">Money values show rounding bugs because prices are passed around as floats.
+                <span class="ask">How do you model an amount of money?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Value object</span>
+                    <p>Introduce a <code>Money(amount, currency)</code> <strong>value object</strong> in the domain that
+                        stores integer minor units (cents) and owns its arithmetic/rounding. It’s immutable and
+                        compared by value, not identity.</p>
+                    <p class="why"><strong>Principle:</strong> wrap primitives that have rules into value objects so the
+                        rules live in one place and can’t be bypassed.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">3</span><span class="s-tag">Healthcare</span></div>
+            <p class="s-body">A <code>Patient</code> stores an SSN that must never appear in API responses, but the
+                name is public.
+                <span class="ask">How do you keep the secret field from leaking?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict layer">Schema at the edge</span>
+                    <p>The domain model may hold all fields, but <strong>what gets serialized is the schema’s
+                            job</strong>
+                        (marshmallow <code>dump</code>/<code>load</code> at the interface layer). Use a response schema
+                        that
+                        simply doesn’t expose the SSN. Don’t rely on the model’s shape for security.</p>
+                    <p class="why"><strong>Principle:</strong> separate the persistence/domain shape from the transport
+                        DTO so you control exposure per direction.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">4</span><span class="s-tag">IoT</span></div>
+            <p class="s-body">Sensor readings have wildly different fields per device type, while user accounts are
+                rigid and relational.
+                <span class="ask">Postgres model or Mongo model for each?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Choose by shape</span>
+                    <p>Readings = flexible/document → a <strong>Mongo</strong> model (like <code>ContactModel</code>).
+                        Users = strong schema + integrity → a <strong>Postgres</strong> model (like
+                        <code>UserModel</code>).
+                        Personify is polyglot for exactly this reason.</p>
+                    <p class="why"><strong>Principle:</strong> let the data’s shape and consistency needs pick the
+                        store;
+                        the model abstracts the choice from services.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">5</span><span class="s-tag">Social</span></div>
+            <p class="s-body">Every <code>Post</code> needs <code>created_at</code> / <code>updated_at</code> set on
+                write, and you keep forgetting it in places.
+                <span class="ask">Where should timestamping happen?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">One consistent place</span>
+                    <p>Pick a single home: either a <strong>base model</strong> default or the <strong>service</strong>
+                        on
+                        create/update (Personify’s <code>ContactService.addUserContact</code> stamps both). What matters
+                        is
+                        it’s not scattered across handlers.</p>
+                    <p class="why"><strong>Principle:</strong> cross-cutting fields need one authoritative write point
+                        to
+                        stay consistent.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">6</span><span class="s-tag">Orders</span></div>
+            <p class="s-body">Should a new <code>Order</code> get its id from the application (UUID) or from the
+                database auto-increment?
+                <span class="ask">Which, and why does it matter?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">App-generated UUID</span>
+                    <p>Generating the id in the app (Personify has an <code>IdentityGenerator</code>) lets you know the
+                        id
+                        <em>before</em> insert, enables idempotency and cross-store references, and avoids coupling
+                        identity
+                        to a single DB’s insert mechanism.
+                    </p>
+                    <p class="why"><strong>Principle:</strong> stable, app-controlled identity is friendlier to
+                        distributed systems than DB-assigned sequence ids.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">7</span><span class="s-tag">Inventory</span></div>
+            <p class="s-body">A teammate adds <code>Product.reserve_stock()</code> that opens a repository and writes
+                to the DB inside the model.
+                <span class="ask">Is that the right place?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Smell — move it</span>
+                    <p>No. A model must not depend on infrastructure (the dependency rule). Pure behaviour like
+                        <code>product.can_fulfill(qty)</code> is fine on the model; anything that <em>touches a
+                            repository</em> belongs in a <strong>service</strong>.
+                    </p>
+                    <p class="why"><strong>Principle:</strong> rich models are good, but “rich” means pure logic, not
+                        database access.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">8</span><span class="s-tag">Loyalty</span></div>
+            <p class="s-body">A <code>Customer.tier</code> (Bronze/Silver/Gold) is determined by their points.
+                <span class="ask">Store the tier, or compute it?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Compute (derive)</span>
+                    <p>Derive <code>tier</code> from <code>points</code> via a method/property so there’s one source of
+                        truth. Only persist a denormalised copy if you must query/sort by it — and then recompute it
+                        whenever points change.</p>
+                    <p class="why"><strong>Principle:</strong> avoid two fields that can disagree; prefer a single
+                        source
+                        of truth.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">9</span><span class="s-tag">Logistics</span></div>
+            <p class="s-body">An identical <code>Address</code> block (street, city, zip, country) is needed inside
+                both <code>Customer</code> and <code>Warehouse</code>.
+                <span class="ask">How do you avoid duplicating the fields?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Composition</span>
+                    <p>Model <code>Address</code> once as a reusable value object / embedded model and
+                        <strong>compose</strong>
+                        it into both. Duplicating four fields in two models invites drift.</p>
+                    <p class="why"><strong>Principle:</strong> composition over duplication keeps shared structure in
+                        one
+                        definition.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">10</span><span class="s-tag">Versioning</span></div>
+            <p class="s-body">An old mobile client still sends a legacy contact JSON shape that no longer matches your
+                model.
+                <span class="ask">Where do you translate the old shape into the current model?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict layer">At the boundary</span>
+                    <p>Adapt incoming shapes at the edge — in the <strong>schema</strong> or a <code>transform</code> /
+                        <code>parser</code> in infra (Personify has both folders). Keep the domain model on the latest
+                        shape; never pollute it with legacy branches.
+                    </p>
+                    <p class="why"><strong>Principle:</strong> translate at boundaries so the core stays clean and
+                        singular.</p>
+                </div>
+            </details>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- 2 · SERVICES -->
+        <!-- ============================================================= -->
+        <div class="concept-head" id="services">
+            <span class="cn">2</span>
+            <div>
+                <h2>Services / Use-cases</h2>
+                <span class="meta">Orchestrate domain + infra · own business rules · framework-agnostic</span>
+            </div>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">1</span><span class="s-tag">Banking</span></div>
+            <p class="s-body">A transfer must debit one account and credit another, all-or-nothing.
+                <span class="ask">Which component coordinates it, and how is atomicity guaranteed?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Service + one UoW</span>
+                    <p>A <code>TransferService</code> use-case wraps both writes in a <strong>single Unit of
+                            Work</strong>
+                        so they commit or roll back together. Splitting them across two services with separate
+                        transactions
+                        risks half a transfer.</p>
+                    <p class="why"><strong>Principle:</strong> the use-case defines the consistency boundary; the UoW
+                        enforces it.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">2</span><span class="s-tag">Auth</span></div>
+            <p class="s-body">Passwords must be hashed before they’re stored.
+                <span class="ask">Handler, model, or service?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Service</span>
+                    <p>The service (Personify’s <code>UserService.createUser</code>) calls the
+                        <code>HashGenerator</code>
+                        then persists. The handler only shapes HTTP; the model has no infra dependency.</p>
+                    <p class="why"><strong>Principle:</strong> orchestrating infra helpers around a domain operation is
+                        a
+                        use-case responsibility.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">3</span><span class="s-tag">E-commerce</span></div>
+            <p class="s-body">Placing an order must (a) save the order, (b) decrement stock, and (c) send a
+                confirmation email.
+                <span class="ask">Which of these belong inside the same transaction?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Separate consistency from side-effects</span>
+                    <p>Save order + decrement stock go in the <strong>same UoW</strong> (they must agree). The email is
+                        a
+                        <strong>side effect</strong> — do it <em>after</em> commit (or via an outbox/queue), never
+                        inside the
+                        transaction, or a mail failure rolls back a valid order.
+                    </p>
+                    <p class="why"><strong>Principle:</strong> only data that must be consistent shares a transaction;
+                        external effects happen after commit.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">4</span><span class="s-tag">Auth</span></div>
+            <p class="s-body">A handler builds and signs a JWT inline before returning it.
+                <span class="ask">Is that a problem?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Move to service</span>
+                    <p>Token issuance is a use-case concern. Personify’s <code>loginUserWithCredentials</code> verifies
+                        the password and <em>returns</em> the token; the handler just maps it to a response.</p>
+                    <p class="why"><strong>Principle:</strong> handlers translate HTTP; decisions and credentials live
+                        in
+                        services.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">5</span><span class="s-tag">Reporting</span></div>
+            <p class="s-body">A dashboard endpoint needs user data from Postgres and activity data from Mongo in one
+                response.
+                <span class="ask">Where do you combine them?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Service composes repositories</span>
+                    <p>A service may hold <strong>multiple repositories / UoWs</strong> and stitch their results
+                        together.
+                        Cross-store coordination is exactly what a use-case is for.</p>
+                    <p class="why"><strong>Principle:</strong> the service is the only place allowed to know that two
+                        stores combine into one answer.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">6</span><span class="s-tag">Accounts</span></div>
+            <p class="s-body">“Username must be unique.”
+                <span class="ask">Is that schema validation or service logic?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict layer">Mostly service</span>
+                    <p>Format checks (length, non-empty) belong in the <strong>schema</strong>. Uniqueness needs the
+                        database, so it’s a <strong>service</strong> rule — Personify lets the DB’s unique constraint
+                        fire and
+                        catches <code>IntegrityError</code> in <code>createUser</code>.</p>
+                    <p class="why"><strong>Principle:</strong> rules that need stored data can’t be validated at the
+                        edge;
+                        they live in the use-case.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">7</span><span class="s-tag">API design</span></div>
+            <p class="s-body"><code>getUserContacts</code> could return ready-made JSON or domain models.
+                <span class="ask">What should a service return?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Domain models</span>
+                    <p>Return <code>List[ContactModel]</code>; the handler/schema does the <code>dump</code> to JSON. If
+                        the
+                        service returned JSON it would be coupled to the transport.</p>
+                    <p class="why"><strong>Principle:</strong> keep services transport-agnostic so the same use-case
+                        serves
+                        HTTP, a CLI, or a worker.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">8</span><span class="s-tag">Payments</span></div>
+            <p class="s-body">“Create payment” may be retried by a flaky client, risking double charges.
+                <span class="ask">How do you design the service to be idempotent?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Idempotency key in the use-case</span>
+                    <p>Accept a client-supplied idempotency key; the service checks the repository for an existing
+                        operation with that key and returns the prior result instead of creating a duplicate.</p>
+                    <p class="why"><strong>Principle:</strong> idempotency is a business guarantee, so it’s designed
+                        into
+                        the service, not bolted onto the handler.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">9</span><span class="s-tag">SaaS</span></div>
+            <p class="s-body">New rule: VIP users may add unlimited contacts; everyone else is capped at 50.
+                <span class="ask">Where does this rule live?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Service</span>
+                    <p>It needs a count from the repository and the user’s tier — a <strong>business rule</strong> the
+                        service evaluates before calling <code>_add</code>. Not the handler (HTTP) and not the model
+                        (no data access).</p>
+                    <p class="why"><strong>Principle:</strong> policy that depends on stored state is use-case logic.
+                    </p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">10</span><span class="s-tag">Testing</span></div>
+            <p class="s-body">You must unit-test <code>createUser</code> without spinning up a database.
+                <span class="ask">What makes that possible here?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Dependency injection</span>
+                    <p>The service receives its Unit of Work / repository as constructor arguments, so a test passes in
+                        a
+                        <strong>fake</strong>. No real DB needed; you assert on behaviour (password hashed, id
+                        returned).
+                    </p>
+                    <p class="why"><strong>Principle:</strong> injected collaborators are the seam that makes use-cases
+                        unit-testable.</p>
+                </div>
+            </details>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- 3 · REPOSITORIES -->
+        <!-- ============================================================= -->
+        <div class="concept-head" id="repos">
+            <span class="cn">3</span>
+            <div>
+                <h2>Repositories</h2>
+                <span class="meta">Collection-like data access · hide the query language · return domain models</span>
+            </div>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">1</span><span class="s-tag">Analytics</span></div>
+            <p class="s-body">You need “users created in the last 7 days.”
+                <span class="ask">Add a method to the repository, or build the query in the service?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Repository method</span>
+                    <p>The repository owns query construction; expose an intent-named method and let the service call
+                        it.
+                        The service should express <em>what</em>, not <em>how</em>.</p>
+                    <p class="why"><strong>Principle:</strong> no SQL/BSON leaks into services; query knowledge stays in
+                        the repository.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">2</span><span class="s-tag">ORM leak</span></div>
+            <p class="s-body">A repository returns raw SQLAlchemy row objects straight to the service.
+                <span class="ask">What’s wrong?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Leaky abstraction</span>
+                    <p>It leaks the ORM across the boundary, coupling the service to SQLAlchemy. The repository should
+                        map
+                        rows to <strong>domain models</strong> (Personify does <code>_model_type().load(...)</code>).
+                    </p>
+                    <p class="why"><strong>Principle:</strong> the repository’s job is to keep persistence types from
+                        escaping upward.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">3</span><span class="s-tag">Migration</span></div>
+            <p class="s-body">Leadership wants contacts moved from MongoDB to PostgreSQL.
+                <span class="ask">If the repository is well-designed, what has to change?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Just a new repository</span>
+                    <p>Write a <code>PostgresRepository</code> with the <em>same method names</em> and swap the wiring.
+                        Services stay untouched because they depend on the interface, not the engine.</p>
+                    <p class="why"><strong>Principle:</strong> a stable repository interface makes the storage engine
+                        replaceable.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">4</span><span class="s-tag">Side effects</span></div>
+            <p class="s-body">Someone makes the repository’s <code>add()</code> also fire a “welcome” email.
+                <span class="ask">Acceptable?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">No — single responsibility</span>
+                    <p>Repositories do data access only. The email is a service-level side effect (and should follow a
+                        successful commit). Mixing them makes the repository unpredictable and hard to test.</p>
+                    <p class="why"><strong>Principle:</strong> one reason to change per class — persistence, not
+                        notifications.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">5</span><span class="s-tag">Paging</span></div>
+            <p class="s-body">A handler receives <code>offset</code> and <code>limit</code> for a contact list.
+                <span class="ask">Which layer actually applies the pagination?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Repository</span>
+                    <p>The repository’s <code>get(filter_by, skip_to, limit_by)</code> translates to
+                        <code>.offset().limit()</code> (SQL) or Mongo skip/limit — exactly how Personify does it. The
+                        handler
+                        validates the numbers; the service passes intent.
+                    </p>
+                    <p class="why"><strong>Principle:</strong> turning paging parameters into store-specific calls is
+                        the
+                        repository’s job.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">6</span><span class="s-tag">Testing</span></div>
+            <p class="s-body">You want fast tests with no database at all.
+                <span class="ask">Can you build an in-memory repository?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Yes — same interface</span>
+                    <p>Implement a dict-backed repository exposing the same
+                        <code>add/get/get_by_key/update/remove</code>
+                        methods and inject it. The service can’t tell the difference.</p>
+                    <p class="why"><strong>Principle:</strong> because the interface is the contract, any conforming
+                        implementation is substitutable.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">7</span><span class="s-tag">CRM</span></div>
+            <p class="s-body">You need “contacts in city X whose birthday is this month.”
+                <span class="ask">Where is that filter compiled?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Repository compiles it</span>
+                    <p>The service expresses the filter as plain criteria; the repository turns it into binary
+                        expressions
+                        (Postgres) or a filter dict (Mongo), like Personify’s <code>_compile_filter_by</code>.</p>
+                    <p class="why"><strong>Principle:</strong> translation of criteria → engine syntax stays inside the
+                        repository.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">8</span><span class="s-tag">Reuse</span></div>
+            <p class="s-body">Two different services both need “find by email.”
+                <span class="ask">Duplicate the query in each?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Define once, reuse</span>
+                    <p>Put <code>find_by_email</code> once on the repository (or a shared base) and have both services
+                        call
+                        it. Duplicating queries invites them to drift apart.</p>
+                    <p class="why"><strong>Principle:</strong> DRY at the data layer; queries have a single home.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">9</span><span class="s-tag">Leak</span></div>
+            <p class="s-body">A repository adds <code>get_session()</code> so callers can run ad-hoc queries.
+                <span class="ask">Good idea?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">No — it breaks the wall</span>
+                    <p>Exposing the session lets callers bypass the repository and couple to the engine + transaction.
+                        Expose <strong>intent-revealing methods</strong> instead; keep the session private.</p>
+                    <p class="why"><strong>Principle:</strong> an abstraction you can reach around isn’t an abstraction.
+                    </p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">10</span><span class="s-tag">Compliance</span></div>
+            <p class="s-body">Policy changes: deleting a contact should keep the row but mark <code>deleted=true</code>
+                (soft delete).
+                <span class="ask">Where does this change, and do callers change?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Inside the repository only</span>
+                    <p>Change <code>remove()</code> to perform an update (and filter out deleted rows in reads). The
+                        service
+                        still calls <code>remove</code>; the storage detail stays hidden.</p>
+                    <p class="why"><strong>Principle:</strong> changing <em>how</em> data is stored shouldn’t ripple
+                        into
+                        callers.</p>
+                </div>
+            </details>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- 4 · UNIT OF WORK -->
+        <!-- ============================================================= -->
+        <div class="concept-head" id="uow">
+            <span class="cn">4</span>
+            <div>
+                <h2>Unit of Work</h2>
+                <span class="meta">Transaction boundary · commit on success, rollback on error · per-request
+                    scope</span>
+            </div>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">1</span><span class="s-tag">Banking</span></div>
+            <p class="s-body">Two writes must both succeed or both fail.
+                <span class="ask">How do you structure the boundary?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">One <code>with</code> block</span>
+                    <p>Wrap both repository calls in a single <code>with unit_of_work as uow:</code>. Commit happens on
+                        a
+                        clean exit; an exception triggers rollback. The block <em>is</em> the transaction.</p>
+                    <p class="why"><strong>Principle:</strong> co-locate writes that must be atomic in one UoW scope.
+                    </p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">2</span><span class="s-tag">Code review</span></div>
+            <p class="s-body">A reviewer asks “where do we call <code>commit()</code>?”
+                <span class="ask">What’s the answer in this architecture?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Nowhere explicit</span>
+                    <p>The UoW’s <code>__exit__</code> commits on a clean exit (Personify’s base UoW does this).
+                        Services
+                        never sprinkle <code>commit()</code> calls.</p>
+                    <p class="why"><strong>Principle:</strong> centralising commit/rollback in <code>__exit__</code>
+                        removes
+                        a whole class of “forgot to commit/rollback” bugs.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">3</span><span class="s-tag">Scaling</span></div>
+            <p class="s-body">One database session is reused across many unrelated operations in a long request.
+                <span class="ask">What’s the risk?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Fat / stale transaction</span>
+                    <p>Long-held sessions hold locks and accumulate state. Prefer a <strong>fresh UoW/session per
+                            request
+                            scope</strong> — Personify builds one per <code>request_id</code>.</p>
+                    <p class="why"><strong>Principle:</strong> short, request-scoped transactions reduce contention and
+                        surprises.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">4</span><span class="s-tag">MongoDB</span></div>
+            <p class="s-body">A Mongo operation inserts a single document.
+                <span class="ask">Do you still need commit/rollback?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">No-op, kept for uniformity</span>
+                    <p>A single-document write is atomic on its own, so Personify’s Mongo UoW <code>commit</code>/
+                        <code>rollback</code> are intentionally empty. The pattern stays so services have one uniform
+                        interface across stores.
+                    </p>
+                    <p class="why"><strong>Principle:</strong> consistent shape across stores beats special-casing the
+                        service code.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">5</span><span class="s-tag">Failure</span></div>
+            <p class="s-body">An exception is thrown after the first of three writes.
+                <span class="ask">What happens to the partial work?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Rolled back</span>
+                    <p><code>__exit__</code> sees a non-null <code>exc_type</code> and calls <code>rollback()</code>;
+                        nothing
+                        persists. Atomicity is preserved automatically.</p>
+                    <p class="why"><strong>Principle:</strong> the context manager guarantees cleanup on both the happy
+                        and
+                        sad paths.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">6</span><span class="s-tag">Banking</span></div>
+            <p class="s-body">You must read a balance, then debit based on it, without another request sneaking in.
+                <span class="ask">Same UoW or two?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Same UoW</span>
+                    <p>Do the read and the write inside one transaction so you act on consistent data (and can lock if
+                        needed). Reading in one transaction and writing in another opens a race window.</p>
+                    <p class="why"><strong>Principle:</strong> check-then-act must share a transaction to stay correct.
+                    </p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">7</span><span class="s-tag">Design</span></div>
+            <p class="s-body">Service A opens a UoW, then calls Service B which opens its own UoW.
+                <span class="ask">What’s the concern?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Two boundaries can’t roll back together</span>
+                    <p>Independent nested transactions defeat atomicity. Either pass one UoW/session down, or coordinate
+                        at a single use-case so there’s one boundary.</p>
+                    <p class="why"><strong>Principle:</strong> one logical operation should map to one transaction.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">8</span><span class="s-tag">Wiring</span></div>
+            <p class="s-body">Why does the UoW <em>own</em> the repository rather than the service creating a
+                repository itself?
+                <span class="ask">What would break otherwise?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Shared session</span>
+                    <p>The UoW hands out a repository bound to <em>its</em> session, so all writes land in the same
+                        transaction. A separately-created repository could use a different session and escape the
+                        boundary.</p>
+                    <p class="why"><strong>Principle:</strong> repository + transaction must share one session to be
+                        atomic.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">9</span><span class="s-tag">Ops</span></div>
+            <p class="s-body">Connections are leaking; sessions never close.
+                <span class="ask">Where do you fix the lifecycle?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">UoW <code>__exit__</code></span>
+                    <p>The UoW should close/clean up after commit/rollback (Personify’s Postgres UoW closes the session
+                        on
+                        exit). Centralising lifecycle there means callers can’t forget it.</p>
+                    <p class="why"><strong>Principle:</strong> own the resource’s full lifecycle in one place.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">10</span><span class="s-tag">Batch</span></div>
+            <p class="s-body">An import writes 10,000 rows inside a single UoW.
+                <span class="ask">Any concern?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Boundary too big</span>
+                    <p>One huge transaction means memory pressure and long-held locks. Chunk the work into batches, each
+                        its own UoW/commit.</p>
+                    <p class="why"><strong>Principle:</strong> a transaction boundary can be too large; size it to the
+                        real unit of consistency.</p>
+                </div>
+            </details>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- 5 · FACTORIES -->
+        <!-- ============================================================= -->
+        <div class="concept-head" id="factories">
+            <span class="cn">5</span>
+            <div>
+                <h2>Factories</h2>
+                <span class="meta">Centralise construction · wire the object graph · per-request scope</span>
+            </div>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">1</span><span class="s-tag">Smell</span></div>
+            <p class="s-body">A handler does <code>UserService(logger=…, uow=PostgresUnitOfWork(…))</code> inline.
+                <span class="ask">What’s the better approach?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Use a factory</span>
+                    <p>Construction logic leaks into the transport layer. A <code>UserServiceFactory.build(scope)</code>
+                        hides the wiring; the handler just asks for a service.</p>
+                    <p class="why"><strong>Principle:</strong> the handler should know <em>what</em> it needs, not
+                        <em>how</em> to build it.
+                    </p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">2</span><span class="s-tag">Design</span></div>
+            <p class="s-body">Personify has a service factory <em>and</em> a Unit-of-Work factory.
+                <span class="ask">Why two tiers?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Composable construction</span>
+                    <p>The service factory delegates UoW creation to the UoW factory. Each factory owns one slice of the
+                        graph, so wiring stays small and reusable.</p>
+                    <p class="why"><strong>Principle:</strong> layer your construction the way you layer your runtime.
+                    </p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">3</span><span class="s-tag">Testing</span></div>
+            <p class="s-body">In tests you want services built with a fake UoW, without editing the service.
+                <span class="ask">What’s the seam?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">The factory</span>
+                    <p>Provide a test factory (or a fake bootstrap) that builds the service with stubs. The factory is
+                        the
+                        single place where “real vs fake” is decided.</p>
+                    <p class="why"><strong>Principle:</strong> centralised construction gives you one place to
+                        substitute
+                        test doubles.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">4</span><span class="s-tag">Config</span></div>
+            <p class="s-body">A flag chooses Postgres vs Mongo persistence for a feature at runtime.
+                <span class="ask">Where does that choice belong?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">In the factory</span>
+                    <p>The factory reads config and builds the matching UoW/repository. Business code receives a ready
+                        service and never branches on the store.</p>
+                    <p class="why"><strong>Principle:</strong> push implementation choices to construction time, out of
+                        the
+                        use-case.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">5</span><span class="s-tag">Wiring</span></div>
+            <p class="s-body">Personify’s factories take the <code>bootstrap</code> object.
+                <span class="ask">Why pass it in?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Access shared singletons</span>
+                    <p>The bootstrap (composition root) holds the long-lived logger and DB clients. Factories read from
+                        it
+                        to wire per-request objects, avoiding globals.</p>
+                    <p class="why"><strong>Principle:</strong> create expensive things once (bootstrap), assemble cheap
+                        per-request things in factories.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">6</span><span class="s-tag">Anti-pattern</span></div>
+            <p class="s-body">A teammate proposes a global <code>get_service()</code> callable from anywhere.
+                <span class="ask">What’s the downside?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Service locator</span>
+                    <p>It hides dependencies and makes tests hard (callers reach into a global). Prefer an explicit
+                        factory
+                        injected into the handler, so dependencies are visible.</p>
+                    <p class="why"><strong>Principle:</strong> make dependencies explicit; avoid hidden global lookups.
+                    </p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">7</span><span class="s-tag">Scope</span></div>
+            <p class="s-body">Each request builds a fresh service via <code>build(request_id)</code>.
+                <span class="ask">Why per-request rather than one shared instance?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Isolation</span>
+                    <p>A fresh service means a fresh UoW/session and no shared mutable state across concurrent requests
+                        —
+                        avoiding cross-talk and stale transactions.</p>
+                    <p class="why"><strong>Principle:</strong> request-scoped construction keeps concurrency safe.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">8</span><span class="s-tag">Extending</span></div>
+            <p class="s-body">You’re adding a brand-new <code>NoteService</code>.
+                <span class="ask">What construction code must you write?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">A new factory + a route</span>
+                    <p>Write a <code>NoteServiceFactory</code> (reusing a UoW factory) and register the handler in the
+                        route
+                        table. The generic base service/repo are reused.</p>
+                    <p class="why"><strong>Principle:</strong> the pattern scales by <em>adding</em> a factory, not
+                        editing
+                        existing ones.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">9</span><span class="s-tag">Performance</span></div>
+            <p class="s-body">A factory’s <code>build()</code> makes a network call to fetch config on every request.
+                <span class="ask">Concern?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Construction should be cheap</span>
+                    <p>Expensive one-time setup belongs in <strong>bootstrap</strong>, cached for reuse. A factory
+                        called
+                        per request must stay fast.</p>
+                    <p class="why"><strong>Principle:</strong> separate “build once, expensive” from “build often,
+                        cheap.”</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">10</span><span class="s-tag">Contract</span></div>
+            <p class="s-body"><code>BaseServiceFactory.build()</code> just raises <code>NotImplementedError</code>.
+                <span class="ask">Why have it at all?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Defines the contract</span>
+                    <p>The abstract base fixes the <code>build(scope)</code> signature every concrete factory must
+                        honour,
+                        so handlers can depend on the abstraction.</p>
+                    <p class="why"><strong>Principle:</strong> an abstract method documents and enforces a uniform
+                        construction interface.</p>
+                </div>
+            </details>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- 6 · ADAPTERS -->
+        <!-- ============================================================= -->
+        <div class="concept-head" id="adapters">
+            <span class="cn">6</span>
+            <div>
+                <h2>Adapters</h2>
+                <span class="meta">Wrap third-party drivers · anti-corruption layer · keep vendors at the edge</span>
+            </div>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">1</span><span class="s-tag">Driver</span></div>
+            <p class="s-body">PyMongo calls appear directly inside a repository.
+                <span class="ask">What’s the cleaner structure?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Wrap it in an adapter</span>
+                    <p>Put a <code>PyMongoAdapter</code> exposing your own methods (<code>insert_one</code>,
+                        <code>find</code>…); the repository depends on the adapter, not the raw driver.
+                    </p>
+                    <p class="why"><strong>Principle:</strong> insulate the codebase from a vendor’s API surface.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">2</span><span class="s-tag">Storage</span></div>
+            <p class="s-body">You’re migrating object storage from MinIO to AWS S3.
+                <span class="ask">If adapters are right, what changes?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Only the storage adapter</span>
+                    <p>Swap the adapter implementation behind the same interface; repositories and services are
+                        untouched
+                        (MinIO being S3-compatible makes it even smaller).</p>
+                    <p class="why"><strong>Principle:</strong> vendor swaps stay contained to one adapter.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">3</span><span class="s-tag">Leak</span></div>
+            <p class="s-body">An adapter returns a <code>pymongo.Cursor</code> up to the repository.
+                <span class="ask">Problem?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Vendor type leak</span>
+                    <p>Returning a driver type re-couples callers to PyMongo. The adapter should return plain data
+                        (lists/dicts) so the repository maps to models.</p>
+                    <p class="why"><strong>Principle:</strong> adapters convert vendor types into neutral data at the
+                        boundary.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">4</span><span class="s-tag">Reliability</span></div>
+            <p class="s-body">You need retry-with-backoff on transient DB connection errors.
+                <span class="ask">Which layer owns that?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">The adapter</span>
+                    <p>Connection-level concerns (retries, pooling, timeouts) belong with the thing that owns the driver
+                        —
+                        the adapter. Services and repositories shouldn’t know.</p>
+                    <p class="why"><strong>Principle:</strong> cross-cutting connection behaviour lives where the
+                        connection lives.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">5</span><span class="s-tag">Anti-corruption</span></div>
+            <p class="s-body">A third-party SMS SDK throws its own exception types all over your code.
+                <span class="ask">How do you contain it?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Adapter as anti-corruption layer</span>
+                    <p>The adapter catches SDK-specific exceptions and re-raises <em>your</em> error types, so the rest
+                        of
+                        the app speaks one vocabulary.</p>
+                    <p class="why"><strong>Principle:</strong> translate foreign concepts/errors into your own at the
+                        edge.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">6</span><span class="s-tag">Resources</span></div>
+            <p class="s-body">Bootstrap creates one Mongo client and shares it with adapters.
+                <span class="ask">Why not create a client per request?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Pooling / singleton</span>
+                    <p>Clients are expensive and manage their own pools. Create once in bootstrap and let the adapter
+                        wrap
+                        the shared client; per-request clients waste connections.</p>
+                    <p class="why"><strong>Principle:</strong> share heavyweight connections; don’t rebuild them per
+                        request.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">7</span><span class="s-tag">Testing</span></div>
+            <p class="s-body">You want to test a repository without a real database.
+                <span class="ask">How does the adapter help?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Swap a fake adapter</span>
+                    <p>Because the repository depends on the adapter interface, inject a fake adapter that returns
+                        canned
+                        data. The adapter boundary is your mock seam.</p>
+                    <p class="why"><strong>Principle:</strong> every clean boundary doubles as a test seam.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">8</span><span class="s-tag">Security</span></div>
+            <p class="s-body">MinIO needs admin rights to create buckets at startup but only limited rights at runtime.
+                <span class="ask">One adapter or two?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Two — least privilege</span>
+                    <p>An admin adapter for setup and an app-scoped adapter for day-to-day use, each with appropriate
+                        credentials. Don’t run normal traffic as root.</p>
+                    <p class="why"><strong>Principle:</strong> separate privileges by purpose to limit blast radius.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">9</span><span class="s-tag">Leak</span></div>
+            <p class="s-body">An adapter exposes <code>get_raw_connection()</code> for “flexibility.”
+                <span class="ask">Concern?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Bypasses the abstraction</span>
+                    <p>Callers can now couple to the driver and dodge the adapter’s guarantees. Expose intent methods,
+                        not
+                        the raw connection.</p>
+                    <p class="why"><strong>Principle:</strong> don’t provide escape hatches that undo your insulation.
+                    </p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">10</span><span class="s-tag">Growth</span></div>
+            <p class="s-body">Analytics now needs a ClickHouse column store added.
+                <span class="ask">What’s the minimal, non-invasive way?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">New adapter + repository</span>
+                    <p>Add a ClickHouse adapter and a repository implementing the existing interfaces; services consume
+                        them unchanged. New tech is additive, not invasive.</p>
+                    <p class="why"><strong>Principle:</strong> adapters make new infrastructure a plug-in, not a
+                        rewrite.</p>
+                </div>
+            </details>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- 7 · INTERFACES / DI / VALIDATION -->
+        <!-- ============================================================= -->
+        <div class="concept-head" id="interfaces">
+            <span class="cn">7</span>
+            <div>
+                <h2>Interfaces · DI · Validation</h2>
+                <span class="meta">Thin handlers · inject dependencies · validate &amp; auth at the edge</span>
+            </div>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">1</span><span class="s-tag">Smell</span></div>
+            <p class="s-body">A handler creates its own logger and database client inside itself.
+                <span class="ask">What’s wrong, and the fix?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Hard dependencies</span>
+                    <p>Self-created collaborators can’t be swapped in tests. Inject them via <code>initialize()</code>
+                        (Personify passes logger, schema validators, and a service factory).</p>
+                    <p class="why"><strong>Principle:</strong> receive dependencies; don’t manufacture them in the
+                        transport layer.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">2</span><span class="s-tag">Validation</span></div>
+            <p class="s-body">Where should the JSON request body be validated?
+                <span class="ask">Before or after business logic, and in which layer?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict layer">Schema, in <code>prepare()</code></span>
+                    <p>Validate with a marshmallow schema at the edge, in <code>prepare()</code>, <em>before</em> any
+                        use-case runs. Reject malformed input early with a structured 400.</p>
+                    <p class="why"><strong>Principle:</strong> fail fast at the boundary so the core only sees clean
+                        input.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">3</span><span class="s-tag">Auth</span></div>
+            <p class="s-body">Every protected handler repeats the same JWT-decoding code.
+                <span class="ask">How do you remove the duplication?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Base handler (Template Method)</span>
+                    <p>Put auth once in a base handler’s <code>prepare()</code> (Personify’s
+                        <code>_set_authentication_context</code>) and inherit it. One implementation, consistent 401s.
+                    </p>
+                    <p class="why"><strong>Principle:</strong> hoist shared steps into a base; subclasses add only the
+                        verb method.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">4</span><span class="s-tag">Routing</span></div>
+            <p class="s-body">You’re adding <code>PUT</code> to an endpoint that already handles <code>POST</code>.
+                <span class="ask">How do you avoid an <code>if method == …</code> ladder?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Strategy via a dict</span>
+                    <p>Add a key to <code>schema_method_validators</code> (<code>{"PUT": UpdateSchema}</code>);
+                        <code>prepare()</code> selects the right validator by HTTP method automatically.
+                    </p>
+                    <p class="why"><strong>Principle:</strong> table-driven selection beats branching ladders.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">5</span><span class="s-tag">Smell</span></div>
+            <p class="s-body">A handler contains the SQL to load a user.
+                <span class="ask">What rule is broken?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Layer violation</span>
+                    <p>The transport layer is doing data access. It should call a <strong>service</strong>, which calls
+                        a
+                        <strong>repository</strong>. Handlers map HTTP ↔ use-case only.
+                    </p>
+                    <p class="why"><strong>Principle:</strong> each layer talks only to its neighbour, not past it.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">6</span><span class="s-tag">Observability</span></div>
+            <p class="s-body">Every log line must carry the request id, method, URI, and client IP.
+                <span class="ask">Where is that context set?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict layer">Base handler <code>prepare()</code></span>
+                    <p>Set the log context once at the edge (Personify’s <code>_set_log_context</code>), so every
+                        downstream log inherits it. Cross-cutting context is established where the request enters.</p>
+                    <p class="why"><strong>Principle:</strong> establish request-scoped context at the boundary, not in
+                        each function.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">7</span><span class="s-tag">Response</span></div>
+            <p class="s-body">A service returns domain models, but the client needs JSON.
+                <span class="ask">Who converts, and where?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Handler via response schema</span>
+                    <p>The handler calls the response schema’s <code>dump</code> to serialise. The service stays
+                        transport-agnostic and reusable beyond HTTP.</p>
+                    <p class="why"><strong>Principle:</strong> serialisation is a delivery concern, not a use-case one.
+                    </p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">8</span><span class="s-tag">Smell</span></div>
+            <p class="s-body">A handler decides “users may have at most 50 contacts.”
+                <span class="ask">Right place?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict watch">Move to the service</span>
+                    <p>That’s a business rule needing stored data — it belongs in the service, not the handler. Handlers
+                        translate requests; they don’t own policy.</p>
+                    <p class="why"><strong>Principle:</strong> keep policy out of transport so it’s reusable and
+                        testable.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">9</span><span class="s-tag">Testing</span></div>
+            <p class="s-body">You want to test a handler’s status-code logic without Tornado or a database.
+                <span class="ask">What enables it?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Inject a fake service factory</span>
+                    <p>Because the factory and service are injected, pass a stub service that returns canned results and
+                        assert on the chosen status codes. DI makes the handler testable in isolation.</p>
+                    <p class="why"><strong>Principle:</strong> injection turns even the edge layer into a unit-testable
+                        piece.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="scenario">
+            <div class="s-head"><span class="s-no">10</span><span class="s-tag">Consistency</span></div>
+            <p class="s-body">Error responses look different on every endpoint.
+                <span class="ask">How do you make them uniform?</span>
+            </p>
+            <details class="quiz">
+                <summary>Reveal the answer &amp; reasoning</summary>
+                <div class="ans">
+                    <span class="verdict">Shared error schemas + base <code>write_error</code></span>
+                    <p>Centralise on <code>BadRequestSchema</code> / <code>NotFoundSchema</code> /
+                        <code>ServerErrorSchema</code>
+                        and a base <code>write_error</code>, so every endpoint emits the same error contract.</p>
+                    <p class="why"><strong>Principle:</strong> one error shape across the API is part of the public
+                        contract.</p>
+                </div>
+            </details>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="callout tip">
+            <div class="ct">When you can answer most of these without peeking…</div>
+            <p>…you’ve reached <strong>Level 3–4</strong> on the <a
+                    href="05_learnings_checklist.html">self-assessment</a>:
+                you don’t just recognise the patterns, you can place new logic correctly under pressure. Revisit the
+                ones you missed, then try inventing your own scenario for a domain you know well — teaching is the final
+                test.</p>
+        </div>
+
+        <div class="callout">
+            <div class="ct acc">Accuracy note</div>
+            <p>Answers reflect the architecture and patterns of the cloned <code>Personify-Service</code> snapshot and
+                general DDD/clean-architecture practice. In real projects there are sometimes valid trade-offs — if you
+                can justify a different placement with sound reasoning, that’s a win, not a wrong answer.</p>
+        </div>
+
+        <div class="pager">
+            <a href="05_learnings_checklist.html">
+                <span class="dir">← Back</span>
+                <span class="ttl">5 · Learnings &amp; Self-Assessment</span>
+            </a>
+            <a class="next" href="index.html">
+                <span class="dir">Home</span>
+                <span class="ttl">Back to Overview</span>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p><strong>Personify-Service · Code Reading Guide</strong> — Practice Lab · 70 scenarios across 7 concepts.
+            </p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#e0e7ff',
+                primaryTextColor: '#312e81',
+                primaryBorderColor: '#4338ca',
+                lineColor: '#7c83b8',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 06 — Planning</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 06 — Planning</h1>
+  <p>Goal in → multi-step plan out. Then execute, observe, replan.</p>
+  <p><span class="tag">Template Method</span><span class="tag">Composite</span><span class="tag">Replan</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Planning is "decide the <em>how</em> from the <em>what</em>." A planner LLM emits an ordered list of steps (each step usually a tool call or sub-task). An executor runs them, and a re-planner can rewrite the remaining steps if reality diverges.</p>
+<div class="callout tip"><strong>Mental model:</strong> a project manager who breaks a delivery into Jira tickets, then re-orders them when a dependency slips.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart TD
+  G([Goal]) --> P[Planner LLM]
+  P --> PL[Plan: step1 → step2 → step3]
+  PL --> E[Executor]
+  E -->|"observe result"| M{Goal met?}
+  M -->|"yes"| O([Done])
+  M -->|"no"| RP[Re-planner]
+  RP --> E
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Office relocation agent</h2>
+<div class="callout scenario">
+"Move my team of 30 from BLR to HYD by Aug 1, 2026 within ₹4M." The planner emits 11 steps (book site visit, negotiate lease, IT migration, vendor change-of-address, employee relocation comms, etc.). When the lease quote comes in over budget, the re-planner drops the gym-membership perk and re-orders the IT migration to start a week earlier.
+</div>
+<div class="mermaid">
+flowchart LR
+  G[Goal: move team] --> P[Planner]
+  P --> S1[Site visit]
+  S1 --> S2[Lease negotiation]
+  S2 --> S3{Budget OK?}
+  S3 -->|"no"| RP[Replan: trim perks]
+  S3 -->|"yes"| S4[IT migration]
+  RP --> S4
+  S4 --> S5[Comms + relocation]
+  S5 --> D([Done])
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>Planning support</th></tr>
+  <tr><td>LangGraph</td><td>Plan-and-Execute graphs; replan node loops back.</td></tr>
+  <tr><td>CrewAI</td><td>Hierarchical process — manager agent plans, workers execute.</td></tr>
+  <tr><td>OpenAI Agents</td><td>Built-in <code>plan</code> step in Assistants.</td></tr>
+  <tr><td>Semantic Kernel</td><td><code>HandlebarsPlanner</code> / <code>FunctionCallingStepwisePlanner</code>.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Template Method</strong></td><td><code>PlannerAgent</code> defines plan/execute skeleton.</td></tr>
+  <tr><td><strong>Composite</strong></td><td>A <code>Plan</code> contains <code>Step</code>s; a step can be a sub-plan.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td>Different planners (greedy / hierarchical) plug in.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── plan.py        # Plan / Step (Composite)
+├── planner.py     # PlannerAgent + Replanner
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>Plan-once vs ReAct?</summary><div>Plan-once is cheap and predictable but brittle when the world changes. ReAct interleaves think/act/observe per step — slower but adaptive. Modern systems combine: an upfront plan + per-step ReAct.</div></details>
+<details class="qa"><summary>How do you bound the plan?</summary><div>Constrain the planner to a fixed tool catalog, set a max-step limit, and validate each step against a schema before execution.</div></details>
+</section>
+
+</main>
+<footer>Chapter 06 of 21.</footer>
+</body>
+</html>

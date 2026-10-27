@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Orchestration Platforms Compared</title>
+</head>
+
+<body>
+<header class="site-header">
+    <div class="shell">
+        <a class="brand" href="index.html">
+            <span class="brand-mark">AI</span>
+            <span>AI Engineer Interview Guide</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </nav>
+    </div>
+</header>
+
+    <main class="cp-container">
+    <div class="cp-hero"><h1>🔗 Orchestration Platforms Compared</h1>
+        <p>LangChain, LlamaIndex, Haystack, Semantic Kernel — the middleware connecting LLMs to your applications</p></div>
+
+    
+        <div class="section">
+            <h2>What is an Orchestration Platform?</h2>
+            <p>An orchestration platform is the <strong>middleware layer</strong> between your application and the LLM.
+                It handles: prompt construction, model calling, retrieval integration, output parsing, chains/pipelines,
+                and memory. Think of it as the "glue" that connects all the pieces of an LLM-powered application.</p>
+            <div class="highlight">
+                <p><strong>The Core Question:</strong> "I have an LLM and I have data. How do I connect them into a
+                    working application?" That's what orchestration platforms solve. Each has a different philosophy
+                    about HOW to connect them.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Major Platforms</h2>
+
+            <div class="platform-card" style="--pcolor: #10b981;">
+                <h3>🦜 LangChain</h3>
+                <div class="tagline">"The Swiss Army Knife" — largest ecosystem, most integrations</div>
+                <div class="desc">The most popular LLM framework. Provides abstractions for everything: prompts, models,
+                    chains, agents, memory, retrieval. Massive integration ecosystem (700+ integrations).</div>
+                <div class="philosophy">
+                    <strong>Philosophy:</strong> <span>"Provide composable building blocks for ANY LLM application.
+                        Integrate with everything."</span>
+                </div>
+                <ul class="strengths">
+                    <li>Largest ecosystem — 700+ integrations (vector DBs, LLMs, tools)</li>
+                    <li>LCEL (LangChain Expression Language) for declarative chains</li>
+                    <li>LangGraph for complex agent orchestration</li>
+                    <li>LangSmith for tracing, evaluation, monitoring</li>
+                    <li>Most tutorials, examples, and community support</li>
+                    <li>Provider-agnostic (switch models by changing one line)</li>
+                </ul>
+                <ul class="weaknesses">
+                    <li>Abstraction overhead can obscure what's happening</li>
+                    <li>API changes frequently (breaking changes between versions)</li>
+                    <li>Over-engineered for simple tasks</li>
+                    <li>Large dependency tree</li>
+                </ul>
+                <div class="example">
+                    # LangChain: Typical RAG pipeline
+                    from langchain_openai import ChatOpenAI
+                    from langchain_community.vectorstores import FAISS
+                    from langchain.chains import RetrievalQA
+
+                    llm = ChatOpenAI(model="gpt-4o")
+                    vectorstore = FAISS.load_local("./index")
+                    qa_chain = RetrievalQA.from_chain_type(llm, retriever=vectorstore.as_retriever())
+                    answer = qa_chain.invoke("What is LangGraph?")
+                </div>
+            </div>
+
+            <div class="platform-card" style="--pcolor: #a78bfa;">
+                <h3>🦙 LlamaIndex</h3>
+                <div class="tagline">"The Data Framework" — built specifically for RAG and data-heavy apps</div>
+                <div class="desc">Purpose-built for connecting LLMs to data. Excels at indexing, retrieval, and
+                    structured query over documents. If your app is primarily about querying your own data, LlamaIndex
+                    is often the better choice.</div>
+                <div class="philosophy">
+                    <strong>Philosophy:</strong> <span>"Data is the differentiator. Make it trivially easy to index,
+                        query, and reason over YOUR data."</span>
+                </div>
+                <ul class="strengths">
+                    <li>Best-in-class data indexing and retrieval</li>
+                    <li>Multiple index types (vector, keyword, tree, knowledge graph)</li>
+                    <li>Structured output and query engines</li>
+                    <li>Agentic RAG with query planning</li>
+                    <li>LlamaParse for complex document parsing (PDFs, tables)</li>
+                    <li>LlamaCloud for managed infrastructure</li>
+                    <li>Sub-question query decomposition</li>
+                </ul>
+                <ul class="weaknesses">
+                    <li>Less suitable for non-RAG use cases</li>
+                    <li>Smaller integration ecosystem than LangChain</li>
+                    <li>Less community content/tutorials</li>
+                    <li>Agent capabilities less mature than LangGraph</li>
+                </ul>
+                <div class="example">
+                    # LlamaIndex: Typical RAG pipeline
+                    from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+
+                    documents = SimpleDirectoryReader("./data").load_data()
+                    index = VectorStoreIndex.from_documents(documents)
+                    query_engine = index.as_query_engine()
+                    response = query_engine.query("What is LangGraph?")
+                </div>
+            </div>
+
+            <div class="platform-card" style="--pcolor: #60a5fa;">
+                <h3>🌾 Haystack (deepset)</h3>
+                <div class="tagline">"The Pipeline Builder" — production-focused, modular pipelines</div>
+                <div class="desc">German-engineered framework focused on production NLP pipelines. Clean, type-safe
+                    component system. Pipeline-first design where you connect components like LEGO. Strong enterprise
+                    focus.</div>
+                <div class="philosophy">
+                    <strong>Philosophy:</strong> <span>"Build production-grade NLP pipelines with well-defined,
+                        type-safe components. Quality over quantity."</span>
+                </div>
+                <ul class="strengths">
+                    <li>Clean, modular pipeline architecture</li>
+                    <li>Type-safe components with clear inputs/outputs</li>
+                    <li>Excellent for production deployments</li>
+                    <li>Strong evaluation framework</li>
+                    <li>deepset Cloud for managed hosting</li>
+                    <li>Good documentation and examples</li>
+                    <li>Less abstraction = easier debugging</li>
+                </ul>
+                <ul class="weaknesses">
+                    <li>Smaller ecosystem than LangChain</li>
+                    <li>Fewer LLM integrations</li>
+                    <li>Agent support less mature</li>
+                    <li>Less community momentum</li>
+                </ul>
+                <div class="example">
+                    # Haystack: Typical RAG pipeline
+                    from haystack import Pipeline
+                    from haystack.components.retrievers import InMemoryEmbeddingRetriever
+                    from haystack.components.generators import OpenAIGenerator
+
+                    pipeline = Pipeline()
+                    pipeline.add_component("retriever", InMemoryEmbeddingRetriever(document_store))
+                    pipeline.add_component("generator", OpenAIGenerator(model="gpt-4o"))
+                    pipeline.connect("retriever", "generator")
+                    result = pipeline.run({"retriever": {"query": "What is LangGraph?"}})
+                </div>
+            </div>
+
+            <div class="platform-card" style="--pcolor: #f59e0b;">
+                <h3>🧠 Semantic Kernel (Microsoft)</h3>
+                <div class="tagline">"The Enterprise Bridge" — Azure-native, .NET-first, plugin architecture</div>
+                <div class="desc">Microsoft's framework for building AI into enterprise .NET and Python apps.
+                    Plugin-based architecture. Deep Azure OpenAI integration. Designed for large organizations with
+                    existing Microsoft infrastructure.</div>
+                <div class="philosophy">
+                    <strong>Philosophy:</strong> <span>"AI should integrate into existing enterprise applications, not
+                        replace them. Plugin architecture for extensibility."</span>
+                </div>
+                <ul class="strengths">
+                    <li>.NET first-class support (rare in LLM frameworks)</li>
+                    <li>Plugin architecture (reusable AI capabilities)</li>
+                    <li>Azure OpenAI native integration</li>
+                    <li>Planner for automatic function orchestration</li>
+                    <li>Enterprise security and compliance</li>
+                    <li>Integrates with Microsoft 365, Dynamics, etc.</li>
+                </ul>
+                <ul class="weaknesses">
+                    <li>Heavily tied to Microsoft ecosystem</li>
+                    <li>Smaller Python support compared to .NET</li>
+                    <li>Less community outside Microsoft</li>
+                    <li>RAG capabilities less mature than LlamaIndex</li>
+                </ul>
+                <div class="example">
+                    # Semantic Kernel (Python)
+                    import semantic_kernel as sk
+                    from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
+
+                    kernel = sk.Kernel()
+                    kernel.add_service(AzureChatCompletion(service_id="chat"))
+                    result = await kernel.invoke_prompt("Summarize: {{$input}}", input_vars={"input": text})
+                </div>
+            </div>
+
+            <div class="platform-card" style="--pcolor: #ef4444;">
+                <h3>🔥 DSPy (Stanford)</h3>
+                <div class="tagline">"The Compiler" — program LLMs, don't prompt them</div>
+                <div class="desc">Radically different approach: treats LLM calls as MODULES that can be compiled and
+                    optimized, not prompt templates. You define signatures and behaviors; DSPy optimizes the prompts
+                    automatically.</div>
+                <div class="philosophy">
+                    <strong>Philosophy:</strong> <span>"Prompting is manual labor. COMPILE your LLM programs — let the
+                        framework find optimal prompts automatically."</span>
+                </div>
+                <ul class="strengths">
+                    <li>Automatic prompt optimization (no manual prompt engineering)</li>
+                    <li>Composable modules (like PyTorch for LLMs)</li>
+                    <li>Can optimize across examples (few-shot selection)</li>
+                    <li>More robust to model changes</li>
+                    <li>Research-backed (Stanford NLP group)</li>
+                </ul>
+                <ul class="weaknesses">
+                    <li>Steep learning curve (different paradigm)</li>
+                    <li>Less production tooling</li>
+                    <li>Smaller ecosystem</li>
+                    <li>Still maturing as a framework</li>
+                </ul>
+                <div class="example">
+                    # DSPy: Define signatures, compile automatically
+                    import dspy
+
+                    class RAG(dspy.Module):
+                    def __init__(self):
+                    self.retrieve = dspy.Retrieve(k=3)
+                    self.generate = dspy.ChainOfThought("context, question -> answer")
+
+                    def forward(self, question):
+                    context = self.retrieve(question).passages
+                    return self.generate(context=context, question=question)
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Head-to-Head Comparison</h2>
+            <div style="overflow-x:auto;">
+                <table class="comparison-table">
+                    <tr>
+                        <th>Platform</th>
+                        <th>Best At</th>
+                        <th>Ecosystem Size</th>
+                        <th>RAG Quality</th>
+                        <th>Agent Support</th>
+                        <th>Production</th>
+                        <th>Learning Curve</th>
+                    </tr>
+                    <tr>
+                        <td><strong>LangChain</strong></td>
+                        <td>Everything (generalist)</td>
+                        <td class="good">Massive (700+)</td>
+                        <td class="good">Good</td>
+                        <td class="good">Excellent (LangGraph)</td>
+                        <td class="good">Good (LangSmith)</td>
+                        <td class="mid">Medium</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LlamaIndex</strong></td>
+                        <td>Data/RAG</td>
+                        <td class="mid">Large</td>
+                        <td class="good">Best-in-class</td>
+                        <td class="mid">Good</td>
+                        <td class="good">Good (LlamaCloud)</td>
+                        <td class="good">Low-Medium</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Haystack</strong></td>
+                        <td>Clean pipelines</td>
+                        <td class="mid">Medium</td>
+                        <td class="good">Very Good</td>
+                        <td class="mid">Basic</td>
+                        <td class="good">Excellent</td>
+                        <td class="good">Low</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Semantic Kernel</strong></td>
+                        <td>Microsoft/.NET</td>
+                        <td class="mid">Medium (Azure)</td>
+                        <td class="mid">Good</td>
+                        <td class="good">Good</td>
+                        <td class="good">Excellent (Azure)</td>
+                        <td class="mid">Medium</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DSPy</strong></td>
+                        <td>Prompt optimization</td>
+                        <td class="low">Small</td>
+                        <td class="good">Excellent (compiled)</td>
+                        <td class="low">Minimal</td>
+                        <td class="mid">Growing</td>
+                        <td class="low">High</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Decision Framework</h2>
+            <div class="decision-box">
+                <h4>Choose based on your primary need:</h4>
+                <p><strong>📚 RAG is core feature →</strong> LlamaIndex (purpose-built for data retrieval)</p>
+                <p><strong>🔧 Need everything + largest ecosystem →</strong> LangChain (most integrations)</p>
+                <p><strong>🏭 Production pipeline, clean code →</strong> Haystack (type-safe, modular)</p>
+                <p><strong>🏢 Microsoft/.NET enterprise →</strong> Semantic Kernel (Azure-native)</p>
+                <p><strong>🧪 Research, auto-optimize prompts →</strong> DSPy (compiler approach)</p>
+                <p><strong>🤖 Complex agents →</strong> LangChain + LangGraph combo</p>
+                <p><strong>🔀 Multiple platforms together →</strong> LlamaIndex for RAG + LangGraph for agents (they
+                    integrate)</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧠 Pro Thinker Analysis</h2>
+            <div class="highlight">
+                <p><strong>Don't pick a religion — pick the right tool for the job.</strong> LangChain's strength is
+                    breadth (it connects to everything). LlamaIndex's strength is depth (it handles data better than
+                    anyone). Haystack's strength is production quality. Semantic Kernel's strength is enterprise
+                    integration. DSPy's strength is eliminating prompt engineering. In practice, many production systems
+                    use MULTIPLE frameworks: LlamaIndex for indexing/retrieval + LangGraph for agent orchestration, for
+                    example. They're not mutually exclusive.</p>
+            </div>
+        </div>
+
+        <div class="cp-nav-footer">
+            <a href="cp-agentic-frameworks.html">← Agentic Frameworks</a>
+            <a href="cp-feature-stores-caching.html">Next: Feature Stores & Caching →</a>
+        </div>
+    </div>
+
+    </main>
+
+<footer class="site-footer">
+    <div class="shell">
+        <p>Part of the AI and ML Interview Starter Guide. Open locally in any browser.</p>
+        <div class="mini-links">
+            <a href="index.html">Home</a>
+            <a href="cp-index.html">Cross-Platform AI</a>
+            <a href="lg-index.html">LangGraph Journey</a>
+        </div>
+    </div>
+</footer>
+</body>
+
+</html>

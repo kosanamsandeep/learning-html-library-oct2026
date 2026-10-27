@@ -1,0 +1,352 @@
+/* Shared styles for industry_standards hub and pages. */
+:root {
+    --bg: #f6f7fb;
+    --paper: #ffffff;
+    --ink: #0f172a;
+    --muted: #5b6478;
+    --line: #d8def0;
+    --accent: #0f766e;
+    --accent-soft: #ccfbf1;
+    --anth: #d97706;
+    --anth-soft: #ffedd5;
+    --oai: #0d9488;
+    --oai-soft: #ccfbf1;
+    --gh: #4338ca;
+    --gh-soft: #e0e7ff;
+    --green: #047857;
+    --green-soft: #d1fae5;
+    --warn: #b45309;
+    --warn-soft: #fef3c7;
+    --bad: #b91c1c;
+    --bad-soft: #fee2e2;
+    --shadow: 0 18px 40px rgba(15, 23, 42, .07);
+    --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+    --mono: "Cascadia Mono", "Consolas", monospace;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--ink);
+    line-height: 1.65;
+    background: linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+}
+
+.shell {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 2.4rem 1.4rem;
+}
+
+header {
+    border-bottom: 1px solid var(--line);
+    background: rgba(255, 255, 255, .94);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .9rem 0;
+}
+
+.brand {
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 750;
+}
+
+.brand span {
+    display: inline-grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    margin-right: .5rem;
+    border-radius: 6px;
+    color: white;
+    background: var(--accent);
+    font-size: .85rem;
+}
+
+.top-links {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+.top-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: .92rem;
+}
+
+.top-links a:hover {
+    color: var(--accent);
+}
+
+.hero {
+    padding: 2.6rem 0 1.2rem;
+}
+
+.eyebrow {
+    color: var(--accent);
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+h1 {
+    max-width: 940px;
+    margin: .2rem 0 .75rem;
+    font-size: clamp(1.9rem, 4.6vw, 2.9rem);
+    line-height: 1.1;
+}
+
+h2 {
+    margin: 0 0 .8rem;
+    font-size: 1.45rem;
+}
+
+h3 {
+    margin: 0 0 .4rem;
+    font-size: 1.05rem;
+}
+
+p {
+    margin: 0 0 .85rem;
+}
+
+.lead {
+    max-width: 880px;
+    color: var(--muted);
+    font-size: 1.05rem;
+}
+
+.card {
+    margin: 1rem 0;
+    padding: 1.3rem 1.4rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.mini {
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.good {
+    background: var(--green-soft);
+    border-color: #a7f3d0;
+}
+
+.warn {
+    background: var(--warn-soft);
+    border-color: #fde68a;
+}
+
+.bad {
+    background: var(--bad-soft);
+    border-color: #fecaca;
+}
+
+.flow {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    align-items: stretch;
+    margin: 1rem 0;
+}
+
+.step {
+    flex: 1 1 160px;
+    padding: .85rem;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--accent-soft);
+    color: #134e4a;
+    font-weight: 700;
+    text-align: center;
+}
+
+.arrow {
+    align-self: center;
+    color: var(--muted);
+    font-weight: 800;
+}
+
+.callout {
+    padding: .9rem 1.15rem;
+    border-left: 4px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0;
+}
+
+.callout.anth {
+    border-left-color: var(--anth);
+    background: var(--anth-soft);
+}
+
+.callout.oai {
+    border-left-color: var(--oai);
+    background: var(--oai-soft);
+}
+
+.callout.gh {
+    border-left-color: var(--gh);
+    background: var(--gh-soft);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: .6rem;
+}
+
+th,
+td {
+    border: 1px solid var(--line);
+    padding: .65rem;
+    vertical-align: top;
+    text-align: left;
+    font-size: .94rem;
+}
+
+th {
+    background: #f1f5f9;
+}
+
+code {
+    font-family: var(--mono);
+    font-size: .9em;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: .05rem .35rem;
+    border-radius: 4px;
+}
+
+pre {
+    overflow-x: auto;
+    padding: 1rem;
+    color: #e2e8f0;
+    background: #0f172a;
+    border-radius: 8px;
+}
+
+pre code {
+    padding: 0;
+    color: inherit;
+    background: transparent;
+    border: 0;
+}
+
+ol,
+ul {
+    padding-left: 1.2rem;
+}
+
+.quiet {
+    color: var(--muted);
+}
+
+a.project {
+    display: block;
+    padding: 1rem 1.1rem;
+    margin: .5rem 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--ink);
+    text-decoration: none;
+    transition: border-color .15s, transform .15s;
+}
+
+a.project:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+a.project strong {
+    display: block;
+    color: var(--accent);
+    margin-bottom: .15rem;
+    font-family: var(--mono);
+    font-size: .8rem;
+    letter-spacing: .05em;
+}
+
+.tag {
+    display: inline-block;
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .05em;
+}
+
+.tag.anth {
+    color: var(--anth);
+    background: var(--anth-soft);
+}
+
+.tag.oai {
+    color: var(--oai);
+    background: var(--oai-soft);
+}
+
+.tag.gh {
+    color: var(--gh);
+    background: var(--gh-soft);
+}
+
+.source {
+    display: inline-block;
+    margin: .25rem .35rem 0 0;
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--muted);
+    font-size: .78rem;
+    text-decoration: none;
+    border: 1px solid var(--line);
+}
+
+.source:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.sources {
+    margin-top: .6rem;
+}
+
+.kbd {
+    font-family: var(--mono);
+    font-size: .82rem;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: .05rem .4rem;
+}

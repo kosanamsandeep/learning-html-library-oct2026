@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P1 · Rate Limiter</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>Fundamentals</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p2_consistent_hashing/README.html">Next: P2</a><a href="../../index.html">Academy</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Fundamentals · Project 1</p>
+            <h1>Rate limiter — three classic algorithms, one demo</h1>
+            <p class="lead">Stripe, Cloudflare, AWS, and almost every public API rate-limits requests. The choice of
+                algorithm controls how the system feels: smooth, bursty, or strict.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Your API got featured on a tech newsletter. Suddenly traffic is 30× normal. Without a rate limiter, one
+                greedy client can starve everyone else. A rate limiter is the polite bouncer at the door — it lets in a
+                fair share and asks the rest to come back soon.</p>
+        </section>
+
+        <section class="card">
+            <h2>The three algorithms</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Algorithm</th>
+                        <th>How it works</th>
+                        <th>Best for</th>
+                        <th>Watch out for</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Token bucket</td>
+                        <td>Tokens refill at a steady rate up to a max bucket size; each request costs one.</td>
+                        <td>APIs that want to allow short bursts but cap sustained rate.</td>
+                        <td>Picking a too-big bucket lets one client burst hard.</td>
+                    </tr>
+                    <tr>
+                        <td>Sliding window log</td>
+                        <td>Store a timestamp per request; count timestamps inside the window.</td>
+                        <td>Strict per-second/per-minute fairness.</td>
+                        <td>Memory grows with traffic; use approximations at scale.</td>
+                    </tr>
+                    <tr>
+                        <td>Fixed window counter</td>
+                        <td>One counter per time window; reset at window boundary.</td>
+                        <td>Cheap counters when exactness does not matter.</td>
+                        <td>Boundary bursts: 2× the limit possible across a window edge.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Mental model</h2>
+            <div class="flow">
+                <div class="step">Request arrives</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Lookup limiter for this key</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Allow or deny</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Update internal state</div>
+            </div>
+            <p>Real systems key the limiter by user id, API key, or IP, and store the state in Redis so multiple servers
+                share one view.</p>
+        </section>
+
+        <section class="card">
+            <h2>Core code</h2>
+            <pre><code>def allow(self) -&gt; bool:
+    now = time.monotonic()
+    self.tokens = min(self.capacity, self.tokens + (now - self.last) * self.rate)
+    self.last = now
+    if self.tokens &gt;= 1:
+        self.tokens -= 1
+        return True
+    return False</code></pre>
+            <p>Notice the bucket is updated lazily on each request — no background thread needed.</p>
+        </section>
+
+        <section class="card">
+            <h2>How to run</h2>
+            <pre><code>cd system_design_academy/system_design_fundamentals/p1_rate_limiter
+python main.py</code></pre>
+            <p>You will see the same request pattern hit all three limiters and notice the differences.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"I usually start with a token bucket because it allows short bursts while still capping
+                the long-term rate. If exact fairness across a window matters I move to a sliding window log, knowing it
+                costs more memory. Fixed window counters are cheapest but allow 2× bursts at window boundaries, which I
+                call out explicitly. In production I keep limiter state in Redis with a Lua script so it stays
+                consistent across multiple API servers."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

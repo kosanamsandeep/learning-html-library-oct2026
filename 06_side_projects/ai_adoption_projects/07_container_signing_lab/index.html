@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Container Signing Lab</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="../"><span>AI</span>Adoption Projects</a>
+      <div class="top-links">
+        <a href="../">Hub</a>
+        <a href="../06_sbom_diff_checker/">Prev: SBOM Diff Checker</a>
+        <a href="../08_slsa_level_walkthrough/">Next: SLSA Level Walkthrough</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Project 07 &mdash; Supply Chain Security</p>
+      <h1>Container Signing Lab</h1>
+      <p class="lead">Build a CI pipeline that builds a Docker image, signs it with Cosign (keyless mode), pushes it to a registry, and enforces that only signed images can be deployed &mdash; using Sigstore's Fulcio + Rekor for transparent, keyless signing.</p>
+    </section>
+
+    <div class="card">
+      <h2>Architecture &amp; Flow</h2>
+      <p>The signing flow binds an identity (your GitHub OIDC token) to an artifact (the container image) through a short-lived signing certificate issued by Fulcio. Rekor records the signature in a tamper-proof transparency log.</p>
+      <div class="mermaid">
+<pre class="mermaid">
+sequenceDiagram
+    participant Dev as 👤 Developer
+    participant CI as ⚙️ GitHub Actions
+    participant Build as 🐳 Docker Build
+    participant Cosign as 🔏 Cosign
+    participant Fulcio as 🏛️ Fulcio CA
+    participant Rekor as 📜 Rekor Log
+    participant Registry as 📦 Container Registry
+    participant Deploy as 🚀 Deploy (Admission Control)
+
+    Dev->>CI: Push commit / Open PR
+    CI->>Build: docker build -t image:v1
+    Build-->>CI: image:v1 (digest sha256:...)
+    CI->>Cosign: cosign sign image:v1
+    Cosign->>Fulcio: Request signing cert (OIDC token)
+    Fulcio-->>Cosign: Short-lived code signing cert
+    Cosign->>Rekor: Record signature in transparency log
+    Rekor-->>Cosign: Signed entry timestamp (SET)
+    Cosign->>Registry: cosign push image:v1 + signature
+    Registry-->>CI: Image + signature stored
+
+    CI->>Registry: cosign verify image:v1
+    Registry-->>CI: Signature + cert chain
+    CI->>Fulcio: Verify certificate chain
+    CI->>Rekor: Verify transparency log entry
+    Rekor-->>CI: Entry verified
+
+    CI-->>Dev: ✅ Signed & verified
+
+    Deploy->>Registry: Attempt to pull image
+    Deploy->>Rekor: cosign verify image:v1
+    alt Signature Valid
+        Deploy-->>Deploy: ✅ Allow deployment
+    else Signature Invalid or Missing
+        Deploy-->>Deploy: ❌ Block deployment
+    end
+</pre>
+      </div>
+      <ol>
+        <li><strong>Build</strong> &mdash; CI builds a container image and computes its digest (sha256 hash).</li>
+        <li><strong>Request certificate</strong> &mdash; Cosign presents the CI job's OIDC token (from GitHub Actions) to Fulcio, which issues a short-lived code-signing certificate binding the identity to a ephemeral key pair.</li>
+        <li><strong>Sign</strong> &mdash; Cosign signs the image digest with the private key and stores the signature as a separate manifest in the container registry alongside the image.</li>
+        <li><strong>Transparency log</strong> &mdash; Cosign records the signature in Rekor's immutable merkle tree. Rekor returns a Signed Entry Timestamp (SET) proving the record was included.</li>
+        <li><strong>Verify</strong> &mdash; During deployment, an admission controller (or CI step) runs <code>cosign verify</code> to check the signature, validate the certificate chain against Fulcio, and confirm the entry exists in Rekor.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>How Keyless Signing Works (Fulcio + Rekor)</h2>
+
+      <p>Traditional signing requires managing long-lived private keys &mdash; a security risk and operational burden. Sigstore's keyless signing eliminates this by using <strong>ephemeral keys</strong> tied to a <strong>software identity</strong> (not a person, but an OIDC identity like an email or GitHub repository).</p>
+
+      <table>
+        <tr>
+          <th>Component</th>
+          <th>Role</th>
+          <th>How It Works</th>
+        </tr>
+        <tr>
+          <td><strong>Fulcio</strong></td>
+          <td>Certificate Authority (CA)</td>
+          <td>Receives an OIDC token from the CI provider (e.g., <code>id-token: write</code> in GitHub Actions). Validates the token, then issues a short-lived X.509 code-signing certificate. The certificate embeds the identity (e.g., <code>https://github.com/my-org/my-repo/.github/workflows/build.yml@refs/heads/main</code>) in the Subject Alternative Name (SAN) field.</td>
+        </tr>
+        <tr>
+          <td><strong>Rekor</strong></td>
+          <td>Transparency Log</td>
+          <td>An immutable, append-only merkle tree of signing events. Every signature is recorded, creating a public audit trail. This prevents attackers from signing malicious artifacts and then hiding their tracks. Rekor returns a Signed Entry Timestamp (SET) that can be verified offline.</td>
+        </tr>
+        <tr>
+          <td><strong>Cosign</strong></td>
+          <td>Signing &amp; Verification CLI</td>
+          <td>Orchestrates the flow: generates an ephemeral key pair, requests the Fulcio certificate, signs the artifact, records in Rekor, and uploads the signature to the registry. On verify, it checks the certificate chain, the Rekor entry, and confirms the identity matches expected policies.</td>
+        </tr>
+      </table>
+
+      <div class="callout">
+        <strong>Key insight:</strong> There are no long-lived secrets to rotate. The signing key exists only for the duration of the <code>cosign sign</code> command and is immediately discarded. Trust is rooted in the OIDC identity &mdash; an attacker would need to compromise your CI provider (e.g., steal your GitHub Actions OIDC token) to sign a malicious image as your project.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>GitHub Actions Workflow</h2>
+      <p>This is a complete CI pipeline that builds, signs, and pushes a container image using Cosign keyless signing. The <code>id-token: write</code> permission is required to obtain the OIDC token from GitHub.</p>
+
+      <pre><code># .github/workflows/build-and-sign.yml
+name: Build, Sign &amp; Push Container
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write    # needed for OIDC token (keyless signing)
+  packages: write    # needed to push to GHCR
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-sign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        id: build
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign the image with Cosign keyless
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}"
+          cosign sign "$image" \
+            --yes \
+            --upload=true \
+            --tlog-upload=true
+
+      - name: Verify the signed image
+        run: |
+          image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
+          cosign verify "$image" \
+            --certificate-identity-regexp "https://github.com/${{ github.repository }}/.*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+</code></pre>
+    </div>
+
+    <div class="card">
+      <h2>Admission Control: Refusing Unsigned Images</h2>
+      <p>Signing is only half the battle &mdash; you must enforce that only signed images can run in production. In Kubernetes, this is done with an <strong>admission controller</strong> like <a href="https://docs.sigstore.dev/policy-controller/overview/">Sigstore Policy Controller</a> or <a href="https://kyverno.io/">Kyverno</a>.</p>
+
+      <p><strong>Example Kyverno policy:</strong></p>
+      <pre><code># require-image-signature.yaml
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-cosign-signature
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: verify-image
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/my-org/*"
+          attestors:
+            - entries:
+                - keyless:
+                    issuer: "https://token.actions.githubusercontent.com"
+                    subject: "https://github.com/my-org/my-repo/.github/workflows/build.yml@*"
+          required: true
+</code></pre>
+
+      <div class="callout">
+        <strong>How it works:</strong> When a Kubernetes pod spec references an image, the admission controller intercepts the request, runs <code>cosign verify</code> against the image, and checks that the signing certificate's identity matches the expected OIDC issuer and subject. If verification fails, the pod is rejected with a clear error message. This prevents attackers from deploying a tampered image even if they have push access to the registry.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Running the Lab Locally</h2>
+      <p>You can simulate the signing flow on your local machine without a full CI pipeline:</p>
+
+      <pre><code># Prerequisites
+# Install Cosign: https://docs.sigstore.dev/cosign/installation/
+# Install Docker
+
+# 1. Build a test image
+docker build -t my-app:latest .
+
+# 2. Sign with keyless mode (opens browser for OIDC auth)
+cosign sign docker.io/yourname/my-app:latest
+
+# 3. Verify the signature
+cosign verify docker.io/yourname/my-app:latest \
+  --certificate-identity your@email.com \
+  --certificate-oidc-issuer https://accounts.google.com
+
+# 4. (Optional) Verify without network access using the Rekor SET
+cosign verify docker.io/yourname/my-app:latest \
+  --certificate-identity your@email.com \
+  --certificate-oidc-issuer https://accounts.google.com \
+  --rekor-public-key /path/to/rekor.pub
+</code></pre>
+
+      <p><strong>Commands reference:</strong></p>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Purpose</th>
+        </tr>
+        <tr>
+          <td><code>cosign sign</code></td>
+          <td>Signs an image digest and uploads the signature to the registry</td>
+        </tr>
+        <tr>
+          <td><code>cosign verify</code></td>
+          <td>Verifies a signature against Fulcio root certs and Rekor</td>
+        </tr>
+        <tr>
+          <td><code>cosign verify-attestation</code></td>
+          <td>Verifies an in-toto attestation attached to the image</td>
+        </tr>
+        <tr>
+          <td><code>cosign triangulate</code></td>
+          <td>Locates the signature manifest for a given image</td>
+        </tr>
+        <tr>
+          <td><code>rekor-cli get</code></td>
+          <td>Retrieves a transparency log entry by UUID</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Security Model &amp; Limitations</h2>
+      <table>
+        <tr>
+          <th>Aspect</th>
+          <th>Detail</th>
+        </tr>
+        <tr>
+          <td>Trust root</td>
+          <td>The OIDC identity (GitHub repo, email, etc.) and the Fulcio CA public key. No long-lived secrets.</td>
+        </tr>
+        <tr>
+          <td>Key compromise</td>
+          <td>Ephemeral keys exist only during signing. No key rotation needed.</td>
+        </tr>
+        <tr>
+          <td>Transparency</td>
+          <td>All signatures are public in Rekor. Any auditor can verify that no hidden signatures exist.</td>
+        </tr>
+        <tr>
+          <td>Limitation</td>
+          <td>Keyless signing requires network access to Fulcio and Rekor. For air-gapped environments, use Cosign with a private key or a self-hosted Sigstore deployment.</td>
+        </tr>
+        <tr>
+          <td>Limitation</td>
+          <td>OIDC identity binding is only as strong as the CI provider's OIDC implementation. GitHub's OIDC tokens include the repository and workflow ref, making them strongly scoped.</td>
+        </tr>
+      </table>
+
+      <p class="quiet">Project source: <a href="https://docs.sigstore.dev/">Sigstore Documentation</a> &bull; <a href="https://github.com/sigstore/cosign">Cosign on GitHub</a> &bull; <a href="https://www.cncf.io/projects/sigstore/">CNCF Sigstore</a></p>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Context Management — how ChatGPT, Claude &amp; Co keep long chats alive</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="anthropic_building_agents.html">Anthropic</a>
+                <a href="openai_agents_sdk.html">OpenAI</a>
+                <a href="anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Platform internals</p>
+            <h1>How do ChatGPT, Claude, and Gemini keep a chat going for months?</h1>
+            <p class="lead">You send message #300 in a thread you started weeks ago. Does the platform dump all 299
+                previous messages into the model every time? If it did, the chat would lag, crash, or hit the model's
+                hard context limit on every turn. Here's how the industry actually solves that — three complementary
+                techniques you'll find in every major platform.</p>
+        </section>
+
+        <section class="card" id="problem">
+            <h2>The problem — visible to every user, solved by every platform</h2>
+            <p>Large Language Models have a <strong>maximum context window</strong> — a hard cap on how many tokens they
+                can process in a single request. Claude 4 Sonnet caps at 200K tokens; Gemini 2.5 Pro can reach 1M;
+                GPT-4o sits around 128K. A single long chat that runs for weeks or months will eventually cross any of
+                these limits if the platform kept appending every message unconditionally.</p>
+            <p>Worse, even <em>before</em> you hit the cap, resending the entire history on every turn would be
+                prohibitively slow and expensive — you'd wait tens of seconds for response generation to even start while
+                the model re-processes hundreds of thousands of words of preamble.</p>
+            <p>Platforms solve this with <strong>three layers operating together</strong>: a speed/cost layer (context
+                caching), a hard-stop layer (sliding window truncation), and a continuity layer (background
+                summarisation / memory). Each does something different; none works alone.</p>
+
+            <div class="flow">
+                <div class="step">① Context Cache<br><small>speed + cost</small></div>
+                <span class="arrow">→</span>
+                <div class="step">② Sliding Window<br><small>hard limit</small></div>
+                <span class="arrow">→</span>
+                <div class="step">③ Memory Layer<br><small>continuity</small></div>
+            </div>
+        </section>
+
+        <!-- ── 1. CONTEXT CACHE ── -->
+        <section class="card" id="context-cache">
+            <div class="eyebrow">Layer 1 — speed &amp; cost</div>
+            <h2>Prompt Caching (KV cache)</h2>
+            <p>When you send message #300, the platform <strong>does not</strong> re-run the transformer over messages
+                1–299. Instead, it keeps the Key-Value (KV) cache for those earlier messages hot in accelerator memory.
+                The model only does a forward pass on your <em>new</em> message, then reads the pre-computed cache to
+                link it to everything that came before.</p>
+
+            <div class="callout">
+                <strong>How it feels to the user:</strong> Fast — the first token arrives in roughly the same time on
+                message #1 and message #300. The platform is not secretly re-reading the past.
+            </div>
+
+            <h3>How the platforms implement it</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Platform</th>
+                        <th>Feature name</th>
+                        <th>How it works</th>
+                        <th>Cost savings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Anthropic (Claude)</strong></td>
+                        <td><a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching" target="_blank"
+                                rel="noopener">Prompt Caching</a></td>
+                        <td>Any prompt prefix ≥ 1,024 tokens is automatically cached server-side. The KV cache persists
+                            between turns with a 5-minute TTL (reset on each new message).</td>
+                        <td>Up to 90% off input token costs for the cached prefix; 50%+ latency reduction on
+                            cache-hit responses.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>OpenAI (ChatGPT)</strong></td>
+                        <td><a href="https://platform.openai.com/docs/guides/prompt-caching" target="_blank"
+                                rel="noopener">Automatic Prompt Caching</a></td>
+                        <td>Prompts ≥ 1,024 tokens are cached; cache is invalidated after 5–10 minutes of inactivity.
+                            Special tokens mark cache breakpoints in the Messages API.</td>
+                        <td>50% discount on cached input tokens; lower latency on cache hits.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Google (Gemini)</strong></td>
+                        <td><a href="https://ai.google.dev/gemini-api/docs/caching" target="_blank"
+                                rel="noopener">Context Caching</a></td>
+                        <td>Explicit — you choose what to cache via a <code>CachedContent</code> object. 32-second
+                            default TTL; extend to up to 30 days for a storage fee.</td>
+                        <td>Up to 76% reduction in input token cost (variable by model size).</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout warn">
+                <strong>Important caveat:</strong> Caching is <em>not</em> persistence. When the TTL expires (usually
+                5–10 minutes of inactivity), the cache is evicted and the next request pays full price and latency. This
+                is why resuming a chat hours later feels slower — the platform re-processes the prefix from scratch.
+            </div>
+
+            <h3>Why this matters for chat quality</h3>
+            <ul>
+                <li><strong>Coherence</strong> — The model sees the full history on every turn (cache hit), so it can
+                    reference a detail from message #12 in message #300.</li>
+                <li><strong>Speed</strong> — Cache hits reduce time-to-first-token from "re-process 100K tokens"
+                    to "process 500 new tokens".</li>
+                <li><strong>Cost feasibility</strong> — Without caching, a multi-month chat could cost more in API
+                    compute than the subscription price. Caching makes the business model work.</li>
+            </ul>
+        </section>
+
+        <!-- ── 2. SLIDING WINDOW ── -->
+        <section class="card" id="sliding-window">
+            <div class="eyebrow">Layer 2 — the hard limit</div>
+            <h2>Context window cutoff (sliding window)</h2>
+            <p>Caching makes history fast to access, but it doesn't make it fit. If your chat has grown beyond the
+                model's maximum context window (say, 200K tokens for Claude 4 Sonnet), the entire history literally
+                cannot be fed to the model in one go. At that point, platforms switch to a <strong>sliding window</strong>
+                strategy.</p>
+
+            <div class="flow">
+                <div class="step">System prompt<br><small>always kept</small></div>
+                <span class="arrow">→</span>
+                <div class="step">Memory / Instructions<br><small>always kept</small></div>
+                <span class="arrow">→</span>
+                <div class="step">Recent messages<br><small>keep newest N</small></div>
+                <span class="arrow">→</span>
+                <div class="step">...Oldest dropped<br><small>forgotten</small></div>
+            </div>
+
+            <h3>What gets dropped vs. kept</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Always kept</th>
+                        <th>Dropped first (oldest)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>System prompt (model instructions)</td>
+                        <td>Early back-and-forth pleasantries</td>
+                    </tr>
+                    <tr>
+                        <td>Custom instructions / user preferences</td>
+                        <td>Exploratory side conversations in the chat</td>
+                    </tr>
+                    <tr>
+                        <td>Memory / knowledge files (see Layer 3)</td>
+                        <td>Draft after draft of the same document</td>
+                    </tr>
+                    <tr>
+                        <td>Most recent ~10–50 exchanges</td>
+                        <td>Long code outputs that were never referenced again</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout anth">
+                <strong>Anthropic's approach:</strong> Claude's API supports up to 200K tokens. In the chat product,
+                when a conversation approaches the limit, older messages are gradually trimmed from the top — but the
+                <em>system prompt</em> and any <em>Project knowledge</em> files are pinned and never dropped.
+                Anthropic also offers 1M-token context windows for select models (Claude 4 Opus / extended thinking).
+            </div>
+
+            <div class="callout oai">
+                <strong>OpenAI's approach:</strong> ChatGPT uses a similar sliding window. Older messages are
+                compressed or dropped. The <em>Memory</em> feature (see Layer 3) acts as a safety net — facts extracted
+                from dropped messages survive in a persistent profile.
+            </div>
+
+            <h3>What the user notices</h3>
+            <ul>
+                <li><strong>Forgetting:</strong> The model no longer remembers the specific wording of an early
+                    instruction. It may behave as if the conversation "started over" in tone.</li>
+                <li><strong>Still coherent:</strong> The model retains the gist of the recent discussion, so a single
+                    session within a long chat still works fine.</li>
+                <li><strong>Silent operation:</strong> Platforms rarely announce "I dropped messages 1–150." The user
+                    just observes that the model seems to have forgotten something from last week.</li>
+            </ul>
+        </section>
+
+        <!-- ── 3. MEMORY / SUMMARISATION ── -->
+        <section class="card" id="memory">
+            <div class="eyebrow">Layer 3 — continuity</div>
+            <h2>Background summarisation and persistent memory</h2>
+            <p>The sliding window solves the hard-limit problem, but it introduces a new one: information from early
+                in the chat that the user still considers important (their name, their tech stack, their preferences)
+                gets silently dropped. Platforms fight this with background processes that extract and store facts.</p>
+
+            <h3>How each platform does it</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Platform</th>
+                        <th>Feature</th>
+                        <th>How it works</th>
+                        <th>When it triggers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>ChatGPT</strong></td>
+                        <td><a href="https://openai.com/index/memory-and-new-controls-for-chatgpt/" target="_blank"
+                                rel="noopener">Memory</a></td>
+                        <td>An invisible extraction layer reads the conversation and writes structured facts into a
+                            profile snippet (e.g., "user lives in Chicago, uses Python, prefers concise answers").
+                            This snippet is pinned to the system prompt on every turn.</td>
+                        <td>After key information is mentioned; user can also explicitly teach or delete memories.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Claude</strong></td>
+                        <td><a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching" target="_blank"
+                                rel="noopener">Project Knowledge</a> / Custom Instructions</td>
+                        <td>Project-level knowledge files are pinned at the top of the context window and never
+                            evicted. For ad-hoc chats, there is no automatic extraction; users add custom instructions
+                            manually. (Third-party tools like Memory Bank or Claude's own "remember" skill fill this
+                            gap.)</td>
+                        <td>Project knowledge is set at project creation; custom instructions are set in settings.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gemini</strong></td>
+                        <td><a href="https://blog.google/products/gemini/google-gemini-update-march-2025/" target="_blank"
+                                rel="noopener">Saved Info</a></td>
+                        <td>Users can explicitly save personal preferences and facts. Gemini also automatically
+                            extracts key details from conversations into a profile.</td>
+                        <td>On user request or automatically when Gemini detects new personal information.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout">
+                <strong>Key insight:</strong> Memory is <em>not</em> a compression of the chat — it's a
+                <em>structured extract</em>. The system prompt memory snippet might say "user = Sande · role = dev ·
+                prefers Python" — 10 tokens instead of the 5,000 tokens of conversation that revealed those facts.
+                This is dramatically more efficient than trying to re-summarise the entire chat history.
+            </div>
+
+            <h3>Trade-offs</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pro</th>
+                        <th>Con</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Facts survive across sessions and even across chats</td>
+                        <td>Memory can contain stale or incorrect facts — there's no automatic fact-checking</td>
+                    </tr>
+                    <tr>
+                        <td>Uses negligible context-window space (~10–100 tokens per fact snippet)</td>
+                        <td>Only captures <em>explicit</em> facts — nuance, tone, and implicit context are lost</td>
+                    </tr>
+                    <tr>
+                        <td>User-visible and editable (in most platforms)</td>
+                        <td>Users may not realise the model is "remembering" things from old chats</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ── COMPARISON ── -->
+        <section class="card" id="comparison">
+            <h2>How the three layers work together</h2>
+            <p>No single layer solves the problem. A multi-month chat goes through all three:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Chat age</th>
+                        <th>Speed layer (cache)</th>
+                        <th>Hard limit (window)</th>
+                        <th>Continuity (memory)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>First session</strong> (&lt; 20 messages)</td>
+                        <td>Not needed — history is small enough to process directly</td>
+                        <td>Not triggered — well under the context cap</td>
+                        <td>Warming up — platform may extract first facts</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Growing chat</strong> (50–500 messages)</td>
+                        <td>✅ Active — early messages are cached, new messages are fast</td>
+                        <td>Not yet — still fits</td>
+                        <td>✅ Active — key facts being extracted</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multi-month chat</strong> (500+ messages)</td>
+                        <td>✅ Active — but cache evicts after 5–10 min idle</td>
+                        <td>✅ Triggered — oldest messages are being dropped</td>
+                        <td>✅ Essential — only way the "forgotten" early context survives</td>
+                    </tr>
+                    <tr>
+                        <td><strong>After idle period</strong> (hours later)</td>
+                        <td>❌ Evicted — next message re-processes from scratch</td>
+                        <td>Still in effect — earlier history already dropped</td>
+                        <td>✅ Still there — fact snippets survive eviction</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ── IMPLICATIONS ── -->
+        <section class="card" id="implications">
+            <h2>What this means for how you use these tools</h2>
+
+            <h3>For everyday chat users</h3>
+            <ul>
+                <li><strong>Restate important context periodically</strong> — don't assume the model remembers
+                    an instruction from message #5 when you're on message #500. A quick "Remember, I need everything
+                    in markdown" keeps it fresh in the sliding window.</li>
+                <li><strong>Use Memories / Custom Instructions</strong> for things that must never be forgotten —
+                    your name, your role, your recurring preferences. These survive window drops.</li>
+                <li><strong>Start a new chat for unrelated topics</strong> — a clean context window gives the model
+                    full attention on the new task without old history diluting it.</li>
+            </ul>
+
+            <h3>For API developers</h3>
+            <ul>
+                <li><strong>Leverage prompt caching explicitly</strong> — structure your API calls so the stable
+                    prefix (system prompt + knowledge) comes first, and the new user message comes last. The cache
+                    only works if the prefix is byte-identical across turns.</li>
+                <li><strong>Design for the sliding window</strong> — if your agent needs long-term memory, build it
+                    yourself (summarisation or RAG), don't rely on the API keeping the full chat history forever.</li>
+                <li><strong>Watch the cache TTL</strong> — a 5-minute idle gap evicts the cache. If your users
+                    typically wait 10+ minutes between turns, caching won't help them much.</li>
+            </ul>
+
+            <h3>For agent builders</h3>
+            <ul>
+                <li><strong>Memory is a feature, not a bug</strong> — persistent memory (like ChatGPT's) is the
+                    same pattern as a "memory bank" for coding agents. The Anthropic workshops call this
+                    <a href="claude_workshops/agents-that-remember.html">agents-that-remember</a>: a standalone
+                    summarisation loop that extracts and re-injects facts.</li>
+                <li><strong>Explicit summarisation beats implicit sliding</strong> — if you control the agent,
+                    run a background "compress the conversation so far" prompt every N turns and inject the summary
+                    as a system message. This preserves key information far better than waiting for the platform's
+                    default windowing behaviour.</li>
+            </ul>
+        </section>
+
+        <!-- ── SOURCES ── -->
+        <section class="card sources" id="sources">
+            <h2>Sources</h2>
+            <p class="quiet">Official documentation and engineering blogs. Always treat the linked source as the
+                authoritative version — vendor docs and pricing change.</p>
+            <div>
+                <a class="source" href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching"
+                    target="_blank" rel="noopener">Anthropic — Prompt Caching</a>
+                <a class="source" href="https://docs.anthropic.com/en/docs/build-with-claude/context-windows"
+                    target="_blank" rel="noopener">Anthropic — Context Windows</a>
+                <a class="source" href="https://platform.openai.com/docs/guides/prompt-caching" target="_blank"
+                    rel="noopener">OpenAI — Prompt Caching</a>
+                <a class="source" href="https://openai.com/index/memory-and-new-controls-for-chatgpt/" target="_blank"
+                    rel="noopener">OpenAI — Memory &amp; Controls</a>
+                <a class="source" href="https://ai.google.dev/gemini-api/docs/caching" target="_blank"
+                    rel="noopener">Google — Context Caching</a>
+                <a class="source" href="https://blog.google/products/gemini/google-gemini-update-march-2025/"
+                    target="_blank" rel="noopener">Google — Gemini Saved Info</a>
+                <a class="source" href="claude_workshops/agents-that-remember.html" rel="noopener">Claude Workshop —
+                    Agents That Remember</a>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

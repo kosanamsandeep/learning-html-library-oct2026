@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design Fundamentals — hands-on builds</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>SD</span>System Design Academy</a>
+            <nav class="top-links">
+                <a href="../index.html">Academy hub</a>
+                <a href="../system_design_case_studies/index.html">Case Studies</a>
+                <a href="../ai_engineering/index.html">AI Engineering</a>
+                <a href="../../README.html">Workspace</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Track 1 · Fundamentals</p>
+            <h1>The five building blocks every distributed system reuses</h1>
+            <p class="lead">Rate limiting, consistent hashing, bloom filters, idempotency, and short IDs. They show up
+                in API gateways, load balancers, caches, payment systems, and link shorteners. Each project here builds
+                one from scratch with a story-style README and a small main.py demo.</p>
+        </section>
+
+        <section class="card">
+            <h2>Project order</h2>
+            <a class="project" href="p1_rate_limiter/README.html"><strong>P1 · RATE LIMITER</strong>Token bucket,
+                sliding window log, fixed window. Compare burst vs steady traffic.</a>
+            <a class="project" href="p2_consistent_hashing/README.html"><strong>P2 · CONSISTENT HASHING</strong>Hash
+                ring with virtual nodes. See why adding a server only re-maps a small slice of keys.</a>
+            <a class="project" href="p3_bloom_filter/README.html"><strong>P3 · BLOOM FILTER</strong>Bit array + multiple
+                hashes. Trade a tiny false-positive rate for huge memory savings.</a>
+            <a class="project" href="p4_idempotent_api/README.html"><strong>P4 · IDEMPOTENT API</strong>Stripe-style
+                idempotency keys. Safe POSTs even when the client retries.</a>
+            <a class="project" href="p5_url_shortener/README.html"><strong>P5 · URL SHORTENER</strong>Base62 short
+                codes, collision strategy, and the read-heavy lookup path.</a>
+        </section>
+
+        <section class="card">
+            <h2>How each project is structured</h2>
+            <ul>
+                <li><code>main.py</code> — minimal but realistic implementation with docstrings.</li>
+                <li><code>README.html</code> — story, mental model, code highlights, tradeoffs, interview answer.</li>
+                <li><code>requirements.txt</code> — stdlib only.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+
+</html>

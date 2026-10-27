@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go projects — parallel to Python p1-p10</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../bootcamp/syntax_python_vs_go.html">Go syntax</a>
+                <a href="../rust_projects/index.html">Rust projects</a>
+                <a href="../../07_learning_projects/learning_tracker.html">Python originals</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go</span> · 10 projects parallel to Python p1-p10</p>
+            <h1>Re-build the first 10 learning projects in Go</h1>
+            <p class="lead">Each project below mirrors the same-numbered Python project. Read the Python README first,
+                then jump to the Go version. The point is <em>not</em> to learn Go from scratch — the bootcamp does that
+                — it's to feel how each Python pattern translates.</p>
+        </section>
+
+        <section class="card">
+            <h2>How each project is structured</h2>
+            <pre><code>p&lt;n&gt;_&lt;name&gt;/
+├── README.html      ← what's different from Python; key Go idioms shown
+├── go.mod           ← module declaration
+└── main.go          ← single-file runnable demo</code></pre>
+            <p>Run any project with: <code>cd go_projects/p1_student_management; go run .</code></p>
+        </section>
+
+        <section class="card">
+            <h2>The 10 projects</h2>
+            <a class="project go" href="p1_student_management/README.html"><strong>P1 · STUDENT
+                    MANAGEMENT</strong>Service layer + struct method receivers — the Go version of Python OOP
+                encapsulation.</a>
+            <a class="project go" href="p2_banking_system/README.html"><strong>P2 · BANKING SYSTEM</strong>Inheritance →
+                struct embedding + interfaces. Polymorphism without classes.</a>
+            <a class="project go" href="p3_hospital_management/README.html"><strong>P3 · HOSPITAL
+                    MANAGEMENT</strong>Composition with structs containing other structs. Pointer receivers when
+                mutation matters.</a>
+            <a class="project go" href="p4_ecommerce_api/README.html"><strong>P4 · E-COMMERCE API</strong>DTO pattern
+                using separate structs and JSON tags. <code>encoding/json</code> as the contract layer.</a>
+            <a class="project go" href="p5_contact_management/README.html"><strong>P5 · CONTACT
+                    MANAGEMENT</strong>Nested structs + validation. Compile-time shape vs Python's runtime schema.</a>
+            <a class="project go" href="p6_inventory_management/README.html"><strong>P6 · INVENTORY
+                    MANAGEMENT</strong>Repository pattern via interfaces. Memory-backed and file-backed
+                implementations.</a>
+            <a class="project go" href="p7_healthtrack/README.html"><strong>P7 · HEALTHTRACK</strong>Layered
+                architecture: handler → service → repo. The classic Go HTTP service shape.</a>
+            <a class="project go" href="p8_authentication_platform/README.html"><strong>P8 · AUTHENTICATION
+                    PLATFORM</strong>Pluggable strategies via interfaces — multiple auth providers, one entry point.</a>
+            <a class="project go" href="p9_notification_platform/README.html"><strong>P9 · NOTIFICATION
+                    PLATFORM</strong>Factory + Strategy in idiomatic Go: a registry of interface implementations.</a>
+            <a class="project go" href="p10_genai_rag_platform/README.html"><strong>P10 · GENAI RAG
+                    PLATFORM</strong>End-to-end RAG skeleton — chunker, embedder interface, in-memory vector store,
+                ranker, generator, all wired with goroutines.</a>
+        </section>
+
+        <section class="card">
+            <h2>Common Go idioms you'll see across all 10</h2>
+            <ul>
+                <li><strong><code>type X struct { … }</code></strong> + methods declared as
+                    <code>func (x *X) Method()</code>.</li>
+                <li><strong>Errors as values</strong>: <code>(T, error)</code> returns and
+                    <code>if err != nil { return err }</code> on every call site.</li>
+                <li><strong>Interfaces are tiny</strong> — usually 1-3 methods. Big interfaces are an anti-pattern.</li>
+                <li><strong>Capitalisation = visibility</strong>. <code>SaveOrder</code> is exported;
+                    <code>saveOrder</code> is package-private.</li>
+                <li><strong>Tests live next to the code</strong> in <code>*_test.go</code> files.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gRPC Explained</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="mcp-server.html">MCP Server</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What gRPC is</a>
+            <a href="#why">Why it exists</a>
+            <a href="#stack">How it works</a>
+            <a href="#http-diff">Difference from HTTP APIs</a>
+            <a href="#streaming">Streaming</a>
+            <a href="#examples">Examples</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Systems track</p>
+                    <h1>gRPC explained clearly</h1>
+                    <p><strong>gRPC</strong> is a high-performance remote procedure call framework where services are
+                        defined through a typed contract, usually Protocol Buffers, and clients call remote methods
+                        almost like local functions.</p>
+                    <p>It is common in microservices and internal backends where strong typing, performance, code
+                        generation, and streaming matter more than human-readable JSON payloads.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core flow</h2>
+                    <p class="formula">.proto contract -> generated stubs -> RPC over HTTP/2</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What “remote procedure call” means</h3>
+                        <p>You define service methods such as GetUser, CreateOrder, or StreamLogs and invoke them as
+                            remote operations instead of manually constructing ad hoc request payloads for each
+                            endpoint.</p>
+                    </div>
+                    <div class="card">
+                        <h3>What Protocol Buffers adds</h3>
+                        <p>Protocol Buffers provides a compact binary serialization format and a schema language for
+                            defining messages and service methods in a contract-first style.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="why">
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Why gRPC evolved</h3>
+                        <ul class="stack-list">
+                            <li>Distributed systems needed faster and more strongly typed service communication.</li>
+                            <li>Hand-written REST clients create contract drift and duplicated parsing logic.</li>
+                            <li>Streaming workflows are awkward in many plain request-response API designs.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What it solves</h3>
+                        <ul class="stack-list">
+                            <li>Shared service contracts across languages.</li>
+                            <li>Efficient binary payloads.</li>
+                            <li>Generated client and server code.</li>
+                            <li>First-class unary and streaming RPC patterns.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="stack">
+                <div class="diagram-card">
+                    <img src="assets/grpc-stack.svg"
+                        alt="Diagram showing Protocol Buffers contract, generated stubs, HTTP/2 transport, and RPC calls in gRPC.">
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Define a service</h3>
+                        <p>You write a .proto file with messages and service methods.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Generate code</h3>
+                        <p>Tooling produces client stubs and server interfaces in supported languages.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Implement the server</h3>
+                        <p>Your application fills in business logic behind the generated service interface.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Call remote methods</h3>
+                        <p>The client uses generated types and methods rather than hand-crafting HTTP requests for each
+                            call.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="http-diff">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Important comparison</p>
+                        <h2>gRPC vs typical HTTP/REST APIs</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Typical HTTP/REST</th>
+                                <th>gRPC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Contract style</td>
+                                <td>Often endpoint-first and loosely typed.</td>
+                                <td>Usually contract-first with .proto schemas.</td>
+                            </tr>
+                            <tr>
+                                <td>Payload</td>
+                                <td>Often JSON and human-readable.</td>
+                                <td>Usually compact binary Protocol Buffers.</td>
+                            </tr>
+                            <tr>
+                                <td>Client code</td>
+                                <td>Often hand-written SDK logic.</td>
+                                <td>Generated stubs are a central feature.</td>
+                            </tr>
+                            <tr>
+                                <td>Streaming</td>
+                                <td>Possible but less native.</td>
+                                <td>First-class support.</td>
+                            </tr>
+                            <tr>
+                                <td>Best fit</td>
+                                <td>Public APIs and browser-friendly integrations.</td>
+                                <td>Internal microservices and high-throughput service meshes.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Important nuance:</strong> gRPC still uses HTTP/2 underneath. The real difference is
+                        contract style, binary serialization, generated stubs, and RPC semantics.</p>
+                </div>
+            </section>
+
+            <section class="section" id="streaming">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Unary RPC</h3>
+                        <p>One request and one response. Closest to a standard API call.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Server streaming</h3>
+                        <p>One request and many streamed responses. Useful for logs or incremental results.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Client streaming</h3>
+                        <p>Many client messages followed by one final response. Useful for upload and aggregation flows.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>Bidirectional streaming</h3>
+                        <p>Both sides send messages over the same stream. Useful for real-time coordination.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="examples">
+                <div class="interview-grid">
+                    <div class="example">
+                        <h2>Example 1: user profile service</h2>
+                        <p>A gateway calls a user-profile microservice from Go, Java, and Python. gRPC is attractive
+                            because one proto definition can generate compatible clients and server interfaces across
+                            languages.</p>
+                    </div>
+                    <div class="example">
+                        <h2>Example 2: live metrics stream</h2>
+                        <p>A monitoring service pushes metric updates continuously to consumers. gRPC streaming is
+                            cleaner than forcing the workflow into repeated polling requests.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>When would you prefer gRPC over REST?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>When I need strongly typed internal service contracts, efficient binary payloads,
+                                multi-language code generation, and especially streaming or high-throughput
+                                service-to-service communication.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is gRPC not always the default for public APIs?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Public consumers often prefer human-readable JSON, simpler debugging, and broad
+                                browser/tooling support. gRPC is strongest when internal efficiency and type safety
+                                matter more than public API ergonomics.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You are designing an internal microservice mesh in Java, Go, and Python. Why might gRPC fit
+                            well?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>The contract-first proto definition can generate consistent clients and servers across
+                                languages, reducing contract drift and making service interaction more reliable.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>An interviewer says, “gRPC is just HTTP.” How do you respond?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>gRPC uses HTTP/2 as transport, but the application model is different: contract-first RPC
+                                semantics, generated stubs, binary Protocol Buffers serialization, and first-class
+                                streaming support.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Use MCP and gRPC together only when they solve different layers: MCP for AI capability interoperability,
+                gRPC for typed backend service communication.</p>
+            <div class="mini-links">
+                <a href="mcp-server.html">Back to MCP</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

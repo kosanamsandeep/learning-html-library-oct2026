@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Engineering — agent patterns, memory, context, RAG with eval</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>SD</span>System Design Academy</a>
+            <nav class="top-links">
+                <a href="../index.html">Academy hub</a>
+                <a href="../system_design_fundamentals/index.html">Fundamentals</a>
+                <a href="../system_design_case_studies/index.html">Case Studies</a>
+                <a href="../../README.html">Workspace</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Track 3 · AI Engineering</p>
+            <h1>Five patterns the modern AI-system-design interview tests</h1>
+            <p class="lead">Agentic loops, multi-agent collaboration, agent memory, context engineering, and knowledge
+                Q&amp;A with evaluation. Each project uses a tiny mock LLM so you can run everything offline and focus
+                on the architecture, not the prompt engineering.</p>
+        </section>
+
+        <section class="card">
+            <h2>Project order</h2>
+            <a class="project" href="p1_agentic_patterns/README.html"><strong>P1 · AGENTIC PATTERNS</strong>Router,
+                planner, ReAct, reflector. The four building blocks every agent framework reuses.</a>
+            <a class="project" href="p2_multi_agent_system/README.html"><strong>P2 · MULTI-AGENT
+                    SYSTEM</strong>Supervisor + specialist workers. Handoff, results aggregation, parallel calls.</a>
+            <a class="project" href="p3_ai_agent_memory/README.html"><strong>P3 · AGENT MEMORY</strong>Short-term turn
+                buffer, long-term fact store, episodic past sessions, summarisation.</a>
+            <a class="project" href="p4_context_engineering/README.html"><strong>P4 · CONTEXT ENGINEERING</strong>Token
+                budgets, retrieval merge, compression, deduping. Stop the context window from exploding.</a>
+            <a class="project" href="p5_knowledge_qa_system/README.html"><strong>P5 · KNOWLEDGE Q&amp;A WITH
+                    EVAL</strong>RAG + grounded citations + LLM-as-judge eval + guardrail refusal.</a>
+        </section>
+
+        <section class="card">
+            <h2>How the mock LLM works</h2>
+            <p>Real LLMs are slow, expensive, and non-deterministic. Each project ships a <code>MockLLM</code> class
+                that returns canned answers based on simple keyword matching. This makes the demos:</p>
+            <ul>
+                <li>Free to run (no API keys).</li>
+                <li>Deterministic (same input → same output, so tests pass).</li>
+                <li>Fast (a full run in milliseconds).</li>
+            </ul>
+            <p>The architecture is exactly the same as a real system — swap in OpenAI/Anthropic/local Llama at the
+                boundary and the rest stays unchanged.</p>
+        </section>
+
+        <section class="card">
+            <h2>How this maps to academy topics</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Academy topic</th>
+                        <th>Project</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>AI Agents / Agentic Design Patterns</td>
+                        <td>P1 + P2</td>
+                    </tr>
+                    <tr>
+                        <td>Context Engineering / LLM concepts</td>
+                        <td>P3 + P4</td>
+                    </tr>
+                    <tr>
+                        <td>RAG / Knowledge QA / Vector DB</td>
+                        <td>P5 (extends the existing <a
+                                href="../../07_learning_projects/p10_genai_rag_platform/README.html">RAG platform
+                                project</a>)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</body>
+
+</html>

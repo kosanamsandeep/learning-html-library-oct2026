@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P1 · Stateful Chatbot — LangGraph Projects</title>
+    <link rel="stylesheet" href="projects.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span>LG</span>P1 · Stateful Chatbot</div>
+        <div class="links">
+            <a href="index.html">Projects Hub</a>
+            <a href="p2_react_tool_agent.html">Next: P2 →</a>
+        </div>
+    </div>
+
+    <div class="header">
+        <p class="badge">Project 1 · Beginner</p>
+        <h1>The smallest graph that already remembers</h1>
+        <p class="subtitle">Build a chatbot as a <code>StateGraph</code>. You'll meet the four ideas every
+            LangGraph app is made of: <strong>state</strong>, <strong>nodes</strong>, <strong>edges</strong>,
+            and <strong>reducers</strong>.</p>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>What this project does</h2>
+            <p>A user sends a message. One node calls the LLM. The reply is appended to a running list of
+                messages held in the graph's <em>state</em>. Because the state persists between turns, the bot
+                "remembers" the conversation without you wiring any memory yourself.</p>
+            <div class="pill-row">
+                <span class="level beginner">Beginner</span>
+                <span class="tag green">StateGraph</span>
+                <span class="tag">MessagesState</span>
+                <span class="tag">add_messages</span>
+                <span class="tag">START / END</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The graph</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    START((START)) --> chatbot["chatbot node<br/>llm.invoke(state['messages'])"]
+    chatbot --> END((END))
+                </pre>
+                <p class="caption">One node. The power isn't the shape — it's that <code>messages</code> is
+                    <em>shared, typed state</em> that the reducer keeps appending to.
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The four core ideas</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>1. State</h3>
+                    <p>A typed dict that flows through the graph. Here it holds the message list. Every node
+                        receives it and returns a partial update.</p>
+                </div>
+                <div class="mini">
+                    <h3>2. Node</h3>
+                    <p>A plain Python function <code>(state) -&gt; partial_state</code>. The
+                        <code>chatbot</code> node calls the model and returns new messages.
+                    </p>
+                </div>
+                <div class="mini">
+                    <h3>3. Edge</h3>
+                    <p>A wire that says "after this node, go there". <code>START → chatbot → END</code>.</p>
+                </div>
+                <div class="mini">
+                    <h3>4. Reducer</h3>
+                    <p><code>add_messages</code> decides <em>how</em> a node's update merges into state: append
+                        instead of overwrite. This is why history grows.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The code, annotated</h2>
+            <pre><code><span class="c-kw">from</span> typing <span class="c-kw">import</span> Annotated
+<span class="c-kw">from</span> typing_extensions <span class="c-kw">import</span> TypedDict
+<span class="c-kw">from</span> langgraph.graph <span class="c-kw">import</span> StateGraph, START, END
+<span class="c-kw">from</span> langgraph.graph.message <span class="c-kw">import</span> add_messages
+<span class="c-kw">from</span> langchain.chat_models <span class="c-kw">import</span> init_chat_model
+
+<span class="c-com"># 1) STATE — a TypedDict. The Annotated[...] attaches a REDUCER to the field.</span>
+<span class="c-kw">class</span> <span class="c-cls">State</span>(TypedDict):
+    messages: Annotated[list, add_messages]   <span class="c-com"># append, don't overwrite</span>
+
+llm = init_chat_model(<span class="c-str">"openai:gpt-4o-mini"</span>)
+
+<span class="c-com"># 2) NODE — receives state, returns a PARTIAL update {"messages": [...]}.</span>
+<span class="c-kw">def</span> <span class="c-fn">chatbot</span>(state: State) -> <span class="c-kw">dict</span>:
+    reply = llm.invoke(state[<span class="c-str">"messages"</span>])
+    <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: [reply]}
+
+<span class="c-com"># 3) BUILD the graph: add node, wire edges.</span>
+builder = StateGraph(State)
+builder.add_node(<span class="c-str">"chatbot"</span>, chatbot)
+builder.add_edge(START, <span class="c-str">"chatbot"</span>)
+builder.add_edge(<span class="c-str">"chatbot"</span>, END)
+
+graph = builder.compile()
+
+<span class="c-com"># 4) RUN it.</span>
+result = graph.invoke({<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"Hi, who are you?"</span>}]})
+<span class="c-fn">print</span>(result[<span class="c-str">"messages"</span>][-<span class="c-cls">1</span>].content)</code></pre>
+            <div class="callout green">
+                <strong>The whole trick:</strong> <code>Annotated[list, add_messages]</code>. Without the
+                reducer, returning <code>{"messages": [reply]}</code> would <em>replace</em> the list and the
+                bot would forget. With it, LangGraph <em>appends</em>.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>How one turn flows through state</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+sequenceDiagram
+    participant U as You
+    participant G as Graph
+    participant N as chatbot node
+    participant R as add_messages reducer
+    U->>G: invoke({messages: [HumanMessage("Hi")]})
+    G->>N: state = {messages: [Human("Hi")]}
+    N->>N: llm.invoke(messages) -> AIMessage("Hello!")
+    N-->>G: return {messages: [AIMessage("Hello!")]}
+    G->>R: merge update into state
+    R-->>G: messages = [Human("Hi"), AIMessage("Hello!")]
+    G-->>U: final state
+                </pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Streaming — see tokens as they arrive</h2>
+            <p>Real apps stream. LangGraph exposes <code>.stream()</code> with several modes. Use
+                <code>"messages"</code> for token-by-token, <code>"updates"</code> to see each node's output,
+                <code>"values"</code> for the full state after every step.
+            </p>
+            <pre><code><span class="c-kw">for</span> chunk <span class="c-kw">in</span> graph.stream(
+    {<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"Explain LangGraph in one line"</span>}]},
+    stream_mode=<span class="c-str">"updates"</span>,            <span class="c-com"># what each node produced</span>
+):
+    <span class="c-fn">print</span>(chunk)</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Best practices from day one</h2>
+            <ul>
+                <li><strong>Use <code>MessagesState</code> when you can.</strong> LangGraph ships a built-in
+                    state class that already has <code>messages: Annotated[list, add_messages]</code> — you can
+                    subclass it instead of redefining.</li>
+                <li><strong>Nodes return partial updates, never the whole state.</strong> Return only the keys
+                    you changed; reducers handle the merge.</li>
+                <li><strong>Keep nodes pure and small.</strong> One responsibility each — it makes testing and
+                    diagnostics trivial later.</li>
+                <li><strong>Compile once, invoke many.</strong> <code>builder.compile()</code> returns a
+                    reusable runnable.</li>
+            </ul>
+            <div class="callout">
+                <strong>Mental upgrade:</strong> a "chain" hides state in function arguments. A
+                <code>StateGraph</code> makes state a first-class, inspectable object. Everything later in this
+                series — tools, memory, human checkpoints — is just more nodes reading and writing that same
+                state.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="index.html"><span class="dir">Back</span>
+                <div class="ttl">Projects Hub</div>
+            </a>
+            <a class="next" href="p2_react_tool_agent.html"><span class="dir">Next</span>
+                <div class="ttl">P2 · ReAct Tool-Calling Agent →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>LangGraph Projects · P1 of 6</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 14 — Knowledge Retrieval (RAG)</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 14 — Knowledge Retrieval (RAG)</h1>
+  <p>Look it up before you answer. Ground the LLM in your private + current data.</p>
+  <p><span class="tag">RAG</span><span class="tag">Vector DB</span><span class="tag">Repository</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>The LLM was trained months ago and doesn't know your company's policies. RAG = retrieve relevant chunks from a knowledge base, stuff them into the prompt, generate a grounded answer.</p>
+<div class="callout tip"><strong>Mental model:</strong> a lawyer who looks up case law before answering — never relies on memory alone.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart LR
+  Q([User question]) --> E[Embedding model]
+  E --> V[(Vector DB)]
+  V -->|"top-k chunks"| C[Context]
+  Q --> P[Prompt builder]
+  C --> P
+  P --> L[LLM]
+  L --> A([Grounded answer + citations])
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — HR policy bot</h2>
+<div class="callout scenario">
+A 2026 HR copilot answers "How much paid leave do I get next year?" by retrieving the 2026 leave policy PDF chunks for the user's role + region, then answering with citations like <em>"per Policy-2026-IN-EMP-LEAVE §3.2..."</em>. Updates to the PDF re-index overnight; no model retraining.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as Employee
+  participant Bot as HR Bot
+  participant V as Vector DB
+  participant L as LLM
+  U->>Bot: leave policy 2026?
+  Bot->>V: search "leave policy 2026 IN engineer"
+  V-->>Bot: top-3 chunks with citations
+  Bot->>L: answer using only these chunks
+  L-->>Bot: grounded answer
+  Bot-->>U: answer + sources
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>RAG support</th></tr>
+  <tr><td>LangChain / LlamaIndex</td><td>Loaders, splitters, retrievers, evaluators.</td></tr>
+  <tr><td>Vertex AI Search / Azure AI Search</td><td>Managed retrieval as a service.</td></tr>
+  <tr><td>Vector DBs</td><td>pgvector, Qdrant, Pinecone, Weaviate, Milvus, Chroma.</td></tr>
+  <tr><td>Reranker libs</td><td>Cohere Rerank, BGE-reranker for top-k → top-n.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Repository</strong></td><td><code>VectorStore</code> hides storage.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td>Pluggable chunking strategies (fixed / sentence / semantic).</td></tr>
+  <tr><td><strong>Pipeline</strong></td><td>Load → split → embed → store → retrieve → generate.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── chunker.py     # Strategy: chunking interface + sentence splitter
+├── store.py       # In-memory tf-cosine vector store (Repository)
+├── rag.py         # RAGPipeline: retrieve + generate
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>Why does RAG hallucinate?</summary><div>Common causes: bad retrieval (wrong chunks), prompt that allows fallback to model knowledge, no instruction to cite. Fix with reranking, "answer only from context or say I don't know," and citation enforcement.</div></details>
+<details class="qa"><summary>What's good chunking?</summary><div>Sentence- or paragraph-aware with overlap (~10-20%). Avoid chunks &lt; 100 tokens (loss of context) and &gt; 800 (precision loss). Add metadata for filtering (doc id, section, date).</div></details>
+</section>
+
+</main>
+<footer>Chapter 14 of 21.</footer>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How Multimodal LLMs Do Vision Tasks</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">M</span>
+                <span>AI Engineer Interview Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="vision-model-evolution.html">Vision Evolution</a>
+                <a href="transformer-basics.html">Transformers</a>
+                <a href="vision-inference-speed.html">Inference Speed</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#core">Core architecture</a>
+            <a href="#pipeline">How image understanding flows</a>
+            <a href="#why-good">Why they do vision tasks so well</a>
+            <a href="#tasks">Tasks they can handle</a>
+            <a href="#limits">What they still struggle with</a>
+            <a href="#video">How they extend to video</a>
+            <a href="#interview">Interview questions</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Multimodal systems</p>
+                    <h1>How multimodal LLMs do vision tasks so well</h1>
+                    <p>A multimodal LLM usually combines a <strong>vision encoder</strong> with a
+                        <strong>language model</strong>. The vision side turns images into embeddings, and the language
+                        side reasons over those embeddings using the same transformer machinery it already uses for
+                        text.
+                    </p>
+                    <p>The result is not “the LLM suddenly learned pixels directly.” It is a coordinated system where
+                        the image is converted into a token-like representation the language model can reason over.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Minimal formula</h2>
+                    <p class="formula">image -> vision encoder -> visual tokens -> projector / adapter -> LLM -> text,
+                        boxes, labels, or actions</p>
+                </div>
+            </section>
+
+            <section class="section" id="core">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Architecture</p>
+                        <h2>The core structure</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Vision encoder</h3>
+                        <p>This is often a pretrained ViT, ConvNeXt, or another large vision backbone. Its job is to
+                            turn the image into dense patch-level or region-level embeddings.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Projector or adapter</h3>
+                        <p>The vision embeddings usually do not match the language model embedding space directly. A
+                            learned projection layer, cross-attention bridge, or Q-former-like module maps visual
+                            features into the representation space the LLM expects.</p>
+                    </div>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>Language model</h3>
+                        <p>The LLM does the reasoning, instruction following, summarization, chain-of-thought style
+                            decomposition, and text generation. Once the image is encoded as tokens, the LLM can answer
+                            questions about it much like it answers questions about text.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Optional grounding heads</h3>
+                        <p>Many production systems add specialized heads for OCR, detection, segmentation, or pointing.
+                            That is why a multimodal assistant may feel “general,” while still containing specialized
+                            submodules under the hood.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="pipeline">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">End-to-end flow</p>
+                        <h2>How image understanding happens step by step</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Encode the image</h3>
+                        <p>The image is split into patches or regions and converted into high-dimensional vectors that
+                            summarize texture, shape, objects, and spatial relationships.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Compress or select visual tokens</h3>
+                        <p>Because raw patch tokens can be too many, the model often reduces them through pooling,
+                            learned queries, attention selection, or region proposals before passing them into the LLM.
+                        </p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Condition the LLM on visual tokens plus text prompt</h3>
+                        <p>The prompt might ask for captioning, VQA, OCR extraction, chart reasoning, scene
+                            explanation, or step-by-step interpretation. The LLM now reasons over both modalities.</p>
+                    </div>
+                    <div class="step">
+                        <h3>4. Decode into the required output</h3>
+                        <p>The output may be a caption, answer, explanation, JSON structure, classification label,
+                            grounding tokens, or action plan for a downstream tool.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="why-good">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Why it works</p>
+                        <h2>Why multimodal LLMs are so strong on vision tasks</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Reason</th>
+                                <th>Why it matters</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Strong pretrained vision backbones</td>
+                                <td>The image encoder already knows a huge amount about objects, textures, shapes, and
+                                    scene composition.</td>
+                            </tr>
+                            <tr>
+                                <td>Strong pretrained language models</td>
+                                <td>The LLM already knows how to follow instructions, organize answers, and reason over
+                                    structured evidence.</td>
+                            </tr>
+                            <tr>
+                                <td>Vision-language alignment</td>
+                                <td>Joint training teaches the system which visual patterns correspond to which language
+                                    concepts.</td>
+                            </tr>
+                            <tr>
+                                <td>Instruction tuning</td>
+                                <td>The model is trained not just to see, but to answer, explain, compare, and summarize
+                                    in the style users expect.</td>
+                            </tr>
+                            <tr>
+                                <td>Tool integration</td>
+                                <td>OCR engines, detectors, retrieval systems, and segmentation models can be wrapped
+                                    into one assistant, improving real-world output.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Key insight:</strong> multimodal LLM quality comes from combining perception and
+                        reasoning.
+                        The vision model sees; the LLM explains, relates, plans, and summarizes.</p>
+                </div>
+            </section>
+
+            <section class="section" id="tasks">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Capabilities</p>
+                        <h2>What tasks they can do well</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Tasks they are already strong at</h3>
+                        <ul class="stack-list">
+                            <li>Image captioning and scene description.</li>
+                            <li>Visual question answering.</li>
+                            <li>OCR-heavy understanding like receipts, diagrams, and slides.</li>
+                            <li>Chart, document, and UI interpretation.</li>
+                            <li>Image classification from natural language prompts.</li>
+                            <li>Grounded reasoning when paired with boxes, points, or retrieval.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Tasks that usually need specialist modules</h3>
+                        <ul class="stack-list">
+                            <li>Pixel-accurate segmentation.</li>
+                            <li>High-precision industrial defect detection.</li>
+                            <li>Medical-image diagnosis with regulatory constraints.</li>
+                            <li>Precise tracking over long videos.</li>
+                            <li>Geometry-heavy measurement tasks.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="limits">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Failure modes</p>
+                        <h2>What they still struggle with</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Fine localization</h3>
+                        <p>Natural-language reasoning does not guarantee pixel precision. A model may describe an
+                            object correctly while still being weak at exact mask boundaries unless paired with a
+                            dedicated segmentation module.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Temporal coherence</h3>
+                        <p>Video reasoning requires more than recognizing single frames. The system must retain state,
+                            understand actions over time, and connect events across many frames.</p>
+                    </div>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>Hallucination</h3>
+                        <p>The LLM can still over-explain or infer details not fully supported by the image, especially
+                            when the prompt encourages speculation.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Dense visual counting and exact geometry</h3>
+                        <p>Fine-grained counting, precise measurements, or tiny visual differences may still require
+                            specialist CV pipelines rather than relying on the multimodal assistant alone.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="video">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Video extension</p>
+                        <h2>How the same idea extends to video</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Treat video as a sequence of frames or clips</h3>
+                        <p>Each frame is encoded visually, then the model learns temporal relationships across frames.
+                            Some systems use frame sampling, others use 3D encoders or temporal transformers.</p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Build a compact temporal memory</h3>
+                        <p>Because full video tokenization is expensive, systems compress frame features into summaries,
+                            key frames, or clip-level embeddings before passing them to the reasoning model.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Ask the LLM to summarize or reason over the sequence</h3>
+                        <p>This is how models can answer “what happened in this clip,” “what changed over time,” or
+                            “summarize the video in three bullets.”</p>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Interview-ready summary</h2>
+                    <p>Multimodal LLMs are strong because they combine a visual feature extractor with a powerful
+                        instruction-following reasoning engine. They are best thought of as orchestrators over visual
+                        tokens, language priors, and often specialist tools.</p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questions and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Is the LLM itself reading pixels directly?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Usually no. A vision encoder first converts the image into embeddings. Those embeddings
+                                are
+                                then projected into a token-like space so the LLM can reason over them.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why are multimodal models better than plain image classifiers for general tasks?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because they combine perception with language reasoning. A classifier gives one label,
+                                while a multimodal model can answer questions, summarize, explain ambiguity, and follow
+                                instructions over the same visual input.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You need exact product masks for an e-commerce app. Would a general multimodal LLM alone be
+                            enough?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Usually no. I would combine a promptable segmentation model or detector with the LLM.
+                                The LLM can orchestrate and explain, but pixel-accurate boundaries should come from a
+                                dedicated visual head.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Why can a multimodal model summarize a chart or slide deck?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>The vision encoder extracts the layout, text, and visual patterns, while the LLM maps
+                                them to language concepts and produces a concise summary. It is a
+                                perception-plus-reasoning pipeline.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Multimodal vision systems work by turning images into tokens the language model can reason over.</p>
+            <div class="mini-links">
+                <a href="vision-model-evolution.html">Vision Evolution</a>
+                <a href="vision-inference-speed.html">Inference Speed</a>
+                <a href="vision-roadmap.html">Roadmap</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

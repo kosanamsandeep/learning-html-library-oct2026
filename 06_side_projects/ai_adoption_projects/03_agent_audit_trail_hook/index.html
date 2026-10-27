@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Audit Trail Hook</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="brand" href="../"><span>AI</span>AI Adoption Projects</a>
+  <div class="nav-links">
+    <a href="../">Hub</a>
+    <a href="../01_context_file_generator/">Context Generator</a>
+    <a href="../02_minimal_mcp_server/">MCP Server</a>
+    <a href="../04_agent_router/">Agent Router</a>
+  </div>
+</nav>
+
+<main class="shell">
+  <section class="hero">
+    <p class="eyebrow">Project 03</p>
+    <h1>Agent Audit Trail Hook</h1>
+    <p class="subtitle">
+      A Git <code>prepare-commit-msg</code> hook that automatically appends an AI attribution footer
+      to every commit message — providing traceability, compliance, and metadata standards for
+      AI-generated or AI-assisted code.
+    </p>
+  </section>
+
+  <section class="card">
+    <span class="tag">OVERVIEW</span>
+    <h2>Why trace AI contributions?</h2>
+    <p>
+      As AI-generated code becomes a larger share of production codebases, teams need answers to three questions:
+    </p>
+    <ul>
+      <li><strong>Accountability:</strong> Which parts of this commit were written by a human, which were AI-generated, and which were AI-assisted (human-edited)?</li>
+      <li><strong>Compliance:</strong> Some regulated industries require disclosure of AI-generated code. Licenses (e.g., MIT vs. GPL) may apply differently to AI outputs depending on jurisdiction.</li>
+      <li><strong>Debugging:</strong> When an AI-generated pattern causes a bug, knowing the tool, model, and prompt that produced it speeds up root-cause analysis.</li>
+    </ul>
+    <p>
+      The <strong>Agent Audit Trail Hook</strong> solves this by intercepting every commit and appending a
+      structured metadata footer to the commit message. The metadata is human-readable and machine-parseable,
+      so it works in <code>git log</code>, code reviews, and compliance dashboards.
+    </p>
+    <div class="callout">
+      <strong>Principle:</strong> Make AI attribution automatic, structured, and non-optional. If the
+      hook isn't installed, clearly distinguish AI-assisted from purely human commits via the message
+      footer conventions.
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="tag indigo">ARCHITECTURE</span>
+    <h2>Git commit flow with hook interception</h2>
+
+    <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TD
+    A[Developer writes code<br/>with AI assistance] --> B[git add .]
+    B --> C[git commit]
+    C --> D{prepare-commit-msg<br/>hook fires}
+
+    D -->|"Hook reads<br/>commit message"| E{Detect AI<br/>involvement?}
+    E -->|"Yes — AI attribution<br/>variables set"| F[Append footer:<br/>Co-authored-by +<br/>AI-Agent + model]
+    E -->|"No — human-only<br/>or skip marker"| G[Leave message<br/>unchanged]
+
+    F --> H[Editor opens with<br/>annotated message]
+    G --> H
+    H --> I[Developer reviews<br/>and saves]
+    I --> J[commit-msg hook<br/>validates footer]
+    J --> K[Commit recorded<br/>in git history]
+
+    style A fill:#ccfbf1,stroke:#0f766e
+    style D fill:#e0e7ff,stroke:#4338ca
+    style F fill:#fef3c7,stroke:#d97706
+    style K fill:#d1fae5,stroke:#047857
+</pre>
+      <div class="caption">The prepare-commit-msg hook intercepts the commit before the editor opens, giving the
+      developer a chance to see and edit the attribution before finalizing.</div>
+    </div>
+
+    <p>Git provides several hook points for commit messages:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Hook</th>
+          <th>When it fires</th>
+          <th>What we do</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>prepare-commit-msg</code></td>
+          <td>After the default message is created, before the editor opens</td>
+          <td>Append the AI attribution footer. The developer sees it and can edit or remove it if the commit is purely human.</td>
+        </tr>
+        <tr>
+          <td><code>commit-msg</code></td>
+          <td>After the editor closes, before the commit is finalized</td>
+          <td>Validate that the footer is present (or has an explicit <code>AI-Skip: true</code> marker). Reject if missing.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <span class="tag green">STARTER CODE</span>
+    <h2>Bash — prepare-commit-msg hook</h2>
+    <p>Save this script as <code>.git/hooks/prepare-commit-msg</code> in your repository and make it executable
+    (<code>chmod +x .git/hooks/prepare-commit-msg</code>). It reads environment variables that your AI
+    tools set before invoking git, and appends a structured attribution footer.</p>
+
+<pre><code><span class="c-com">#!/usr/bin/env bash</span>
+<span class="c-com"># .git/hooks/prepare-commit-msg — Append AI attribution footer to commit messages.</span>
+<span class="c-com">#</span>
+<span class="c-com"># Environment variables (set by AI coding tools before calling git commit):</span>
+<span class="c-com">#   AI_AGENT        — tool name, e.g. "claude-code", "copilot", "cursor"</span>
+<span class="c-com">#   AI_MODEL        — model identifier, e.g. "claude-sonnet-4", "gpt-4o"</span>
+<span class="c-com">#   AI_SESSION_ID   — unique session identifier for traceability</span>
+<span class="c-com">#   AI_ASSISTANCE   — "generated" | "assisted" | "reviewed" | empty</span>
+
+set -euo pipefail
+
+COMMIT_MSG_FILE=<span class="c-str">"$1"</span>
+COMMIT_SOURCE=<span class="c-str">"${2:-}"</span>    <span class="c-com"># e.g. "message", "template", "merge", "squash"</span>
+
+<span class="c-com"># If the commit already has an AI footer, skip.</span>
+<span class="c-kw">if</span> grep -q <span class="c-str">"^Co-authored-by:.*<.*@.*>"</span> <span class="c-str">"$COMMIT_MSG_FILE"</span> 2&gt;/dev/null; <span class="c-kw">then</span>
+    exit 0
+<span class="c-kw">fi</span>
+
+<span class="c-com"># Determine if this is an AI-assisted commit</span>
+AI_AGENT=<span class="c-str">"${AI_AGENT:-}"</span>
+AI_MODEL=<span class="c-str">"${AI_MODEL:-}"</span>
+AI_SESSION=<span class="c-str">"${AI_SESSION_ID:-}"</span>
+AI_ASSISTANCE=<span class="c-str">"${AI_ASSISTANCE:-}"</span>
+
+<span class="c-com"># If no AI variables are set, check if this looks like a merge/amendsquash — skip those</span>
+<span class="c-kw">if</span> [ -z <span class="c-str">"$AI_AGENT"</span> ] &amp;&amp; [ -z <span class="c-str">"$AI_MODEL"</span> ]; <span class="c-kw">then</span>
+    <span class="c-com"># No AI metadata — could be human-only. Leave message as-is.</span>
+    exit 0
+<span class="c-kw">fi</span>
+
+<span class="c-com"># Build the footer</span>
+FOOTER=<span class="c-str">""</span>
+FOOTER+=$<span class="c-str">'\n\n---\n'</span>
+
+<span class="c-com"># Co-authored-by lines (standard Git convention)</span>
+<span class="c-kw">if</span> [ -n <span class="c-str">"$AI_AGENT"</span> ]; <span class="c-kw">then</span>
+    FOOTER+=<span class="c-str">"Co-authored-by: $AI_AGENT &lt;ai+$AI_AGENT@git.local&gt;\n"</span>
+<span class="c-kw">fi</span>
+
+<span class="c-com"># AI metadata block (machine-parseable)</span>
+FOOTER+=$<span class="c-str">"AI-Agent: ${AI_AGENT:-unknown}\n"</span>
+FOOTER+=$<span class="c-str">"AI-Model: ${AI_MODEL:-unknown}\n"</span>
+<span class="c-kw">if</span> [ -n <span class="c-str">"$AI_SESSION"</span> ]; <span class="c-kw">then</span>
+    FOOTER+=$<span class="c-str">"AI-Session: $AI_SESSION\n"</span>
+<span class="c-kw">fi</span>
+<span class="c-kw">if</span> [ -n <span class="c-str">"$AI_ASSISTANCE"</span> ]; <span class="c-kw">then</span>
+    FOOTER+=$<span class="c-str">"AI-Assistance: $AI_ASSISTANCE\n"</span>
+<span class="c-kw">fi</span>
+
+<span class="c-com"># Append the footer to the commit message</span>
+printf <span class="c-str">"$FOOTER"</span> &gt;&gt; <span class="c-str">"$COMMIT_MSG_FILE"</span>
+</code></pre>
+
+    <h3>Accompanying validation hook — <code>commit-msg</code></h3>
+    <p>Save as <code>.git/hooks/commit-msg</code> (also executable) to require the footer on AI-assisted commits:</p>
+
+<pre><code><span class="c-com">#!/usr/bin/env bash</span>
+<span class="c-com"># .git/hooks/commit-msg — Validate that AI attribution footer is present or explicitly skipped.</span>
+
+set -euo pipefail
+COMMIT_MSG_FILE=<span class="c-str">"$1"</span>
+
+<span class="c-com"># Allow explicit skip</span>
+<span class="c-kw">if</span> grep -q <span class="c-str">"^AI-Skip: true"</span> <span class="c-str">"$COMMIT_MSG_FILE"</span> 2&gt;/dev/null; <span class="c-kw">then</span>
+    exit 0
+<span class="c-kw">fi</span>
+
+<span class="c-com"># Enforce footer presence if AI involvement is declared</span>
+<span class="c-kw">if</span> grep -qE <span class="c-str">"^(AI-Agent|AI-Model|Co-authored-by.*ai)"</span> <span class="c-str">"$COMMIT_MSG_FILE"</span> 2&gt;/dev/null; <span class="c-kw">then</span>
+    <span class="c-com"># Footer present — good</span>
+    exit 0
+<span class="c-kw">fi</span>
+
+<span class="c-com"># If AI_AGENT environment variable is set but footer is missing, reject</span>
+<span class="c-kw">if</span> [ -n <span class="c-str">"${AI_AGENT:-}"</span> ]; <span class="c-kw">then</span>
+    echo <span class="c-str">"ERROR: AI agent detected ($AI_AGENT) but no attribution footer found."</span> &gt;&amp;2
+    echo <span class="c-str">"Add an AI-Skip: true line if this is intentionally human-only."</span> &gt;&amp;2
+    exit 1
+<span class="c-kw">fi</span>
+</code></pre>
+  </section>
+
+  <section class="card">
+    <span class="tag amber">METADATA STANDARDS</span>
+    <h2>What to track — and why</h2>
+    <p>A well-designed attribution footer balances completeness with readability. Here is the recommended
+    set of metadata fields and the rationale for each:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Example</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Co-authored-by</code></td>
+          <td><code>claude-code &lt;ai+claude-code@git.local&gt;</code></td>
+          <td>Standard Git trailer — visible in <code>git log</code>, GitHub UI, and code review tools. Humans and AI appear the same way.</td>
+        </tr>
+        <tr>
+          <td><code>AI-Agent</code></td>
+          <td><code>claude-code</code>, <code>copilot</code>, <code>cursor</code></td>
+          <td>Identifies the tool. Useful for tracking which AI tools are being used in the codebase.</td>
+        </tr>
+        <tr>
+          <td><code>AI-Model</code></td>
+          <td><code>claude-sonnet-4-20250514</code>, <code>gpt-4o</code></td>
+          <td>Identifies the specific model version. Critical for debugging: if a model update changes behavior, you can see which commits used which version.</td>
+        </tr>
+        <tr>
+          <td><code>AI-Session</code></td>
+          <td><code>uuid-a1b2c3d4-...</code></td>
+          <td>Correlates all commits from a single AI session. Helps reconstruct the context in which changes were generated.</td>
+        </tr>
+        <tr>
+          <td><code>AI-Assistance</code></td>
+          <td><code>generated</code>, <code>assisted</code>, <code>reviewed</code></td>
+          <td>Degree of AI involvement. <code>generated</code> = fully AI-written, <code>assisted</code> = human edited AI output, <code>reviewed</code> = human wrote, AI reviewed.</td>
+        </tr>
+        <tr>
+          <td><code>AI-Skip</code></td>
+          <td><code>true</code></td>
+          <td>Explicit human-only marker. Lets the validation hook distinguish "forgotten footer" from "intentionally human commit".</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout indigo">
+      <strong>Recommendation:</strong> Configure your AI coding tools to set these environment variables
+      before invoking git. For example, Claude Code sets <code>CLAUDE_CODE_SESSION_ID</code> — your
+      hook can map it to <code>AI_SESSION_ID</code>. Add a shell alias like
+      <code>alias gcam='AI_AGENT=manual git commit -a -m'</code> for human commits.
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="tag">STEP-BY-STEP</span>
+    <h2>How to adopt this project</h2>
+    <div class="steps">
+      <div class="step-row">
+        <div class="num">1</div>
+        <div><strong>Create the hook files</strong> — write <code>prepare-commit-msg</code> and <code>commit-msg</code> into <code>.git/hooks/</code>. Make both executable (<code>chmod +x</code>).</div>
+      </div>
+      <div class="step-row">
+        <div class="num">2</div>
+        <div><strong>Configure your AI tools</strong> — set up environment variables like <code>AI_AGENT</code> and <code>AI_MODEL</code> in your AI tooling's config. For Claude Code, wrap it in a script that exports these before calling <code>git commit</code>.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">3</div>
+        <div><strong>Test the flow</strong> — make an AI-assisted change and run <code>git commit</code>. Verify the footer appears in the editor. Accept and check <code>git log</code>.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">4</div>
+        <div><strong>Add to template</strong> — if using <code>git init</code> or a <code>cookiecutter</code> template, include these hooks in <code>hooks/</code> and run <code>git config core.hooksPath hooks</code> so they're shared with the team.</div>
+      </div>
+      <div class="step-row">
+        <div class="num">5</div>
+        <div><strong>Build a compliance dashboard</strong> — parse <code>git log --format=full</code> to extract AI metadata, count AI vs. human commits, and identify which agents and models are most used.</div>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Team tip:</strong> Store hooks in a <code>.githooks/</code> directory at the repo root and
+      run <code>git config core.hooksPath .githooks</code> so every clone gets them automatically.
+    </div>
+  </section>
+
+  <div class="pager">
+    <a href="../02_minimal_mcp_server/" class="prev">
+      <div class="dir">Previous</div>
+      <div class="ttl">Minimal MCP Server</div>
+    </a>
+    <a href="../04_agent_router/" class="next">
+      <div class="dir">Next Project</div>
+      <div class="ttl">Agent Router</div>
+    </a>
+  </div>
+</main>
+
+<footer>
+  AI Adoption Projects &mdash; Educational explainers for agentic engineering workflows.
+</footer>
+
+</body>
+</html>

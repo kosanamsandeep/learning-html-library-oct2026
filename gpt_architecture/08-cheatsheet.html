@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>08 — Cheat Sheet & Quick Reference</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .subtitle { color: #8b8fa8; font-size: 1rem; margin-bottom: 1.5rem; }
+  h2 { font-size: 1.3rem; margin: 2rem 0 0.75rem; color: #6c5ce7; border-bottom: 1px solid #2d3154; padding-bottom: 0.4rem; }
+  h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  p { margin-bottom: 0.75rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #6c5ce7; color: #e1e4f0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .q { color: #6c5ce7; } .k { color: #00cec9; } .v { color: #fd79a8; } .score { color: #fdcb6e; } .attn { color: #55efc4; } .dim { color: #636e72; font-size: 0.8rem; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #6c5ce7; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #6c5ce7; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #6c5ce7; font-weight: 600; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  tr:hover td { background: rgba(108,92,231,0.03); }
+  .section-card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width:600px) { .grid-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="07-next-token-prediction.html">← 07: Prediction</a>
+  <a href="index.html">Index →</a>
+</div>
+
+<h1>08 · Cheat Sheet &amp; Quick Reference</h1>
+<p class="subtitle">All equations, shapes, hyperparameters, and terminology in one place</p>
+
+<h2>📐 The Core Attention Equation</h2>
+
+<div class="math-block" style="font-size:1rem;text-align:center;padding:1.5rem;">
+  <span style="color:#55efc4;font-weight:700;">Attention(Q, K, V)</span> = softmax( <span style="color:#fdcb6e;">Q · K<sup>T</sup> / √d<sub>k</sub></span> ) · <span class="v">V</span>
+</div>
+
+<table>
+  <thead><tr><th>Symbol</th><th>Meaning</th><th>Shape</th></tr></thead>
+  <tbody>
+    <tr><td><span class="q">Q</span></td><td>Query — "what am I looking for?"</td><td>(T × d<sub>k</sub>)</td></tr>
+    <tr><td><span class="k">K</span></td><td>Key — "what do I contain?"</td><td>(T × d<sub>k</sub>)</td></tr>
+    <tr><td><span class="v">V</span></td><td>Value — "what information do I provide?"</td><td>(T × d<sub>k</sub>)</td></tr>
+    <tr><td>T</td><td>Number of tokens in the sequence</td><td>scalar</td></tr>
+    <tr><td>d<sub>k</sub></td><td>Dimension per attention head</td><td>scalar (typically 64–128)</td></tr>
+    <tr><td>n_embd</td><td>Full embedding dimension</td><td>scalar (768–16000)</td></tr>
+    <tr><td>h</td><td>Number of attention heads</td><td>scalar (12–128)</td></tr>
+  </tbody>
+</table>
+
+<div class="section-card" style="border-color:#6c5ce7;">
+  <h3>Multi-Head Extension</h3>
+  <div class="math-block">
+    <span class="dim">// Each head i has its own Q_i, K_i, V_i</span>
+    head<sub>i</sub> = Attention(X·W<sub>Q<sub>i</sub></sub>, X·W<sub>K<sub>i</sub></sub>, X·W<sub>V<sub>i</sub></sub>)
+
+    <span class="dim">// Concatenate all heads and project back</span>
+    MultiHead(X) = Concat(head<sub>1</sub>, ..., head<sub>h</sub>) · W<sub>O</sub>
+
+    <span class="dim">// Where W_O: (n_embd × n_embd), and each head output: (T × d_k)</span>
+    <span class="dim">// d_k = n_embd / h  —  so concatenation recovers n_embd dimensions</span>
+  </div>
+</div>
+
+<h2>🧮 Hyperparameter Relationships</h2>
+
+<table>
+  <thead><tr><th>Parameter</th><th>Relationship</th><th>Typical Values</th></tr></thead>
+  <tbody>
+    <tr><td>Head dimension</td><td>d<sub>k</sub> = n_embd / h</td><td>64 (GPT-2), 128 (GPT-4)</td></tr>
+    <tr><td>Number of heads</td><td>h = n_embd / d<sub>k</sub></td><td>12 (GPT-2 small), 96 (GPT-4)</td></tr>
+    <tr><td>Total parameters (attention)</td><td>4 × n_embd² (Q,K,V,O)</td><td>2.4M for n_embd=768</td></tr>
+    <tr><td>Total parameters (FFN)</td><td>2 × n_embd × 4·n_embd</td><td>4.7M for n_embd=768</td></tr>
+    <tr><td>Scaling factor</td><td>√d<sub>k</sub></td><td>8 for d<sub>k</sub>=64, 11.3 for d<sub>k</sub>=128</td></tr>
+  </tbody>
+</table>
+
+<h2>📊 Shape Flow</h2>
+
+<div class="section-card">
+<table>
+  <thead><tr><th>Operation</th><th>Input Shape</th><th>Weight Shape</th><th>Output Shape</th></tr></thead>
+  <tbody>
+    <tr><td>Embedding</td><td>(T,)</td><td>(vocab_size × n_embd)</td><td>(T × n_embd)</td></tr>
+    <tr><td>Q projection</td><td>(T × n_embd)</td><td>(n_embd × d<sub>k</sub>)</td><td>(T × d<sub>k</sub>)</td></tr>
+    <tr><td>K projection</td><td>(T × n_embd)</td><td>(n_embd × d<sub>k</sub>)</td><td>(T × d<sub>k</sub>)</td></tr>
+    <tr><td>V projection</td><td>(T × n_embd)</td><td>(n_embd × d<sub>k</sub>)</td><td>(T × d<sub>k</sub>)</td></tr>
+    <tr><td>Q·K<sup>T</sup></td><td>(T × d<sub>k</sub>), (d<sub>k</sub> × T)</td><td>—</td><td>(T × T)</td></tr>
+    <tr><td>Mask + Softmax</td><td>(T × T)</td><td>—</td><td>(T × T)</td></tr>
+    <tr><td>A·V</td><td>(T × T), (T × d<sub>k</sub>)</td><td>—</td><td>(T × d<sub>k</sub>)</td></tr>
+    <tr><td>Concat heads</td><td>h × (T × d<sub>k</sub>)</td><td>—</td><td>(T × n_embd)</td></tr>
+    <tr><td>W<sub>O</sub> projection</td><td>(T × n_embd)</td><td>(n_embd × n_embd)</td><td>(T × n_embd)</td></tr>
+    <tr><td>Unembed</td><td>(T × n_embd)</td><td>(n_embd × vocab_size)</td><td>(T × vocab_size)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>📖 Step-by-Step Summary</h2>
+
+<div class="section-card">
+<table>
+  <thead><tr><th>Step</th><th>Name</th><th>Description</th><th>Result Shape</th></tr></thead>
+  <tbody>
+    <tr><td style="color:#6c5ce7;">0</td><td>Input X</td><td>Token embeddings</td><td>(T × n_embd)</td></tr>
+    <tr><td style="color:#6c5ce7;">1</td><td>Project to Q, K, V</td><td>X · W<sub>Q</sub>, X · W<sub>K</sub>, X · W<sub>V</sub></td><td>(T × d<sub>k</sub>) each</td></tr>
+    <tr><td style="color:#fdcb6e;">2</td><td>Compute scores</td><td>Q · K<sup>T</sup> / √d<sub>k</sub></td><td>(T × T)</td></tr>
+    <tr><td style="color:#ff6b6b;">3</td><td>Causal mask</td><td>Upper triangle → -∞</td><td>(T × T)</td></tr>
+    <tr><td style="color:#55efc4;">4</td><td>Softmax</td><td>Rows → probabilities summing to 1</td><td>(T × T)</td></tr>
+    <tr><td style="color:#fd79a8;">5</td><td>Weighted sum</td><td>A · V — context-aware blend</td><td>(T × d<sub>k</sub>)</td></tr>
+    <tr><td style="color:#b8a9ff;">6</td><td>Multi-head concat</td><td>Concat all h heads</td><td>(T × n_embd)</td></tr>
+    <tr><td style="color:#b8a9ff;">7</td><td>Output projection</td><td>Concat · W<sub>O</sub></td><td>(T × n_embd)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>📚 Key Terminology</h2>
+
+<div class="grid-2">
+<div class="section-card">
+<h3>Core Concepts</h3>
+<table>
+  <tr><td><strong>Attention</strong></td><td>Mechanism for tokens to gather context from other tokens via weighted blending</td></tr>
+  <tr><td><strong>Self-attention</strong></td><td>Tokens attending to other tokens within the same sequence</td></tr>
+  <tr><td><strong>Cross-attention</strong></td><td>Tokens in one sequence attending to tokens in another (encoder-decoder)</td></tr>
+  <tr><td><strong>Causal / Masked</strong></td><td>Decoder-only: tokens cannot attend to future tokens</td></tr>
+  <tr><td><strong>Multi-head</strong></td><td>Multiple parallel attention "perspectives" (syntax, semantics, etc.)</td></tr>
+</table>
+</div>
+
+<div class="section-card">
+<h3>Training Concepts</h3>
+<table>
+  <tr><td><strong>Cross-Entropy Loss</strong></td><td>-log P(actual_token) — how surprised the model was</td></tr>
+  <tr><td><strong>Backpropagation</strong></td><td>Gradient of loss flows backward through QKV operations</td></tr>
+  <tr><td><strong>Gradient Descent</strong></td><td>W ← W - η · ∇W — update weights opposite gradient</td></tr>
+  <tr><td><strong>Logits</strong></td><td>Raw scores before softmax (output of unembedding)</td></tr>
+  <tr><td><strong>Temperature</strong></td><td>Sharpens or flattens the softmax distribution at inference</td></tr>
+</table>
+</div>
+</div>
+
+<h2>🧠 Intuition Summary</h2>
+
+<div class="section-card" style="border-left:3px solid #6c5ce7;">
+<p style="font-size:1.05rem;font-weight:600;margin-bottom:0.75rem;">The Three Roles in One Sentence Each:</p>
+<table>
+  <tr><td style="width:90px;color:#6c5ce7;font-weight:700;">Query</td><td>"I am looking for specific information — let me scan all Keys to find it."</td></tr>
+  <tr><td style="color:#00cec9;font-weight:700;">Key</td><td>"Here's what I contain — if your Query matches me, pay attention to my Value."</td></tr>
+  <tr><td style="color:#fd79a8;font-weight:700;">Value</td><td>"Here's my actual content — blend me into your representation proportionally to how much attention I received."</td></tr>
+</table>
+</div>
+
+<div class="section-card" style="border-left:3px solid #55efc4;">
+<p style="margin-bottom:0;">The complete equation is <strong>learnable</strong>, <strong>parallelizable</strong>, and <strong>content-addressable</strong>. Every parameter (W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, W<sub>O</sub>) is updated by gradient descent to minimize the loss — which means the model discovers <strong>for itself</strong> which tokens should attend to which other tokens, for any given task.</p>
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

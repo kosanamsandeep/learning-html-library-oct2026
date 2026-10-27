@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anthropic — Building Effective Agents</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+                <a href="openai_agents_sdk.html">OpenAI</a>
+                <a href="github_copilot_best_practices.html">Copilot</a>
+                <a href="multi_scenario_playbook.html">Scenarios</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">Anthropic · Engineering</span></p>
+            <h1>Building effective agents — start simple, add structure only when it pays off</h1>
+            <p class="lead">Anthropic's guidance, distilled. The headline message: most successful production
+                deployments are <em>not</em> sophisticated frameworks. They are simple, composable workflows. Reach for
+                an autonomous agent only when the problem is open-ended and a fixed control flow cannot capture it.</p>
+        </section>
+
+        <section class="card">
+            <h2>Workflows vs agents (the architectural split)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>System</th>
+                        <th>Definition</th>
+                        <th>When to choose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Workflow</td>
+                        <td>LLM and tools orchestrated through <em>predefined</em> code paths.</td>
+                        <td>Tasks decompose cleanly. You want predictability, lower latency, lower cost.</td>
+                    </tr>
+                    <tr>
+                        <td>Agent</td>
+                        <td>LLM dynamically directs its own process and tool use.</td>
+                        <td>Open-ended problems where you cannot enumerate the steps in advance.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>Default:</strong> a single LLM call with retrieval and good in-context
+                examples. Add complexity only when measurements show it improves the outcome.</div>
+        </section>
+
+        <section class="card">
+            <h2>The augmented LLM — the building block of every agentic system</h2>
+            <p>Every pattern below assumes one thing: an LLM that can <em>retrieve</em>, <em>call tools</em>, and
+                <em>maintain memory</em>. Build that augmented LLM well — clear tool definitions, a clean retrieval
+                interface, an explicit memory layer — before you reach for any pattern.
+            </p>
+            <div class="flow">
+                <div class="step">User input</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">LLM</div>
+                <div class="arrow">↔</div>
+                <div class="step">Tools</div>
+                <div class="arrow">↔</div>
+                <div class="step">Retrieval</div>
+                <div class="arrow">↔</div>
+                <div class="step">Memory</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The five workflow patterns</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>Shape</th>
+                        <th>Best for</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Prompt chaining</strong></td>
+                        <td>Step 1 → Step 2 → Step 3, with optional gates between.</td>
+                        <td>Tasks that decompose cleanly into fixed steps where you trade latency for accuracy. Example:
+                            outline → check → write the doc.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Routing</strong></td>
+                        <td>Classify input, dispatch to a specialised handler.</td>
+                        <td>Distinct categories that benefit from different prompts or different model sizes (cheap
+                            model for easy questions, capable model for hard ones).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Parallelisation</strong></td>
+                        <td>Sectioning (split into independent subtasks) or voting (run the same task multiple times,
+                            aggregate).</td>
+                        <td>Independent subtasks; multi-perspective reviews; guardrails that run alongside the main
+                            answer.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Orchestrator-workers</strong></td>
+                        <td>A central LLM decides what subtasks exist, delegates to workers, synthesises.</td>
+                        <td>Tasks where the subtasks can <em>not</em> be predicted up front (e.g. coding changes that
+                            touch an unknown number of files).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Evaluator-optimiser</strong></td>
+                        <td>One LLM drafts, another LLM critiques in a loop until the critic is satisfied.</td>
+                        <td>Clear evaluation criteria + iterative refinement helps. Translation, search, complex code
+                            generation.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Choosing the right pattern — concrete scenarios</h2>
+            <p>Each of the five patterns solves a different class of problem. Here is how to recognise which one you
+                need, with real-world examples.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>You need this when …</th>
+                        <th>Sample scenario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Prompt chaining</strong></td>
+                        <td>The task has a linear sequence of steps where later steps depend on earlier ones. You are
+                            willing to trade a little latency for substantially higher accuracy, because each stage can
+                            focus on one concern.</td>
+                        <td>
+                            <strong>Content pipeline with quality gates.</strong><br>
+                            Step 1: An LLM drafts a marketing email from bullet points.<br>
+                            Gate: Is the tone on-brand? If not, loop back to step 1.<br>
+                            Step 2: A second LLM localises the approved draft to three languages.<br>
+                            Step 3: A third LLM extracts SEO metadata from the final text.<br>
+                            <em>Why chaining? Each step needs the <strong>output</strong> of the previous step. No
+                                parallelism is possible. The gate prevents wasted work downstream.</em>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Routing</strong></td>
+                        <td>Your inputs fall into well-defined buckets, and each bucket needs different instructions,
+                            different tools, or a different model tier. You want one entry point with specialised
+                            back-ends.</td>
+                        <td>
+                            <strong>Customer support triage.</strong><br>
+                            The router classifies each incoming ticket: <code>refund</code>, <code>technical</code>,
+                            <code>billing</code>, or <code>general</code>.<br>
+                            <code>refund</code> → fast cheap model (only needs policy lookup + template).<br>
+                            <code>technical</code> → capable model with access to logs and debug tools.<br>
+                            <code>billing</code> → capable model that can query subscription data.<br>
+                            <code>general</code> → simple Q&amp;A model.<br>
+                            <em>Why routing? Each category has distinct tools, prompts, and sometimes a different cost
+                                ceiling. Routing lets you spend money only where you need to.</em>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Parallelisation</strong></td>
+                        <td>The work is embarrassingly parallel — subtasks do not share state — or you need multiple
+                            independent perspectives on the same input. Speed (sectioning) or reliability (voting) are
+                            your goal.</td>
+                        <td>
+                            <strong>Security review of a PR (voting).</strong><br>
+                            Three independent LLM reviewers each analyse the same diff for vulnerabilities — one focused
+                            on injection risks, one on auth logic, one on dependency changes. A fourth LLM aggregates
+                            their findings, keeping only issues flagged by at least two reviewers.<br>
+                            <em>Why parallelisation? The three reviews are independent. Running them concurrently gives
+                                you the answer in the time of the slowest reviewer, not the sum of all three. Voting
+                                reduces false positives.</em><br><br>
+                            <strong>Dashboards from raw data (sectioning).</strong><br>
+                            A quarterly business report pulls revenue, churn, and NPS data at the same time, each handled
+                            by a separate sub-pipeline, then assembled into one slide deck.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Orchestrator-workers</strong></td>
+                        <td>The task is complex but its shape is unknown at design time. An orchestrator LLM must decide
+                            <em>what</em> subtasks exist, <em>how many</em> workers to spawn, and <em>how to join</em>
+                            the results.
+                        </td>
+                        <td>
+                            <strong>Autonomous codebase refactor.</strong><br>
+                            The orchestrator receives "Rename the interface <code>PaymentGateway</code> to
+                            <code>CheckoutProvider</code> across the entire monorepo."<br>
+                            It first searches the codebase to discover every file that references the old name, then
+                            spawns one worker per affected file (the number is unknown until the search finishes).
+                            After all workers report, the orchestrator updates the barrel exports and runs the
+                            test suite, rolling back any worker whose changes break a test.<br>
+                            <em>Why orchestrator-workers? A prompt chain cannot work here because the set of affected
+                                files is discovered dynamically. A router cannot work because the subtasks are all
+                                "change references" — they just target different files. The orchestrator adds the
+                                synthesis and validation step that makes the result safe.</em>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Evaluator-optimiser</strong></td>
+                        <td>You have a clear, measurable quality criterion (a rubric, a test, a style guide) and the
+                            output improves through iteration. One-off generation rarely gets it right on the first
+                            try.</td>
+                        <td>
+                            <strong>Machine translation with dialect targeting.</strong><br>
+                            A generator LLM translates "The elevator is out of service" from English to Spanish.<br>
+                            The evaluator checks against a rubric: is the register informal (Latin America)?
+                            Does it prefer <em>ascensor</em> over <em>elevador</em> (Mexico)? Is the tone
+                            courteous but direct?<br>
+                            The evaluator scores the draft. If below threshold, it sends specific feedback back to
+                            the generator ("Use <em>ascensor</em>, not <em>elevador</em>; make it imperative tone.")
+                            and the generator revises. The loop terminates when the score passes the bar or a max
+                            iteration count is reached.<br>
+                            <em>Why evaluator-optimiser? Good translation is hard to nail in one pass. The iterative
+                                loop lets you <strong>separate the skill of writing from the skill of judging</strong>,
+                                and the evaluator never gets tired or inconsistent the way a human reviewer would
+                                after the 50th translation.</em>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>Quick rule of thumb:</strong> known fixed steps → <strong>chaining</strong>.
+                Known categories → <strong>routing</strong>. Independent work → <strong>parallelisation</strong>.
+                Unknown shape → <strong>orchestrator-workers</strong>. Needs iteration → <strong>evaluator-optimiser</strong>.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Evals before agent complexity</h2>
+            <p>Anthropic's practical standard is measurement-first: start with the simplest prompt or workflow, build a
+                representative eval set, then add routing, tools, memory, or an agent loop only when the evals show a
+                real gain. Evals should cover the <em>decision</em>, the <em>tool path</em>, and the <em>final
+                    answer</em>
+                because an agent can sound right while using the wrong evidence or skipping a required tool.</p>
+            <div class="flow">
+                <div class="step">Golden tasks</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Deterministic checks</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">LLM judge for fuzzy quality</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Ship only if simpler failed</div>
+            </div>
+            <div class="callout anth"><strong>Claude team pattern:</strong> use clear success criteria, tool-result
+                ground truth, sandboxed testing, and human checkpoints. For coding agents, automated tests are a strong
+                objective signal, but human review still checks broader design fit.</div>
+        </section>
+
+        <section class="card">
+            <h2>Common eval scorers</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scorer</th>
+                        <th>Use it when</th>
+                        <th>Agent example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>exact_match</code></td>
+                        <td>The answer must be one exact label, route, enum, or status.</td>
+                        <td>Expected route is <code>refunds</code>; any other route fails.</td>
+                    </tr>
+                    <tr>
+                        <td><code>regex_match</code></td>
+                        <td>The output must follow a pattern, but the value can vary.</td>
+                        <td>Generated ticket id matches <code>^TKT-[0-9]{6}$</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>contains</code> / <code>not_contains</code></td>
+                        <td>Specific required or forbidden content matters.</td>
+                        <td>Answer mentions the refund window and does not invent a fee.</td>
+                    </tr>
+                    <tr>
+                        <td><code>set_match</code></td>
+                        <td>Order does not matter, but the selected items must match.</td>
+                        <td>Agent used exactly <code>search_orders</code> and <code>refund_policy</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>subset_match</code></td>
+                        <td>Required items must be present; extra acceptable items are okay.</td>
+                        <td>Retrieved docs include policy and order history, even if shipping FAQ is also fetched.</td>
+                    </tr>
+                    <tr>
+                        <td><code>json_schema_match</code></td>
+                        <td>The model must return structured data or tool arguments.</td>
+                        <td>Router output has <code>route</code>, <code>confidence</code>, and <code>needs_human</code>.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>numeric_match</code></td>
+                        <td>The answer is numeric, often with a tolerance.</td>
+                        <td>Refund amount is within one cent of the expected value.</td>
+                    </tr>
+                    <tr>
+                        <td><code>semantic_similarity</code></td>
+                        <td>Meaning matters more than exact wording.</td>
+                        <td>Summary preserves the core policy even with different phrasing.</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm_judge</code></td>
+                        <td>The quality bar is fuzzy and needs a rubric.</td>
+                        <td>A judge model scores groundedness, completeness, and unsupported claims from 1-5.</td>
+                    </tr>
+                    <tr>
+                        <td><code>tool_call_match</code></td>
+                        <td>The agent must call the right tool with the right arguments.</td>
+                        <td>For <code>ORD-123</code>, the first lookup calls <code>search_orders</code> with that id.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>trajectory_eval</code></td>
+                        <td>The order of actions and recovery behavior matters.</td>
+                        <td>Search docs -> inspect policy -> answer with cited evidence; no write tool before approval.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Prefer deterministic scorers first because they are cheap, stable, and easy to debug. Use
+                <code>llm_judge</code> for open-ended quality, but give the judge a tight rubric, pass threshold, and
+                structured output so the eval itself is auditable.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Minimal eval file shape</h2>
+            <pre><code>- name: route_refund_question
+  input: "Can I get my money back for order ORD-123?"
+  expected:
+    route: refunds
+    tools: [search_orders, refund_policy]
+  evals:
+    - type: exact_match
+      path: route
+      expected: refunds
+    - type: tool_call_match
+      tool: search_orders
+      args_contains:
+        query: ORD-123
+
+- name: answer_grounded_in_policy
+  input: "What is the refund window?"
+  evals:
+    - type: contains
+      expected: "30 days"
+    - type: llm_judge
+      rubric: "Answer only from retrieved policy text; penalize unsupported claims."
+      pass_score: 4</code></pre>
+            <p>For production agents, keep a small smoke suite for every deploy and a larger scenario suite for prompt,
+                model, retrieval, or tool-definition changes. Track both final-answer quality and intermediate tool-use
+                quality; the intermediate failures are usually easier to fix.</p>
+        </section>
+
+        <section class="card">
+            <h2>When (and when not) to use a fully autonomous agent</h2>
+            <div class="grid">
+                <div class="mini good"><strong>Use an agent</strong> when the number of steps is unknown, the LLM needs
+                    to make decisions based on tool outputs, and the environment is trusted enough that you can let the
+                    loop run.</div>
+                <div class="mini warn"><strong>Stay with a workflow</strong> when the steps are predictable. Workflows
+                    are cheaper, faster, and easier to debug.</div>
+                <div class="mini bad"><strong>Avoid an agent</strong> when the cost of a wrong action is high
+                    (irrevocable writes, real money) and you have not invested in guardrails, sandboxing, and
+                    human-in-the-loop checkpoints.</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The agent loop, in practice</h2>
+            <ol>
+                <li>Receive a goal from a user (or a triggered event).</li>
+                <li>Plan and call a tool.</li>
+                <li>Observe the tool result — this is "ground truth" for the next step.</li>
+                <li>Decide: continue, ask the user a question, or finish.</li>
+                <li>Always have a stop condition: max steps, time budget, or explicit completion signal.</li>
+            </ol>
+            <div class="callout anth"><strong>Quote the post:</strong> "Agents are typically just LLMs using tools based
+                on environmental feedback in a loop. It is therefore crucial to design toolsets and their documentation
+                clearly and thoughtfully." Tool design is the bottleneck, not model choice.</div>
+        </section>
+
+        <section class="card">
+            <h2>Three core principles to design by</h2>
+            <ol>
+                <li><strong>Maintain simplicity.</strong> Add layers only after evidence that simpler did not work.</li>
+                <li><strong>Prioritise transparency.</strong> Show the agent's planning steps so a human can audit them.
+                </li>
+                <li><strong>Invest in the agent-computer interface (ACI).</strong> Treat tool docs as carefully as you
+                    treat human-facing docs.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Where this maps in our workspace</h2>
+            <ul>
+                <li><a href="../system_design_academy/ai_engineering/p1_agentic_patterns/README.html">ai_engineering /
+                        P1 agentic patterns</a> — implements router, planner, ReAct, reflector from scratch.</li>
+                <li><a href="../system_design_academy/ai_engineering/p2_multi_agent_system/README.html">ai_engineering /
+                        P2 multi-agent</a> — orchestrator-workers in code.</li>
+                <li><a href="../system_design_academy/ai_engineering/p5_knowledge_qa_system/README.html">ai_engineering
+                        / P5 knowledge Q&amp;A</a> — evaluator pattern with grounded-answer eval.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank"
+                    rel="noopener">anthropic.com — Building effective agents</a>
+                <a class="source" href="https://www.anthropic.com/engineering" target="_blank"
+                    rel="noopener">Engineering at Anthropic</a>
+                <a class="source" href="https://docs.claude.com/en/docs/build-with-claude/tool-use" target="_blank"
+                    rel="noopener">Claude Tool Use docs</a>
+                <a class="source" href="https://docs.claude.com/en/docs/test-and-evaluate/define-success"
+                    target="_blank" rel="noopener">Claude docs — Define success criteria</a>
+                <a class="source" href="https://docs.claude.com/en/docs/test-and-evaluate/develop-tests" target="_blank"
+                    rel="noopener">Claude docs — Develop test cases</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

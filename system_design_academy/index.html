@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design Academy — Hands-on builds from the systemdesign42 curriculum</title>
+    <link rel="stylesheet" href="_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>SD</span>System Design Academy</a>
+            <nav class="top-links">
+                <a href="#tracks">Tracks</a>
+                <a href="system_design_fundamentals/index.html">Fundamentals</a>
+                <a href="system_design_case_studies/index.html">Case Studies</a>
+                <a href="ai_engineering/index.html">AI Engineering</a>
+                <a href="../README.html">Workspace</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Inspired by systemdesign42 / system-design-academy</p>
+            <h1>System Design Academy — turn the reading list into working code</h1>
+            <p class="lead">The public <a
+                    href="https://github.com/systemdesign42/system-design-academy">system-design-academy</a> repo is a
+                curated reading list. This folder is the hands-on companion: 15 small, runnable Python projects that
+                implement the patterns the academy describes — fundamentals, real-world case studies, and modern AI
+                engineering. Each project starts from a story, shows the smallest working code, and explains the
+                tradeoffs you would actually discuss in an interview.</p>
+        </section>
+
+        <section class="card" id="tracks">
+            <h2>The three tracks</h2>
+            <div class="grid">
+                <a class="project" href="system_design_fundamentals/index.html">
+                    <strong>TRACK 1 · FUNDAMENTALS</strong>
+                    Rate limiter, consistent hashing, bloom filter, idempotent API, URL shortener. The building blocks
+                    every distributed system uses.
+                </a>
+                <a class="project" href="system_design_case_studies/index.html">
+                    <strong>TRACK 2 · CASE STUDIES</strong>
+                    Distributed counter, real-time leaderboard, presence service, saga orchestrator, geo nearby-drivers.
+                    Mini versions of patterns from Stripe, Uber, WhatsApp, and friends.
+                </a>
+                <a class="project" href="ai_engineering/index.html">
+                    <strong>TRACK 3 · AI ENGINEERING</strong>
+                    Agentic design patterns, multi-agent supervisor, agent memory, context engineering, knowledge
+                    Q&amp;A with evaluation. The modern half of the academy curriculum.
+                </a>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How this maps to the original academy</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Academy section</th>
+                        <th>Source article style</th>
+                        <th>What we add here</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>System Design Fundamentals</td>
+                        <td>Concept explainer per topic.</td>
+                        <td>5 runnable Python projects implementing the core concepts.</td>
+                    </tr>
+                    <tr>
+                        <td>System Design Case Studies</td>
+                        <td>How company X scaled.</td>
+                        <td>5 mini systems showing the same patterns at toy scale.</td>
+                    </tr>
+                    <tr>
+                        <td>AI Engineering</td>
+                        <td>How RAG / MCP / agents work.</td>
+                        <td>5 projects: agent patterns, multi-agent, memory, context, knowledge Q&amp;A.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout"><strong>Why builds, not articles:</strong> reading explains the idea. Implementing it
+                forces you to make the small decisions that articles skip — collisions, retries, ordering, cancellation,
+                hot keys, budgets. Those decisions are what interviewers actually probe.</div>
+        </section>
+
+        <section class="card">
+            <h2>Suggested learning order</h2>
+            <ol>
+                <li>Start with <a href="system_design_fundamentals/index.html">Fundamentals</a> P1 → P5. Each one is a
+                    self-contained algorithm.</li>
+                <li>Move to <a href="system_design_case_studies/index.html">Case Studies</a> P1 → P5. These combine
+                    fundamentals into mini products.</li>
+                <li>Finish with <a href="ai_engineering/index.html">AI Engineering</a> P1 → P5. These extend the
+                    existing <a href="../07_learning_projects/p10_genai_rag_platform/README.html">RAG platform
+                        project</a> with agent-era patterns.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>How to run any project</h2>
+            <pre><code>cd system_design_academy/system_design_fundamentals/p1_rate_limiter
+python main.py</code></pre>
+            <p>All 15 projects use the Python standard library. Python 3.11+ recommended.</p>
+        </section>
+
+        <section class="card">
+            <h2>Where this fits with the rest of the workspace</h2>
+            <ul>
+                <li><a href="../04_system_design/roadmap.html">04_system_design</a> — the 30-day theory roadmap. Read
+                    this for the "what".</li>
+                <li><a href="../05_data_structures/roadmap.html">05_data_structures</a> — DSA roadmap. Read this for the
+                    "how the data structure works".</li>
+                <li><a href="../07_learning_projects/learning_tracker.html">07_learning_projects</a> — the 20 hand-on
+                    OOP/architecture projects. Read this for the "how to structure a Python app".</li>
+                <li><strong>system_design_academy</strong> — this folder. Read this for "how do the famous patterns
+                    actually work in code".</li>
+            </ul>
+        </section>
+    </main>
+</body>
+
+</html>

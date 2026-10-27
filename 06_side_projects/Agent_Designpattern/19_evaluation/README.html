@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 19 — Evaluation &amp; Monitoring</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 19 — Evaluation &amp; Monitoring</h1>
+  <p>Offline evals before launch. Online metrics + traces after launch. Both are non-negotiable.</p>
+  <p><span class="tag">Observer</span><span class="tag">Decorator</span><span class="tag">Telemetry</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Two halves:</p>
+<ul>
+  <li><strong>Offline eval</strong> — run a curated test set through the agent, score with metrics or LLM-as-judge.</li>
+  <li><strong>Online monitoring</strong> — record latency, cost, success rate, user feedback, traces of every step in production.</li>
+</ul>
+<div class="callout tip"><strong>Mental model:</strong> unit tests + APM (Datadog / Grafana) for agents.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart LR
+  Dev[Eval set] --> Eval[Offline runner]
+  Eval --> Score[Metrics + LLM-judge]
+  Score --> Gate{ok?}
+  Gate -->|"yes"| Deploy
+  Gate -->|"no"| Dev
+  Deploy --> Prod[Production agent]
+  Prod -->|"events"| Trace[(Tracer / metrics)]
+  Trace --> Dash[Dashboard + alerts]
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Sales-AI rollout</h2>
+<div class="callout scenario">
+A 2026 sales SaaS ships a v2 outreach agent. Before deploy: 200-prompt eval set with response-rate / tone scores. Post-deploy: every send is traced (LangSmith / Phoenix), with latency, cost, and reply-rate dashboards. Auto-rollback rule: if reply-rate drops &gt; 15% week-on-week, revert.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant Eval as Offline Eval
+  participant CI as CI/CD
+  participant P as Production
+  participant T as Tracer
+  Eval->>CI: 200 prompts → score 0.92
+  CI->>P: deploy v2
+  P->>T: every step (latency, cost, tools used)
+  T-->>CI: SLO breach? auto-rollback
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Tool</th><th>Use</th></tr>
+  <tr><td>LangSmith / LangFuse</td><td>Tracing + evals + datasets.</td></tr>
+  <tr><td>Arize Phoenix</td><td>Open-source LLM observability.</td></tr>
+  <tr><td>OpenInference / OpenTelemetry-GenAI</td><td>Standard span schemas for agents.</td></tr>
+  <tr><td>Ragas / DeepEval / promptfoo</td><td>RAG + agent evaluators.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Observer</strong></td><td>Tracer subscribes to agent events.</td></tr>
+  <tr><td><strong>Decorator</strong></td><td><code>traced</code> wraps any callable to emit spans.</td></tr>
+  <tr><td><strong>Strategy</strong></td><td>Pluggable scorers (exact-match, contains, LLM-judge).</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── tracer.py       # Span + Tracer + @traced (Decorator)
+├── evaluator.py    # Eval runner with multiple scorers
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>What's an eval set?</summary><div>A curated set of (input, expected_output_or_criteria) pairs that exercises the agent's surface. Grow it with every production failure — that's the only way the set stays representative.</div></details>
+<details class="qa"><summary>LLM-as-judge — pitfalls?</summary><div>Position bias, length bias, self-preference. Mitigate with paired comparisons, randomized order, and judge ensembles. Always anchor with at least a small human-labeled subset.</div></details>
+</section>
+
+</main>
+<footer>Chapter 19 of 21.</footer>
+</body>
+</html>

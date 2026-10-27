@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redis — from install to expert</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span class="mark">◆</span>Redis Mastery</a>
+            <nav class="top-links">
+                <a href="../index.html">Side Projects</a>
+                <a href="01_setup_redis.html">Setup</a>
+                <a href="03_data_types.html">Data types</a>
+                <a href="08_practice_tests.html">Practice</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Redis · redis-cli · In-memory data store</p>
+            <h1>Become a Redis expert — free, on your own machine</h1>
+            <p class="lead">A complete, hands-on path: install Redis locally for free, talk to it with
+                <code>redis-cli</code>, master every core data structure, load real data, build the patterns Redis
+                is famous for (caching, sessions, rate limiting, leaderboards, queues), and learn exactly when
+                Redis is the right tool — and when it isn't.
+            </p>
+            <div class="toc">
+                <a href="01_setup_redis.html">① Install</a>
+                <a href="02_redis_thinking.html">② Think in Redis</a>
+                <a href="03_data_types.html">③ Data types</a>
+                <a href="04_commands_basics.html">④ Core commands</a>
+                <a href="05_patterns.html">⑤ Patterns</a>
+                <a href="06_advanced.html">⑥ Advanced</a>
+                <a href="07_power_use_cases.html">⑦ Why Redis wins</a>
+                <a href="08_practice_tests.html">⑧ Practice</a>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>What is Redis in one picture?</h2>
+            <p>Redis (<strong>RE</strong>mote <strong>DI</strong>ctionary <strong>S</strong>erver) is an
+                <strong>in-memory data store</strong>: it keeps your data in RAM, so reads and writes happen in
+                <em>microseconds</em>. At its core it's a giant, server-side dictionary — every value is stored
+                under a <strong>key</strong> — but the values can be rich data structures, not just strings.
+            </p>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+graph LR
+    App["🖥️ Your app"] -- "GET / SET (microseconds)" --> R[("⚡ Redis<br/>in RAM")]
+    R -.->|"user:42 → hash"| H["name, email, age"]
+    R -.->|"cart:42 → list"| L["item1, item2"]
+    R -.->|"leaderboard → zset"| Z["scores ranked"]
+    R -.->|"online → set"| S["unique users"]
+    classDef app fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef redis fill:#fde8e6,stroke:#dc382d,color:#7f1d1d;
+    classDef data fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+    class App app;
+    class R redis;
+    class H,L,Z,S data;
+                </pre>
+                <p class="caption">One key → one value, where the value is a <em>data structure</em> (string,
+                    hash, list, set, sorted set, stream…). Everything lives in RAM, which is why Redis is one of
+                    the fastest databases on earth.</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Your 8-step road to expert</h2>
+            <div class="grid">
+                <a class="card-link mini info" href="01_setup_redis.html">
+                    <h3>① Install Redis (free, local)</h3>
+                    <p class="quiet">Docker, native Linux/macOS, or Windows via WSL/Memurai — plus Redis Cloud
+                        free tier and how to open <code>redis-cli</code>.</p>
+                </a>
+                <a class="card-link mini note" href="02_redis_thinking.html">
+                    <h3>② Think in Redis</h3>
+                    <p class="quiet">In-memory, single-threaded, key→structure model — and how it differs from
+                        relational, document, and graph databases.</p>
+                </a>
+                <a class="card-link mini good" href="03_data_types.html">
+                    <h3>③ Data types</h3>
+                    <p class="quiet">Strings, lists, hashes, sets, sorted sets (and streams/bitmaps/HLL) — what
+                        each is for, with paste-in examples.</p>
+                </a>
+                <a class="card-link mini info" href="04_commands_basics.html">
+                    <h3>④ Core commands</h3>
+                    <p class="quiet"><code>SET</code>/<code>GET</code>, <code>EXPIRE</code>/<code>TTL</code>,
+                        <code>INCR</code>, key naming, <code>SCAN</code>, and atomic operations.
+                    </p>
+                </a>
+                <a class="card-link mini warn" href="05_patterns.html">
+                    <h3>⑤ Patterns that ship</h3>
+                    <p class="quiet">Caching (cache-aside), sessions, rate limiting, leaderboards, queues, and
+                        pub/sub — the real reasons teams adopt Redis.</p>
+                </a>
+                <a class="card-link mini note" href="06_advanced.html">
+                    <h3>⑥ Advanced & performance</h3>
+                    <p class="quiet">Persistence (RDB/AOF), transactions, Lua, pipelining, streams, eviction
+                        policies, replication & cluster.</p>
+                </a>
+                <a class="card-link mini good" href="07_power_use_cases.html">
+                    <h3>⑦ Why Redis wins</h3>
+                    <p class="quiet">The power of an in-memory store vs SQL/Mongo, the use cases where it's the
+                        obvious choice — and when NOT to use it.</p>
+                </a>
+                <a class="card-link mini bad" href="08_practice_tests.html">
+                    <h3>⑧ Practice tests</h3>
+                    <p class="quiet">Graded quizzes (easy → hard) with hidden answers, plus challenge tasks to
+                        confirm you're an expert.</p>
+                </a>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>When should you reach for Redis?</h2>
+            <div class="grid-2">
+                <div class="mini good">
+                    <h3>✅ Great fit</h3>
+                    <ul>
+                        <li><strong>Caching</strong> — sit in front of a slow DB/API and serve hot data instantly.
+                        </li>
+                        <li><strong>Sessions & tokens</strong> — fast, expiring per-user state.</li>
+                        <li><strong>Rate limiting & counters</strong> — atomic <code>INCR</code> per second/user.
+                        </li>
+                        <li><strong>Leaderboards & ranking</strong> — sorted sets do this natively.</li>
+                        <li><strong>Queues & streams</strong> — background jobs, event pipelines, pub/sub.</li>
+                        <li><strong>Real-time</strong> — presence, live counts, geospatial, feature flags.</li>
+                    </ul>
+                </div>
+                <div class="mini warn">
+                    <h3>⚠️ Probably not</h3>
+                    <ul>
+                        <li>System of record for data you can't afford to lose without care (it's RAM-first).</li>
+                        <li>Complex multi-table queries, JOINs, ad-hoc analytics (use SQL).</li>
+                        <li>Datasets far larger than your RAM budget (RAM is the cost).</li>
+                        <li>Deep relationship traversal (use a graph DB).</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="callout">
+                <strong>Rule of thumb:</strong> if a query is asked <em>constantly</em> and must return in
+                <em>milliseconds</em> — or you need counters, queues, expiring keys, or rankings — Redis is
+                usually the simplest, fastest answer. It often sits <em>alongside</em> your main database, not
+                instead of it.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How to use this folder</h2>
+            <ol>
+                <li>Do <strong>① Install</strong> first — you'll want to run every command as you read.</li>
+                <li>Read <strong>②</strong> once to rewire your brain from tables to keys & structures.</li>
+                <li>Work through <strong>③–④</strong> with <code>redis-cli</code> open, typing every example.</li>
+                <li>Build the real patterns in <strong>⑤</strong>, then go deep in <strong>⑥</strong>.</li>
+                <li>Read <strong>⑦</strong> to articulate <em>why</em> Redis to your team.</li>
+                <li>Hammer <strong>⑧</strong> until every answer is automatic — that's expertise.</li>
+            </ol>
+            <p>👉 Start now: <a href="01_setup_redis.html"><strong>① Install Redis locally for free</strong></a></p>
+        </section>
+    </main>
+
+    <footer>Redis Mastery · built for the learning_path · <a href="../index.html">back to Side Projects</a></footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true, theme: 'base',
+            themeVariables: { primaryColor: '#fde8e6', primaryTextColor: '#241616', primaryBorderColor: '#dc382d', lineColor: '#a02218', fontFamily: 'Segoe UI, Aptos, system-ui, sans-serif' }
+        });
+    </script>
+</body>
+
+</html>

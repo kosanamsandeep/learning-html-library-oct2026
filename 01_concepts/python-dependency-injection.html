@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Dependency Injection with FastAPI</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">DI</span>
+                <span>Dependency Injection Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="python-solid-principles.html">SOLID</a>
+                <a href="python-project-structure.html">Project Structure</a>
+                <a href="http-status-logging.html">HTTP and Logging</a>
+                <a href="#fastapi">FastAPI examples</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what-is-di">What dependency injection means</a>
+            <a href="#why-it-matters">Why it matters</a>
+            <a href="#bad-vs-good">Bad vs better structure</a>
+            <a href="#fastapi">FastAPI dependency examples</a>
+            <a href="#testing">Fakes and test seams</a>
+            <a href="#patterns">Useful DI patterns</a>
+            <a href="#mistakes">Common mistakes</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card" id="what-is-di">
+                <div>
+                    <p class="eyebrow">Loose coupling in practice</p>
+                    <h1>Dependency injection means the code receives what it needs from the outside instead of creating
+                        everything internally.</h1>
+                    <p>When a service directly creates its database client, email sender, logger, cache, and model
+                        client inside the class, the code becomes tightly coupled and hard to test. Dependency
+                        injection fixes that by <strong>passing dependencies in clearly</strong>.</p>
+                    <p>In Python, dependency injection does not require a complicated framework. Often it is just
+                        constructor arguments, function parameters, or FastAPI dependencies.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Simple before and after</h2>
+                    <ul>
+                        <li><strong>Without DI:</strong> service creates its own dependencies</li>
+                        <li><strong>With DI:</strong> service receives dependencies from outside</li>
+                        <li><strong>Benefit:</strong> lower coupling, easier testing, easier replacement</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section" id="why-it-matters">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Why this matters</p>
+                        <h2>Why dependency injection improves Python applications</h2>
+                    </div>
+                </div>
+                <div class="grid three">
+                    <div class="card">
+                        <h3>Testability</h3>
+                        <p>You can swap real dependencies for fakes or mocks without changing business logic.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Replaceability</h3>
+                        <p>You can change storage, vendors, or model providers with smaller code impact.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Clarity</h3>
+                        <p>Dependencies become visible at the edge of the class or function instead of being hidden
+                            inside the implementation.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="bad-vs-good">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Before and after</p>
+                        <h2>Bad coupling vs better injection</h2>
+                    </div>
+                </div>
+                <div class="code-compare">
+                    <div class="code-card">
+                        <h3>Tightly coupled service</h3>
+                        <pre>class UserService:
+    def __init__(self):
+        self.repository = PostgresUserRepository()
+        self.mailer = SmtpMailer()
+
+    def create_user(self, payload):
+        user = self.repository.save(payload)
+        self.mailer.send_welcome(user.email)
+        return user</pre>
+                        <p>This is hard to test because the class decides its own dependencies.</p>
+                    </div>
+                    <div class="code-card">
+                        <h3>Injected dependencies</h3>
+                        <pre>class UserService:
+    def __init__(self, repository, mailer):
+        self.repository = repository
+        self.mailer = mailer
+
+    def create_user(self, payload):
+        user = self.repository.save(payload)
+        self.mailer.send_welcome(user.email)
+        return user</pre>
+                        <p>This is easier to test because the dependencies can be replaced at construction time.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="fastapi">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Framework example</p>
+                        <h2>How dependency injection looks in FastAPI</h2>
+                    </div>
+                </div>
+                <div class="code-compare">
+                    <div class="code-card">
+                        <h3>Dependency providers</h3>
+                        <pre>from fastapi import Depends, FastAPI
+
+app = FastAPI()
+
+
+class UserRepository:
+    def save(self, payload):
+        return payload
+
+
+class Mailer:
+    def send_welcome(self, email):
+        return None
+
+
+class UserService:
+    def __init__(self, repository: UserRepository, mailer: Mailer):
+        self.repository = repository
+        self.mailer = mailer
+
+
+def get_user_repository() -> UserRepository:
+    return UserRepository()
+
+
+def get_mailer() -> Mailer:
+    return Mailer()
+
+
+def get_user_service(
+    repository: UserRepository = Depends(get_user_repository),
+    mailer: Mailer = Depends(get_mailer),
+) -> UserService:
+    return UserService(repository, mailer)</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Injected route</h3>
+                        <pre>@app.post("/users")
+def create_user(
+    payload: dict,
+    service: UserService = Depends(get_user_service),
+):
+    return service.create_user(payload)</pre>
+                        <p>The route depends on a service provider, and the service provider depends on lower-level
+                            providers. This keeps each layer focused.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Important point:</strong> FastAPI dependency injection is mainly for wiring objects and
+                        request-scoped resources cleanly. It is not just a convenience feature. It enforces clearer
+                        boundaries if used well.</p>
+                </div>
+            </section>
+
+            <section class="section" id="testing">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Testing seam</p>
+                        <h2>Using fakes and overrides in tests</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Fake dependencies</h3>
+                        <p>Instead of talking to a real database or external API, tests can pass fake repositories or
+                            stub mailers into the service. That makes unit tests fast and deterministic.</p>
+                    </div>
+                    <div class="card">
+                        <h3>FastAPI dependency overrides</h3>
+                        <p>FastAPI lets you override dependency providers in tests, so routes can run against safe fake
+                            collaborators without changing production code.</p>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>Simple override example</h3>
+                    <pre>def get_fake_user_service() -> UserService:
+    return UserService(FakeUserRepository(), FakeMailer())
+
+
+app.dependency_overrides[get_user_service] = get_fake_user_service</pre>
+                </div>
+            </section>
+
+            <section class="section" id="patterns">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Useful patterns</p>
+                        <h2>Dependency injection patterns worth using</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pattern</th>
+                                <th>When to use it</th>
+                                <th>Why it helps</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Constructor injection</td>
+                                <td>Services and long-lived objects</td>
+                                <td>Makes dependencies explicit at object creation time</td>
+                            </tr>
+                            <tr>
+                                <td>Function parameter injection</td>
+                                <td>Small utilities and pure functions</td>
+                                <td>Keeps dependencies simple without needing classes</td>
+                            </tr>
+                            <tr>
+                                <td>Provider functions</td>
+                                <td>Framework integration and wiring</td>
+                                <td>Separates object construction from business logic</td>
+                            </tr>
+                            <tr>
+                                <td>Interface or protocol plus implementation</td>
+                                <td>Swappable infrastructure</td>
+                                <td>Improves replaceability and testing seams</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="mistakes">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Common mistakes</p>
+                        <h2>What to avoid when using dependency injection</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Over-abstracting too early</h3>
+                        <ul class="stack-list">
+                            <li>Do not create interfaces for every tiny class from day one.</li>
+                            <li>Add abstraction where variation or testing seams are real.</li>
+                            <li>Keep the code readable for the next developer.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Hiding dependencies again</h3>
+                        <ul class="stack-list">
+                            <li>A service locator can reintroduce hidden global state.</li>
+                            <li>Dependencies should still be visible in constructors or provider functions.</li>
+                            <li>The goal is clarity, not indirection for its own sake.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <a class="card" href="http-status-logging.html">
+                        <span class="tag">Related</span>
+                        <h3>HTTP status codes and logging levels</h3>
+                        <p>See how clean service design connects to proper API responses and useful operational
+                            logging.</p>
+                    </a>
+                    <a class="card" href="python-config-secrets.html">
+                        <span class="tag warm">Related</span>
+                        <h3>Python config, environment variables, and secrets</h3>
+                        <p>See how settings and sensitive credentials should be loaded once and injected clearly.</p>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>This page explains dependency injection in practical Python terms and shows how FastAPI dependencies help
+                create cleaner test seams and service boundaries.</p>
+            <div class="mini-links">
+                <a href="index.html">Back to home</a>
+                <a href="python-project-structure.html">Project structure</a>
+                <a href="python-solid-principles.html">SOLID in Python</a>
+                <a href="http-status-logging.html">HTTP and logging</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

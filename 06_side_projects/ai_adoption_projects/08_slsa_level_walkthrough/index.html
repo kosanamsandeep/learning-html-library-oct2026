@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SLSA Level Walkthrough</title>
+  <link rel="stylesheet" href="../projects.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'neutral', themeVariables:{primaryColor:'#ccfbf1',primaryBorderColor:'#0f766e',secondaryColor:'#e0e7ff',tertiaryColor:'#fef3c7',lineColor:'#5b6478',fontFamily:'system-ui'}})</script>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="../"><span>AI</span>Adoption Projects</a>
+      <div class="top-links">
+        <a href="../">Hub</a>
+        <a href="../07_container_signing_lab/">Prev: Container Signing Lab</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Project 08 &mdash; Supply Chain Security</p>
+      <h1>SLSA Level Walkthrough</h1>
+      <p class="lead">Progressively harden a build pipeline through SLSA Levels 1 through 4. Each level adds concrete security guarantees: from basic build integrity at L1 to fully hermetic, reproducible builds with signed provenance at L4.</p>
+    </section>
+
+    <div class="card">
+      <h2>The SLSA Framework: A Security Staircase</h2>
+      <p>SLSA (Supply-chain Levels for Software Artifacts, pronounced "salsa") is a security framework that defines a progression of increasing trust guarantees for software supply chains. Each level builds on the previous one, adding specific requirements that make it progressively harder for attackers to tamper with build outputs without detection.</p>
+
+      <div class="mermaid">
+<pre class="mermaid">
+flowchart TD
+    subgraph L4["🏔️ SLSA L4 — Hermetic + Reproducible"]
+        L4_REQ["• Fully hermetic build<br/>• Reproducible builds<br/>• Two-party review required<br/>• All dependencies enumerated"]
+    end
+
+    subgraph L3["🏔️ SLSA L3 — Hardened Build"]
+        L3_REQ["• Non-falsifiable provenance<br/>• Hosted build platform<br/>• Build-as-code (no manual steps)<br/>• Isolated build environment"]
+    end
+
+    subgraph L2["🏔️ SLSA L2 — Build Integrity"]
+        L2_REQ["• Signed provenance<br/>• Version-controlled build<br/>• Build service runs on dedicated infra"]
+    end
+
+    subgraph L1["🏔️ SLSA L1 — Basic"]
+        L1_REQ["• Build script exists<br/>• Provenance generated<br/>• Run on any platform"]
+    end
+
+    L1 --> L2 --> L3 --> L4
+
+    style L1 fill:#fee2e2,stroke:#b91c1c,color:#222
+    style L2 fill:#fef3c7,stroke:#b45309,color:#222
+    style L3 fill:#ccfbf1,stroke:#0f766e,color:#222
+    style L4 fill:#d1fae5,stroke:#047857,color:#222
+</pre>
+      </div>
+
+      <div class="callout">
+        <strong>Bottom line:</strong> Most real-world open source projects are at L1 or below. Reaching L3 is a strong security milestone. L4 is aspirational for all but the most critical infrastructure. The goal is not to hit L4 overnight but to make incremental progress that reduces risk.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>SLSA L1 — Basic Build Integrity</h2>
+
+      <p><strong>What it provides:</strong> The build process is scripted and automated, with documented provenance. This prevents "works on my machine" issues and establishes a basic audit trail.</p>
+
+      <p><strong>Requirements:</strong></p>
+      <ul>
+        <li>Build steps are defined in a script (not manual clicks).</li>
+        <li>Provenance is generated describing who built what and how.</li>
+      </ul>
+
+      <p><strong>Example: Basic GitHub Actions build with provenance</strong></p>
+      <pre><code># .github/workflows/build.yml -- SLSA L1
+name: Build
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make build
+      - run: make test
+      - name: Generate provenance
+        run: |
+          cat &lt;&lt;EOF &gt; provenance.json
+          {
+            "builder": {"id": "https://github.com/actions/virtual-environments"},
+            "buildType": "https://example.com/makefile/v1",
+            "invocation": {
+              "configSource": {
+                "uri": "git+https://github.com/${{ github.repository }}@${{ github.sha }}"
+              }
+            },
+            "metadata": {
+              "buildStartedOn": "${{ github.event.head_commit.timestamp }}"
+            }
+          }
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: provenance.json
+          path: provenance.json
+</code></pre>
+
+      <div class="grid">
+        <div class="grid-item">
+          <strong>Cost</strong>: Low. Minimal changes to existing CI pipeline.
+        </div>
+        <div class="grid-item">
+          <strong>Benefit</strong>: Basic build traceability. You can answer "who built this and when?"
+        </div>
+        <div class="grid-item">
+          <strong>Gap</strong>: Provenance is not signed or verified. Anyone could craft a fake one.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>SLSA L2 — Build Integrity with Signed Provenance</h2>
+
+      <p><strong>What it adds:</strong> Provenance is now <em>signed</em> by the build platform, making it non-repudiable. The build runs on dedicated infrastructure, not a developer's laptop.</p>
+
+      <p><strong>New requirements over L1:</strong></p>
+      <ul>
+        <li>Provenance must be signed using an ephemeral key tied to the build platform.</li>
+        <li>The build runs on dedicated, hosted infrastructure (not a personal machine).</li>
+        <li>Build steps are version-controlled.</li>
+      </ul>
+
+      <p><strong>Example: Using the SLSA Generator (GitHub Actions)</strong></p>
+      <pre><code># .github/workflows/build.yml -- SLSA L2
+name: Build (L2)
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write   # needed for keyless signing
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make build
+
+  provenance:
+    needs: [build]
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: "${{ needs.build.outputs.digests }}"
+      compile-generator: true
+</code></pre>
+
+      <p>The SLSA Generator workflow produces an <strong>in-toto attestation</strong> signed by the GitHub Actions OIDC identity and uploads it as a build artifact. The attestation includes:</p>
+      <ul>
+        <li><strong>Subject:</strong> Digest of the built artifact (e.g., binary SHA256).</li>
+        <li><strong>Builder:</strong> <code>https://github.com/slsa-framework/slsa-github-generator</code>.</li>
+        <li><strong>Build Config:</strong> Link to the exact workflow file and commit that triggered the build.</li>
+        <li><strong>Metadata:</strong> Timestamp, source repository, and invocation parameters.</li>
+      </ul>
+
+      <div class="grid">
+        <div class="grid-item">
+          <strong>Cost</strong>: Medium. Requires adopting the SLSA generator or integrating a signing step.
+        </div>
+        <div class="grid-item">
+          <strong>Benefit</strong>: Non-repudiable provenance. Consumers can verify that the artifact was built by your CI, not an attacker.
+        </div>
+        <div class="grid-item">
+          <strong>Gap</strong>: Build environment may still fetch dependencies from the internet with no pinning or verification.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>SLSA L3 — Hardened Build Environment</h2>
+
+      <p><strong>What it adds:</strong> The build is <em>isolated</em> and <em>hermetic</em>. The build platform prevents tampering during the build, and the provenance proves the build was fully defined by source code.</p>
+
+      <p><strong>New requirements over L2:</strong></p>
+      <ul>
+        <li>Build runs on a hosted platform with strong isolation between builds.</li>
+        <li>Build is "as-code" &mdash; no manual steps or parameters.</li>
+        <li>Provenance is <em>non-falsifiable</em>: the build platform signs it with a key that is inaccessible to build steps.</li>
+      </ul>
+
+      <p><strong>Example: Hermetic build with dependency pinning</strong></p>
+      <pre><code># .github/workflows/build.yml -- SLSA L3 (hermetic)
+name: Build (L3 Hermetic)
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build in isolated container
+        # Use a pinned base image with all deps pre-installed
+        run: |
+          docker run --rm \
+            -v $PWD:/workspace \
+            -w /workspace \
+            --network none \                    # 🔒 No network access during build
+            "golang:1.22-alpine@sha256:abc123..." \
+            sh -c "go build -o myapp . && go test ./..."
+
+      - name: Generate non-falsifiable provenance
+        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+        with:
+          base64-subjects: "${{ needs.build.outputs.digests }}"
+          compile-generator: true
+</code></pre>
+
+      <p><strong>Key hermetic build practices:</strong></p>
+      <table>
+        <tr>
+          <th>Practice</th>
+          <th>Why It Matters</th>
+        </tr>
+        <tr>
+          <td><code>--network none</code></td>
+          <td>Prevents the build from fetching unversioned, unpinned dependencies. All deps must be pre-declared.</td>
+        </tr>
+        <tr>
+          <td>Pin base images by digest</td>
+          <td><code>golang:1.22-alpine@sha256:abc</code> ensures the same base image every time, even if the tag is updated.</td>
+        </tr>
+        <tr>
+          <td>Use lockfiles</td>
+          <td><code>go.sum</code>, <code>package-lock.json</code>, <code>requirements.txt</code> with hashes pin every transitive dependency.</td>
+        </tr>
+        <tr>
+          <td>Pre-install dependencies</td>
+          <td>Use a pre-built builder image rather than <code>apt-get install</code> during the build.</td>
+        </tr>
+      </table>
+
+      <div class="grid">
+        <div class="grid-item">
+          <strong>Cost</strong>: High. Requires changing how dependencies are managed and enforcing network isolation.
+        </div>
+        <div class="grid-item">
+          <strong>Benefit</strong>: Strong supply chain guarantees. A compromised dependency server cannot inject malicious code during your build.
+        </div>
+        <div class="grid-item">
+          <strong>Gap</strong>: Different hermetic builds may produce different artifacts even from the same source (not reproducible).
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>SLSA L4 — Reproducible &amp; Hermetic Builds</h2>
+
+      <p><strong>What it adds:</strong> Everything from L3, plus the build is <em>reproducible</em> &mdash; rebuilding the same source produces bit-for-bit identical output. This provides the strongest guarantee: you can detect backdoors inserted by the build platform itself.</p>
+
+      <p><strong>New requirements over L3:</strong></p>
+      <ul>
+        <li>Build is fully hermetic (no external dependencies during build).</li>
+        <li>Build is reproducible: two independent builders produce identical output.</li>
+        <li>Two-person review is required for all changes affecting the build process.</li>
+        <li>All external dependencies are fully enumerated in the provenance.</li>
+      </ul>
+
+      <p><strong>Example: Reproducible Go build step</strong></p>
+      <pre><code># Reproducible Go build snippet
+# Achieved by: setting -trimpath, specifying GOFLAGS, and pinning toolchain version
+
+name: Build (L4 Reproducible)
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reproducible Go build
+        run: |
+          # ✓ Pin Go version
+          # ✓ Set -trimpath to remove filesystem-specific paths
+          # ✓ Use -buildmode=default for consistent output
+          # ✓ Set SOURCE_DATE_EPOCH for timestamp-independent binaries
+          docker run --rm \
+            -v $PWD:/workspace \
+            -w /workspace \
+            --network none \
+            -e SOURCE_DATE_EPOCH=0 \
+            -e GOFLAGS="-trimpath -ldflags=-buildid=" \
+            "golang:1.22-alpine@sha256:abc123..." \
+            go build -o myapp .
+
+      - name: Verify reproducibility
+        run: |
+          # Build twice and compare checksums
+          cp myapp myapp.first
+          docker run --rm \
+            -v $PWD:/workspace -w /workspace --network none \
+            "golang:1.22-alpine@sha256:abc123..." \
+            go build -o myapp .
+          if ! cmp myapp.first myapp; then
+            echo "❌ Build is NOT reproducible!"
+            exit 1
+          fi
+          echo "✅ Build is reproducible"
+
+      - name: Generate signed provenance (L4)
+        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+        with:
+          base64-subjects: "${{ needs.build.outputs.digests }}"
+          compile-generator: true
+</code></pre>
+
+      <p><strong>Making builds reproducible:</strong></p>
+      <table>
+        <tr>
+          <th>Challenge</th>
+          <th>Solution</th>
+        </tr>
+        <tr>
+          <td>Timestamps embedded in binary</td>
+          <td>Set <code>SOURCE_DATE_EPOCH=0</code> (or another fixed timestamp).</td>
+        </tr>
+        <tr>
+          <td>Filesystem paths in debug info</td>
+          <td>Use <code>-trimpath</code> (Go), <code>-ffile-prefix-map</code> (GCC), or equivalent.</td>
+        </tr>
+        <tr>
+          <td>Build IDs</td>
+          <td>Use <code>-ldflags=-buildid=</code> (Go) or strip build IDs from the binary.</td>
+        </tr>
+        <tr>
+          <td>Randomness / ASLR</td>
+          <td>Disable PIE if not needed, or accept the trade-off with documented caveats.</td>
+        </tr>
+        <tr>
+          <td>Locale-dependence</td>
+          <td>Set <code>LC_ALL=C.UTF-8</code> and <code>TZ=UTC</code>.</td>
+        </tr>
+      </table>
+
+      <div class="grid">
+        <div class="grid-item">
+          <strong>Cost</strong>: Very high. Requires deep build system expertise and significant tooling changes.
+        </div>
+        <div class="grid-item">
+          <strong>Benefit</strong>: Maximum supply chain integrity. Even a compromised build platform cannot hide tampering, because a separate builder would produce a different output.
+        </div>
+        <div class="grid-item">
+          <strong>Trade-off</strong>: Not all build systems or languages support reproducible builds. Some anti-virus scanners and signing tools intentionally inject non-reproducible data.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Cost-Benefit Summary</h2>
+      <table>
+        <tr>
+          <th>Level</th>
+          <th>Key Requirement</th>
+          <th>Implementation Effort</th>
+          <th>Security Benefit</th>
+          <th>Best For</th>
+        </tr>
+        <tr>
+          <td>L1</td>
+          <td>Scripted build + basic provenance</td>
+          <td>Low (hours)</td>
+          <td>Basic audit trail</td>
+          <td>All projects</td>
+        </tr>
+        <tr>
+          <td>L2</td>
+          <td>Signed provenance + hosted CI</td>
+          <td>Low-Medium (days)</td>
+          <td>Non-repudiable builds</td>
+          <td>Teams shipping artifacts</td>
+        </tr>
+        <tr>
+          <td>L3</td>
+          <td>Hermetic build + isolated env</td>
+          <td>Medium-High (weeks)</td>
+          <td>Tamper-proof build process</td>
+          <td>Critical shared infrastructure</td>
+        </tr>
+        <tr>
+          <td>L4</td>
+          <td>Reproducible + two-party review</td>
+          <td>High (months)</td>
+          <td>Maximum integrity guarantees</td>
+          <td>High-security / compliance contexts</td>
+        </tr>
+      </table>
+
+      <div class="callout">
+        <strong>Recommended path:</strong> Start at L1 for all projects (it's essentially free). Aim for L2 on any project that produces deployable artifacts. Target L3 for shared libraries, base images, and critical infrastructure. Pursue L4 only for projects where the cost of a compromised build is catastrophic (e.g., cryptographic libraries, OS packages, certificate authorities).
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Verifying SLSA Provenance</h2>
+      <p>Provenance is only useful if consumers verify it. The <code>slsa-verifier</code> tool checks that an artifact's provenance meets expected SLSA levels:</p>
+
+      <pre><code># Install slsa-verifier
+go install github.com/slsa-framework/slsa-verifier/v2/cli/slsa-verifier@latest
+
+# Verify an artifact was built at SLSA L3 or above
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/my-org/my-repo \
+  --source-tag v1.2.3 \
+  myapp.bin
+
+# Verify against the SLSA attestation stored in a container registry
+cosign verify-attestation \
+  --type slsaprovenance \
+  --certificate-identity-regexp "https://github.com/slsa-framework/.*" \
+  ghcr.io/my-org/my-app@sha256:...
+</code></pre>
+
+      <p class="quiet">Project source: <a href="https://slsa.dev/">SLSA.dev</a> &bull; <a href="https://github.com/slsa-framework/slsa-github-generator">SLSA GitHub Generator</a> &bull; <a href="https://in-toto.io/">in-toto Attestations</a></p>
+    </div>
+  </main>
+</body>
+</html>

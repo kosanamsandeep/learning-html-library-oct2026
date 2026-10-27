@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go P8 — Authentication Platform</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Go projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p8_authentication_platform/README.html">Python p8</a>
+                <a href="../../rust_projects/p8_authentication_platform/README.html">Rust p8</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go · P8</span></p>
+            <h1>Authentication — strategies behind a one-method interface</h1>
+            <p class="lead">Two providers (password, API key), one entry point. The service depends on the
+                <code>Authenticator</code> interface; both providers satisfy it implicitly. This is the
+                dependency-injection pattern Python achieves with Protocols, only enforced at compile time.</p>
+        </section>
+
+        <section class="card">
+            <h2>The shape</h2>
+            <pre><code>type Authenticator interface {
+    Authenticate(creds map[string]string) (Identity, error)
+}
+
+func main() {
+    pwSvc  := &AuthService{a: NewPasswordAuth()}
+    apiSvc := &AuthService{a: NewAPIKeyAuth()}
+    // same AuthService.Login works for both
+}</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Real-world extensions</h2>
+            <ul>
+                <li>Add an OIDC strategy — same interface.</li>
+                <li>Add a session token issuer (JWT, opaque) at the service layer, not inside the strategies.</li>
+                <li>Use <code>bcrypt</code> (golang.org/x/crypto/bcrypt) instead of plain SHA-256 for password hashing
+                    in production. SHA-256 here is only for demo.</li>
+            </ul>
+            <div class="callout warn"><strong>Security note:</strong> never use SHA-256 for passwords in real code. Use
+                bcrypt, scrypt, or argon2id.</div>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd go_projects/p8_authentication_platform
+go run .</code></pre>
+            <p>Files: <a href="main.go">main.go</a> · <a href="go.mod">go.mod</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

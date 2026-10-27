@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P6 · Integration tests with SQLite — todo repository</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>T</span>Testing Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p5_tdd_password_validator/README.html">Prev: P5</a>
+                <a href="../p7_fastapi_unit_vs_integration/README.html">Next: P7</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 6 · Intermediate</p>
+            <h1>Integration tests — let your code touch a real database</h1>
+            <p class="lead">Unit tests are fast because they fake the world. Integration tests are honest because
+                they do not. In this project a tiny <code>TodoRepository</code> talks to a real SQLite database that
+                lives on disk, and pytest gives each test a fresh copy of it.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You wrote a repository class with a clean API: <code>add</code>, <code>get</code>, <code>list_all</code>,
+                <code>mark_done</code>, <code>delete</code>. The tests pass in isolation — but the moment you point
+                the code at a real database, things break: wrong column name, missing commit, type mismatch on the
+                <code>done</code> column. Integration tests catch those bugs because they exercise the SQL itself.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>repository.py</code></td>
+                        <td><code>TodoRepository</code> backed by SQLite. Real schema, real queries.</td>
+                    </tr>
+                    <tr>
+                        <td><code>conftest.py</code></td>
+                        <td>Fixture that gives each test a brand-new SQLite file via <code>tmp_path</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_repository.py</code></td>
+                        <td>Integration tests that round-trip data through the database.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Unit test vs integration test — the line</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Unit test (P4)</th>
+                        <th>Integration test (P6)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Touches the network or disk?</td>
+                        <td>No</td>
+                        <td>Yes (a real file on disk)</td>
+                    </tr>
+                    <tr>
+                        <td>What is being verified?</td>
+                        <td>Pure rule (rain &gt;= threshold)</td>
+                        <td>Code + database glue together correctly</td>
+                    </tr>
+                    <tr>
+                        <td>Speed</td>
+                        <td>Milliseconds</td>
+                        <td>Tens of milliseconds</td>
+                    </tr>
+                    <tr>
+                        <td>Failure points</td>
+                        <td>Logic bugs</td>
+                        <td>SQL syntax, missing commit, schema drift, type coercion</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout"><strong>Rule of thumb:</strong> if you mocked the repository in a higher test, you
+                still need at least one integration test of the repository itself, so that mock stays believable.</div>
+        </section>
+
+        <section class="card">
+            <h2>The <code>tmp_path</code> fixture — pytest's gift to integration tests</h2>
+            <pre><code>@pytest.fixture
+def repo(tmp_path):
+    db_file = tmp_path / "todos.sqlite"
+    repository = TodoRepository(db_file)
+    yield repository
+    repository.close()</code></pre>
+            <p><code>tmp_path</code> is a built-in pytest fixture that hands you a unique temporary directory per
+                test, auto-deleted afterwards. Each test gets a brand-new database, so no test can pollute another.</p>
+            <p>The <code>yield</code> pattern is how a fixture does setup and teardown in one place: code before
+                <code>yield</code> runs before the test, code after <code>yield</code> runs after.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>What an integration test looks like</h2>
+            <pre><code>def test_added_todo_can_be_retrieved(repo):
+    saved = repo.add("Buy milk")
+    fetched = repo.get(saved.id)
+
+    assert fetched == saved
+
+def test_persistence_survives_repository_instance(tmp_path):
+    first = TodoRepository(tmp_path / "db.sqlite")
+    first.add("survive me")
+    first.close()
+
+    second = TodoRepository(tmp_path / "db.sqlite")
+    assert [t.title for t in second.list_all()] == ["survive me"]
+    second.close()</code></pre>
+            <p>The second test in particular cannot be faked with a mock — it proves that the row was actually
+                written to the file. That is the kind of confidence integration tests buy you.</p>
+        </section>
+
+        <section class="card">
+            <h2>How to ideate integration tests</h2>
+            <ol>
+                <li><strong>Round-trip</strong>: write a row, read it back, assert equality.</li>
+                <li><strong>Update isolation</strong>: change row A, verify row B is unaffected.</li>
+                <li><strong>Not found</strong>: query a missing id, verify a clean "no result" instead of a crash.</li>
+                <li><strong>Constraints</strong>: insert invalid data (empty title, oversized field) and assert the
+                    correct error.</li>
+                <li><strong>Persistence</strong>: open a new connection and confirm the data is still there.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Why SQLite for integration tests</h2>
+            <ul>
+                <li>Zero install. It is part of the Python standard library.</li>
+                <li>One file. <code>tmp_path</code> makes each test database disposable.</li>
+                <li>Fast enough. A whole test suite usually runs in under a second.</li>
+                <li>Real SQL. Your queries actually run against an SQL engine.</li>
+            </ul>
+            <p class="quiet">For Postgres-specific features, the same pattern works with <code>testcontainers</code>
+                or a dedicated test database. The structure of the fixture stays the same: setup, yield, teardown.</p>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 06_side_projects/testing_projects/p6_database_integration
+pip install -r requirements.txt
+pytest -v</code></pre>
+            <p>To break it on purpose: remove the <code>self._connection.commit()</code> line in <code>add</code>.
+                <code>test_persistence_survives_repository_instance</code> will fail, because the row never reached
+                the file. That single test would have caught a real production bug.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>What you should take away from P6</h2>
+            <ul>
+                <li>Integration tests verify that your code and a real dependency work together.</li>
+                <li><code>tmp_path</code> gives each test an isolated workspace.</li>
+                <li><code>yield</code> fixtures handle setup and teardown in one block.</li>
+                <li>The kinds of bugs integration tests catch (missing commit, bad SQL) cannot be caught by mocks.</li>
+            </ul>
+            <div class="callout"><strong>Interview-ready answer:</strong> "I use SQLite plus pytest's
+                <code>tmp_path</code> fixture to spin up a clean database per test. That gives me real integration
+                coverage — schema, SQL, commit boundaries — without the overhead of a containerized database. For
+                Postgres-specific work I swap SQLite for <code>testcontainers</code> with the same fixture shape."
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Reading order</h2>
+            <ol>
+                <li>Read <code>repository.py</code> and notice the SQL.</li>
+                <li>Read <code>conftest.py</code> — the whole reset-per-test trick is in five lines.</li>
+                <li>Read <code>test_repository.py</code> and group tests by the "how to ideate" list above.</li>
+                <li>Run <code>pytest -v</code>.</li>
+                <li>Continue to <a href="../p7_fastapi_unit_vs_integration/README.html">P7 · FastAPI unit vs
+                        integration</a>.</li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

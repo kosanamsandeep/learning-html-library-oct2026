@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>04 · API Hardening &amp; Abuse — Cyber Security Designs</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="sec">🛡</span>Cyber Security Designs</div>
+        <div class="links">
+            <a href="index.html">Hub</a>
+            <a href="03_secrets_transport_data.html">← Secrets</a>
+            <a href="05_dependencies_supply_chain.html">Supply chain →</a>
+        </div>
+    </div>
+
+    <div class="header sec">
+        <p class="badge">04 · Scale discipline · Abuse resistance</p>
+        <h1>🚦 API hardening &amp; abuse prevention</h1>
+        <p class="subtitle">A scalable API is also an attractive target: bots scrape it, scripts hammer it, and
+            crafted requests try to exhaust it. Hardening means controlling <strong>how much</strong>,
+            <strong>how fast</strong>, and <strong>how big</strong> — plus failing safely when limits are hit.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section sec">
+            <h2>The abuse surface of a scalable API</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    A["🤖 Abuse traffic"] --> R{"Rate limited?"}
+    R -->|no| OVER["Resource exhaustion / DoS"]
+    R -->|yes| SZ{"Payload bounded?"}
+    SZ -->|no| MEM["Memory blow-up<br/>huge body / deep JSON"]
+    SZ -->|yes| PG{"Query bounded?"}
+    PG -->|no| DBX["DB melt<br/>unbounded SELECT"]
+    PG -->|yes| OK["✅ Stable under load"]
+    classDef bad fill:#470d1c,stroke:#f43f5e,color:#fecdd3
+    classDef good fill:#0c2a22,stroke:#34d399,color:#bbf7d0
+    class OVER,MEM,DBX bad
+    class OK good
+                </pre>
+                <p class="caption">Every "unbounded" path is a denial-of-service waiting to happen. Bound
+                    rate, size, and query cost.</p>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Rate limiting &amp; throttling</h2>
+            <p>Cap requests per client (by API key, user, or IP) to stop brute force, credential stuffing,
+                scraping, and accidental floods. Use a shared store (Redis) so limits hold across replicas.</p>
+            <pre><code><span class="c-com"># Example with slowapi (a Starlette/FastAPI rate-limit helper)</span>
+<span class="c-kw">from</span> slowapi <span class="c-kw">import</span> Limiter
+<span class="c-kw">from</span> slowapi.util <span class="c-kw">import</span> get_remote_address
+
+limiter = Limiter(key_func=get_remote_address, storage_uri=<span class="c-str">"redis://cache:6379"</span>)
+
+<span class="c-fn">@app.post</span>(<span class="c-str">"/login"</span>)
+<span class="c-fn">@limiter.limit</span>(<span class="c-str">"5/minute"</span>)            <span class="c-com"># tight limit on sensitive endpoints</span>
+<span class="c-kw">async def</span> <span class="c-fn">login</span>(request: Request, body: LoginRequest):
+    ...
+</code></pre>
+            <div class="callout rose">
+                <strong>Layer your limits:</strong> a global limit per IP at the edge, a per-user limit in the
+                app, and <em>stricter</em> limits on expensive or sensitive routes (login, search, export).
+                Return <code>429 Too Many Requests</code> with a <code>Retry-After</code> header.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Bound the size of everything</h2>
+            <p>Unbounded inputs are a DoS vector — a 2&nbsp;GB body or a deeply nested JSON can exhaust memory
+                before your code even runs.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Limit</th>
+                        <th>Where</th>
+                        <th>Stops</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Max request body size</td>
+                        <td>Reverse proxy (nginx <code>client_max_body_size</code>)</td>
+                        <td>Memory exhaustion</td>
+                    </tr>
+                    <tr>
+                        <td>Field length / list size</td>
+                        <td>Pydantic <code>max_length</code>, <code>max_items</code></td>
+                        <td>Algorithmic blow-up</td>
+                    </tr>
+                    <tr>
+                        <td>Upload size &amp; type</td>
+                        <td>Stream + validate MIME/magic bytes</td>
+                        <td>Malicious/huge files</td>
+                    </tr>
+                    <tr>
+                        <td>Request timeout</td>
+                        <td>Server/gateway timeouts</td>
+                        <td>Slowloris / hung connections</td>
+                    </tr>
+                    <tr>
+                        <td>JSON depth/keys</td>
+                        <td>Validate or limit parser</td>
+                        <td>Billion-laughs-style attacks</td>
+                    </tr>
+                </tbody>
+            </table>
+            <pre><code><span class="c-kw">from</span> pydantic <span class="c-kw">import</span> BaseModel, Field
+<span class="c-kw">from</span> typing <span class="c-kw">import</span> Annotated
+
+<span class="c-kw">class</span> <span class="c-cls">BulkRequest</span>(BaseModel):
+    <span class="c-com"># Cap list length so a client can't ask you to process a million items at once.</span>
+    ids: Annotated[<span class="c-cls">list</span>[<span class="c-cls">int</span>], Field(max_length=<span class="c-str">100</span>)]
+</code></pre>
+        </div>
+
+        <div class="section sec">
+            <h2>Mass assignment / over-posting</h2>
+            <p>If you bind a request body straight onto your DB model, an attacker can set fields you never
+                meant to expose — like <code>is_admin</code> or <code>account_balance</code>.</p>
+            <p class="bad-label">❌ Vulnerable — trusts the whole payload</p>
+            <pre><code><span class="c-fn">@app.patch</span>(<span class="c-str">"/me"</span>)
+<span class="c-kw">async def</span> <span class="c-fn">update_me</span>(payload: <span class="c-cls">dict</span>, user: User = Depends(current_user)):
+    <span class="c-kw">await</span> users.update(user.id, **payload)   <span class="c-com"># payload={"is_admin": true} 😱</span>
+</code></pre>
+            <p class="good-label">✅ Hardened — explicit input schema, allow-list fields</p>
+            <pre><code><span class="c-kw">class</span> <span class="c-cls">ProfileUpdate</span>(BaseModel):
+    model_config = {<span class="c-str">"extra"</span>: <span class="c-str">"forbid"</span>}     <span class="c-com"># reject unknown fields</span>
+    display_name: <span class="c-cls">str</span> | <span class="c-cls">None</span> = <span class="c-cls">None</span>
+    bio: <span class="c-cls">str</span> | <span class="c-cls">None</span> = <span class="c-cls">None</span>          <span class="c-com"># no is_admin, no balance here</span>
+
+<span class="c-fn">@app.patch</span>(<span class="c-str">"/me"</span>)
+<span class="c-kw">async def</span> <span class="c-fn">update_me</span>(payload: ProfileUpdate, user: User = Depends(current_user)):
+    <span class="c-kw">await</span> users.update(user.id, **payload.model_dump(exclude_unset=<span class="c-cls">True</span>))
+</code></pre>
+            <div class="callout amber">
+                <strong>Strategy:</strong> use <em>separate</em> models for input and output. Never reuse your
+                ORM/DB model as the request schema, and never serialize your DB model directly to the client
+                (it leaks internal/sensitive fields).
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Pagination &amp; query cost control</h2>
+            <p>An endpoint that returns "all" of something is a DoS button. Always paginate, cap the page
+                size, and prefer keyset (cursor) pagination at scale.</p>
+            <pre><code><span class="c-kw">from</span> fastapi <span class="c-kw">import</span> Query
+
+<span class="c-fn">@app.get</span>(<span class="c-str">"/items"</span>)
+<span class="c-kw">async def</span> <span class="c-fn">list_items</span>(
+    limit: <span class="c-cls">int</span> = Query(<span class="c-str">20</span>, ge=<span class="c-str">1</span>, le=<span class="c-str">100</span>),    <span class="c-com"># hard upper bound</span>
+    cursor: <span class="c-cls">str</span> | <span class="c-cls">None</span> = <span class="c-cls">None</span>,
+    user: User = Depends(current_user),
+):
+    <span class="c-kw">return</span> <span class="c-kw">await</span> items.page(owner_id=user.id, limit=limit, after=cursor)
+</code></pre>
+            <ul>
+                <li>Add DB indexes for every filter/sort column to keep queries cheap.</li>
+                <li>Set statement timeouts on the DB so a pathological query can't run forever.</li>
+                <li>Beware N+1 queries and unbounded joins under attacker-controlled filters.</li>
+            </ul>
+        </div>
+
+        <div class="section sec">
+            <h2>Safe error handling &amp; observability</h2>
+            <p>How you fail matters as much as how you succeed.</p>
+            <pre><code><span class="c-kw">from</span> fastapi <span class="c-kw">import</span> Request
+<span class="c-kw">from</span> fastapi.responses <span class="c-kw">import</span> JSONResponse
+<span class="c-kw">import</span> logging, uuid
+
+log = logging.getLogger(<span class="c-str">"app"</span>)
+
+<span class="c-fn">@app.exception_handler</span>(<span class="c-cls">Exception</span>)
+<span class="c-kw">async def</span> <span class="c-fn">unhandled</span>(request: Request, exc: <span class="c-cls">Exception</span>):
+    trace_id = <span class="c-cls">str</span>(uuid.uuid4())
+    <span class="c-com"># Full detail to logs (server-side), correlation id to client.</span>
+    log.exception(<span class="c-str">"unhandled error"</span>, extra={<span class="c-str">"trace_id"</span>: trace_id, <span class="c-str">"path"</span>: request.url.path})
+    <span class="c-kw">return</span> JSONResponse(status_code=<span class="c-str">500</span>,
+        content={<span class="c-str">"error"</span>: <span class="c-str">"internal_error"</span>, <span class="c-str">"trace_id"</span>: trace_id})
+</code></pre>
+            <ul>
+                <li><strong>Log security events:</strong> auth failures, authz denials, rate-limit hits, input
+                    rejections — these are your breach early-warning system (OWASP A09).</li>
+                <li><strong>Monitor &amp; alert</strong> on spikes in 4xx/5xx, 401/403, and 429.</li>
+                <li><strong>Never</strong> return stack traces or internal identifiers to clients.</li>
+            </ul>
+        </div>
+
+        <div class="section sec">
+            <h2>API hardening checklist</h2>
+            <ul class="check">
+                <li>Rate limits applied globally and tighter on sensitive endpoints; 429 + Retry-After.</li>
+                <li>Max body size enforced at the proxy; uploads streamed &amp; type-checked.</li>
+                <li>List/field lengths bounded via Pydantic.</li>
+                <li>Separate input/output schemas; <code>extra="forbid"</code>; no ORM model as request body.</li>
+                <li>All list endpoints paginated with a hard <code>limit</code> cap.</li>
+                <li>DB indexes + statement timeouts in place.</li>
+                <li>Generic errors with trace IDs; security events logged &amp; alerted.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="03_secrets_transport_data.html"><span class="dir">Back</span>
+                <div class="ttl">03 · Secrets</div>
+            </a>
+            <a class="next" href="05_dependencies_supply_chain.html"><span class="dir">Next</span>
+                <div class="ttl">05 · Dependencies &amp; requests →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Cyber Security Designs · 04 · API hardening &amp; abuse prevention</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

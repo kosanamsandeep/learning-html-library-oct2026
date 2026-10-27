@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P9 · Property-based testing with Hypothesis</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>T</span>Testing Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p8_e2e_with_httpx/README.html">Prev: P8</a>
+                <a href="../p10_test_pyramid_showcase/README.html">Next: P10</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 9 · Advanced</p>
+            <h1>Property-based testing — let the computer invent the inputs</h1>
+            <p class="lead">Example-based tests check that <em>your</em> chosen inputs produce <em>your</em> expected
+                outputs. Property-based testing flips the question: describe a rule that must hold for <em>any</em>
+                input, and let Hypothesis throw hundreds of inputs at it — including the weird ones you never would
+                have thought of.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You write <code>merge_sorted</code>. You write tests with neat inputs like <code>[1,3,5]</code> and
+                <code>[2,4,6]</code>. Everything passes. In production a user passes <code>[]</code> and your code
+                explodes. Or <code>[2_147_483_648]</code>. Or a list with duplicates. Hypothesis tries those for you
+                automatically, including the smallest input that breaks your code.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>math_utils.py</code></td>
+                        <td>Four small functions: reverse, base64 round-trip, merge_sorted, safe_average.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_properties.py</code></td>
+                        <td>Example-based tests on top, property-based tests below.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Example vs property — side by side</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>Example-based</h3>
+                    <pre><code>def test_reverse_known_string():
+    assert reverse("hello") == "olleh"</code></pre>
+                    <p>You picked the input. You picked the output. Useful, but blind to anything you did not pick.</p>
+                </div>
+                <div class="mini">
+                    <h3>Property-based</h3>
+                    <pre><code>@given(st.text())
+def test_reverse_is_an_involution(s):
+    assert reverse(reverse(s)) == s</code></pre>
+                    <p>Hypothesis generates strings: empty, unicode, very long, special characters, surrogate pairs.
+                        Your rule must hold for every one of them.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How to ideate properties — the four families</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Family</th>
+                        <th>Shape</th>
+                        <th>Example from this project</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Round-trip</strong></td>
+                        <td><code>decode(encode(x)) == x</code></td>
+                        <td>base64 round-trip</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Invariant</strong></td>
+                        <td>Some property is always preserved</td>
+                        <td><code>len(reverse(s)) == len(s)</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Equivalence</strong></td>
+                        <td>Two implementations should agree</td>
+                        <td><code>merge_sorted(a, b) == sorted(a + b)</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bounds</strong></td>
+                        <td>The result always sits in a known range</td>
+                        <td><code>min(xs) &lt;= avg(xs) &lt;= max(xs)</code></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>If you can describe one of these about your function, you have a property-based test.</p>
+        </section>
+
+        <section class="card">
+            <h2>The Hypothesis vocabulary you need</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Piece</th>
+                        <th>What it does</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>@given(...)</code></td>
+                        <td>Decorator that generates inputs for the test.</td>
+                    </tr>
+                    <tr>
+                        <td><code>st.integers()</code></td>
+                        <td>Strategy that produces ints (positive, negative, big, small).</td>
+                    </tr>
+                    <tr>
+                        <td><code>st.text()</code></td>
+                        <td>Strategy for strings, including unicode edge cases.</td>
+                    </tr>
+                    <tr>
+                        <td><code>st.lists(strategy, max_size=...)</code></td>
+                        <td>Lists of values from another strategy.</td>
+                    </tr>
+                    <tr>
+                        <td><code>st.binary()</code></td>
+                        <td>Random byte strings.</td>
+                    </tr>
+                    <tr>
+                        <td><code>@settings(max_examples=200)</code></td>
+                        <td>Increase the search budget for tricky properties.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Shrinking — the killer feature</h2>
+            <p>When Hypothesis finds a failing input it does not just report it. It shrinks it. If
+                <code>[7, -3, 1_000_000, 0, 0]</code> breaks your code, Hypothesis will try simpler variants until it
+                finds the smallest input that still fails, often something like <code>[0, 0]</code> or
+                <code>[]</code>. That tiny counterexample is what you commit as a regression test.
+            </p>
+            <div class="callout"><strong>Why this matters:</strong> debugging is much easier when the failing input
+                is one element instead of fifty.</div>
+        </section>
+
+        <section class="card">
+            <h2>When to use property-based tests</h2>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>Great fit</h3>
+                    <ul>
+                        <li>Encoders/decoders, serializers, parsers.</li>
+                        <li>Sorters, mergers, collection utilities.</li>
+                        <li>Pure math: rounding, averages, bounds.</li>
+                        <li>Functions with clean mathematical properties.</li>
+                    </ul>
+                </div>
+                <div class="mini warn">
+                    <h3>Not the best fit</h3>
+                    <ul>
+                        <li>Code that depends on time, randomness, or external services.</li>
+                        <li>UI flows. Use E2E (P8) instead.</li>
+                        <li>Functions whose contract is just "produce HTTP 200".</li>
+                    </ul>
+                </div>
+            </div>
+            <p class="quiet">You will still write example-based tests. Property-based tests complement them; they
+                rarely replace them.</p>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 06_side_projects/testing_projects/p9_property_based_hypothesis
+pip install -r requirements.txt
+pytest -v</code></pre>
+            <p>Try to break it: introduce a bug in <code>merge_sorted</code> by changing <code>&lt;=</code> to
+                <code>&lt;</code>. Hypothesis will report the failing input, often something simple like
+                <code>[0]</code> and <code>[0]</code>.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>What you should take away from P9</h2>
+            <ul>
+                <li>Properties describe what must always be true, regardless of input.</li>
+                <li>Hypothesis searches the input space and shrinks counterexamples to the smallest failing one.</li>
+                <li>The four families — round-trip, invariant, equivalence, bounds — cover most useful properties.</li>
+                <li>Use property-based tests for parsers, encoders, math, and data structures.</li>
+            </ul>
+            <div class="callout"><strong>Interview-ready answer:</strong> "Hypothesis lets me describe properties
+                like 'reversing twice gives the original' or 'encoder + decoder is the identity', and then it
+                generates inputs to try to falsify them. When it finds a counterexample it shrinks it, so I get the
+                smallest input that breaks my code — which I add as a regression test."</div>
+        </section>
+
+        <section class="card">
+            <h2>Reading order</h2>
+            <ol>
+                <li>Read <code>math_utils.py</code>.</li>
+                <li>Read the example-based tests in <code>test_properties.py</code>.</li>
+                <li>Read the property-based tests below them and match each to one of the four families.</li>
+                <li>Run <code>pytest -v</code>.</li>
+                <li>Continue to <a href="../p10_test_pyramid_showcase/README.html">P10 · Full test pyramid</a>.</li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

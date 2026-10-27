@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personify-Service · Code Reading Guide</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <div class="shell">
+        <nav class="nav">
+            <a class="brand" href="index.html">
+                <span class="mark">P</span> Personify-Service · Reading Guide
+            </a>
+            <span class="spacer"></span>
+            <a class="link" href="01_architecture.html">Architecture</a>
+            <a class="link" href="03_design_patterns.html">Patterns</a>
+            <a class="link" href="05_learnings_checklist.html">Self-Check</a>
+            <a class="link" href="06_scenarios.html">Practice</a>
+            <a class="link" href="../index.html">↩ Side Projects</a>
+        </nav>
+
+        <header class="hero">
+            <span class="eyebrow">Read Real Code · Domain-Driven Design</span>
+            <h1>Personify-Service, explained.</h1>
+            <p class="lead">
+                A guided tour through a production-shaped <strong>Python micro-service</strong> built with
+                Domain-Driven Design. This guide shows you the <strong>architecture</strong>, the
+                <strong>design patterns</strong>, how a request flows end-to-end, and exactly
+                <strong>how to read the codebase</strong> — so you can measure where your understanding stands.
+            </p>
+            <div class="progress">
+                <span class="d on"></span><span class="d on"></span><span class="d on"></span>
+                <span class="d on"></span><span class="d on"></span>
+                <span class="lbl">5 chapters · ~40 min read</span>
+            </div>
+        </header>
+
+        <div class="grid grid-3" style="margin-top:30px;">
+            <div class="mini">
+                <div class="k">4</div>
+                <div class="v">DDD layers — interfaces, app, domain, infra</div>
+            </div>
+            <div class="mini">
+                <div class="k">10+</div>
+                <div class="v">Design patterns you can name &amp; explain</div>
+            </div>
+            <div class="mini">
+                <div class="k">3</div>
+                <div class="v">Data stores — Postgres · MongoDB · MinIO</div>
+            </div>
+        </div>
+
+        <div class="callout tip">
+            <div class="ct">How to use this guide</div>
+            <p>
+                Read it top-to-bottom once to get the mental model, then keep the source open next to
+                <a href="04_how_to_read.html">Chapter 4 (How to Read)</a> and trace one feature yourself.
+                Finish with the <a href="05_learnings_checklist.html">self-assessment</a> to see where you stand.
+            </p>
+        </div>
+
+        <h2>What is this service?</h2>
+        <p>
+            <strong>Personify-Service</strong> is a contacts / personal-CRM style REST API. A user can
+            <span class="pill acc">sign up</span><span class="pill acc">sign in</span> and then
+            <span class="pill">create</span><span class="pill">list</span><span class="pill">update</span><span
+                class="pill">delete</span>
+            their personal contacts. It is deliberately built like a "real" backend so it can demonstrate
+            clean architecture, not just CRUD.
+        </p>
+
+        <div class="diagram">
+            <div class="mermaid">
+                flowchart LR
+                C([Client / Swagger]) -->|HTTP JSON| T[Tornado App]
+                T --> H[Handlers<br />interfaces]
+                H --> S[Services<br />app]
+                S --> U[Unit of Work + Repository<br />infra]
+                U --> PG[(PostgreSQL<br />users)]
+                U --> MO[(MongoDB<br />contacts)]
+                S -.objects.-> MI[(MinIO<br />storage)]
+                classDef db fill:#eef0fa,stroke:#4338ca,color:#312e81;
+                class PG,MO,MI db;
+            </div>
+            <div class="cap">The big picture — a request travels through clear, single-purpose layers before it ever
+                touches a database.</div>
+        </div>
+
+        <h2>The tech stack at a glance</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Concern</th>
+                        <th>Choice</th>
+                        <th>Why it's there</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Web framework</td>
+                        <td><code>Tornado</code> (async)</td>
+                        <td>Non-blocking HTTP server &amp; routing</td>
+                    </tr>
+                    <tr>
+                        <td>Relational store</td>
+                        <td><code>PostgreSQL</code> + SQLAlchemy + Alembic</td>
+                        <td>Users (strong schema, migrations)</td>
+                    </tr>
+                    <tr>
+                        <td>Document store</td>
+                        <td><code>MongoDB</code> + PyMongo</td>
+                        <td>Contacts (flexible, per-user documents)</td>
+                    </tr>
+                    <tr>
+                        <td>Object storage</td>
+                        <td><code>MinIO</code> (S3-compatible)</td>
+                        <td>Files / avatars</td>
+                    </tr>
+                    <tr>
+                        <td>Validation / DTOs</td>
+                        <td><code>marshmallow</code></td>
+                        <td>Request &amp; response schemas</td>
+                    </tr>
+                    <tr>
+                        <td>Auth</td>
+                        <td><code>JWT</code> bearer + pbkdf2 hashing</td>
+                        <td>Stateless tokens, hashed passwords</td>
+                    </tr>
+                    <tr>
+                        <td>Quality gates</td>
+                        <td><code>pytest</code> · <code>mypy</code> · <code>ruff</code></td>
+                        <td>Tests, type-checking, linting</td>
+                    </tr>
+                    <tr>
+                        <td>Runtime</td>
+                        <td><code>Docker</code> · docker-compose · nginx</td>
+                        <td>Reproducible local + prod environments</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2>Your reading path</h2>
+        <div class="grid grid-2">
+            <a class="card" href="01_architecture.html">
+                <span class="step-no">1</span>
+                <h3>The Architecture</h3>
+                <p>The four DDD layers, the dependency rule, and the folder map. The mental model everything else hangs
+                    on.</p>
+                <span class="tag">Layers &amp; boundaries →</span>
+            </a>
+            <a class="card" href="02_request_lifecycle.html">
+                <span class="step-no">2</span>
+                <h3>A Request's Lifecycle</h3>
+                <p>Follow <code>POST /signup</code> and <code>POST /contact</code> from socket to database and back,
+                    step by step.</p>
+                <span class="tag">Sequence diagrams →</span>
+            </a>
+            <a class="card" href="03_design_patterns.html">
+                <span class="step-no">3</span>
+                <h3>The Design Patterns</h3>
+                <p>Repository, Unit of Work, Factory, Adapter, DI, Generics, Template Method — each with real code.</p>
+                <span class="tag">Patterns deep-dive →</span>
+            </a>
+            <a class="card" href="04_how_to_read.html">
+                <span class="step-no">4</span>
+                <h3>How to Read This Codebase</h3>
+                <p>A concrete reading order and a "follow one feature" trail so you never get lost in the tree.</p>
+                <span class="tag">Navigation guide →</span>
+            </a>
+            <a class="card" href="05_learnings_checklist.html">
+                <span class="step-no">5</span>
+                <h3>Learnings &amp; Self-Assessment</h3>
+                <p>What you can take to your own projects, the caveats to notice, and a level-by-level self-check.</p>
+                <span class="tag">Where do you stand? →</span>
+            </a>
+            <a class="card" href="06_scenarios.html">
+                <span class="step-no">★</span>
+                <h3>Practice Lab · 70 Scenarios</h3>
+                <p>Ten situations per concept across many domains. Decide where the logic belongs, then reveal the
+                    answer to cross-check your thinking.</p>
+                <span class="tag">Train your instinct →</span>
+            </a>
+            <a class="card" href="01_architecture.html#deps">
+                <span class="step-no">★</span>
+                <h3>The One Rule to Remember</h3>
+                <p>If you only remember one thing: <strong>dependencies point inward</strong>. Find out why it matters.
+                </p>
+                <span class="tag">The dependency rule →</span>
+            </a>
+        </div>
+
+        <div class="callout">
+            <div class="ct acc">Accuracy note</div>
+            <p>
+                All explanations and code excerpts are based on a cloned snapshot of the
+                <code>Personify-Service</code> repository. File paths and signatures may shift as the
+                project evolves — always trust the source over the guide.
+            </p>
+        </div>
+
+        <div class="pager">
+            <a class="next" href="01_architecture.html">
+                <span class="dir">Start →</span>
+                <span class="ttl">1 · The Architecture</span>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p><strong>Personify-Service · Code Reading Guide</strong> — part of your learning path.
+                Built to help you assess your understanding of real-world Domain-Driven Design.</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#e0e7ff',
+                primaryTextColor: '#312e81',
+                primaryBorderColor: '#4338ca',
+                lineColor: '#7c83b8',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

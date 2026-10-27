@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P3 · Queue Worker Pipeline</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>A</span>Asyncio Projects</a>
+            <nav class="top-links"><a href="../index.html">Hub</a><a
+                    href="../p2_concurrent_api_fetcher/README.html">Prev: P2</a><a
+                    href="../p4_resilient_orchestrator/README.html">Next: P4</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 3 · Intermediate</p>
+            <h1>Queue worker pipeline — producers, consumers, and backpressure</h1>
+            <p class="lead">Many async systems are not just "call 10 APIs." They are pipelines: one part creates jobs,
+                another part processes jobs, and the queue between them protects the system from overload.</p>
+        </section>
+        <section class="card">
+            <h2>The story</h2>
+            <p>An order service receives work faster than it can process. If every order immediately creates a task,
+                memory can explode. A queue gives you control: producers wait when the queue is full, workers pull jobs
+                at a sustainable pace, and the coordinator knows when all work is finished.</p>
+        </section>
+        <section class="card">
+            <h2>Files</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Async producer, worker pool, bounded queue, queue drain, and cancellation-based shutdown.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>requirements.txt</code></td>
+                        <td>No external dependencies.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="card">
+            <h2>Mental model</h2>
+            <div class="flow">
+                <div class="step">Producer creates jobs</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Bounded queue buffers jobs</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Workers process jobs</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Coordinator waits for drain</div>
+            </div>
+            <p>The queue is the handoff point. Its <code>maxsize</code> is backpressure: if workers fall behind,
+                producers must wait.</p>
+        </section>
+        <section class="card">
+            <h2>Core code</h2>
+            <pre><code>queue = asyncio.Queue(maxsize=4)
+workers = [asyncio.create_task(worker(f"worker-{i}", queue)) for i in range(3)]
+
+await producer(queue, total_jobs=10)
+await queue.join()
+
+for task in workers:
+    task.cancel()
+await asyncio.gather(*workers, return_exceptions=True)</code></pre>
+        </section>
+        <section class="card">
+            <h2>Important queue methods</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Meaning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>await queue.put(job)</code></td>
+                        <td>Add a job; wait if the queue is full.</td>
+                    </tr>
+                    <tr>
+                        <td><code>await queue.get()</code></td>
+                        <td>Take a job; wait if the queue is empty.</td>
+                    </tr>
+                    <tr>
+                        <td><code>queue.task_done()</code></td>
+                        <td>Tell the queue this job has finished processing.</td>
+                    </tr>
+                    <tr>
+                        <td><code>await queue.join()</code></td>
+                        <td>Wait until every queued job has been marked done.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="card">
+            <h2>How to run</h2>
+            <pre><code>cd 06_side_projects/asyncio_projects/p3_queue_worker_pipeline
+python main.py</code></pre>
+        </section>
+        <section class="card">
+            <h2>What to remember</h2>
+            <ul>
+                <li>Queues decouple producers from consumers.</li>
+                <li>A bounded queue prevents unlimited memory growth.</li>
+                <li><code>queue.join</code> waits for all jobs to finish.</li>
+                <li>Workers often run forever and are stopped by cancellation.</li>
+            </ul>
+            <div class="callout"><strong>Interview answer:</strong> I use <code>asyncio.Queue</code> when async tasks
+                need a safe handoff point. Producers put work into the queue, workers consume it, and a bounded queue
+                creates backpressure so the system cannot accept infinite work.</div>
+        </section>
+    </main>
+</body>
+
+</html>

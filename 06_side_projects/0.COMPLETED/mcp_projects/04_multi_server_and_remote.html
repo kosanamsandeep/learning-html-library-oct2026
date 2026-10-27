@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP 04 · Multiple &amp; Remote Servers</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="mcp">MCP</span>MCP · 04 Multi &amp; Remote</div>
+        <div class="links">
+            <a href="index.html">MCP Hub</a>
+            <a href="03_resources_and_prompts.html">← 03</a>
+            <a href="05_production_agent.html">Next: 05 →</a>
+        </div>
+    </div>
+
+    <div class="header mcp">
+        <p class="badge">Build 04 · Intermediate+</p>
+        <h1>Many servers, remote transport &amp; public tools</h1>
+        <p class="subtitle">Real agents combine several MCP servers — some you wrote, many you didn't. Connect
+            multiple servers at once, switch to <strong>streamable-HTTP</strong>, and pull in
+            <strong>ready-made public MCP servers</strong> (filesystem, GitHub, web search) instead of building
+            everything yourself.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section mcp">
+            <h2>One agent, many servers</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    A["LangGraph agent"] --> C["MultiServerMCPClient"]
+    C -->|stdio| M["math (yours)"]
+    C -->|stdio| F["filesystem (official)"]
+    C -->|http| G["GitHub MCP (remote)"]
+    C -->|http| W["web search (hosted)"]
+    M --> A
+    F --> A
+    G --> A
+    W --> A
+                </pre>
+                <p class="caption">The client merges tools from every server into one flat tool list the agent
+                    can pick from.</p>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>Switching your server to HTTP transport</h2>
+            <p>stdio is local-only. To share a server (or run it remotely), serve it over streamable HTTP — one
+                line changes.</p>
+            <pre><code><span class="c-com"># math_server.py — now reachable over the network</span>
+<span class="c-kw">if</span> __name__ == <span class="c-str">"__main__"</span>:
+    mcp.run(transport=<span class="c-str">"http"</span>, host=<span class="c-str">"127.0.0.1"</span>, port=<span class="c-cls">8000</span>)
+    <span class="c-com"># endpoint: http://127.0.0.1:8000/mcp</span></code></pre>
+        </div>
+
+        <div class="section mcp">
+            <h2>Connecting multiple servers (mixed transports)</h2>
+            <pre><code><span class="c-kw">from</span> langchain_mcp_adapters.client <span class="c-kw">import</span> MultiServerMCPClient
+<span class="c-kw">from</span> langgraph.prebuilt <span class="c-kw">import</span> create_react_agent
+
+client = MultiServerMCPClient({
+    <span class="c-com"># a local server you launch as a subprocess</span>
+    <span class="c-str">"math"</span>: {
+        <span class="c-str">"command"</span>: <span class="c-str">"python"</span>, <span class="c-str">"args"</span>: [<span class="c-str">"math_server.py"</span>],
+        <span class="c-str">"transport"</span>: <span class="c-str">"stdio"</span>,
+    },
+    <span class="c-com"># a remote/hosted server reached over HTTP</span>
+    <span class="c-str">"github"</span>: {
+        <span class="c-str">"url"</span>: <span class="c-str">"https://api.githubcopilot.com/mcp/"</span>,
+        <span class="c-str">"transport"</span>: <span class="c-str">"streamable_http"</span>,
+        <span class="c-str">"headers"</span>: {<span class="c-str">"Authorization"</span>: <span class="c-str">f"Bearer {GITHUB_TOKEN}"</span>},
+    },
+})
+
+tools = <span class="c-kw">await</span> client.get_tools()      <span class="c-com"># tools from BOTH servers, merged</span>
+agent = create_react_agent(<span class="c-str">"openai:gpt-4o"</span>, tools)
+
+<span class="c-kw">await</span> agent.ainvoke({<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>,
+    <span class="c-str">"content"</span>: <span class="c-str">"Add 2+2, then list my open GitHub issues."</span>}]})</code></pre>
+            <div class="callout sky">
+                <strong>Naming matters at scale.</strong> If two servers expose a tool with the same name, the
+                server key (<code>"math"</code>, <code>"github"</code>) keeps them distinct and makes traces
+                readable.
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>Using ready-made public MCP servers</h2>
+            <p>You rarely build everything. The ecosystem ships hundreds of servers. Common ones run via
+                <code>npx</code> (Node) or <code>uvx</code> (Python) with zero install:
+            </p>
+            <pre><code>client = MultiServerMCPClient({
+    <span class="c-com"># Official filesystem server (Node) — sandboxed to a directory</span>
+    <span class="c-str">"fs"</span>: {
+        <span class="c-str">"command"</span>: <span class="c-str">"npx"</span>,
+        <span class="c-str">"args"</span>: [<span class="c-str">"-y"</span>, <span class="c-str">"@modelcontextprotocol/server-filesystem"</span>, <span class="c-str">"/path/to/dir"</span>],
+        <span class="c-str">"transport"</span>: <span class="c-str">"stdio"</span>,
+    },
+    <span class="c-com"># A Python server run with uvx (no manual install)</span>
+    <span class="c-str">"fetch"</span>: {
+        <span class="c-str">"command"</span>: <span class="c-str">"uvx"</span>,
+        <span class="c-str">"args"</span>: [<span class="c-str">"mcp-server-fetch"</span>],
+        <span class="c-str">"transport"</span>: <span class="c-str">"stdio"</span>,
+    },
+})</code></pre>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Where to find servers</th>
+                        <th>What it is</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Official servers repo</strong></td>
+                        <td><code>modelcontextprotocol/servers</code> — reference + community servers (filesystem,
+                            fetch, git, memory, time…).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MCP Registry</strong></td>
+                        <td>The official registry/catalog of published servers.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Smithery</strong></td>
+                        <td>A popular marketplace to discover and one-click install MCP servers.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>FastMCP / vendor docs</strong></td>
+                        <td>Many SaaS products (GitHub, Stripe, Notion…) now ship official hosted MCP endpoints.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout amber">
+                <strong>Trust before you connect.</strong> A third-party MCP server can run code and read data.
+                Only connect to servers you trust, prefer official ones, scope filesystem servers to a single
+                directory, and review the tools it exposes in the Inspector first.
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>The flow with public + private servers</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+sequenceDiagram
+    participant A as Agent
+    participant C as Client
+    participant FS as filesystem (public)
+    participant M as math (yours)
+    A->>C: get_tools()
+    C->>FS: list_tools
+    C->>M: list_tools
+    C-->>A: [read_file, write_file, add, multiply]
+    A->>C: call read_file("report.txt")
+    C->>FS: read_file
+    FS-->>A: file contents
+    A->>C: call add(...)
+    C->>M: add
+    M-->>A: result
+                </pre>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Mix transports freely</strong> — stdio for local, streamable-HTTP for remote, in one
+                    client.</li>
+                <li><strong>Prefer official/registry servers</strong> and pin versions for reproducibility.</li>
+                <li><strong>Limit the blast radius:</strong> sandbox filesystem servers, use read-only tokens,
+                    and only enable the servers a given agent actually needs.</li>
+                <li><strong>Cap the tool count.</strong> Dozens of tools hurt accuracy — connect only relevant
+                    servers per agent.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="03_resources_and_prompts.html"><span class="dir">Previous</span>
+                <div class="ttl">← 03 · Resources &amp; prompts</div>
+            </a>
+            <a class="next" href="05_production_agent.html"><span class="dir">Next</span>
+                <div class="ttl">05 · Production agent →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>MCP × LangGraph Projects · 04 of 05</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

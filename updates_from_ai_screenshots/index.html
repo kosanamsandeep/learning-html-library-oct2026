@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Industry Radar — Verified Learnings from the Frontier</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --bg:#0b0e14; --surface:#11151d; --surface2:#161b26; --border:#232a38;
+    --text:#e6e8ee; --dim:#8a93a6; --mute:#5c6575;
+    --accent:#4fd1c5; --accent2:#7aa2f7; --amber:#e9b949; --rose:#e06c75;
+    --green:#98c379; --violet:#a78bfa;
+  }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
+  h1{ font-size:2.6rem; font-weight:800; letter-spacing:-0.03em; line-height:1.15; }
+  h1 em{ color:var(--accent); font-style:normal; }
+  h2{ font-size:1.6rem; font-weight:700; margin:2.5rem 0 1rem; color:var(--text); }
+  h3{ font-size:1.15rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; }
+  .lead{ font-size:1.15rem; color:var(--dim); max-width:60ch; }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  a{ color:var(--accent2); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+  .tag{ display:inline-block; font-size:0.65rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:0.25em 0.7em; border-radius:100px; margin-right:0.4em; vertical-align:middle; }
+  .tag-v{ background:rgba(152,219,121,0.12); color:var(--green); border:1px solid rgba(152,219,121,0.25); }
+  .tag-h{ background:rgba(167,139,250,0.12); color:var(--violet); border:1px solid rgba(167,139,250,0.25); }
+  .tag-a{ background:rgba(233,185,73,0.12); color:var(--amber); border:1px solid rgba(233,185,73,0.25); }
+  .tag-s{ background:rgba(224,108,117,0.12); color:var(--rose); border:1px solid rgba(224,108,117,0.25); }
+  .hero{ padding:4rem 0 2rem; border-bottom:1px solid var(--border); margin-bottom:2.5rem; }
+  .hero .kicker{ color:var(--accent); font-size:0.8rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:0.8rem; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:1.2rem; }
+  @media(max-width:760px){ .grid2,.grid3{ grid-template-columns:1fr; } }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; }
+  .card h3{ margin-top:0; }
+  .card p{ font-size:0.92rem; }
+  .module{ display:flex; gap:1.2rem; align-items:flex-start; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.6rem; margin:1.1rem 0; transition:border-color .2s, transform .2s; }
+  .module:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  .module .num{ font-family:'JetBrains Mono',monospace; font-size:1.6rem; font-weight:600; color:var(--accent); min-width:3rem; text-align:center; padding-top:0.2rem; }
+  .module h3{ margin:0 0 0.4rem; font-size:1.2rem; }
+  .module p{ margin:0 0 0.6rem; font-size:0.95rem; }
+  .module .learn{ font-size:0.8rem; color:var(--mute); }
+  .module a{ color:var(--text); }
+  .module a:hover{ color:var(--accent); text-decoration:none; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(79,209,197,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(233,185,73,0.06); }
+  .callout.danger{ border-left-color:var(--rose); background:rgba(224,108,117,0.06); }
+  .footer{ margin-top:4rem; padding-top:2rem; border-top:1px solid var(--border); color:var(--mute); font-size:0.85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">AI Industry Radar · Compiled Aug 2026</div>
+    <h1>The AI <em>Frontier</em>, Filtered.</h1>
+    <p class="lead">4 batches of ~75 screenshots from X / LinkedIn, read through a lens that separates <em>verified signal</em> from <em>engagement bait</em>. What you should actually learn — organised into 6 modules, each downloadable and navigatable.</p>
+  </div>
+
+  <div class="callout">
+    <strong>⚠️ Trust filter.</strong> Across all batches, one pattern held consistently: content from <strong>named, independently verifiable practitioners</strong> (Boris Cherny, Harrison Chase, Peter Steinberger, Sundar Pichai, Vercel, Arpit Bhayani, Addy Osmani) checked out every time. Content from anonymous accounts or oddly-named community uploads is where errors and embellishments concentrate. Every module below marks each topic as <span class="tag tag-v">Verified</span>, <span class="tag tag-h">High value</span>, <span class="tag tag-a">Verify first</span>, or <span class="tag tag-s">Skip</span>.
+  </div>
+
+  <h2>The Mental Model</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph LR
+    subgraph MODELS["🧠 Models"]
+        M1["Fine-tuning<br/>LoRA · DPO · GRPO"]
+        M2["Inference<br/>FlashAttention · vLLM"]
+        M3["Model routing<br/>cost arbitrage"]
+    end
+    subgraph AGENTS["🤖 Agents"]
+        A1["Frameworks → Harnesses"]
+        A2["The 4 loop types"]
+        A3["Nested subagents"]
+        A4["Multi-agent research"]
+    end
+    subgraph PROD["🏭 Production"]
+        P1["MCP ≠ control layer"]
+        P2["Enterprise runtime<br/>permissions · audit · cost"]
+        P3["Eval loops<br/>JUDGE / LEARN"]
+    end
+    subgraph RETRIEVAL["📚 Retrieval"]
+        R1["Advanced RAG<br/>THINK → ANSWER"]
+        R2["GraphRAG / Neo4j"]
+        R3["AST knowledge graphs<br/>codebase-memory-mcp"]
+        R4["Context engineering<br/>token savings"]
+    end
+    M1 --> A1
+    M2 --> P1
+    M3 --> P3
+    A1 --> A2 --> A3 --> A4
+    A4 --> P2
+    R1 --> P3
+    R3 --> R4
+    P2 --> P1
+  </div>
+  </div>
+
+  <h2>Learning Path — 6 Modules</h2>
+
+  <a href="01-agent-evolution.html"><div class="module">
+    <div class="num">01</div>
+    <div>
+      <h3>Agent Evolution: Frameworks → Harnesses</h3>
+      <p>The single most important shift in the agent-tooling world (per LangChain's own founder). The 5 workflow patterns, the 4 loop types, nested subagents, and the orchestrator-worker multi-agent architecture Anthropic actually ships.</p>
+      <div class="learn">Learn: when to use a workflow vs an agent · loop taxonomy · context-managed delegation</div>
+    </div>
+  </div></a>
+
+  <a href="02-production-runtime.html"><div class="module">
+    <div class="num">02</div>
+    <div>
+      <h3>Production Runtime: Why MCP Isn't Enough</h3>
+      <p>MCP connects agents to tools — it does <em>not</em> give you identity, policy, observability, or control. The 12-item production control layer, the "agents behave like infrastructure" framework, and the AI Factory Stack analogy.</p>
+      <div class="learn">Learn: the control-plane checklist every production agent needs · tool-level auth · audit trails · cost controls</div>
+    </div>
+  </div></a>
+
+  <a href="03-rag-verification.html"><div class="module">
+    <div class="num">03</div>
+    <div>
+      <h3>Advanced RAG + Verification Loops</h3>
+      <p>The THINK / KNOW / ANSWER / JUDGE / LEARN architecture — an evaluator loop over RAG that retries or returns. Plus GraphRAG, codebase-memory-mcp (AST knowledge graphs, verified via arXiv), and the context-engineering tools that slash token spend.</p>
+      <div class="learn">Learn: evaluator-optimiser loops · graph databases · AST code indexing · token-efficient context</div>
+    </div>
+  </div></a>
+
+  <a href="04-inference-serving.html"><div class="module">
+    <div class="num">04</div>
+    <div>
+      <h3>Inference &amp; Serving at Scale</h3>
+      <p>16 techniques for sub-second LLM responses (FlashAttention, PagedAttention, speculative decoding…). OpenAI's real Postgres architecture behind 800M users. Model routing economics from Vercel. VRAM tiering for local models.</p>
+      <div class="learn">Learn: vLLM internals · KV-cache tricks · one-primary-N-replica Postgres · routing for cost/quality</div>
+    </div>
+  </div></a>
+
+  <a href="05-finetuning-alignment.html"><div class="module">
+    <div class="num">05</div>
+    <div>
+      <h3>Fine-Tuning &amp; Alignment Landscape</h3>
+      <p>The full technique map — LoRA, QLoRA, prefix/P-tuning, adapters, BitFit, RLHF, RLAIF, DPO, GRPO (what DeepSeek uses), multi-task &amp; federated tuning. Plus the model-substitution cost-arbitrage table.</p>
+      <div class="learn">Learn: PEFT vs full FT · preference optimisation (DPO/GRPO) · when a cheaper open model beats the frontier</div>
+    </div>
+  </div></a>
+
+  <a href="06-tools-directory.html"><div class="module">
+    <div class="num">06</div>
+    <div>
+      <h3>Verified Tools &amp; MCP Directory</h3>
+      <p>A single, honest directory of the tools worth your time — MCP servers that genuinely exist, token-saving utilities, local model guides, and the reading list for graph theory / network science. With explicit "skip" entries for engagement bait.</p>
+      <div class="learn">Learn: what to install vs skip · the 20-minute MCP upgrades · a real reading list</div>
+    </div>
+  </div></a>
+
+  <h2>Quick Reference — What Was Actually Verified</h2>
+  <table>
+    <thead><tr><th>Claim</th><th>Source</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><code>/checkup</code> Claude Code command cleans up context bloat</td><td>Boris Cherny (bcherny)</td><td><span class="tag tag-v">Verified</span></td></tr>
+      <tr><td>Nested subagent support (depth capped at 5, soft)</td><td>Boris Cherny, Claude Code v2.1.172</td><td><span class="tag tag-v">Verified</span></td></tr>
+      <tr><td>Agent industry shifted frameworks → harnesses</td><td>Harrison Chase (LangChain founder)</td><td><span class="tag tag-v">Verified</span></td></tr>
+      <tr><td>OpenAI scales 800M users on 1 Postgres primary + ~50 replicas</td><td>OpenAI engineering blog</td><td><span class="tag tag-v">Verified</span></td></tr>
+      <tr><td>codebase-memory-mcp: AST graphs, 10× fewer tokens (not "99%")</td><td>arXiv:2603.27277</td><td><span class="tag tag-v">Verified</span></td></tr>
+      <tr><td>Anthropic multi-agent research = orchestrator-workers pattern</td><td>Anthropic blog</td><td><span class="tag tag-v">Verified</span></td></tr>
+      <tr><td>THINK/KNOW/ANSWER/JUDGE/LEARN eval loop</td><td>Practitioner architecture</td><td><span class="tag tag-h">High value</span></td></tr>
+      <tr><td>Fine-tuning technique list (LoRA…GRPO)</td><td>Akshay Pachaar</td><td><span class="tag tag-h">High value</span></td></tr>
+      <tr><td>MCP "not enough" 12-item control checklist</td><td>Brij Kishore Pandey</td><td><span class="tag tag-h">High value</span></td></tr>
+      <tr><td>"Gemma 4 12B coder-fable5" community build</td><td>yuxinlu1 (individual uploader)</td><td><span class="tag tag-s">Don't trust</span></td></tr>
+      <tr><td>"Anthropic engineer says 70% self-improving loops"</td><td>@0xMovez (unnamed)</td><td><span class="tag tag-s">Skip</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <p>Built from <code>pickonly_high_value1–5.txt</code> (5 = duplicate of 4). Compiled 2026-08-03 · Part of the AI engineering learning track.</p>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#11151d',primaryColor:'#161b26',primaryBorderColor:'#4fd1c5',primaryTextColor:'#e6e8ee',lineColor:'#4fd1c5',secondaryColor:'#0b0e14'}});</script>
+</body>
+</html>

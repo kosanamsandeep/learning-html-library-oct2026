@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 — The Verification Funnel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38; --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575; --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f; --green:#a3e077; --violet:#c09bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← Agentic Engineering Playbook</a> · Module 04</div>
+  <h1>The Verification <em style="color:var(--violet);font-style:normal;">Funnel</em></h1>
+  <p>The recurring 2026 thesis: <strong>the skill isn't who writes better — it's who can prove it's right.</strong> Verification is where the reliable teams win. Two pieces: the <strong>Verification Horizon</strong> (why every verifier is a compromise) and a <strong>cost-ordered funnel</strong> (how to actually right-size it).</p>
+
+  <h2>The Verification Horizon — every verifier is a proxy</h2>
+  <div class="callout"><strong>The problem:</strong> any automatic verifier is a proxy for human intent, and it must balance three requirements that are hard to combine:
+    <ul style="margin-top:0.5rem;">
+      <li><strong>Faithfulness</strong> — how close the verification is to real user intent (a database invariant beats "API returns 200").</li>
+      <li><strong>Robustness</strong> — can the agent work around it? Fixed samples can be hard-coded; randomized property tests in isolated permission domains are much harder to game.</li>
+      <li><strong>Scalability</strong> — cost and speed to run at high frequency.</li>
+    </ul>
+  </div>
+  <table>
+    <thead><tr><th>Verifier</th><th>Faithful</th><th>Robust</th><th>Scalable</th></tr></thead>
+    <tbody>
+      <tr><td>Compile / lint / types</td><td>Low</td><td>High</td><td>Very high</td></tr>
+      <tr><td>Unit tests</td><td>Medium</td><td>Medium</td><td>High</td></tr>
+      <tr><td>Property / fuzz tests</td><td>Medium</td><td>High (randomized)</td><td>Medium</td></tr>
+      <tr><td>Human review</td><td>High</td><td>High</td><td>Low</td></tr>
+      <tr><td>Model-as-judge</td><td>Medium</td><td>Low (inherits blind spots, self-preferential)</td><td>Medium</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.9rem;">No single verifier covers all correctness dimensions. That's why the funnel — not the single magic check — is the methodology.</p>
+
+  <h2>The cost-ordered funnel</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph LR
+    A["compile / parse<br/>cheapest"] --> B["lint + types"]
+    B --> C["unit tests"]
+    C --> D["property / fuzz"]
+    D --> E["integration / E2E"]
+    E --> F["security audit / human<br/>most expensive"]
+  </div>
+  </div>
+  <div class="card">
+    <ol>
+      <li><strong>Run the cheapest checks first</strong> — compile, lint, types — to eliminate obvious errors at near-zero cost.</li>
+      <li><strong>Promote candidates up the funnel</strong> — only code that passes an earlier gate spends on the next, more expensive check.</li>
+      <li><strong>Reserve expensive verification</strong> (E2E, security audits, deep review) for the few candidates that make it.</li>
+      <li><strong>Failures return structured evidence, not a vague score</strong> — the agent needs "invariant X violated in file Y under input Z" to actually fix it.</li>
+    </ol>
+  </div>
+  <div class="callout"><strong>Why this pairs with dynamic workflows:</strong> the funnel is the <em>cheap</em> side of correctness; adversarial verification and tournament agents are the <em>expensive</em> side. Right projects use the funnel by default and spend on verification only where stakes justify — see <a href="01-dynamic-workflows.html">Module 01</a>.</div>
+
+  <h2>Agentic TDD — a working 8-pass template</h2>
+  <div class="card">
+    <p>A concrete state machine from the 2026 ecosystem that operationalizes the funnel inside a coding agent:</p>
+    <table>
+      <thead><tr><th>Pass</th><th>Stage</th><th>Gate</th></tr></thead>
+      <tbody>
+        <tr><td><strong>0</strong></td><td>Design &amp; context</td><td>Human-approved artifacts</td></tr>
+        <tr><td><strong>1</strong></td><td>Contracts &amp; types</td><td>Types compile</td></tr>
+        <tr><td><strong>2</strong></td><td>Test generation (Red)</td><td>Tests fail for the right reason</td></tr>
+        <tr><td><strong>3</strong></td><td>Core logic (Green)</td><td>Tests pass</td></tr>
+        <tr><td><strong>4</strong></td><td>Refactor</td><td>Tests still pass</td></tr>
+        <tr><td><strong>5</strong></td><td>Observability &amp; logs</td><td>Instrumentation present</td></tr>
+        <tr><td><strong>6</strong></td><td>Security hardening</td><td>Scan + red-line checks</td></tr>
+        <tr><td><strong>7</strong></td><td>Documentation / spec sync</td><td>Spec and code agree</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li>Each pass runs the local test suite and <strong>self-corrects up to 3 retries</strong> before failing.</li>
+      <li>Each pass <strong>commits atomically</strong>, so any breakage reverts exactly one step.</li>
+    </ul>
+  </div>
+
+  <h2>Model-as-judge, done defensively</h2>
+  <div class="card">
+    <ul>
+      <li>Never let the producing agent grade its own output (that's the <em>self-preferential bias</em> from <a href="01-dynamic-workflows.html">Module 01</a>). Separate producer from verifier.</li>
+      <li>Use adversarial verifiers — prompted to refute, defaulting to "not proven" — rather than "rate this 1–10." Comparative judgment (tournaments) beats absolute scoring.</li>
+      <li>Give the judge structured rubrics and structured output (evidence, not vibes).</li>
+      <li>Remember the horizon: model-as-judge inherits blind spots. Pair it with at least one non-model check at the cheap end of the funnel.</li>
+    </ul>
+  </div>
+
+  <div class="callout warn"><strong>⚠️ The trap:</strong> a funnel is only as good as its weakest proxy. If your "verify" is "did the tests pass" and the tests encode nothing about the requirement, you've automated confidence in the wrong thing. Faithfulness first — what would the user actually notice breaking?</div>
+
+  <div class="card">
+    <h3>Sources</h3>
+    <p style="font-size:0.85rem;color:var(--mute);">
+      · <a href="https://cloud.tencent.cn/developer/article/2725984">Tencent Cloud · AI Coding's real question: not who writes better, but who can prove it's written right</a> (Verification Horizon)<br>
+      · <a href="https://www.npmjs.com/package/agentic-tdd">agentic-tdd · the 8-pass state machine</a><br>
+      · <a href="https://sourcegraph.com/blog/agentic-coding">Sourcegraph · verification &amp; CI gates in big code</a><br>
+      · <a href="https://claude.com/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code">Anthropic · adversarial verification in dynamic workflows</a>
+    </p>
+  </div>
+
+  <a class="prev" href="03-context-infrastructure.html">← Back: Context Infrastructure</a>
+  <a class="next" href="05-codex-playbook.html">Next: The Codex &amp; Cross-Tool Playbook →</a>
+
+</div>
+</body>
+</html>

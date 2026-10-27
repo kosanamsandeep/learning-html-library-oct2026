@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>main.py — Step-by-Step Walkthrough</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { background: '#ffffff', primaryColor: '#3b82f6', primaryTextColor: '#1e293b', secondaryColor: '#f1f5f9', secondaryTextColor: '#334155', tertiaryColor: '#dbeafe', lineColor: '#94a3b8', fontSize: '14px' } })</script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.4rem;
+            background: linear-gradient(135deg, #1e293b, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 2.5rem;
+            font-size: 1.05rem;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            margin-bottom: 1.75rem;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+        .card-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        .step-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 0.85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            color: #fff;
+        }
+        .step-num.s1 { background: #3b82f6; }
+        .step-num.s2 { background: #10b981; }
+        .step-num.s3 { background: #8b5cf6; }
+        .step-num.s4 { background: #f59e0b; }
+
+        .card-body { padding: 1.5rem; }
+        .card-body p { color: #334155; margin-bottom: 0.85rem; }
+        .card-body p:last-child { margin-bottom: 0; }
+
+        .code-block {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.7;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+        }
+        .code-block .comment { color: #94a3b8; }
+        .code-block .key { color: #7dd3fc; }
+        .code-block .string { color: #a5f3fc; }
+        .code-block .kw { color: #c084fc; }
+        .code-block .fn { color: #67e8f9; }
+        .code-block .num { color: #fbbf24; }
+
+        .mermaid-wrap {
+            background: #fafbfc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        .insight-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-left: 4px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin: 1rem 0;
+        }
+        .insight-box h4 { font-size: 0.9rem; color: #0369a1; margin-bottom: 0.3rem; }
+        .insight-box p { font-size: 0.88rem; margin-bottom: 0; color: #075985; }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 0.75rem 0;
+        }
+        .mini-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #fafbfc;
+        }
+        .mini-card h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+        .mini-card p { font-size: 0.85rem; margin-bottom: 0; color: #475569; }
+        .mini-card .label {
+            font-size: 0.72rem;
+            color: #64748b;
+            display: block;
+            margin-bottom: 0.15rem;
+        }
+
+        .file-ref {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            background: #f1f5f9;
+            padding: 0.25rem 0.6rem;
+            border-radius: 5px;
+            display: inline-block;
+            color: #475569;
+        }
+
+        .exec-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 0.75rem 0; }
+        .exec-table th { background: #f1f5f9; text-align: left; padding: 0.5rem 0.75rem; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+        .exec-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #e2e8f0; }
+        .exec-table tr:last-child td { border-bottom: none; }
+
+        .tag {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.65rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .tag.blue { background: #dbeafe; color: #1d4ed8; }
+        .tag.green { background: #d1fae5; color: #047857; }
+        .tag.purple { background: #ede9fe; color: #6d28d9; }
+        .tag.amber { background: #fef3c7; color: #b45309; }
+
+        .line-num {
+            display: inline-block;
+            width: 36px;
+            color: #475569;
+            font-size: 0.7rem;
+            text-align: right;
+            margin-right: 0.75rem;
+            user-select: none;
+        }
+        .line-highlight {
+            background: #1e293b;
+            display: block;
+            margin: 0 -1.25rem;
+            padding: 0 1.25rem;
+            border-left: 3px solid #fbbf24;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>📄 What Does <code>main.py</code> Do?</h1>
+<p class="subtitle">A step-by-step walkthrough of the 4 phases in the MCP + LangGraph demo</p>
+
+<!-- ─── BIG PICTURE ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="step-num s1" style="background:#6366f1;">◉</span>
+        <h2>The Big Picture — All 4 Steps at Once</h2>
+    </div>
+    <div class="card-body">
+        <p>Here's the entire flow of <code>main.py</code> in one diagram. Each numbered step is explained in detail below.</p>
+
+        <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TB
+    subgraph Main["main.py"]
+        direction TB
+        S1["<b>①</b> Start MCP Server<br/><span style='font-size:0.8rem'><code>MCPClient(spawns subprocess)</code></span>"]
+        S2["<b>②</b> Discover Tools<br/><span style='font-size:0.8rem'><code>mcp.list_tools()</code> → 5 tools</span>"]
+        S3["<b>③</b> Build LangGraph<br/><span style='font-size:0.8rem'><code>create_review_graph(mcp)</code></span>"]
+        S4["<b>④</b> Run Workflow<br/><span style='font-size:0.8rem'><code>graph.ainvoke({file_path})</code></span>"]
+        S5["<b>⑤</b> Print Report<br/><span style='font-size:0.8rem'>Formatted markdown</span>"]
+    end
+
+    subgraph Server["MCP Server Process (subprocess)"]
+        ServerTools["read_source_file<br/>analyze_syntax<br/>check_dependencies<br/>check_code_style<br/>format_report"]
+    end
+
+    subgraph LangGraph["LangGraph Execution"]
+        direction TB
+        RF["read_file"]
+        AS["analyze_syntax"]
+        CD["check_deps"]
+        CS["check_style"]
+        GR["gather_results"]
+        RP["generate_report"]
+    end
+
+    S1 -.->|spawns| Server
+    S2 -.->|discovers| ServerTools
+    S3 -.->|creates| LangGraph
+    S4 -->|triggers| RF
+    RF --> AS & CD & CS
+    AS & CD & CS --> GR
+    GR --> RP
+    RP --> S5
+
+    style Main fill:#f0f5ff,stroke:#3b82f6,stroke-width:2px,color:#1e293b
+    style Server fill:#f0fdf4,stroke:#10b981,stroke-width:2px
+    style LangGraph fill:#f5f3ff,stroke:#8b5cf6,stroke-width:2px
+</pre>
+        </div>
+    </div>
+</div>
+
+<!-- ─── STEP 1 ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="step-num s1">1</span>
+        <h2>Start the MCP Server</h2>
+        <span class="tag blue">LINES 54-59</span>
+    </div>
+    <div class="card-body">
+        <p><strong>What the code looks like:</strong></p>
+        <div class="code-block">
+<span class="line-num">58</span><span class="line-highlight"><span class="kw">async with</span> MCPClient(<span class="string">"server/mcp_server.py"</span>) <span class="kw">as</span> mcp:</span>
+<span class="line-num">59</span>    <span class="fn">print</span>(<span class="string">"✅ Connected and session initialized"</span>)</div>
+
+        <p><strong>What happens under the hood:</strong></p>
+        <div class="mermaid-wrap">
+<pre class="mermaid">
+sequenceDiagram
+    participant Main as main.py
+    participant MCP as MCPClient
+    participant OS as Operating System
+    participant Server as MCP Server
+
+    Main->>MCP: MCPClient("server/mcp_server.py")
+    MCP->>OS: spawn subprocess: python server/mcp_server.py
+    OS-->>Server: process started, stdio pipes connected
+    MCP->>Server: initialize() handshake
+    Server-->>MCP: server_info {name: "code-review-tools", version: ...}
+    MCP-->>Main: ✅ Connected!
+</pre>
+        </div>
+
+        <div class="insight-box">
+            <h4>🧠 Key insight</h4>
+            <p>An MCP server is just a <strong>Python script that reads from stdin and writes to stdout</strong> using JSON-RPC messages. The <code>MCPClient</code> class spawns it as a subprocess — two processes talking to each other through stdio pipes.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ─── STEP 2 ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="step-num s2">2</span>
+        <h2>Discover MCP Tools</h2>
+        <span class="tag green">LINES 72-77</span>
+    </div>
+    <div class="card-body">
+        <p><strong>What the code looks like:</strong></p>
+        <div class="code-block">
+<span class="line-num">72</span>tools = <span class="kw">await</span> mcp.<span class="fn">list_tools</span>()
+<span class="line-num">73</span><span class="fn">print</span>(<span class="string">f"Found {len(tools)} tools:"</span>)
+<span class="line-num">74</span><span class="kw">for</span> t <span class="kw">in</span> tools:
+<span class="line-num">75</span>    <span class="fn">print</span>(<span class="string">f"  • {t.name}"</span>)
+<span class="line-num">76</span>    <span class="fn">print</span>(<span class="string">f"    {t.description.split('.')[0]}."</span>)</div>
+
+        <p><strong>This sends a <code>list_tools</code> JSON-RPC request to the MCP server.</strong> The server responds with 5 tool definitions, each containing:</p>
+
+        <div class="two-col">
+            <div class="mini-card">
+                <span class="label">Tool 1</span>
+                <h4>read_source_file</h4>
+                <p>Read a Python source file from disk. Takes: <code>path</code></p>
+            </div>
+            <div class="mini-card">
+                <span class="label">Tool 2</span>
+                <h4>analyze_syntax</h4>
+                <p>Parse Python code with AST. Takes: <code>code</code></p>
+            </div>
+            <div class="mini-card">
+                <span class="label">Tool 3</span>
+                <h4>check_dependencies</h4>
+                <p>Scan imports, flag risky packages. Takes: <code>code</code></p>
+            </div>
+            <div class="mini-card">
+                <span class="label">Tool 4</span>
+                <h4>check_code_style</h4>
+                <p>Check line length, naming, whitespace. Takes: <code>code</code></p>
+            </div>
+            <div class="mini-card" style="grid-column: 1 / -1;">
+                <span class="label">Tool 5</span>
+                <h4>format_report</h4>
+                <p>Format findings into markdown report. Takes: <code>defects, warnings, ok_checks, file_name</code></p>
+            </div>
+        </div>
+
+        <div class="insight-box">
+            <h4>🧠 Key insight</h4>
+            <p>The agent never <code>import</code>s anything from the server. It just receives tool schemas dynamically. <strong>No hardcoded tool list.</strong> If you add a 6th tool to the server, it auto-appears here.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ─── STEP 3 ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="step-num s3">3</span>
+        <h2>Build the LangGraph Workflow</h2>
+        <span class="tag purple">LINE 88</span>
+    </div>
+    <div class="card-body">
+        <p><strong>What the code looks like:</strong></p>
+        <div class="code-block">
+<span class="line-num">88</span>graph = <span class="fn">create_review_graph</span>(mcp)</div>
+
+        <p>This calls into <span class="file-ref">agent/graph.py</span> to build a <code>StateGraph</code> — a directed graph where each node calls an MCP tool.</p>
+
+        <p><strong>The graph has 6 nodes connected like this:</strong></p>
+
+        <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    START -->|edge| RF[read_file]
+    RF -->|conditional edge<br/>Send() fan-out| AS[analyze_syntax]
+    RF -->|Send() fan-out| CD[check_deps]
+    RF -->|Send() fan-out| CS[check_style]
+    AS & CD & CS -->|fan-in join| GR[gather_results]
+    GR --> RP[generate_report]
+    RP --> END
+
+    style START fill:#dbeafe,stroke:#3b82f6
+    style END fill:#dbeafe,stroke:#3b82f6
+    style RF fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e
+    style AS fill:#fef3c7,stroke:#d97706,color:#78350f
+    style CD fill:#fef3c7,stroke:#d97706,color:#78350f
+    style CS fill:#fef3c7,stroke:#d97706,color:#78350f
+    style GR fill:#d1fae5,stroke:#059669,color:#064e3b
+    style RP fill:#d1fae5,stroke:#059669,color:#064e3b
+</pre>
+        </div>
+
+        <p><strong>How each node is wired:</strong></p>
+
+        <table class="exec-table">
+            <tr><th>Node</th><th>Calls MCP Tool</th><th>Arguments</th><th>Returns</th></tr>
+            <tr>
+                <td><code>read_file</code></td>
+                <td><code>read_source_file</code></td>
+                <td><code>{"path": file_path}</code></td>
+                <td>Raw file content</td>
+            </tr>
+            <tr>
+                <td><code>analyze_syntax</code></td>
+                <td><code>analyze_syntax</code></td>
+                <td><code>{"code": content}</code></td>
+                <td>JSON with functions, classes, warnings</td>
+            </tr>
+            <tr>
+                <td><code>check_deps</code></td>
+                <td><code>check_dependencies</code></td>
+                <td><code>{"code": content}</code></td>
+                <td>JSON with imports, risky findings</td>
+            </tr>
+            <tr>
+                <td><code>check_style</code></td>
+                <td><code>check_code_style</code></td>
+                <td><code>{"code": content}</code></td>
+                <td>JSON with style issues</td>
+            </tr>
+            <tr>
+                <td><code>gather_results</code></td>
+                <td><em>(no MCP call)</em></td>
+                <td>Reads state from all 3 branches</td>
+                <td>Categorized defects/warnings/ok</td>
+            </tr>
+            <tr>
+                <td><code>generate_report</code></td>
+                <td><code>format_report</code></td>
+                <td><code>{"defects": [...], "warnings": [...], ...}</code></td>
+                <td>Markdown report string</td>
+            </tr>
+        </table>
+
+        <div class="insight-box">
+            <h4>🧠 Key insight — The <code>mcp</code> object is passed through</h4>
+            <p>Every node function receives the <code>mcp</code> client because it's captured in the closure. The nodes do <code>await mcp.call_tool(tool_name, args)</code> — they don't know how the tool works, they just pass arguments and get results.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ─── STEP 4 ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="step-num s4">4</span>
+        <h2>Run the Workflow</h2>
+        <span class="tag amber">LINES 100-115</span>
+    </div>
+    <div class="card-body">
+        <p><strong>What the code looks like:</strong></p>
+        <div class="code-block">
+<span class="line-num">102</span>result = <span class="kw">await</span> graph.<span class="fn">ainvoke</span>({
+<span class="line-num">103</span>    <span class="string">"file_path"</span>: file_path
+<span class="line-num">104</span>})
+</div>
+
+        <p>This single call kicks off the entire LangGraph execution. Here's the full execution sequence:</p>
+
+        <div class="mermaid-wrap">
+<pre class="mermaid">
+sequenceDiagram
+    participant Main as main.py
+    participant LG as LangGraph
+    participant MCP as MCP Client
+    participant Server as MCP Server
+
+    Main->>LG: ainvoke({"file_path": "sample_code/vulnerable_code.py"})
+
+    Note over LG: Node: read_file
+    LG->>MCP: call_tool("read_source_file", {"path": "..."})
+    MCP->>Server: JSON-RPC: tools/call
+    Server-->>MCP: file content (2539 chars)
+    MCP-->>LG: result text
+    Note over LG: 3 parallel Send() branches
+
+    par Parallel Branch 1
+        Note over LG: Node: analyze_syntax
+        LG->>MCP: call_tool("analyze_syntax", {"code": content})
+        MCP->>Server: JSON-RPC
+        Server-->>MCP: {"valid_syntax": true, "functions": [...], "warnings": [...]}
+        MCP-->>LG: result
+    and Parallel Branch 2
+        Note over LG: Node: check_deps
+        LG->>MCP: call_tool("check_dependencies", {"code": content})
+        MCP->>Server: JSON-RPC
+        Server-->>MCP: {"imports": [...], "risky_findings": ["pickle..."]}
+        MCP-->>LG: result
+    and Parallel Branch 3
+        Note over LG: Node: check_style
+        LG->>MCP: call_tool("check_code_style", {"code": content})
+        MCP->>Server: JSON-RPC
+        Server-->>MCP: {"issues": [...], "issue_count": 5}
+        MCP-->>LG: result
+    end
+
+    Note over LG: All 3 branches complete → gather_results
+    Note over LG: Node: gather_results (fan-in join)
+    Note over LG: Node: generate_report
+    LG->>MCP: call_tool("format_report", {defects, warnings, ok_checks, file_name})
+    MCP->>Server: JSON-RPC
+    Server-->>MCP: markdown report
+    MCP-->>LG: report string
+    LG-->>Main: result = {"report": "# 📋 Code Review Report: ..."}
+
+    Main->>Main: print(result["report"])
+</pre>
+        </div>
+
+        <p><strong>The parallel fan-out is powered by LangGraph's <code>Send()</code>:</strong></p>
+        <div class="code-block">
+<span class="comment"># In graph.py — route_to_analyzers():</span>
+<span class="kw">return</span> [
+    <span class="type">Send</span>(<span class="string">"analyze_syntax"</span>, state),   <span class="comment"># runs in parallel</span>
+    <span class="type">Send</span>(<span class="string">"check_deps"</span>, state),       <span class="comment"># runs in parallel</span>
+    <span class="type">Send</span>(<span class="string">"check_style"</span>, state),      <span class="comment"># runs in parallel</span>
+]</div>
+
+        <p>LangGraph spawns all three branches concurrently. The <code>gather_results</code> node won't run until <strong>all three</strong> complete — that's the fan-in / join point.</p>
+    </div>
+</div>
+
+<!-- ─── CLEANUP ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="step-num s1" style="background:#64748b;">✓</span>
+        <h2>Cleanup</h2>
+        <span class="tag" style="background:#e2e8f0;color:#475569;">LINE 147</span>
+    </div>
+    <div class="card-body">
+        <p>When the <code>async with MCPClient(...)</code> block exits, Python calls <code>__aexit__</code> which:</p>
+        <ol style="padding-left:1.25rem;margin:0.5rem 0;">
+            <li>Closes the MCP <code>ClientSession</code></li>
+            <li>Closes the stdio pipes → terminates the server subprocess</li>
+        </ol>
+        <p>No dangling processes, no manual cleanup needed.</p>
+    </div>
+</div>
+
+<!-- ─── FULL CODE ANNOTATED ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="step-num s1" style="background:#6366f1;">◉</span>
+        <h2>Annotated <code>main.py</code> — Side-by-Side</h2>
+    </div>
+    <div class="card-body">
+        <div class="two-col">
+            <div>
+                <h4 style="font-size:0.9rem;margin-bottom:0.5rem;">The Code</h4>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;line-height:1.6;background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:8px;overflow-x:auto;">
+<span class="comment"># ── Pick the file ──</span>
+file_path = sys.argv[1] <span class="kw">if</span> len(sys.argv) > 1 <span class="kw">else</span> <span class="string">"sample_code/vulnerable_code.py"</span>
+
+<span class="comment"># ── STEP 1: Start MCP server ──</span>
+<span class="kw">async with</span> MCPClient(<span class="string">"server/mcp_server.py"</span>) <span class="kw">as</span> mcp:
+
+    <span class="comment"># ── STEP 2: Discover tools ──</span>
+    tools = <span class="kw">await</span> mcp.<span class="fn">list_tools</span>()
+
+    <span class="comment"># ── STEP 3: Build LangGraph ──</span>
+    graph = <span class="fn">create_review_graph</span>(mcp)
+
+    <span class="comment"># ── STEP 4: Run workflow ──</span>
+    result = <span class="kw">await</span> graph.<span class="fn">ainvoke</span>({
+        <span class="string">"file_path"</span>: file_path
+    })
+
+    <span class="comment"># ── Print report ──</span>
+    <span class="fn">print</span>(result.<span class="fn">get</span>(<span class="string">"report"</span>))
+
+<span class="comment"># ── Cleanup: MCP server terminated ──</span></div>
+            </div>
+            <div>
+                <h4 style="font-size:0.9rem;margin-bottom:0.5rem;">What's Happening</h4>
+                <div style="font-size:0.85rem;color:#334155;">
+                    <div style="margin-bottom:0.75rem;">
+                        <strong style="color:#3b82f6;">📂 File selection</strong><br>
+                        Takes a command-line argument or defaults to the sample file.
+                    </div>
+                    <div style="margin-bottom:0.75rem;">
+                        <strong style="color:#3b82f6;">🔌 Spawn server</strong><br>
+                        <code>MCPClient</code> starts <code>server/mcp_server.py</code> as a subprocess and connects via MCP protocol.
+                    </div>
+                    <div style="margin-bottom:0.75rem;">
+                        <strong style="color:#10b981;">🔎 Discover</strong><br>
+                        Asks the server "what tools do you have?" → gets 5 tool schemas back.
+                    </div>
+                    <div style="margin-bottom:0.75rem;">
+                        <strong style="color:#8b5cf6;">🧠 Build graph</strong><br>
+                        Creates a LangGraph <code>StateGraph</code> where each node calls an MCP tool.
+                    </div>
+                    <div style="margin-bottom:0.75rem;">
+                        <strong style="color:#f59e0b;">▶️ Run</strong><br>
+                        Passes in the file path → the graph executes: read → analyze (3× parallel) → gather → format → report.
+                    </div>
+                    <div style="margin-bottom:0;">
+                        <strong style="color:#64748b;">🧹 Cleanup</strong><br>
+                        <code>async with</code> block exits → MCP server subprocess is terminated.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── FILES INVOLVED ─── -->
+<div class="card">
+    <div class="card-header">
+        <span class="step-num s1" style="background:#64748b;">📁</span>
+        <h2>Files Involved</h2>
+    </div>
+    <div class="card-body">
+        <div class="two-col">
+            <div class="mini-card">
+                <span class="label">Entry point</span>
+                <h4>main.py</h4>
+                <p>Orchestrates the 4 steps — start, discover, build, run, print.</p>
+            </div>
+            <div class="mini-card">
+                <span class="label">MCP Client</span>
+                <h4>agent/mcp_client.py</h4>
+                <p>Wraps the MCP SDK — spawns server, manages session, <code>list_tools()</code>, <code>call_tool()</code>.</p>
+            </div>
+            <div class="mini-card">
+                <span class="label">LangGraph Workflow</span>
+                <h4>agent/graph.py</h4>
+                <p>Defines the <code>StateGraph</code> with 6 nodes, <code>Send()</code> fan-out, and state types.</p>
+            </div>
+            <div class="mini-card">
+                <span class="label">MCP Server</span>
+                <h4>server/mcp_server.py</h4>
+                <p>Implements 5 tools using Python AST, style checks, import scanning, markdown formatting.</p>
+            </div>
+            <div class="mini-card">
+                <span class="label">Test input</span>
+                <h4>sample_code/vulnerable_code.py</h4>
+                <p>Python file with 9 deliberate issues seeded for the demo.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+</body>
+</html>

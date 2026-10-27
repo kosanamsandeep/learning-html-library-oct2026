@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>05 · Dependencies, Supply Chain &amp; requests — Cyber Security Designs</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="sec">🛡</span>Cyber Security Designs</div>
+        <div class="links">
+            <a href="index.html">Hub</a>
+            <a href="04_api_hardening_abuse.html">← Hardening</a>
+            <a href="06_ethical_hacker_playbook.html">Playbook →</a>
+        </div>
+    </div>
+
+    <div class="header sec">
+        <p class="badge">05 · Supply discipline · Third-party trust</p>
+        <h1>📦 Dependencies, supply chain &amp; safe <code>requests</code></h1>
+        <p class="subtitle">Most of your app is code you didn't write. A vulnerable package or a typo-squatted
+            install can compromise everything — and the <code>requests</code> calls you make to other services
+            are an attack surface of their own (SSRF). This page hardens both.</p>
+    </div>
+
+    <div class="container">
+        <div class="section sec">
+            <h2>Your real attack surface includes every dependency</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    YOU["Your code (~5%)"] --> DEPS["Direct deps"]
+    DEPS --> TRANS["Transitive deps (the other 95%)"]
+    TRANS --> RISK1["Known CVEs"]
+    TRANS --> RISK2["Typosquatting / malicious package"]
+    TRANS --> RISK3["Compromised maintainer / build"]
+    classDef bad fill:#470d1c,stroke:#f43f5e,color:#fecdd3
+    class RISK1,RISK2,RISK3 bad
+                </pre>
+                <p class="caption">You audit your 5%. Attackers target the 95% you imported. Supply-chain
+                    security is about trusting that code deliberately.</p>
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Pin, lock, and scan</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Practice</th>
+                        <th>Why</th>
+                        <th>Tooling</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Lockfile with hashes</td>
+                        <td>Reproducible, tamper-evident installs</td>
+                        <td><code>uv.lock</code>, <code>poetry.lock</code>, <code>pip-tools</code> +
+                            <code>--require-hashes</code></td>
+                    </tr>
+                    <tr>
+                        <td>Vulnerability scan (SCA)</td>
+                        <td>Catch known CVEs in deps</td>
+                        <td><code>pip-audit</code>, <code>safety</code>, GitHub Dependabot</td>
+                    </tr>
+                    <tr>
+                        <td>Static analysis (SAST)</td>
+                        <td>Catch insecure patterns in your code</td>
+                        <td><code>bandit</code>, <code>semgrep</code></td>
+                    </tr>
+                    <tr>
+                        <td>SBOM</td>
+                        <td>Know exactly what's shipped</td>
+                        <td>CycloneDX, <code>syft</code></td>
+                    </tr>
+                    <tr>
+                        <td>Update cadence</td>
+                        <td>Don't rot on old versions</td>
+                        <td>Dependabot/Renovate PRs</td>
+                    </tr>
+                </tbody>
+            </table>
+            <pre><code><span class="c-com"># Run these in CI so a vulnerable or insecure change fails the build:</span>
+pip-audit                 <span class="c-com"># known CVEs in installed packages</span>
+bandit -r app/            <span class="c-com"># insecure code patterns (eval, shell=True, etc.)</span>
+pip install --require-hashes -r requirements.txt   <span class="c-com"># verified, pinned installs</span>
+</code></pre>
+            <div class="callout rose">
+                <strong>Typosquatting watch:</strong> double-check package names before installing
+                (<code>requests</code> vs <code>request</code>, <code>python-jose</code> vs lookalikes). Prefer
+                well-maintained, widely-used packages; review new/obscure ones before adding.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>SSRF: when your own <code>requests</code> call is the weapon</h2>
+            <p><strong>Server-Side Request Forgery</strong> happens when an attacker controls (even partially) a
+                URL your server fetches. They point it at internal services or the cloud metadata endpoint to
+                steal credentials. It's OWASP A10 — and the <code>requests</code> library is the usual vehicle.</p>
+            <p class="bad-label">❌ Vulnerable — fetch a user-supplied URL as-is</p>
+            <pre><code><span class="c-kw">import</span> requests
+
+<span class="c-fn">@app.post</span>(<span class="c-str">"/fetch-preview"</span>)
+<span class="c-kw">def</span> <span class="c-fn">preview</span>(url: <span class="c-cls">str</span>):
+    <span class="c-com"># attacker sends url=http://169.254.169.254/latest/meta-data/  (cloud creds!)</span>
+    <span class="c-kw">return</span> requests.get(url).text
+</code></pre>
+            <p class="good-label">✅ Hardened — allow-list + block internal ranges + safe options</p>
+            <pre><code><span class="c-kw">import</span> ipaddress, socket
+<span class="c-kw">from</span> urllib.parse <span class="c-kw">import</span> urlparse
+<span class="c-kw">import</span> requests
+
+ALLOWED_SCHEMES = {<span class="c-str">"https"</span>}
+ALLOWED_HOSTS = {<span class="c-str">"api.partner.com"</span>, <span class="c-str">"cdn.example.com"</span>}
+
+<span class="c-kw">def</span> <span class="c-fn">is_public_ip</span>(host: <span class="c-cls">str</span>) -> <span class="c-cls">bool</span>:
+    ip = ipaddress.ip_address(socket.gethostbyname(host))
+    <span class="c-kw">return</span> <span class="c-kw">not</span> (ip.is_private <span class="c-kw">or</span> ip.is_loopback <span class="c-kw">or</span> ip.is_link_local <span class="c-kw">or</span> ip.is_reserved)
+
+<span class="c-kw">def</span> <span class="c-fn">safe_get</span>(url: <span class="c-cls">str</span>) -> requests.Response:
+    p = urlparse(url)
+    <span class="c-kw">if</span> p.scheme <span class="c-kw">not in</span> ALLOWED_SCHEMES <span class="c-kw">or</span> p.hostname <span class="c-kw">not in</span> ALLOWED_HOSTS:
+        <span class="c-kw">raise</span> <span class="c-cls">ValueError</span>(<span class="c-str">"url not allowed"</span>)
+    <span class="c-kw">if</span> <span class="c-kw">not</span> is_public_ip(p.hostname):       <span class="c-com"># block internal/metadata targets</span>
+        <span class="c-kw">raise</span> <span class="c-cls">ValueError</span>(<span class="c-str">"refusing internal address"</span>)
+    <span class="c-kw">return</span> requests.get(
+        url,
+        timeout=(<span class="c-str">3</span>, <span class="c-str">10</span>),               <span class="c-com"># (connect, read) — NEVER omit timeout</span>
+        allow_redirects=<span class="c-cls">False</span>,         <span class="c-com"># redirects can bypass your allow-list</span>
+        verify=<span class="c-cls">True</span>,                  <span class="c-com"># always verify TLS certs</span>
+        headers={<span class="c-str">"User-Agent"</span>: <span class="c-str">"my-api/1.0"</span>},
+    )
+</code></pre>
+            <div class="callout amber">
+                <strong>SSRF defenses, layered:</strong> allow-list destinations; resolve &amp; block
+                private/loopback/link-local/metadata IPs; disable auto-redirects (or re-validate each hop);
+                run outbound calls through an egress proxy; and deny the app network access to the cloud
+                metadata endpoint at the infra level.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2><code>requests</code> hygiene — small flags, big safety</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Option</th>
+                        <th>Set it to</th>
+                        <th>Why</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>timeout</code></td>
+                        <td>always (e.g. <code>(3, 10)</code>)</td>
+                        <td>Without it, a hung peer ties up a worker forever → DoS</td>
+                    </tr>
+                    <tr>
+                        <td><code>verify</code></td>
+                        <td><code>True</code> (default)</td>
+                        <td>Never disable cert checks; <code>verify=False</code> = MITM open door</td>
+                    </tr>
+                    <tr>
+                        <td><code>allow_redirects</code></td>
+                        <td><code>False</code> for fetches of user URLs</td>
+                        <td>Stops redirect-based allow-list bypass</td>
+                    </tr>
+                    <tr>
+                        <td>Session + retries</td>
+                        <td><code>Session</code> with bounded <code>Retry</code></td>
+                        <td>Connection reuse; controlled, capped retries</td>
+                    </tr>
+                    <tr>
+                        <td>Secrets in headers</td>
+                        <td>From settings, not literals</td>
+                        <td>Avoid leaking API keys in code/logs</td>
+                    </tr>
+                </tbody>
+            </table>
+            <pre><code><span class="c-kw">from</span> requests.adapters <span class="c-kw">import</span> HTTPAdapter, Retry
+
+session = requests.Session()
+retries = Retry(total=<span class="c-str">3</span>, backoff_factor=<span class="c-str">0.5</span>,
+                status_forcelist=[<span class="c-str">502</span>, <span class="c-str">503</span>, <span class="c-str">504</span>], allowed_methods=[<span class="c-str">"GET"</span>])
+session.mount(<span class="c-str">"https://"</span>, HTTPAdapter(max_retries=retries))
+resp = session.get(<span class="c-str">"https://api.partner.com/v1/x"</span>, timeout=(<span class="c-str">3</span>, <span class="c-str">10</span>))
+</code></pre>
+            <div class="callout sky">
+                <strong>Tip:</strong> for high-concurrency FastAPI, prefer an async client like
+                <code>httpx.AsyncClient</code> so outbound calls don't block the event loop. The same
+                hardening rules (timeouts, verify, allow-list, no blind redirects) apply.
+            </div>
+        </div>
+
+        <div class="section sec">
+            <h2>Container &amp; runtime supply chain</h2>
+            <ul>
+                <li>Build from minimal, pinned base images; scan images (<code>trivy</code>, <code>grype</code>).</li>
+                <li>Run as a non-root user; drop capabilities; read-only filesystem where possible.</li>
+                <li>Don't bake secrets into images or layers.</li>
+                <li>Keep base images and the Python runtime patched.</li>
+            </ul>
+        </div>
+
+        <div class="section sec">
+            <h2>Supply-chain &amp; requests checklist</h2>
+            <ul class="check">
+                <li>Dependencies pinned with a hash-locked lockfile.</li>
+                <li><code>pip-audit</code> + <code>bandit</code> (or <code>semgrep</code>) run in CI and gate merges.
+                </li>
+                <li>Dependabot/Renovate keeps deps current; SBOM generated.</li>
+                <li>Every outbound <code>requests</code>/<code>httpx</code> call sets a timeout and keeps
+                    <code>verify=True</code>.</li>
+                <li>User-influenced URLs are allow-listed and blocked from internal/metadata IPs.</li>
+                <li>Redirects disabled (or re-validated) for fetches of untrusted URLs.</li>
+                <li>Container images scanned, non-root, no embedded secrets.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="04_api_hardening_abuse.html"><span class="dir">Back</span>
+                <div class="ttl">04 · Hardening</div>
+            </a>
+            <a class="next" href="06_ethical_hacker_playbook.html"><span class="dir">Next</span>
+                <div class="ttl">06 · Ethical hacker playbook →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Cyber Security Designs · 05 · Dependencies, supply chain &amp; safe requests</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

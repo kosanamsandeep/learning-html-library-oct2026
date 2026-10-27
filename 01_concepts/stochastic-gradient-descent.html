@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stochastic Gradient Descent Explained</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="backpropagation.html">Backpropagation</a>
+                <a href="cnn-basics.html">CNN</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#what">What SGD is</a>
+            <a href="#why-stochastic">Why stochastic</a>
+            <a href="#batch-vs-mini">Batch vs mini-batch</a>
+            <a href="#update">Update rule</a>
+            <a href="#practical">Practical issues</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Optimization fundamentals</p>
+                    <h1>What stochastic gradient descent means</h1>
+                    <p>Gradient descent updates model parameters in the direction that reduces loss. Stochastic gradient
+                        descent uses only a random sample or a small batch of data to estimate that direction instead of
+                        using the full dataset every single update.</p>
+                    <p>The word <strong>stochastic</strong> means there is randomness in the gradient estimate because
+                        the update is based on sampled data rather than the exact full-dataset gradient.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core update</h2>
+                    <p class="formula">new weight = old weight - learning rate * gradient</p>
+                </div>
+            </section>
+
+            <section class="section" id="what">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Why optimization is needed</h3>
+                        <p>After backpropagation computes gradients, the model still needs a rule for turning those
+                            gradients into parameter updates. SGD is one of the oldest and most important such rules.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>What SGD is really doing</h3>
+                        <p>It approximates the downhill direction on the loss surface. The estimate is noisy, but it is
+                            much cheaper than computing the exact full gradient every time on large datasets.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="why-stochastic">
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Why use stochastic updates</h3>
+                        <ul class="stack-list">
+                            <li>Faster updates on large datasets.</li>
+                            <li>Lower memory requirements.</li>
+                            <li>The noise can help optimization avoid some poor sharp local behavior.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What the noise means</h3>
+                        <p>Because each update sees only part of the data, the gradient is not exact. That makes the
+                            training path wobble more, but the method is much more practical at scale.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="batch-vs-mini">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>What gradient uses</th>
+                                <th>Main tradeoff</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Batch gradient descent</td>
+                                <td>Full dataset</td>
+                                <td>Accurate but expensive and slow per update.</td>
+                            </tr>
+                            <tr>
+                                <td>Stochastic gradient descent</td>
+                                <td>One example at a time</td>
+                                <td>Very noisy but updates are extremely cheap.</td>
+                            </tr>
+                            <tr>
+                                <td>Mini-batch gradient descent</td>
+                                <td>Small batch of examples</td>
+                                <td>Most common practical compromise between stability and speed.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note">
+                    <p><strong>Practical note:</strong> when people casually say SGD in deep learning, they often mean
+                        mini-batch training rather than literally one sample per update.</p>
+                </div>
+            </section>
+
+            <section class="section" id="update">
+                <div class="code-card">
+                    <h3>Simple training loop</h3>
+                    <pre>for each mini-batch:
+    predictions = model(batch)
+    loss = loss_fn(predictions, targets)
+    gradients = backprop(loss)
+    weights = weights - learning_rate * gradients</pre>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Role of learning rate</h3>
+                        <p>The learning rate controls step size. If it is too small, training is slow. If it is too
+                            large, updates may overshoot and training can diverge.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why SGD is often extended</h3>
+                        <p>Plain SGD is foundational, but practical systems often use momentum, Adam, RMSProp, or
+                            schedulers to make optimization faster and more stable.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="practical">
+                <div class="flow">
+                    <div class="step">
+                        <h3>1. Start with a reasonable batch size</h3>
+                        <p>Too small can be very noisy. Too large can be memory-heavy and may generalize differently.
+                        </p>
+                    </div>
+                    <div class="step">
+                        <h3>2. Tune the learning rate first</h3>
+                        <p>Learning-rate choice is usually one of the most sensitive optimization decisions.</p>
+                    </div>
+                    <div class="step">
+                        <h3>3. Watch loss curves</h3>
+                        <p>If loss jumps wildly, the learning rate may be too high or gradients may be unstable.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is it called stochastic gradient descent?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because it updates parameters using a randomly sampled example or mini-batch, so the
+                                computed gradient is a noisy estimate of the true full-dataset gradient.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What is the difference between backpropagation and SGD?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Backpropagation computes gradients. SGD uses those gradients to update parameters.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your loss oscillates heavily and does not settle. What do you inspect first?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>I would inspect the learning rate, batch size, gradient scale, and whether momentum or
+                                normalization settings are making updates unstable.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Why do people usually use mini-batches instead of a full batch every step?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Because mini-batches are much cheaper, fit hardware better, and often give a good balance
+                                of optimization speed and training stability.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Interviews often use SGD as the entry point to test whether you understand the difference between
+                gradients and optimization.</p>
+            <div class="mini-links">
+                <a href="backpropagation.html">Backpropagation</a>
+                <a href="cnn-basics.html">CNN</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

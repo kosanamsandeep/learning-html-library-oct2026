@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Power of Hooks — Lifecycle Automation for Agentic Workflows</title>
+  <link rel="stylesheet" href="../projects.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { primaryColor: '#0f766e', secondaryColor: '#ccfbf1', tertiaryColor: '#f9fafb', mainBkg: '#ccfbf1', nodeBorder: '#0f766e', clusterBkg: '#f8fafc', clusterBorder: '#cbd5e1', lineColor: '#0f766e', textColor: '#1e293b' } });
+  </script>
+  <style>
+    .hook-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+    .hook-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow); }
+    .hook-card h3 { margin-top: 0; color: var(--accent); }
+    .hook-card .hook-event { font-family: var(--mono); font-size: 0.85rem; color: var(--accent2); background: var(--accent2-soft); display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; }
+    .diagram-wrap { background: #ffffff; border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; margin: 1rem 0; overflow-x: auto; box-shadow: var(--shadow); text-align: center; }
+    .diagram-wrap pre { background: transparent; color: inherit; padding: 0; margin: 0; }
+    .diagram-wrap pre.mermaid { text-align: center; }
+    .script-block { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.55; margin: 1rem 0; border: 1px solid #1e293b; }
+    .script-block .kw { color: #c084fc; }
+    .script-block .str { color: #86efac; }
+    .script-block .cm { color: #6b7280; font-style: italic; }
+    .script-block .fn { color: #60a5fa; }
+    .script-block .num { color: #fbbf24; }
+    .script-block .var { color: #f472b6; }
+    .file-path { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); background: #f1f5f9; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #e2e8f0; }
+    .feature-list { padding-left: 1.25rem; }
+    .feature-list li { margin-bottom: 0.4rem; }
+    .badge { display: inline-block; background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .badge.amber { background: #d97706; }
+    .badge.blue { background: #3b82f6; }
+    .badge.rose { background: #be123c; }
+    .comparison-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .comparison-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 1.25rem; background: var(--paper); }
+    .comparison-card h3 { margin-top: 0; font-size: 1rem; }
+    .comparison-card.yes { border-left: 4px solid var(--accent); }
+    .comparison-card.no { border-left: 4px solid var(--rose); opacity: 0.75; }
+    .comparison-card.maybe { border-left: 4px solid var(--amber); }
+    table.hook-table th { background: #0f766e; color: #fff; }
+    table.hook-table th:first-child { border-radius: 6px 0 0 0; }
+    table.hook-table th:last-child { border-radius: 0 6px 0 0; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="../" class="brand"><span>&#8592;</span> Hub</a>
+    <div class="nav-links">
+      <a href="#what-are-hooks">What are Hooks</a>
+      <a href="#the-10-hooks">The 10 Hooks</a>
+      <a href="#real-scripts">Real Scripts</a>
+      <a href="#configuration">Configuration</a>
+      <a href="#testing">Testing</a>
+      <a href="#design-principles">Design Principles</a>
+    </div>
+  </nav>
+
+  <div class="shell">
+
+    <!-- ===== Hero ===== -->
+    <div class="hero">
+      <div class="eyebrow">Claude Code Lifecycle</div>
+      <h1>Power of Hooks &mdash; Lifecycle Automation for Agentic Workflows</h1>
+      <p class="subtitle">
+        Hooks are shell commands that fire at specific lifecycle events in a Claude Code session.
+        Inject custom behaviour before and after file operations, command execution, and session
+        teardown &mdash; without modifying Claude Code itself.
+      </p>
+    </div>
+
+    <!-- ===== Section 1: What are Hooks? ===== -->
+    <section id="what-are-hooks">
+      <div class="card">
+        <h2>What are Hooks?</h2>
+        <p>
+          If you have ever used Git hooks (<code>pre-commit</code>, <code>post-merge</code>, etc.),
+          you already understand the concept. Claude Code hooks follow the same pattern: <strong>at
+          specific points in the agent&rsquo;s lifecycle, the hook system fires a shell script</strong>
+          you provide. The script can inspect context, modify behaviour, log activity, or cancel
+          the operation by returning a non-zero exit code.
+        </p>
+
+        <h3>The Hook Lifecycle in a Claude Code Session</h3>
+        <p>
+          The diagram below traces a typical session: reading a file, editing it, writing it back,
+          running a command, and finally exiting. Each step has a before/after hook pair.
+        </p>
+
+        <div class="diagram-wrap">
+          <pre class="mermaid">
+flowchart TD
+    Start(["Session Start"]) --> BR[beforeRead]
+    BR --> Read["Read file from disk"]
+    Read --> AR[afterRead]
+    AR --> BE[beforeEdit]
+    BE --> Edit["Apply edit to buffer"]
+    Edit --> AE[afterEdit]
+    AE --> BW[beforeWrite]
+    BW --> Write["Write file to disk"]
+    Write --> AW[afterWrite]
+    AW --> BC[beforeCommand]
+    BC --> Cmd["Execute shell command"]
+    Cmd --> AC[afterCommand]
+    AC --> More{"More work?"}
+    More -->|Yes| BR
+    More -->|No| PE[preExit]
+    PE --> End(["Session End"])
+
+    style BR fill:#ccfbf1,stroke:#0f766e,color:#0f766e
+    style AR fill:#ccfbf1,stroke:#0f766e,color:#0f766e
+    style BE fill:#ccfbf1,stroke:#0f766e,color:#0f766e
+    style AE fill:#ccfbf1,stroke:#0f766e,color:#0f766e
+    style BW fill:#ccfbf1,stroke:#0f766e,color:#0f766e
+    style AW fill:#ccfbf1,stroke:#0f766e,color:#0f766e
+    style BC fill:#fef3c7,stroke:#d97706,color:#d97706
+    style AC fill:#fef3c7,stroke:#d97706,color:#d97706
+    style PE fill:#fee2e2,stroke:#dc2626,color:#dc2626
+          </pre>
+        </div>
+
+        <div class="callout">
+          <strong>Key insight:</strong> Hooks are transparent to the LLM. Claude does not see the hook
+          script or its output (unless you configure logging). They execute in the host shell before
+          or after the corresponding event, giving you a clean separation between agent logic and
+          system-level policy.
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Section 2: The 10 Hooks ===== -->
+    <section id="the-10-hooks">
+      <div class="card">
+        <h2>The 10 Hooks &mdash; When Each One Fires</h2>
+        <p>
+          Claude Code defines ten hook events. Five are file-related, two are command-related,
+          one fires on every tool invocation, and one fires at session teardown.
+        </p>
+
+        <table class="hook-table">
+          <thead>
+            <tr>
+              <th>Hook</th>
+              <th>Trigger</th>
+              <th>Common Use Case</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>beforeRead</code></td>
+              <td>Before reading a file from disk</td>
+              <td>Refresh a stale cache, check file permissions, inject dynamic content</td>
+            </tr>
+            <tr>
+              <td><code>afterRead</code></td>
+              <td>After reading a file from disk</td>
+              <td>Log file accesses, annotate content for downstream tools</td>
+            </tr>
+            <tr>
+              <td><code>beforeEdit</code></td>
+              <td>Before applying an edit to a file</td>
+              <td>Validate edit permissions, backup the original file, enforce lock checks</td>
+            </tr>
+            <tr>
+              <td><code>afterEdit</code></td>
+              <td>After applying an edit to a file</td>
+              <td>Lint the result, track change deltas, notify watchers</td>
+            </tr>
+            <tr>
+              <td><code>beforeWrite</code></td>
+              <td>Before writing a file to disk</td>
+              <td>Template injection, secret scanning, size limits</td>
+            </tr>
+            <tr>
+              <td><code>afterWrite</code></td>
+              <td>After writing a file to disk</td>
+              <td>Auto-format, compile, trigger rebuilds, run tests</td>
+            </tr>
+            <tr>
+              <td><code>beforeCommand</code></td>
+              <td>Before executing a shell command</td>
+              <td>Block dangerous commands, inject environment variables, enforce timeouts</td>
+            </tr>
+            <tr>
+              <td><code>afterCommand</code></td>
+              <td>After executing a shell command</td>
+              <td>Audit logging, collect metrics, parse output</td>
+            </tr>
+            <tr>
+              <td><code>preExit</code></td>
+              <td>When the session is ending</td>
+              <td>Stash WIP, clean temp files, send notifications, release resources</td>
+            </tr>
+            <tr>
+              <td><code>preToolUse</code></td>
+              <td>Before any tool (read, write, bash, MCP, etc.) is invoked</td>
+              <td>Rate limiting, telemetry, approval gates, context injection</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Sequence: A File Edit Flowing Through Multiple Hooks</h3>
+        <p>
+          When Claude edits and saves a file, six hooks fire in sequence. This diagram traces
+          the full journey of a single file modification.
+        </p>
+
+        <div class="diagram-wrap">
+          <pre class="mermaid">
+sequenceDiagram
+    participant C as Claude
+    participant H as Hook System
+    participant FS as Filesystem
+
+    C->>+H: Read file
+    H->>H: beforeRead
+    H->>+FS: Read file
+    FS->>-H: File content
+    H->>H: afterRead
+    H->>-C: Content returned
+
+    C->>+H: Edit file
+    H->>H: beforeEdit
+    H->>H: afterEdit
+    H->>-C: Edit applied
+
+    C->>+H: Write file
+    H->>H: beforeWrite
+    H->>+FS: Write file to disk
+    FS->>-H: Write complete
+    H->>H: afterWrite
+    Note over H: Format on write runs here
+    H->>-C: Write complete
+          </pre>
+        </div>
+
+        <div class="callout indigo">
+          <strong>Variable reference:</strong> Hooks receive context via arguments &mdash;
+          <code>{file}</code> (file path), <code>{command}</code> (shell command),
+          <code>{exit_code}</code> (last exit code), <code>{tool_name}</code> (tool name),
+          and <code>{tool_input}</code> (tool input JSON). See the individual scripts for details.
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Section 3: Real Hook Scripts ===== -->
+    <section id="real-scripts">
+      <div class="card">
+        <h2>Real Hook Scripts</h2>
+        <p>
+          Four production-ready hook scripts are included in this project. Each is fully functional
+          with proper error handling, logging, and documentation.
+        </p>
+
+        <!-- Hook 01 -->
+        <h3>01_format_on_write.sh <span class="badge">afterWrite</span></h3>
+        <p>
+          Auto-formats Python files after they are saved. Detects <code>ruff</code> first,
+          falls back to <code>black</code>, and logs every action to a dedicated log file.
+          Non-<code>.py</code> files are skipped transparently.
+        </p>
+        <div class="script-block">
+<span class="cm">#!/usr/bin/env bash</span>
+<span class="cm"># 01_format_on_write.sh — afterWrite Hook</span>
+<span class="cm"># Auto-format Python files when Claude Code saves them.</span>
+
+set -euo pipefail
+
+<span class="kw">LOG_FILE</span>=<span class="str">"${HOME}/.claude/hooks/format_on_write.log"</span>
+
+detect_formatter() {
+    <span class="kw">if</span> command -v ruff &amp;/dev/null; <span class="kw">then</span>
+        <span class="kw">PYTHON_FORMATTER</span>=<span class="str">"ruff format"</span>
+    <span class="kw">elif</span> command -v black &amp;/dev/null; <span class="kw">then</span>
+        <span class="kw">PYTHON_FORMATTER</span>=<span class="str">"black --quiet"</span>
+    <span class="kw">else</span>
+        <span class="kw">exit</span> <span class="num">0</span>   <span class="cm"># no formatter available — skip gracefully</span>
+    <span class="kw">fi</span>
+}
+
+format_file() {
+    <span class="kw">local</span> file_path=<span class="str">"$1"</span>
+    <span class="kw">[[</span> <span class="str">"${file_path}"</span> != *.py <span class="kw">]]</span> &amp;&amp; <span class="kw">return</span> <span class="num">0</span>
+    <span class="kw">[[</span> ! -f <span class="str">"${file_path}"</span> <span class="kw">]]</span> &amp;&amp; <span class="kw">return</span> <span class="num">0</span>
+    ${PYTHON_FORMATTER} <span class="str">"${file_path}"</span>
+}
+        </div>
+        <p>Install by adding to <code>settings.local.json</code>:</p>
+        <div class="script-block">
+<span class="str">"afterWrite"</span>: <span class="str">".claude/hooks/01_format_on_write.sh '{file}'"</span>
+        </div>
+
+        <!-- Hook 02 -->
+        <h3>02_audit_trail.sh <span class="badge amber">afterCommand</span></h3>
+        <p>
+          Logs every shell command to a tab-separated audit file. Captures timestamp, session ID,
+          exit code, working directory, and the command text. Automatically rotates when the log
+          exceeds 50 MB.
+        </p>
+        <div class="script-block">
+<span class="cm">#!/usr/bin/env bash</span>
+<span class="cm"># 02_audit_trail.sh — afterCommand Hook</span>
+<span class="cm"># Log every command Claude Code executes.</span>
+
+<span class="kw">AUDIT_FILE</span>=<span class="str">"${HOME}/.claude/hooks/audit_trail.log"</span>
+
+log_entry() {
+    <span class="kw">local</span> timestamp=<span class="str">"$(date '+%Y-%m-%dT%H:%M:%S%z')"</span>
+    <span class="kw">local</span> session_id=<span class="str">"${CLAUDE_CODE_SESSION_ID:-unknown}"</span>
+    <span class="kw">local</span> cwd=<span class="str">"$(pwd)"</span>
+
+    <span class="cm"># Tab-separated: timestamp | session | exit_code | cwd | command</span>
+    printf <span class="str">"%s\t%s\t%s\t%s\t%s\n"</span> \
+        <span class="str">"${timestamp}"</span> <span class="str">"${session_id}"</span> \
+        <span class="str">"${exit_code}"</span> <span class="str">"${cwd}"</span> <span class="str">"${command_raw}"</span> \
+        &gt;&gt; <span class="str">"${AUDIT_FILE}"</span>
+}
+        </div>
+        <p>Query examples:</p>
+        <div class="script-block">
+<span class="cm"># Recent commands</span>
+tail -20 ~/.claude/hooks/audit_trail.log
+
+<span class="cm"># Failed commands (exit code != 0)</span>
+awk <span class="str">'$3 != 0'</span> ~/.claude/hooks/audit_trail.log
+
+<span class="cm"># Commands containing a keyword</span>
+grep <span class="str">'git push'</span> ~/.claude/hooks/audit_trail.log
+        </div>
+
+        <!-- Hook 03 -->
+        <h3>03_block_dangerous.sh <span class="badge rose">beforeCommand</span></h3>
+        <p>
+          Blocks destructive commands before they execute. Returns a non-zero exit code to abort
+          the command when dangerous patterns are detected. Covers <code>rm -rf /</code>,
+          <code>kubectl delete</code>, <code>DROP TABLE</code>, <code>git push --force</code>,
+          and many others.
+        </p>
+        <div class="script-block">
+<span class="cm">#!/usr/bin/env bash</span>
+<span class="cm"># 03_block_dangerous.sh — beforeCommand Hook</span>
+
+<span class="kw">DANGEROUS_PATTERNS</span>=(
+    <span class="str">'rm -rf /'</span>
+    <span class="str">'kubectl delete'</span>
+    <span class="str">'DROP TABLE'</span>
+    <span class="str">'git push --force'</span>
+    <span class="str">'chmod -R 777 /'</span>
+    <span class="str">'mkfs\.'</span>
+)
+
+check_patterns() {
+    <span class="kw">local</span> command_raw=<span class="str">"$1"</span>
+    <span class="kw">for</span> pattern <span class="kw">in</span> <span class="str">"${DANGEROUS_PATTERNS[@]}"</span>; <span class="kw">do</span>
+        <span class="kw">if</span> echo <span class="str">"${command_raw}"</span> | grep -iqE <span class="str">"${pattern}"</span>; <span class="kw">then</span>
+            <span class="kw">echo</span> <span class="str">"BLOCKED: matched pattern '${pattern}'"</span> &gt;&amp;2
+            <span class="kw">return</span> <span class="num">1</span>   <span class="cm"># non-zero cancels the command</span>
+        <span class="kw">fi</span>
+    <span class="kw">done</span>
+    <span class="kw">return</span> <span class="num">0</span>
+}
+        </div>
+
+        <!-- Hook 04 -->
+        <h3>04_wip_safety.sh <span class="badge blue">preExit</span></h3>
+        <p>
+          Auto-stashes uncommitted work-in-progress changes when a Claude Code session exits.
+          Only runs in git repositories with dirty working trees. Stashes are prefixed with
+          <code>WIP/CLAUDE_CODE</code> and include a timestamp and branch name. The hook
+          automatically cleans up old stashes (keeps the last 20).
+        </p>
+        <div class="script-block">
+<span class="cm">#!/usr/bin/env bash</span>
+<span class="cm"># 04_wip_safety.sh — preExit Hook</span>
+<span class="cm"># Auto-stash WIP on session exit.</span>
+
+<span class="kw">STASH_PREFIX</span>=<span class="str">"WIP/CLAUDE_CODE"</span>
+<span class="kw">MAX_STASHES</span>=<span class="num">20</span>
+
+has_uncommitted_changes() {
+    git diff --quiet --cached &amp;&amp; git diff --quiet &amp;&amp; \
+        <span class="kw">[[</span> -z <span class="str">"$(git ls-files --others --exclude-standard)"</span> <span class="kw">]]</span> &amp;&amp; <span class="kw">return</span> <span class="num">1</span>
+    <span class="kw">return</span> <span class="num">0</span>
+}
+
+do_stash() {
+    <span class="kw">local</span> timestamp=<span class="str">"$(date '+%Y-%m-%d %H:%M:%S')"</span>
+    <span class="kw">local</span> branch=<span class="str">"$(git rev-parse --abbrev-ref HEAD)"</span>
+    git stash push --include-untracked \
+        --message <span class="str">"${STASH_PREFIX} ${timestamp} — ${branch}"</span>
+}
+        </div>
+        <p>Restore next session:</p>
+        <div class="script-block">
+git stash list
+git stash pop   <span class="cm"># or: git stash apply stash@{0}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Section 4: Complete Hook Configuration ===== -->
+    <section id="configuration">
+      <div class="card">
+        <h2>Complete Hook Configuration</h2>
+        <p>
+          Here is how all four hooks fit together in a <span class="file-path">settings.local.json</span>
+          file. Place this file in your project&rsquo;s <code>.claude/</code> directory.
+        </p>
+
+        <div class="diagram-wrap" style="text-align:left;">
+          <div class="script-block" style="border:none;background:#0f172a;">
+{<br/>
+  <span class="str">"hooks"</span>: {<br/>
+    <span class="cm"># afterWrite: format Python files on save</span><br/>
+    <span class="str">"afterWrite"</span>: <span class="str">".claude/hooks/01_format_on_write.sh '{file}'"</span>,<br/><br/>
+    <span class="cm"># beforeCommand: block dangerous commands</span><br/>
+    <span class="str">"beforeCommand"</span>: <span class="str">".claude/hooks/03_block_dangerous.sh '{command}'"</span>,<br/><br/>
+    <span class="cm"># afterCommand: audit every command</span><br/>
+    <span class="str">"afterCommand"</span>: <span class="str">".claude/hooks/02_audit_trail.sh '{command}' {exit_code}"</span>,<br/><br/>
+    <span class="cm"># preExit: stash WIP when session ends</span><br/>
+    <span class="str">"preExit"</span>: <span class="str">".claude/hooks/04_wip_safety.sh"</span><br/>
+  }<br/>
+}<br/>
+          </div>
+        </div>
+
+        <h3>Installation Steps</h3>
+        <ol class="feature-list">
+          <li>Copy the <code>hooks/</code> directory into your project as <code>.claude/hooks/</code>.</li>
+          <li>Make scripts executable: <code>chmod +x .claude/hooks/*.sh</code>.</li>
+          <li>Create or edit <code>.claude/settings.local.json</code> with the configuration above.</li>
+          <li>Start a Claude Code session &mdash; hooks fire automatically.</li>
+        </ol>
+
+        <div class="callout amber">
+          <strong>Tip:</strong> Use <code>settings.local.json</code> (not <code>settings.json</code>) for
+          project-specific hooks. The local file is gitignored by default, so each team member can
+          opt in independently.
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Section 5: Testing Your Hooks ===== -->
+    <section id="testing">
+      <div class="card">
+        <h2>Testing Your Hooks</h2>
+        <p>
+          The project includes <span class="file-path">test_hooks.sh</span>, a test suite that
+          validates each hook independently in an isolated temporary directory.
+        </p>
+
+        <div class="script-block">
+<span class="cm"># Run the full test suite</span>
+bash test_hooks.sh
+        </div>
+
+        <h3>What the tests cover</h3>
+        <table class="hook-table">
+          <thead>
+            <tr>
+              <th>Test</th>
+              <th>What it validates</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>test_format_on_write</code></td>
+              <td>Creates a deliberately unformatted <code>.py</code> file, runs the hook, and
+                checks that formatting was applied. Also verifies non-<code>.py</code> files are
+                skipped and missing files are handled gracefully.</td>
+            </tr>
+            <tr>
+              <td><code>test_audit_trail</code></td>
+              <td>Logs commands with exit codes 0 and 1, then checks the audit file for correct
+                timestamp, session ID, working directory, command text, and exit code.</td>
+            </tr>
+            <tr>
+              <td><code>test_block_dangerous</code></td>
+              <td>Runs six dangerous commands through the block hook and confirms each is rejected.
+                Then runs four safe commands and confirms they pass through.</td>
+            </tr>
+            <tr>
+              <td><code>test_wip_safety</code></td>
+              <td>Creates a temporary git repo, commits an initial file, verifies clean tree is
+                skipped, dirties the tree, runs the hook, and checks a timestamped WIP stash was
+                created with the correct prefix.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout green">
+          <strong>All tests pass</strong> when run on a system with a Python formatter (ruff or black)
+          installed. Without a formatter, the format test degrades gracefully &mdash; it checks the
+          log for the &ldquo;No formatter found&rdquo; message and still passes.
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Section 6: Hook Design Principles ===== -->
+    <section id="design-principles">
+      <div class="card">
+        <h2>Hook Design Principles</h2>
+        <p>
+          Not every automation belongs in a hook. Here is a decision framework to help you choose
+          the right mechanism.
+        </p>
+
+        <div class="diagram-wrap">
+          <pre class="mermaid">
+flowchart TD
+    Start(["Should this be a hook?"])
+    Start --> Q1{"Is the logic<br/>synchronous?"}
+
+    Q1 -->|No| Q2{"Could it run<br/>in background?"}
+    Q2 -->|Yes| SKILL["Use a Skill<br/>(/command or loop)"]
+    Q2 -->|No| WORKFLOW["Use a Workflow<br/>(multi-step orchestration)"]
+
+    Q1 -->|Yes| Q3{"Does it need to<br/>block or allow?"}
+    Q3 -->|No| Q4{"Is it a read-only<br/>observation?"}
+
+    Q4 -->|Yes| Q5{"Does it fire on<br/>every event?"}
+    Q5 -->|Yes| TOOL_HOOK["beforeRead / afterRead<br/>or preToolUse hook"]
+    Q5 -->|No| COMMAND_HOOK["afterCommand /<br/>afterWrite hook"]
+
+    Q3 -->|Yes| Q6{"Is it a safety<br/>or policy check?"}
+    Q6 -->|Yes| PRE_HOOK["beforeCommand /<br/>beforeWrite hook ✓"]
+    Q6 -->|No| Q7{"Is it a formatting<br/>or enforcement action?"}
+
+    Q7 -->|Yes| POST_HOOK["afterWrite /<br/>afterEdit hook"]
+    Q7 -->|No| Q8{"Can it run at<br/>session exit?"}
+    Q8 -->|Yes| PREEXIT["preExit hook"]
+    Q8 -->|No| COMBINED["Combination of<br/>multiple hooks"]
+
+    style PRE_HOOK fill:#ccfbf1,stroke:#0f766e,color:#0f766e
+    style POST_HOOK fill:#ccfbf1,stroke:#0f766e,color:#0f766e
+    style PREEXIT fill:#fee2e2,stroke:#dc2626,color:#dc2626
+    style SKILL fill:#fef3c7,stroke:#d97706,color:#d97706
+    style WORKFLOW fill:#e0e7ff,stroke:#4338ca,color:#4338ca
+          </pre>
+        </div>
+
+        <h3>Hooks vs Skills vs Workflows</h3>
+        <div class="comparison-grid">
+          <div class="comparison-card yes">
+            <h3>Hooks <span class="badge">Best for</span></h3>
+            <ul>
+              <li>Synchronous, blocking operations</li>
+              <li>Policy enforcement (security, formatting)</li>
+              <li>Audit and observability</li>
+              <li>Transparent automation (Claude is unaware)</li>
+              <li>&lt; 200 lines of shell script</li>
+            </ul>
+          </div>
+          <div class="comparison-card maybe">
+            <h3>Skills <span class="badge amber">Best for</span></h3>
+            <ul>
+              <li>Interactive slash commands (<code>/deploy</code>, <code>/review</code>)</li>
+              <li>Reusable prompt templates with parameters</li>
+              <li>Loops with /loop integration</li>
+              <li>Claude-visible workflows</li>
+            </ul>
+          </div>
+          <div class="comparison-card no">
+            <h3>Workflows <span class="badge blue">Best for</span></h3>
+            <ul>
+              <li>Complex, multi-step orchestration</li>
+              <li>Long-running background processes</li>
+              <li>Cross-tool coordination (CI/CD, deployment)</li>
+              <li>State machines with branching logic</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout">
+          <strong>Rule of thumb:</strong> If the logic runs in under a second, blocks until done,
+          and enforces a policy &mdash; make it a hook. If it needs user interaction or runs for
+          minutes &mdash; make it a skill or workflow.
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Footer / Pager ===== -->
+    <div class="pager">
+      <a href="../17_power_of_loops/" class="prev">
+        <div class="dir">Previous</div>
+        <div class="ttl">Power of Loops</div>
+      </a>
+      <a href="../" class="next">
+        <div class="dir">Up</div>
+        <div class="ttl">Project Hub</div>
+      </a>
+    </div>
+
+    <footer>
+      <p>Claude Code Hooks &mdash; Lifecycle Automation for Agentic Workflows</p>
+    </footer>
+
+  </div>
+</body>
+</html>

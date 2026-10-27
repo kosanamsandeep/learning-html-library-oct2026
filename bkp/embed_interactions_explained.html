@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactions Pipeline — Upload → Embed Explained + Feasibility Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-card: #1e293b;
+    --bg-code: #0b1120;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --accent: #38bdf8;
+    --accent2: #a78bfa;
+    --green: #4ade80;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --border: #334155;
+    --gradient-start: #38bdf8;
+    --gradient-end: #a78bfa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  .app { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 280px; flex-shrink: 0;
+    background: #0b1120;
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 0;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  .sidebar h2 {
+    font-size: 1.0rem;
+    padding: 0 1.25rem 1rem;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+  }
+  .sidebar nav a {
+    display: block;
+    padding: 0.4rem 1.25rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.82rem;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .sidebar nav a:hover, .sidebar nav a.active {
+    color: var(--text);
+    background: rgba(56,189,248,0.08);
+    border-left-color: var(--accent);
+  }
+  .sidebar .section-label {
+    padding: 0.75rem 1.25rem 0.1rem;
+    font-size: 0.65rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #475569; font-weight: 600;
+  }
+  .sidebar .spacer { height: 0.5rem; }
+
+  /* ── Main ── */
+  .main { flex: 1; max-width: 1000px; margin: 0 auto; padding: 2rem 2rem 5rem; }
+
+  .hero {
+    text-align: center; padding: 2rem 0 1.5rem;
+    border-bottom: 1px solid var(--border); margin-bottom: 2rem;
+  }
+  .hero h1 {
+    font-size: 2.2rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1.2;
+  }
+  .hero .subtitle { color: var(--text-dim); margin-top: 0.5rem; font-size: 1.05rem; }
+  .hero .tags { margin-top: 0.75rem; }
+  .tag {
+    display: inline-block; padding: 0.15rem 0.55rem;
+    border-radius: 4px; font-size: 0.72rem; font-weight: 600;
+    margin: 0 0.2rem;
+  }
+  .tag.python { background: #3572A5; color: white; }
+  .tag.airflow { background: #017A5B; color: white; }
+  .tag.api { background: #6366f1; color: white; }
+  .tag.upload { background: #ea580c; color: white; }
+  .tag.embed { background: #0891b2; color: white; }
+
+  section { margin-bottom: 3rem; scroll-margin-top: 0.5rem; }
+  section h2 {
+    font-size: 1.5rem; font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  section h2 .step {
+    font-size: 0.8rem;
+    background: var(--accent); color: #0f172a;
+    border-radius: 999px; padding: 0.1rem 0.6rem; font-weight: 600;
+  }
+  section h3 {
+    font-size: 1.1rem; font-weight: 600;
+    margin: 1.25rem 0 0.5rem; color: var(--accent);
+  }
+  section p, section li { color: var(--text-dim); margin-bottom: 0.6rem; }
+  section ul, section ol { padding-left: 1.25rem; }
+  section li { margin-bottom: 0.3rem; }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem;
+    margin: 1.25rem 0;
+  }
+  .card-label {
+    font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.06em; font-weight: 600;
+    color: var(--text-dim); margin-bottom: 0.4rem;
+  }
+
+  .info-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1rem; margin: 1rem 0;
+  }
+  .info-cell {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem;
+  }
+  .info-cell h4 { font-size: 0.85rem; margin-bottom: 0.3rem; }
+  .info-cell p { font-size: 0.82rem; margin: 0; }
+
+  .comparison {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1rem; margin: 1.25rem 0;
+  }
+  .compare-card {
+    border-radius: 10px; padding: 1.15rem;
+    border: 1px solid var(--border);
+  }
+  .compare-card.good { background: rgba(74,222,128,0.06); border-color: rgba(74,222,128,0.2); }
+  .compare-card.bad  { background: rgba(248,113,113,0.06); border-color: rgba(248,113,113,0.2); }
+  .compare-card.warn { background: rgba(251,191,36,0.06); border-color: rgba(251,191,36,0.2); }
+  .compare-card.info { background: rgba(56,189,248,0.06); border-color: rgba(56,189,248,0.2); }
+  .compare-card h4 { font-size: 0.85rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; }
+  .compare-card.good h4 { color: var(--green); }
+  .compare-card.bad h4  { color: var(--red); }
+  .compare-card.warn h4 { color: var(--amber); }
+  .compare-card.info h4 { color: var(--accent); }
+  .compare-card p { font-size: 0.82rem; margin-bottom: 0; color: var(--text-dim); }
+
+  .mermaid-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem 0.5rem;
+    margin: 1.25rem 0; overflow-x: auto; text-align: center;
+  }
+  .mermaid-box svg { max-width: 100%; height: auto; }
+
+  .code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.8rem; overflow-x: auto;
+    margin: 0.75rem 0; color: #e2e8f0;
+  }
+  .code-block .comment { color: #64748b; }
+  .code-block .keyword { color: #38bdf8; }
+  .code-block .func { color: #a78bfa; }
+  .code-block .string { color: #4ade80; }
+
+  .callout {
+    background: rgba(56,189,248,0.06);
+    border-left: 3px solid var(--accent);
+    padding: 0.9rem 1.1rem;
+    border-radius: 0 8px 8px 0; margin: 1rem 0;
+  }
+  .callout.warn {
+    background: rgba(251,191,36,0.06);
+    border-left-color: var(--amber);
+  }
+  .callout.danger {
+    background: rgba(248,113,113,0.06);
+    border-left-color: var(--red);
+  }
+  .callout p { margin-bottom: 0; font-size: 0.9rem; }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 1rem 0;
+  }
+  th, td {
+    padding: 0.5rem 0.75rem; border: 1px solid var(--border);
+    text-align: left; font-size: 0.82rem;
+  }
+  th { background: #0b1120; color: var(--accent); font-weight: 600; }
+  td { color: var(--text-dim); }
+
+  .flow-steps { counter-reset: step; }
+  .flow-step {
+    counter-increment: step;
+    padding: 0.8rem 0.8rem 0.8rem 2.8rem;
+    border-left: 2px solid var(--border);
+    margin-left: 0.8rem; position: relative;
+  }
+  .flow-step:last-child { border-left-color: transparent; }
+  .flow-step::before {
+    content: counter(step);
+    position: absolute; left: -1.0rem; top: 0.8rem;
+    width: 1.8rem; height: 1.8rem; border-radius: 50%;
+    background: var(--accent); color: #0f172a;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.8rem;
+  }
+  .flow-step .fs-title { font-weight: 600; font-size: 0.9rem; }
+  .flow-step .fs-desc { font-size: 0.85rem; color: var(--text-dim); }
+
+  .verdict-banner {
+    text-align: center; padding: 1.5rem; border-radius: 12px;
+    margin: 1.5rem 0;
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.2);
+  }
+  .verdict-banner h3 { color: var(--red); margin-bottom: 0.5rem; }
+  .verdict-banner p { color: var(--text-dim); max-width: 650px; margin: 0 auto; font-size: 0.9rem; }
+
+  @media (max-width: 768px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); padding: 0.5rem 0; }
+    .sidebar h2 { padding: 0.5rem 1rem; }
+    .sidebar nav a { padding: 0.25rem 1rem; font-size: 0.78rem; }
+    .sidebar .section-label { padding: 0.4rem 1rem 0.05rem; }
+    .main { padding: 1.25rem 0.75rem 3rem; }
+    .hero h1 { font-size: 1.5rem; }
+    .comparison, .info-grid { grid-template-columns: 1fr; }
+    section h2 { font-size: 1.2rem; }
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <h2>📦 Interactions Pipeline · Explained</h2>
+    <nav>
+      <div class="section-label">Overview</div>
+      <a href="#intro">The Two DAGs</a>
+      <a href="#big-picture">End-to-End Flow</a>
+
+      <div class="section-label">Upload DAG</div>
+      <a href="#upload-overview">askit_monthly_interactions_upload_to_contenthub</a>
+      <a href="#upload-plan">Plan Resolution Logic</a>
+      <a href="#upload-tasks">Tasks in Detail</a>
+      <a href="#upload-flow">Upload Flow Diagram</a>
+
+      <div class="section-label">Embed DAG</div>
+      <a href="#embed-overview">askit_embeddings_from_interactions</a>
+      <a href="#embed-tasks">Tasks in Detail</a>
+      <a href="#embed-flow">Embed Flow Diagram</a>
+
+      <div class="section-label">Analysis</div>
+      <a href="#where-is-content">Where Is the File Content?</a>
+      <a href="#feasibility">Feasibility: Parse → Summarize → Embed</a>
+      <a href="#verdict">Final Verdict</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <!-- ════════════════════════════════════════ -->
+    <!-- HERO -->
+    <!-- ════════════════════════════════════════ -->
+    <div class="hero">
+      <h1>Interactions Pipeline</h1>
+      <div class="subtitle">Two Airflow DAGs that upload interaction data to ContentHub and then embed it — with a feasibility analysis of adding parse→summarize→embed.</div>
+      <div class="tags">
+        <span class="tag python">Python</span>
+        <span class="tag airflow">Airflow</span>
+        <span class="tag upload">Upload DAG</span>
+        <span class="tag embed">Embed DAG</span>
+        <span class="tag api">External APIs</span>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- INTRO -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="intro">
+      <h2>The Two DAGs</h2>
+      <p>Together, these two DAGs form a pipeline that takes "interactions" data (probably user conversations or messages) and makes it searchable via vector embeddings:</p>
+
+      <div class="info-grid">
+        <div class="info-cell" style="border-color:#ea580c;">
+          <h4 style="color:#ea580c;">⬆️ Upload DAG</h4>
+          <p><code>askit_monthly_interactions_upload_to_contenthub</code><br>
+          Runs daily @ 3:00 AM ET. Uploads interaction records from the previous completed day into ContentHub, organized by month folders. <strong>~350 lines.</strong></p>
+        </div>
+        <div class="info-cell" style="border-color:#0891b2;">
+          <h4 style="color:#0891b2;">🧠 Embed DAG</h4>
+          <p><code>askit_embeddings_from_interactions</code><br>
+          Runs daily @ 4:00 AM ET. Triggers an external embedding service to generate vector embeddings from the uploaded files. <strong>~295 lines.</strong></p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <p><strong>💡 The schedule is intentional:</strong> Upload runs at 3 AM ET (so yesterday's data is available), then Embed runs at 4 AM ET (so it can process what was just uploaded). The hour gap gives the upload time to complete.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- BIG PICTURE -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="big-picture">
+      <h2>End-to-End Flow</h2>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph UploadDAG["askit_monthly_interactions_upload_to_contenthub"]
+        direction TB
+        UP1["get_token<br/>OAuth2 client credentials"]
+        UP2["compute_plan<br/>resolve month, dates, chunks"]
+        UP3["extract_chunks<br/>split into 7-day intervals"]
+        UP4["purge_interactions<br/>DELETE old data from folder"]
+        UP5["upload_interactions_chunk<br/>POST × N chunks<br/>→ ContentHub API"]
+        UP1 & UP2 --> UP3 --> UP4 --> UP5
+    end
+
+    subgraph ContentHub["ContentHub / External API"]
+        CH1["Receives interaction data<br/>Stores files in month folders<br/>e.g. /.../months/may/"]
+    end
+
+    subgraph EmbedDAG["askit_embeddings_from_interactions"]
+        direction TB
+        EM1["load_json_config<br/>read embedding config"]
+        EM2["validate_core_service<br/>ping core health"]
+        EM3["get_token<br/>OAuth2 client credentials"]
+        EM4["trigger_local_file_embedding<br/>POST → Embedding Service<br/>(fire-&-forget)"]
+        EM1 --> EM2 --> EM3 --> EM4
+    end
+
+    subgraph EmbedService["Embedding Service (external)"]
+        ES1["Reads files from<br/>ContentHub storage"]
+        ES2["Chunks content"]
+        ES3["Generates embeddings"]
+        ES4["Stores in ChromaDB"]
+    end
+
+    UploadDAG --> |"files stored"| ContentHub
+    EmbedDAG --> |"triggers"| EmbedService
+    ContentHub -.-> |"reads files"| EmbedService
+
+    style UploadDAG fill:#1e293b,stroke:#ea580c
+    style EmbedDAG fill:#1e293b,stroke:#0891b2
+    style ContentHub fill:#1e293b,stroke:#a78bfa
+    style EmbedService fill:#1e293b,stroke:#4ade80
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">🔁 How They Connect</div>
+        <table>
+          <tr><th>Step</th><th>DAG</th><th>What Happens</th></tr>
+          <tr>
+            <td>1. Upload</td>
+            <td style="color:#ea580c;">Upload</td>
+            <td>Fetches interaction data from some source and uploads it to ContentHub under month folders (e.g. <code>/.../months/may/</code>). Runs <strong>3 AM</strong>.</td>
+          </tr>
+          <tr>
+            <td>2. Embed</td>
+            <td style="color:#0891b2;">Embed</td>
+            <td>Triggers the embedding service URL with config. The external service reads the uploaded files, chunks them, generates vectors, stores in ChromaDB. Runs <strong>4 AM</strong>.</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>⚠️ Important:</strong> These DAGs are <strong>not directly linked</strong> in Airflow — there's no <code>UploadDAG >> EmbedDAG</code> dependency. They're just scheduled an hour apart. The connection is implicit: the embedding service reads from the same ContentHub storage that the upload DAG writes to.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- UPLOAD OVERVIEW -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="upload-overview">
+      <h2><span class="step">U</span> Upload DAG — Deep Dive</h2>
+
+      <div class="card">
+        <div class="card-label">📋 DAG Properties</div>
+        <table>
+          <tr><th>Property</th><th>Value</th></tr>
+          <tr><td>DAG ID</td><td><code>askit_monthly_interactions_upload_to_contenthub</code></td></tr>
+          <tr><td>Schedule</td><td>Daily @ 03:00 America/New_York</td></tr>
+          <tr><td>Max active tasks</td><td>1</td></tr>
+          <tr><td>Retries</td><td>1 (5 min delay)</td></tr>
+          <tr><td>Style</td><td>TaskFlow API (<code>@task</code> decorators)</td></tr>
+          <tr><td>Dynamic tasks</td><td>Yes — <code>.expand()</code> to fan out upload chunks</td></tr>
+        </table>
+      </div>
+
+      <h3>The Plan Resolution Logic</h3>
+      <p>This is the most sophisticated part. The DAG decides <em>which</em> month folder and date range to process. Let's walk through it.</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Plan["resolve_interactions_plan()"]
+        direction TB
+        A["as_of_date = today in ET<br/>effective_end = yesterday"]
+        B{"dynamic_enabled?"}
+
+        C["month = effective_end.month<br/>year = effective_end.year"]
+        D["Parse TARGET_MONTH<br/>(e.g. 'may' or 'may_2026')"]
+        E["If no year given, use<br/>most recent completed<br/>cycle of that month"]
+
+        F["start_date = year-month-01"]
+        G["month_last_day"]
+        H["end_date = min(yesterday, month_last_day)"]
+        I["folder_month_name = 'may'"]
+        J["folder_path = base/month_name"]
+        K["chunks = split into<br/>INTERACTIONS_CHUNK_DAYS<br/>intervals (default 7)"]
+
+        A --> B
+        B -->|"true (default)"| C
+        B -->|"false"| D
+        D --> E
+        E --> F
+        C --> F
+        F --> G --> H --> I --> J --> K
+    end
+
+    subgraph Example["When today is 2026-07-21 (dynamic=true)"]
+        EX1["yesterday = 2026-07-20"]
+        EX2["month = 7 (july), year = 2026"]
+        EX3["start = 2026-07-01"]
+        EX4["end = 2026-07-20 (yesterday)"]
+        EX5["folder = .../months/july"]
+        EX6["chunks = [[07-01—07-07], [07-08—07-14], [07-15—07-20]]"]
+    end
+
+    style Plan fill:#1e293b,stroke:#38bdf8
+    style Example fill:#1e293b,stroke:#fbbf24
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- UPLOAD TASKS -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="upload-tasks">
+      <h2>Upload DAG — Tasks in Detail</h2>
+
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="fs-title">get_token</div>
+          <div class="fs-desc">POST to <code>TOKEN_URL</code> with OAuth2 client credentials grant. Returns the <code>access_token</code> string. This is a <code>@task</code> — the return value is pushed to XCom automatically by the TaskFlow API.</div>
+        </div>
+
+        <div class="flow-step">
+          <div class="fs-title">compute_plan</div>
+          <div class="fs-desc">Calls <code>resolve_interactions_plan()</code> which determines the month folder, date range, and 7-day chunks. Takes these inputs:
+            <ul style="margin-top:0.3rem;">
+              <li><code>as_of_date</code> — "today" in ET</li>
+              <li><code>dynamic_enabled</code> — Airflow Variable flag (default <code>true</code>)</li>
+              <li><code>target_month</code> — for manual backfill (e.g. <code>"may"</code> or <code>"may_2026"</code>)</li>
+            </ul>
+            Returns a dict with <code>folder_path</code>, <code>start_date</code>, <code>end_date</code>, <code>chunks</code>.
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="fs-title">extract_chunks</div>
+          <div class="fs-desc">Pulls <code>plan["chunks"]</code> — the list of 7-day date range dicts. Each chunk looks like <code>{"folder_path": "...", "start_date": "2026-07-01", "end_date": "2026-07-07"}</code>.</div>
+        </div>
+
+        <div class="flow-step">
+          <div class="fs-title">purge_interactions</div>
+          <div class="fs-desc"><strong>DELETE</strong> request to <code>/bv/v1/purge_data_file</code> with <code>is_delete_all_files: true</code>. Clears the target month folder before re-uploading. Handles several edge cases gracefully:
+            <ul style="margin-top:0.3rem;">
+              <li>404 / "folder not found" → skip (nothing to purge)</li>
+              <li>500 + "error fetching file list" → skip (known backend bug)</li>
+              <li>All other failures → raise</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="fs-title">upload_interactions_chunk <span style="color:var(--accent);font-size:0.8rem;">(mapped tasks)</span></div>
+          <div class="fs-desc">Uses Airflow's <code>.expand()</code> to create one task <strong>per chunk</strong>. Each sends a POST to <code>/sn/v1/upload_past_interactions_into_contenthub</code> with the folder path and date range. Timeout: 15 min (configurable, default 900s). This is where the <em>actual interaction data</em> gets sent to ContentHub.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- UPLOAD FLOW DIAGRAM -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="upload-flow">
+      <h2>Upload DAG — Flow Diagram</h2>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph DAG["askit_monthly_interactions_upload_to_contenthub"]
+        direction TB
+        TOK["get_token<br/>OAuth2 → access_token"] --> PLAN["compute_plan<br/>resolve month & date range"]
+        PLAN --> CHUNKS["extract_chunks<br/>[chunk1, chunk2, ...]"]
+        CHUNKS --> PURGE["purge_interactions<br/>DELETE old files from folder"]
+        PURGE --> UPLOAD["upload_interactions_chunk<br/>POST × N (mapped tasks)"]
+
+        subgraph OneChunk["Each chunk POST:"]
+            OC1["contenthub_folder_path: /.../months/july"]
+            OC2["start_date: 2026-07-01"]
+            OC3["end_date: 2026-07-07"]
+        end
+    end
+
+    subgraph External["External Services"]
+        TS["Token Service"]
+        API_UP["ContentHub API<br/>/sn/v1/upload_past_interactions_into_contenthub"]
+        API_PURGE["ContentHub API<br/>/bv/v1/purge_data_file"]
+        STORAGE["ContentHub Storage<br/>(organized by month folders)"]
+    end
+
+    TOK -.-> TS
+    PURGE -.-> API_PURGE -.-> STORAGE
+    UPLOAD -.-> API_UP -.-> STORAGE
+
+    style DAG fill:#1e293b,stroke:#ea580c
+    style External fill:#1e293b,stroke:#64748b
+    style OneChunk fill:#1e293b,stroke:#fbbf24
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="comment"># The upload payload — what gets POSTed for each chunk:</span><br>
+{<br>
+&nbsp;&nbsp;<span class="string">"contenthub_folder_path"</span>: <span class="string">"/.../months/july"</span>,<br>
+&nbsp;&nbsp;<span class="string">"start_date"</span>: <span class="string">"2026-07-01"</span>,<br>
+&nbsp;&nbsp;<span class="string">"end_date"</span>: <span class="string">"2026-07-07"</span><br>
+}
+      </div>
+
+      <div class="comparison">
+        <div class="compare-card good">
+          <h4>✅ Smart edge-case handling</h4>
+          <p>Purge tolerates missing folders and known backend bugs. Uses <code>chunk_days</code> for configurable granularity. Dynamic mode picks the right month automatically.</p>
+        </div>
+        <div class="compare-card bad">
+          <h4>❌ No filesystem access</h4>
+          <p>Despite the name "upload", the DAG doesn't read actual interaction files. It sends date ranges to an API — the ContentHub server presumably queries some DB and creates the files internally.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- EMBED DAG -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="embed-overview">
+      <h2><span class="step">E</span> Embed DAG — Deep Dive</h2>
+
+      <div class="card">
+        <div class="card-label">📋 DAG Properties</div>
+        <table>
+          <tr><th>Property</th><th>Value</th></tr>
+          <tr><td>DAG ID</td><td><code>askit_embeddings_from_interactions</code></td></tr>
+          <tr><td>Schedule</td><td>Daily @ 04:00 America/New_York</td></tr>
+          <tr><td>Retries</td><td>0</td></tr>
+          <tr><td>Style</td><td>Classic <code>PythonOperator</code></td></tr>
+          <tr><td>XCom-based</td><td>Yes — <code>xcom_push</code> / <code>xcom_pull</code></td></tr>
+        </table>
+      </div>
+
+      <p>This DAG is simpler — it just triggers an external embedding service with configuration metadata. It does zero data processing itself.</p>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- EMBED TASKS -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="embed-tasks">
+      <h2>Embed DAG — Tasks in Detail</h2>
+
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="fs-title">load_json_config</div>
+          <div class="fs-desc">Reads JSON from Airflow Variable <code>askit_embeddings_config_interactions</code>. Validates required keys (<code>spaceId</code>, <code>flowId</code>, <code>spaceName</code>, <code>userName</code>, <code>userRole</code>). Sets defaults for optional flags. Generates a <code>correlationId</code> (UUID). Pushes to XCom.</div>
+        </div>
+
+        <div class="flow-step">
+          <div class="fs-title">validate_core_service</div>
+          <div class="fs-desc">Pings <code>canvasai_core_svc_url/ping</code> with the correlationId header. Just a health check before proceeding.</div>
+        </div>
+
+        <div class="flow-step">
+          <div class="fs-title">get_token</div>
+          <div class="fs-desc">Same OAuth2 flow as the upload DAG — client credentials → access_token. Pushes to XCom.</div>
+        </div>
+
+        <div class="flow-step">
+          <div class="fs-title">trigger_local_file_embedding</div>
+          <div class="fs-desc">The core action. Builds a payload from the config + token, fires a POST to the embedding service URL. Uses <strong>fire-and-forget</strong> timeout handling:
+            <ul style="margin-top:0.3rem;">
+              <li>Connect timeout: 10s</li>
+              <li>Read timeout: 10s</li>
+              <li>On ReadTimeout → log and continue (assume backend accepted it)</li>
+              <li>On ConnectionError → raise (real failure)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="comment"># The embed payload sent to the external service:</span><br>
+{<br>
+&nbsp;&nbsp;<span class="string">"spaceId"</span>: <span class="string">"..."</span>,<br>
+&nbsp;&nbsp;<span class="string">"flowId"</span>: <span class="string">"..."</span>,<br>
+&nbsp;&nbsp;<span class="string">"spaceName"</span>: <span class="string">"..."</span>,<br>
+&nbsp;&nbsp;<span class="string">"userName"</span>: <span class="string">"..."</span>,<br>
+&nbsp;&nbsp;<span class="string">"userRole"</span>: <span class="string">"..."</span>,<br>
+&nbsp;&nbsp;<span class="string">"isFromDatahub"</span>: <span class="keyword">true</span>,<br>
+&nbsp;&nbsp;<span class="string">"vectorStorageType"</span>: <span class="string">"ChromaDB"</span>,<br>
+&nbsp;&nbsp;<span class="string">"clearEmbeding"</span>: <span class="keyword">false</span>,<br>
+&nbsp;&nbsp;<span class="string">"clearIndexing"</span>: <span class="keyword">false</span>,<br>
+&nbsp;&nbsp;<span class="string">"runEmbedding"</span>: <span class="keyword">true</span>,<br>
+&nbsp;&nbsp;<span class="string">"runIndexing"</span>: <span class="keyword">false</span><br>
+}
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- EMBED FLOW -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="embed-flow">
+      <h2>Embed DAG — Flow Diagram</h2>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph DAG["askit_embeddings_from_interactions"]
+        direction TB
+        L1["load_json_config<br/>read & validate config"] --> L2["validate_core_service<br/>health check ping"]
+        L2 --> L3["get_token<br/>OAuth2"]
+        L3 --> L4["trigger_local_file_embedding<br/>POST request"]
+
+        subgraph FireForget["Fire-and-Forget Pattern"]
+            direction TB
+            F1["POST with timeout (10s, 10s)"]
+            F2{"ReadTimeout?"}
+            F3["Log and continue"]
+            F4{"ConnectionError?"}
+            F5["Raise"]
+            F1 --> F2
+            F1 --> F4
+            F2 -->|"yes"| F3
+            F4 -->|"yes"| F5
+        end
+    end
+
+    subgraph BlackBox["External Embedding Service (Black Box)"]
+        BB1["Reads files from ContentHub"]
+        BB2["Chunks content"]
+        BB3["Generates embeddings"]
+        BB4["Stores in ChromaDB"]
+    end
+
+    DAG -->|"trigger"| BlackBox
+
+    style DAG fill:#1e293b,stroke:#0891b2
+    style FireForget fill:#1e293b,stroke:#fbbf24
+    style BlackBox fill:#1e293b,stroke:#f87171,stroke-dasharray:6
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- WHERE IS THE CONTENT -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="where-is-content">
+      <h2>Where Is the File Content?</h2>
+
+      <p>This is the central question for your parse→summarize→embed requirement. Let's trace where the actual interaction data lives at each step:</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph Source["Source of Interaction Data"]
+        S1["Some database?<br/>API? External system?"]
+    end
+
+    subgraph Upload["Upload DAG (Airflow)"]
+        U1["Sends date ranges + folder path<br/>❌ No file content"]
+    end
+
+    subgraph API["ContentHub API"]
+        A1["Receives date range request"]
+        A2["Queries data source"]
+        A3["Creates files in month folder"]
+        A4["Files now exist on server"]
+    end
+
+    subgraph Embed["Embed DAG (Airflow)"]
+        E1["Sends config + spaceId<br/>❌ No file content"]
+    end
+
+    subgraph EmbedSvc["Embedding Service (external)"]
+        ES1["Receives trigger"]
+        ES2["Reads files from ContentHub ✅"]
+        ES3["Chunks + embeds"]
+        ES4["Stores in ChromaDB"]
+    end
+
+    Source -.-> A1
+    Upload --> API
+    API --> EmbedSvc
+    Embed --> EmbedSvc
+
+    style Upload fill:#1e293b,stroke:#ea580c
+    style Embed fill:#1e293b,stroke:#0891b2
+    style EmbedSvc fill:#1e293b,stroke:#4ade80
+    style API fill:#1e293b,stroke:#a78bfa
+    style Source fill:#1e293b,stroke:#64748b
+        </div>
+      </div>
+
+      <div class="comparison">
+        <div class="compare-card good">
+          <h4>✅ Where files DO exist</h4>
+          <p><strong>ContentHub storage</strong> (server-side) — After the upload DAG runs, files live on the ContentHub server in month-organized folders. The embedding service then reads them from there.</p>
+        </div>
+        <div class="compare-card bad">
+          <h4>❌ Where files do NOT exist</h4>
+          <p><strong>In the Airflow DAGs.</strong> Neither DAG reads, writes, or processes file content. They only send metadata (date ranges, folder paths, config flags) to external APIs. The Airflow workers never see the actual interaction data.</p>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:var(--red);">
+        <div class="card-label" style="color:var(--red);">🚫 Critical Gap for Your Requirement</div>
+        <p style="margin-bottom:0;">To add <strong>custom Python parse logic + OpenAI summarization</strong> to this pipeline, you would need file content available <em>in the DAG worker's memory/filesystem</em>. Currently it isn't. The upload DAG sends date ranges (not files) to ContentHub, and the embed DAG sends config (not files) to the embedding service.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- FEASIBILITY -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="feasibility">
+      <h2>Feasibility: Parse → Summarize → Embed</h2>
+
+      <p>You asked: <em>"Can we use custom parse logic in Python to parse the file, summarize content using OpenAI LLM, and embed both parsed + summarized content?"</em></p>
+
+      <h3>What Would Need to Change</h3>
+
+      <p>To make this work, file content would need to flow through the DAG. Here's the minimum viable change:</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Proposed["Proposed Pipeline"]
+        direction TB
+
+        subgraph Existing["Existing (keep)"]
+            EX1["Upload DAG:<br/>send date ranges to ContentHub"]
+            EX2["ContentHub stores files"]
+        end
+
+        subgraph Fetch["NEW: Fetch + Parse"]
+            N1["fetch_contenthub_files<br/>Download files from<br/>ContentHub via API"]
+            N2["parse_custom_logic<br/>Python parser on<br/>local file content ✅"]
+        end
+
+        subgraph SummarizeEmbed["NEW: Summarize + Embed"]
+            S1["summarize_with_openai<br/>LLM call per document"]
+            S2["generate_embeddings<br/>OpenAI Ada / local model"]
+            S3["store_embeddings<br/>ChromaDB<br/>(2 vectors per doc:<br/>parsed + summary)"]
+        end
+
+        Existing --> Fetch --> N2 --> S1 --> S2 --> S3
+
+        subgraph Or["OR: Modify Embed DAG"]
+            R1["Keep existing trigger as-is<br/>for backward compatibility"]
+            R2["Add new task chain<br/>that reads from ContentHub,<br/>parses, summarizes, embeds"]
+        end
+    end
+
+    style Existing fill:#1e293b,stroke:#64748b
+    style Fetch fill:#1e293b,stroke:#38bdf8
+    style SummarizeEmbed fill:#1e293b,stroke:#4ade80
+    style Or fill:#1e293b,stroke:#fbbf24
+        </div>
+      </div>
+
+      <h3>Required Changes — Detailed</h3>
+      <table>
+        <tr><th>Capability</th><th>Current State</th><th>What's Needed</th></tr>
+        <tr>
+          <td>Read file content</td>
+          <td style="color:var(--red);">❌ Not in either DAG</td>
+          <td>Add a task that fetches files from ContentHub via its API (if one exists) or from an intermediate storage</td>
+        </tr>
+        <tr>
+          <td>Custom Python parser</td>
+          <td style="color:var(--red);">❌ No files to parse</td>
+          <td>Implement parsing logic on fetched file content — possible in a <code>PythonOperator</code></td>
+        </tr>
+        <tr>
+          <td>OpenAI summarization</td>
+          <td style="color:var(--red);">❌ No OpenAI integration</td>
+          <td>Add <code>openai</code> SDK, API key to Airflow Variables, call <code>chat.completions.create()</code></td>
+        </tr>
+        <tr>
+          <td>Generate embeddings</td>
+          <td style="color:var(--amber);">⚠️ Delegated to external service</td>
+          <td>Either use OpenAI Embeddings API locally or feed summarized text to the existing embedding service</td>
+        </tr>
+        <tr>
+          <td>Store parsed + summary embeddings</td>
+          <td style="color:var(--amber);">⚠️ Embed service writes to ChromaDB</td>
+          <td>Add a direct ChromaDB write task, or modify the embedding service to accept additional content</td>
+        </tr>
+      </table>
+
+      <div class="comparison">
+        <div class="compare-card info">
+          <h4>🛠️ What IS feasible (with changes)</h4>
+          <p>Adding PythonOperator tasks to the <strong>embed DAG</strong> that:<br>
+          1. Call ContentHub's API to download files<br>
+          2. Run custom parse logic<br>
+          3. Call OpenAI for summaries<br>
+          4. Generate embeddings libraries (sentence-transformers / openai)<br>
+          5. Store in ChromaDB via the ChromaDB Python client</p>
+        </div>
+        <div class="compare-card bad">
+          <h4>🚫 What is NOT feasible</h4>
+          <p>Injecting custom parse/summarize logic into the <strong>existing black-box embedding service</strong> — you don't control it. And the upload DAG sends no file content, only date ranges.</p>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>⚡ The most pragmatic approach:</strong> Don't modify either DAG. Build a <strong>third DAG</strong> (or standalone script) that:<br>
+        1. Fetches files from ContentHub (maybe via a download API endpoint)<br>
+        2. Parses + summarizes + embeds locally<br>
+        3. Writes all three vectors (raw chunks, parsed structure, summary) to ChromaDB<br>
+        This keeps the existing pipeline untouched and is independently testable.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- VERDICT -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="verdict">
+      <h2>Final Verdict</h2>
+
+      <div class="card">
+        <div class="card-label">📊 Summary Assessment</div>
+        <table>
+          <tr><th>Question</th><th>Answer</th></tr>
+          <tr>
+            <td>Does any DAG read file content locally?</td>
+            <td style="color:var(--red);font-weight:600;font-size:1rem;">No.</td>
+          </tr>
+          <tr>
+            <td>Is the pipeline entirely external-service-reliant?</td>
+            <td style="color:var(--green);font-weight:600;font-size:1rem;">Yes.</td>
+          </tr>
+          <tr>
+            <td>Upload DAG — does it handle file content?</td>
+            <td>❌ No. Sends date ranges to ContentHub API. The server creates the files.</td>
+          </tr>
+          <tr>
+            <td>Embed DAG — does it handle file content?</td>
+            <td>❌ No. Sends metadata config to a black-box embedding service.</td>
+          </tr>
+          <tr>
+            <td>Can you add parse→summarize→embed as new tasks?</td>
+            <td style="color:var(--amber);font-weight:600;">⚠️ Yes, but only if you also add file-fetching capability.</td>
+          </tr>
+          <tr>
+            <td>Can the existing external services do this?</td>
+            <td style="color:var(--red);font-weight:600;">❌ Unknown — the embedding service is a black box.</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="comparison">
+        <div class="compare-card good">
+          <h4>✅ What This Pipeline Does Well</h4>
+          <p>It cleanly separates concerns:<br>
+          • Upload → gets data into ContentHub<br>
+          • Embed → triggers vectorization<br>
+          Each DAG has one job. The schedule ensures data is available before embedding runs. Error handling (fire-and-forget, purge edge cases) is thoughtful.</p>
+        </div>
+        <div class="compare-card bad">
+          <h4>❌ What It Cannot Do (as-is)</h4>
+          <p>• Read or process file content in Airflow<br>
+          • Run custom Python on interaction data<br>
+          • Call OpenAI or any LLM<br>
+          • Store structured + summarized embeddings side by side<br>
+          These would require significant new code.</p>
+        </div>
+      </div>
+
+      <div class="callout danger">
+        <p><strong>🚩 Bottom line:</strong> The <span style="color:var(--accent);">parse → summarize → embed</span> pipeline you want <strong>cannot be dropped into the existing DAGs</strong>. Both DAGs are pure orchestrators — they delegate all data work to external services. You'd need to build a <strong>data-processing layer</strong> (new tasks, a new DAG, or a new service) that fetches files from ContentHub, runs your Python parser, calls OpenAI, and then stores the results. The existing pipeline is a <em>trigger</em>, not a <em>processor</em>.</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- FOOTER -->
+    <!-- ════════════════════════════════════════ -->
+    <div style="border-top:1px solid var(--border);padding-top:1.5rem;margin-top:2rem;text-align:center;color:var(--text-dim);font-size:0.8rem;">
+      <p>Analyzed from <code>upload_interactions.py</code> + <code>embed_interactions.py</code>.</p>
+      <p style="margin-top:0.2rem;"><a href="#" onclick="window.print()" style="color:var(--accent);">Print / Save as PDF</a></p>
+    </div>
+  </main>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1e293b',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#334155',
+      lineColor: '#38bdf8',
+      secondaryColor: '#0f172a',
+      tertiaryColor: '#1e293b',
+      fontSize: '14px'
+    },
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+    sequence: { showSequenceNumbers: false }
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+        const id = entry.target.getAttribute('id');
+        const link = document.querySelector(`.sidebar nav a[href="#${id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  document.querySelectorAll('section[id]').forEach(s => observer.observe(s));
+  document.querySelectorAll('.sidebar nav a').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

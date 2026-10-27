@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nanoGPT Math — Learn the Concepts, Work the Problems</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0b1120; --bg-card: #1e293b; --bg-code: #0f172a;
+    --text: #e2e8f0; --text-dim: #94a3b8;
+    --border: #1e3a5f; --accent: #38bdf8; --accent2: #a78bfa;
+    --green: #4ade80; --red: #f87171; --amber: #fbbf24;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; font-size: 15px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    text-align: center; padding: 2.5rem 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: radial-gradient(ellipse at center, rgba(56,189,248,0.06) 0%, transparent 70%);
+  }
+  .hero h1 {
+    font-size: 2.2rem; font-weight: 800;
+    background: linear-gradient(135deg, #38bdf8, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p { color: var(--text-dim); max-width: 650px; margin: 0.4rem auto 0; font-size: 1rem; }
+
+  /* ── Tab Navigation ── */
+  .tab-bar {
+    display: flex; justify-content: center; overflow-x: auto; gap: 2px;
+    background: #080f1c; border-bottom: 1px solid var(--border);
+    padding: 0 1rem; position: sticky; top: 0; z-index: 10;
+  }
+  .tab-bar::-webkit-scrollbar { height: 3px; }
+  .tab-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .tab-btn {
+    flex-shrink: 0; padding: 0.75rem 1.1rem;
+    background: transparent; border: none; color: var(--text-dim);
+    font-size: 0.8rem; font-weight: 500; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); background: rgba(56,189,248,0.04); }
+  .tab-btn.active {
+    color: var(--accent); border-bottom-color: var(--accent);
+    background: rgba(56,189,248,0.06);
+  }
+
+  /* ── Main Content ── */
+  .main { max-width: 880px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  section { margin-bottom: 2.5rem; scroll-margin-top: 4rem; }
+  section h2 {
+    font-size: 1.5rem; font-weight: 700; margin-bottom: 0.3rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  section h2 .num {
+    font-size: 0.8rem; background: var(--accent); color: #0f172a;
+    border-radius: 999px; padding: 0.1rem 0.6rem; font-weight: 600;
+  }
+  section h3 {
+    font-size: 1rem; font-weight: 600; color: var(--accent);
+    margin: 1.25rem 0 0.4rem;
+  }
+  section p, section li { color: var(--text-dim); margin-bottom: 0.5rem; }
+  section ul, section ol { padding-left: 1.25rem; }
+
+  .why-box {
+    background: rgba(56,189,248,0.06);
+    border-left: 3px solid var(--accent);
+    padding: 0.75rem 1rem; border-radius: 0 8px 8px 0;
+    margin: 0.75rem 0; font-size: 0.9rem;
+  }
+  .why-box p { margin-bottom: 0; }
+  .why-box strong { color: var(--accent); }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem; margin: 1rem 0;
+  }
+  .card-label {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 600; color: var(--text-dim); margin-bottom: 0.4rem;
+  }
+
+  .mermaid-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem 0.5rem;
+    margin: 1rem 0; overflow-x: auto; text-align: center;
+  }
+  .mermaid-box svg { max-width: 100%; height: auto; }
+  .mermaid-box .label { color: var(--text) !important; }
+
+  /* ── Problem box ── */
+  .problem {
+    background: #0f172a; border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem 1.25rem;
+    margin: 0.75rem 0; border-left: 3px solid var(--amber);
+  }
+  .problem h4 { font-size: 0.9rem; color: var(--amber); margin-bottom: 0.4rem; }
+  .problem p { font-size: 0.88rem; margin-bottom: 0.3rem; }
+  .problem .math { font-family: 'Times New Roman', serif; font-style: italic; }
+  .problem .hint {
+    font-size: 0.8rem; color: #64748b; margin-top: 0.4rem;
+    border-top: 1px solid var(--border); padding-top: 0.4rem;
+  }
+  .problem .answer {
+    display: none; margin-top: 0.5rem;
+    background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.15);
+    border-radius: 6px; padding: 0.6rem 0.8rem; font-size: 0.85rem;
+  }
+  .problem .answer.show { display: block; }
+  .problem .answer strong { color: var(--green); }
+  .show-btn {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-dim); padding: 0.2rem 0.6rem; border-radius: 4px;
+    font-size: 0.75rem; cursor: pointer; margin-top: 0.4rem;
+  }
+  .show-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Formula highlight ── */
+  .formula {
+    background: #0f172a; border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.75rem 1rem; margin: 0.5rem 0;
+    text-align: center; font-size: 1.1rem; font-family: 'Times New Roman', serif;
+    color: var(--accent2);
+  }
+
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.75rem 0;
+  }
+  .two-col .compare-card {
+    border-radius: 10px; padding: 1rem;
+    border: 1px solid var(--border);
+  }
+  .two-col .compare-card h4 { font-size: 0.85rem; margin-bottom: 0.3rem; }
+  .two-col .compare-card p { font-size: 0.82rem; margin: 0; }
+
+  .callout {
+    border-left: 3px solid var(--accent2);
+    background: rgba(167,139,250,0.06); padding: 0.75rem 1rem;
+    border-radius: 0 8px 8px 0; margin: 0.75rem 0; font-size: 0.88rem;
+  }
+  .callout p { margin-bottom: 0; }
+
+  /* ── Step list ── */
+  .step-list { counter-reset: step; }
+  .step-item {
+    counter-increment: step;
+    padding: 0.5rem 0.5rem 0.5rem 2.5rem;
+    border-left: 2px solid var(--border);
+    margin-left: 0.5rem; position: relative;
+  }
+  .step-item:last-child { border-left-color: transparent; }
+  .step-item::before {
+    content: counter(step);
+    position: absolute; left: -0.9rem; top: 0.5rem;
+    width: 1.6rem; height: 1.6rem; border-radius: 50%;
+    background: var(--accent); color: #0f172a;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.75rem;
+  }
+  .step-item .st-title { font-weight: 600; font-size: 0.9rem; }
+  .step-item .st-desc { font-size: 0.82rem; color: var(--text-dim); }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 1.5rem; }
+    .main { padding: 1.25rem 0.75rem 3rem; }
+    .two-col { grid-template-columns: 1fr; }
+    section h2 { font-size: 1.2rem; }
+    .tab-btn { padding: 0.6rem 0.8rem; font-size: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🧮 nanoGPT Math</h1>
+  <p>Learn the concepts behind the Transformer — one operation at a time.<br>Each tab builds on the last. Work the problems by hand to truly understand.</p>
+</div>
+
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" data-tab="tab1">1 · Vectors &amp; Matrices</button>
+  <button class="tab-btn" data-tab="tab2">2 · Scaling &amp; Variance</button>
+  <button class="tab-btn" data-tab="tab3">3 · Softmax &amp; Probabilities</button>
+  <button class="tab-btn" data-tab="tab4">4 · Causal Masking</button>
+  <button class="tab-btn" data-tab="tab5">5 · Full Self-Attention</button>
+  <button class="tab-btn" data-tab="tab6">6 · LayerNorm &amp; FFN</button>
+  <button class="tab-btn" data-tab="tab7">7 · Loss &amp; Gradients</button>
+</div>
+
+<div class="main">
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- TAB 1: VECTORS & MATRICES -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="tab-content active" id="tab1">
+    <section>
+      <h2><span class="num">1</span> Vector Spaces, Matrices &amp; Operations</h2>
+
+      <div class="why-box">
+        <p><strong>Why in nanoGPT:</strong> Every word starts as a token ID. That ID is mapped to a <strong>continuous vector</strong> via the token embedding table (<code>wte</code>). A position vector (<code>wpe</code>) is <strong>added</strong> to it to tell the model where the token sits in the sequence. Then <strong>matrix multiplications</strong> project these vectors into Query, Key, and Value spaces.</p>
+      </div>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph Embed["Token → Vector"]
+        T["Token ID: 24"] --> TE["Token Embedding (wte)<br/>lookup row 24"]
+        TE --> TV["e = [0.5, -1.2, 0.8]"]
+    end
+    subgraph Pos["Position"]
+        P["Pos: 2"] --> PE["Position Embedding (wpe)<br/>lookup row 2"]
+        PE --> PV["p = [0.1, 0.4, -0.2]"]
+    end
+    TV --> Add["✚ Element-wise Add"]
+    PV --> Add
+    Add --> X["x = e + p<br/>= [0.6, -0.8, 0.6]"]
+    X --> Proj["Linear Projection<br/>q = x · W_q"]
+    style Embed fill:#1e293b,stroke:#38bdf8
+    style Pos fill:#1e293b,stroke:#a78bfa
+    style Add fill:#1e293b,stroke:#fbbf24
+    style Proj fill:#1e293b,stroke:#4ade80
+        </div>
+      </div>
+
+      <h3>Key Ideas</h3>
+      <ul>
+        <li><strong>Vector:</strong> A list of numbers. In nanoGPT, every token is represented as a vector in high-dimensional space (e.g., 384 dimensions).</li>
+        <li><strong>Element-wise addition:</strong> Add corresponding positions: <code>[a, b] + [c, d] = [a+c, b+d]</code>. This is how token embedding + position embedding combine.</li>
+        <li><strong>Dot product:</strong> <code>u · v = u₁v₁ + u₂v₂ + ...</code>. Measures how aligned two vectors are. Core of the attention mechanism.</li>
+        <li><strong>Matrix × vector:</strong> Each output element is a dot product between a row of the matrix and the vector. This is how we project embeddings into Q/K/V space.</li>
+      </ul>
+
+      <div class="callout">
+        <p><strong>Tip:</strong> When reading matrix shapes in nanoGPT, you'll see <code>(B, T, C)</code> — Batch, Time/sequence position, Channels/embedding dimension. Matrix multiply "contracts" the last dimension of the first with the second-to-last of the second.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📝 Practice Problems</div>
+
+        <div class="problem">
+          <h4>Problem 1.1 — Embedding Addition</h4>
+          <p>Given token vector <b>e</b> = [0.5, -1.2, 0.8] and position vector <b>p</b> = [0.1, 0.4, -0.2], compute the input vector <b>x</b> = <b>e</b> + <b>p</b>.</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> <b>x</b> = [0.5+0.1, -1.2+0.4, 0.8+(-0.2)] = <b>[0.6, -0.8, 0.6]</b>
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 1.2 — Linear Projection</h4>
+          <p>Given input vector <b>x</b> = [1, 2] and projection matrix <b>W<sub>q</sub></b> = [[1, 0], [-1, 2]], compute the query vector <b>q</b> = <b>x</b> · <b>W<sub>q</sub></b>.</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> q₁ = 1·1 + 2·(-1) = -1, q₂ = 1·0 + 2·2 = 4 → <b>q = [-1, 4]</b>
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 1.3 — Dot Product Similarity</h4>
+          <p>Given <b>q</b> = [2, 1] and two key vectors <b>k₁</b> = [1, 3], <b>k₂</b> = [-1, 0], calculate dot products <b>q·k₁ᵀ</b> and <b>q·k₂ᵀ</b>.</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> q·k₁ = 2·1 + 1·3 = <b>5</b>. q·k₂ = 2·(-1) + 1·0 = <b>-2</b>. Token 1 is more "relevant" to the query.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- TAB 2: SCALING & VARIANCE -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="tab-content" id="tab2">
+    <section>
+      <h2><span class="num">2</span> Dynamic Score Scaling &amp; Variance Control</h2>
+
+      <div class="why-box">
+        <p><strong>Why in nanoGPT:</strong> The dot product <b>Q · Kᵀ</b> grows with the dimension of the vectors. If keys and queries have dimension <em>d<sub>k</sub></em> = 64, the dot product has variance ≈ 64. Large values push Softmax into "one-hot" territory — every token attends to just one other token. The fix: <strong>scale by 1/√d<sub>k</sub></strong> to keep variance ≈ 1.</p>
+      </div>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Before["Without Scaling: dₖ = 64"]
+        B1["q, k ~ 0 mean, 1 variance<br/>per component"]
+        B2["dot = Σ qᵢ·kᵢ"]
+        B3["variance of dot = dₖ = 64"]
+        B4["standard deviation = 8"]
+        B5["Softmax becomes near<br/>one-hot ← BAD"]
+    end
+    subgraph After["With Scaling: ÷√dₖ"]
+        A1["same q, k"]
+        A2["dot = (Σ qᵢ·kᵢ) / √64"]
+        A3["variance = 64/64 = 1"]
+        A4["standard deviation = 1"]
+        A5["Softmax stays diffuse ← GOOD"]
+    end
+    Before --> After
+    style Before fill:#1e293b,stroke:#f87171
+    style After fill:#1e293b,stroke:#4ade80
+        </div>
+      </div>
+
+      <h3>Key Ideas</h3>
+      <ul>
+        <li><strong>Variance of a sum:</strong> If you add <em>n</em> independent random variables each with variance σ², the sum has variance <em>n</em>·σ².</li>
+        <li><strong>Dot product variance:</strong> Each of the <em>d<sub>k</sub></em> products contributes variance 1 (assuming unit variance inputs), so total variance = <em>d<sub>k</sub></em>.</li>
+        <li><strong>Scaling:</strong> Dividing by √<em>d<sub>k</sub></em> brings variance back to 1, keeping attention weights diffuse at initialization.</li>
+      </ul>
+
+      <div class="formula">Attention(Q, K, V) = Softmax( QKᵀ / √dₖ ) · V</div>
+
+      <div class="card">
+        <div class="card-label">📝 Practice Problems</div>
+
+        <div class="problem">
+          <h4>Problem 2.1 — Variance Growth</h4>
+          <p>Suppose components of <b>q</b> and <b>k</b> in ℝ<sup>64</sup> are independent with mean 0 and variance 1. What is the expected variance of their dot product <b>q · k</b> before scaling?</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> Each of the 64 terms contributes variance 1. <b>Variance = 64.</b> The standard deviation is √64 = 8, meaning typical dot products are ≈ ±8 (range ~16).
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 2.2 — The Scaling Factor</h4>
+          <p>Calculate the scaling factor 1/√dₖ when dₖ = 64. If an unscaled dot product score is 16.0, what is the scaled score?</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> 1/√64 = 1/8 = <b>0.125</b>. Scaled score = 16.0 × 0.125 = <b>2.0</b>. The scaled scores now have reasonable magnitude for Softmax to produce a diffuse distribution.
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 2.3 — Compare Distributions</h4>
+          <p>Take raw scores [4.0, 2.0]. Before scaling (dₖ=1, no change), Softmax gives very concentrated weights. After scaling with dₖ=64 (divide by 8 → [0.5, 0.25]), compute both Softmax outputs and compare how "peaky" they are. <span class="hint">Hint: Softmax formula is in the next tab if you need it.</span></p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> Unscaled: e⁴/(e⁴+e²) = 54.6/61.0 = <b>0.88</b> vs 0.12 — very peaky.<br>Scaled: e⁰·⁵/(e⁰·⁵+e⁰·²⁵) = 1.65/2.93 = <b>0.56</b> vs 0.44 — much more balanced.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- TAB 3: SOFTMAX & PROBABILITIES -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="tab-content" id="tab3">
+    <section>
+      <h2><span class="num">3</span> Probability Distributions &amp; Softmax</h2>
+
+      <div class="why-box">
+        <p><strong>Why in nanoGPT:</strong> After computing attention scores (how much should token <em>t</em> listen to token <em>t′</em>?), we need a proper probability distribution that sums to 1. <strong>Softmax</strong> converts raw scores into probabilities. It also converts the final output logits into a probability over the next character.</p>
+      </div>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph SoftmaxOp["Softmax in Attention"]
+        direction TB
+        IN["Raw scores z = [2.0, 0.0]"] --> EXP["Exponentiate<br/>e² = 7.39, e⁰ = 1.0"]
+        EXP --> SUM["Sum = 7.39 + 1.0 = 8.39"]
+        SUM --> DIV["Divide each by sum<br/>7.39/8.39 = 0.88<br/>1.0/8.39 = 0.12"]
+        DIV --> OUT["Attention weights<br/>sum to 1.00"]
+    end
+    style SoftmaxOp fill:#1e293b,stroke:#38bdf8
+    style IN fill:#1e293b,stroke:#fbbf24
+    style OUT fill:#1e293b,stroke:#4ade80
+        </div>
+      </div>
+
+      <h3>Key Ideas</h3>
+      <ul>
+        <li><strong>Softmax formula:</strong> P(zᵢ) = <sup>e^zᵢ</sup> / <sub>Σⱼ e^zⱼ</sub>. Always positive, always sums to 1.</li>
+        <li><strong>Exponentiation amplifies differences:</strong> Score 2.0 vs 0.0 becomes probability 0.88 vs 0.12 — the gap widens.</li>
+        <li><strong>Temperature scaling:</strong> Dividing scores by <em>T</em> > 1 flattens the distribution (more random). <em>T</em> → 0 makes it deterministic (one-hot).</li>
+      </ul>
+
+      <div class="formula">Softmax(zᵢ) = e<sup>zᵢ</sup> / Σⱼ e<sup>zⱼ</sup></div>
+
+      <div class="card">
+        <div class="card-label">📝 Practice Problems</div>
+
+        <div class="problem">
+          <h4>Problem 3.1 — Basic 2-Way Softmax</h4>
+          <p>Calculate Softmax for scores <b>s</b> = [2.0, 0.0].</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> e² = 7.39, e⁰ = 1.0, sum = 8.39. P₁ = 7.39/8.39 = <b>0.88</b>, P₂ = 1.0/8.39 = <b>0.12</b>.
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 3.2 — Temperature Effect</h4>
+          <p>Raw scores [4.0, 2.0]. Apply temperature T = 2.0 (divide both by 2 → [2.0, 1.0]), then compute Softmax.</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> e² = 7.39, e¹ = 2.72, sum = 10.11. P₁ = 7.39/10.11 = <b>0.73</b>, P₂ = 2.72/10.11 = <b>0.27</b>. Compare to without temperature: e⁴/(e⁴+e²) = <b>0.88</b>. Temperature <strong>flattens</strong> the distribution.
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 3.3 — 3-Way Softmax</h4>
+          <p>Compute Softmax for scores [1.0, 2.0, 3.0].</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> e¹=2.72, e²=7.39, e³=20.09, sum=30.20. P = [2.72/30.20, 7.39/30.20, 20.09/30.20] = <b>[0.09, 0.24, 0.67]</b>.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- TAB 4: CAUSAL MASKING -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="tab-content" id="tab4">
+    <section>
+      <h2><span class="num">4</span> Triangular Causal Masking</h2>
+
+      <div class="why-box">
+        <p><strong>Why in nanoGPT:</strong> Language models must be <strong>autoregressive</strong> — token at position <em>t</em> can only see tokens at positions ≤ <em>t</em>. To enforce this, we set the upper-triangular entries of the attention matrix to <strong>−∞</strong> before Softmax. Since <em>e</em><sup>−∞</sup> = 0, future tokens get 0% attention weight.</p>
+      </div>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Masking["Causal Mask — How It Works"]
+        direction TB
+        S["Raw scores (T×T)<br/>Token₀→Token₃ all visible"] --> M["Apply mask:<br/>upper triangle → -∞"]
+        M --> O["Row 0: only token₀<br/>Row 1: only token₀, token₁<br/>Row 2: token₀, token₁, token₂"]
+    end
+    subgraph Detail["3×3 Example"]
+        D1["[ 2.0,  -∞,  -∞ ]<br/>[ 0.5,  2.5,  -∞ ]<br/>[ 1.0,  0.0,  2.0 ]"]
+    end
+    Masking --> Detail
+    style Masking fill:#1e293b,stroke:#38bdf8
+    style Detail fill:#1e293b,stroke:#fbbf24
+        </div>
+      </div>
+
+      <h3>Key Ideas</h3>
+      <ul>
+        <li><strong>Triangular matrix:</strong> Entries below the diagonal = allowed (past + current). Entries above = disallowed (future).</li>
+        <li><strong>−∞ in Softmax:</strong> <em>e</em><sup>−∞</sup> → 0, so those positions contribute nothing to the weighted sum.</li>
+        <li><strong>Row-wise operation:</strong> Each token row has its own attention distribution over ≤ <em>t</em> tokens.</li>
+      </ul>
+
+      <div class="card">
+        <div class="card-label">📝 Practice Problems</div>
+
+        <div class="problem">
+          <h4>Problem 4.1 — Apply Causal Mask</h4>
+          <p>Given 3×3 attention scores <b>A</b> = [[2.0, 1.0, 3.0], [0.5, 2.5, 1.5], [1.0, 0.0, 2.0]], apply causal mask (set upper-triangle entries where column > row to −∞).</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> <b>A<sub>masked</sub></b> = [[2.0, <span style="color:#f87171;">−∞</span>, <span style="color:#f87171;">−∞</span>], [0.5, 2.5, <span style="color:#f87171;">−∞</span>], [1.0, 0.0, 2.0]]
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 4.2 — Masked Softmax</h4>
+          <p>Compute row-wise Softmax for each row of the masked matrix above.</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> Row 0: e² = 7.39, e<sup>−∞</sup> ≈ 0. P = [<b>1.0, 0, 0</b>].<br>Row 1: e<sup>0.5</sup>=1.65, e<sup>2.5</sup>=12.18, sum=13.83. P = [<b>0.12, 0.88, 0</b>].<br>Row 2: e¹=2.72, e⁰=1.0, e²=7.39, sum=11.11. P = [<b>0.24, 0.09, 0.67</b>].<br>Future positions always get 0%.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- TAB 5: FULL SELF-ATTENTION -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="tab-content" id="tab5">
+    <section>
+      <h2><span class="num">5</span> Full Single-Head Self-Attention Assembly</h2>
+
+      <div class="why-box">
+        <p><strong>Why in nanoGPT:</strong> This is the <strong>core operation</strong> of the Transformer. It combines everything you've learned: Q/K/V projections, scaled dot products, causal masking, Softmax, and weighted aggregation of values. One formula, five steps.</p>
+      </div>
+
+      <div class="formula">Attention(Q, K, V) = Softmax( QKᵀ / √dₖ + M ) · V</div>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph FullAttn["Full Self-Attention"]
+        direction TB
+        Q["Q<br/>What am I looking for?"] --> S["Step A: Scores<br/>S = Q · Kᵀ"]
+        K["K<br/>What do I contain?"] --> S
+        S --> SC["Step B: Scale<br/>S ÷ √dₖ"]
+        SC --> M["Step C: Mask<br/>Set future → -∞"]
+        M --> SM["Step D: Softmax<br/>Convert to weights"]
+        V["V<br/>What do I share?"] --> AGG["Step E: Aggregate<br/>O = weights · V"]
+        SM --> AGG
+    end
+    style FullAttn fill:#1e293b,stroke:#38bdf8
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📝 Full Worked Example</div>
+
+        <div class="problem" style="border-left-color:var(--green);">
+          <h4>Problem 5.1 — Hand-Calculated Self-Attention</h4>
+          <p>Consider 2 tokens (T=2), embedding dimension dₖ = 2.</p>
+          <p style="margin-top:0.3rem;">
+            <b>Q</b> = [[1, 0], [1, 1]]<br>
+            <b>K</b> = [[1, 0], [0, 1]]<br>
+            <b>V</b> = [[2, 4], [6, 8]]
+          </p>
+          <p style="margin-top:0.3rem;">Follow steps A through E.</p>
+
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Step A</button>
+          <div class="answer">
+            <strong>Step A: Raw scores S = Q·Kᵀ</strong><br>
+            Row 0: [1,0]·[1,0]ᵀ = 1, [1,0]·[0,1]ᵀ = 0<br>
+            Row 1: [1,1]·[1,0]ᵀ = 1, [1,1]·[0,1]ᵀ = 1<br>
+            <b>S</b> = [[1, 0], [1, 1]]
+          </div>
+
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Step B</button>
+          <div class="answer">
+            <strong>Step B: Scale by 1/√dₖ</strong><br>
+            √2 ≈ 1.414. Divide each entry: [[1/1.414, 0/1.414], [1/1.414, 1/1.414]]<br>
+            <b>S<sub>scaled</sub></b> ≈ [[0.707, 0], [0.707, 0.707]]
+          </div>
+
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Step C</button>
+          <div class="answer">
+            <strong>Step C: Causal mask</strong><br>
+            Set entry (0,1) to −∞ (future token for row 0). Row 1 is fine (both positions ≤ 1).<br>
+            <b>S<sub>masked</sub></b> = [[0.707, <span style="color:#f87171;">−∞</span>], [0.707, 0.707]]
+          </div>
+
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Step D</button>
+          <div class="answer">
+            <strong>Step D: Row-wise Softmax</strong><br>
+            Row 0: e<sup>0.707</sup> = 2.03, e<sup>−∞</sup> = 0. Sum = 2.03. <b>W</b> = [<b>1.0, 0</b>]<br>
+            Row 1: e<sup>0.707</sup> = 2.03, e<sup>0.707</sup> = 2.03. Sum = 4.06. <b>W</b> = [<b>0.5, 0.5</b>]
+          </div>
+
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Step E</button>
+          <div class="answer">
+            <strong>Step E: O = W · V</strong><br>
+            Row 0: 1.0 × [2, 4] + 0 × [6, 8] = <b>[2, 4]</b><br>
+            Row 1: 0.5 × [2, 4] + 0.5 × [6, 8] = <b>[4, 6]</b><br>
+            <b>O</b> = [[2, 4], [4, 6]] ✅
+          </div>
+          <p class="hint">Notice token₀ only sees itself (output = V₀). Token₁ sees both equally (average of V₀ and V₁) — exactly what causal attention should do.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- TAB 6: LAYERNORM & FFN -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="tab-content" id="tab6">
+    <section>
+      <h2><span class="num">6</span> Layer Normalization &amp; Feed-Forward Networks</h2>
+
+      <div class="why-box">
+        <p><strong>Why in nanoGPT:</strong> After tokens communicate via attention, each token needs to <strong>think independently</strong> (FFN). But deep networks suffer from activation magnitudes growing uncontrollably. <strong>LayerNorm</strong> fixes this by normalizing each token's features to zero mean and unit variance. Then the FFN applies a non-linear transformation.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="compare-card" style="border-color:var(--accent);">
+          <h4 style="color:var(--accent);">Layer Normalization</h4>
+          <p>For each token independently: compute μ and σ² across all its features, then normalize: (x − μ) / √(σ² + ε). Then scale and shift with learnable γ, β.</p>
+        </div>
+        <div class="compare-card" style="border-color:var(--amber);">
+          <h4 style="color:var(--amber);">Feed-Forward Network</h4>
+          <p>Two linear layers with a ReLU in between: <b>FFN(x) = W₂ · ReLU(W₁ · x + b₁) + b₂</b>. First layer expands 4×, second compresses back. Each token processes independently.</p>
+        </div>
+      </div>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph LN["LayerNorm"]
+        direction TB
+        IN1["x = [2, 4, 6, 8]<br/>features of one token"] --> MU["μ = (2+4+6+8)/4 = 5"]
+        IN1 --> VAR["σ² = ((2-5)² + ...)/4 = 5"]
+        MU & VAR --> NORM["normalized = (x-μ)/√(σ²+ε)<br/>= [-3, -1, 1, 3] / √5<br/>= [-1.34, -0.45, 0.45, 1.34]"]
+        NORM --> SCALE["γ · norm + β<br/>(learned affine)"]
+    end
+    subgraph FFN["Feed-Forward"]
+        direction TB
+        IN2["x = 1.0"] --> L1["W₁x + b₁ = (2)(1) + (-0.5) = 1.5"]
+        L1 --> RELU["ReLU(1.5) = max(0, 1.5) = 1.5"]
+        RELU --> L2["W₂ · ReLU + b₂ = (1.5)(1.5) + 0 = 2.25"]
+    end
+    style LN fill:#1e293b,stroke:#38bdf8
+    style FFN fill:#1e293b,stroke:#fbbf24
+        </div>
+      </div>
+
+      <h3>Key Ideas</h3>
+      <ul>
+        <li><strong>LayerNorm is per-token, per-batch:</strong> Unlike BatchNorm which normalizes across examples, LayerNorm normalizes across <em>features</em> for each individual token.</li>
+        <li><strong>ReLU = max(0, x):</strong> Simple non-linearity. Negative values become 0, positive values pass through. This lets the model learn non-linear patterns.</li>
+        <li><strong>4× expansion:</strong> The inner FFN dimension is typically 4× the embedding dimension (e.g., 384 → 1536 → 384). This gives the model room to compute.</li>
+      </ul>
+
+      <div class="card">
+        <div class="card-label">📝 Practice Problems</div>
+
+        <div class="problem">
+          <h4>Problem 6.1 — Token Normalization</h4>
+          <p>Given token vector <b>x</b> = [2, 4, 6, 8] (dimension C=4), compute μ, σ², and the normalized vector (ε=0).</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> μ = (2+4+6+8)/4 = <b>5</b>. σ² = ((2-5)²+(4-5)²+(6-5)²+(8-5)²)/4 = (9+1+1+9)/4 = <b>5</b>. Normalized: [(2-5)/√5, (4-5)/√5, (6-5)/√5, (8-5)/√5] = <b>[-1.34, -0.45, 0.45, 1.34]</b>. Zero mean, unit variance.
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 6.2 — FFN Forward Pass</h4>
+          <p>Input x = 1.0. Linear layer: w₁ = 2.0, b₁ = -0.5. ReLU. Linear layer: w₂ = 1.5, b₂ = 0.0. Compute the output.</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> W₁x + b₁ = 2(1.0) + (-0.5) = <b>1.5</b>. ReLU(1.5) = max(0, 1.5) = <b>1.5</b>. W₂·(1.5) + 0 = 1.5 × 1.5 = <b>2.25</b>.
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 6.3 — FFN with Negative Input</h4>
+          <p>Same FFN as above, but input x = -0.5. Trace through.</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> W₁x + b₁ = 2(-0.5) + (-0.5) = -1.0 + (-0.5) = <b>-1.5</b>. ReLU(-1.5) = max(0, -1.5) = <b>0</b> (dead neuron). W₂·0 + 0 = <b>0</b>. The ReLU killed the signal because the neuron wasn't activated.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- TAB 7: LOSS & GRADIENTS -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="tab-content" id="tab7">
+    <section>
+      <h2><span class="num">7</span> Optimization &amp; Loss Metrics</h2>
+
+      <div class="why-box">
+        <p><strong>Why in nanoGPT:</strong> How do we know if the model is learning? <strong>Cross-Entropy Loss</strong> measures how surprised the model is by the actual next token. Lower loss = better predictions. Then <strong>gradients flow backward</strong> through the network to update parameters — and residual connections make this possible even with 100+ layers.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="compare-card" style="border-color:var(--green);">
+          <h4 style="color:var(--green);">Cross-Entropy Loss</h4>
+          <p>L = −ln(p<sub>target</sub>)<br>
+          If the model assigns p = 0.25 to the correct next character, L = −ln(0.25) = <b>1.39</b>.<br>
+          Random baseline for 65 chars: L = ln(65) = <b>4.17</b>.</p>
+        </div>
+        <div class="compare-card" style="border-color:var(--accent);">
+          <h4 style="color:var(--accent);">Residual Gradient Flow</h4>
+          <p>y = x + f(x) → dy/dx = 1 + f′(x)<br>
+          The "+1" guarantees gradient can always flow backward, even if f′(x) = 0. This is why Transformers can be 100+ layers deep.</p>
+        </div>
+      </div>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph LossFlow["Loss & Gradient Flow"]
+        direction TB
+        LOSS["Cross-Entropy Loss<br/>L = -ln(p_target)"] --> GRAD["dL/d(output)<br/>gradient signal"]
+        GRAD --> RES["Residual Connection<br/>y = x + f(x)"]
+        RES --> SPLIT["dL/dx = dL/dy · (1 + f'(x))"]
+        SPLIT --> PATH1["← dL/dy · 1 →<br/>Gradient Super Highway<br/>flows unimpeded to input"]
+        SPLIT --> PATH2["← dL/dy · f'(x) →<br/>Fork into sub-layer<br/>updates weights"]
+    end
+    style LossFlow fill:#1e293b,stroke:#38bdf8
+    style LOSS fill:#1e293b,stroke:#f87171
+    style RES fill:#1e293b,stroke:#4ade80
+    style PATH1 fill:#1e293b,stroke:#4ade80
+    style PATH2 fill:#1e293b,stroke:#fbbf24
+        </div>
+      </div>
+
+      <h3>Key Ideas</h3>
+      <ul>
+        <li><strong>Lower loss = better model:</strong> Loss of 4.17 = random guessing. Loss of 1.48 = scaled nanoGPT on Shakespeare. Loss of 0.0 = perfect prediction (overfitting).</li>
+        <li><strong>Residual shortcut:</strong> The derivative of y = x + f(x) is 1 + f′(x). The "1" term means gradients from the loss can skip <em>all</em> the nonlinear layers and flow directly to the input. This is why deep Transformers train without vanishing gradients.</li>
+        <li><strong>ln(65) = 4.17:</strong> This is the "is it learning?" sanity check. If loss is above 4.17, the model is worse than random.</li>
+      </ul>
+
+      <div class="card">
+        <div class="card-label">📝 Practice Problems</div>
+
+        <div class="problem">
+          <h4>Problem 7.1 — Random Baseline Loss</h4>
+          <p>Tiny Shakespeare has 65 unique characters. Compute the random baseline cross-entropy loss: L = ln(65).</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> L<sub>random</sub> = ln(65) ≈ <b>4.17</b>. If your model's loss is above this, it's literally worse than random guessing.
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 7.2 — Model Loss</h4>
+          <p>If the model assigns probability p = 0.25 to the correct next character, what is the cross-entropy loss? Compare to the bigram model's loss of ~2.5 from nanoGPT.</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> L = −ln(0.25) = −(−1.386) = <b>1.39</b>. The bigram model at 2.5 corresponds to p ≈ e<sup>−2.5</sup> = <b>0.082</b>. The scaled nanoGPT at 1.48 corresponds to p ≈ e<sup>−1.48</sup> = <b>0.23</b> — much more confident.
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 7.3 — Residual Gradient Shortcut</h4>
+          <p>Given y = x + x², calculate dy/dx at x = 2. Notice that the gradient has a "1" component separate from the non-linear part.</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> dy/dx = 1 + 2x = 1 + 4 = <b>5</b>. The "1" is the residual shortcut. Even if the non-linear part 2x were zero (e.g., if x=0 in a ReLU), the gradient would still be <b>1</b> — not zero. This is the <strong>Gradient Super Highway</strong>.
+          </div>
+        </div>
+
+        <div class="problem">
+          <h4>Problem 7.4 — Gradient Flow Through Residual Stack</h4>
+          <p>A Transformer has 6 residual blocks. The loss gradient entering the final block has magnitude 1.0. Each block's non-linear path has derivative 0.5. What gradient reaches the input?</p>
+          <button class="show-btn" onclick="toggleAnswer(this)">Show Answer</button>
+          <div class="answer">
+            <strong>Answer:</strong> Through residual shortcut: 1 × 1 × 1 × 1 × 1 × 1 = <b>1.0</b> (unimpeded!). Through non-linear path only: 0.5⁶ = <b>0.016</b> (vanished!). The residual connection preserves gradient magnitude regardless of depth.
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <p><strong>🎉 Congratulations!</strong> You've worked through the entire math pipeline that powers nanoGPT — from token embeddings to self-attention to optimization. These same operations, scaled up by factors of 10,000× and running on thousands of GPUs, are what power GPT-5.6, Claude Fable 5, DeepSeek V4, and every other modern LLM. The math hasn't changed — only the scale.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- FOOTER -->
+  <!-- ════════════════════════════════════════ -->
+  <div style="border-top:1px solid var(--border);padding-top:1.5rem;margin-top:1rem;text-align:center;color:var(--text-dim);font-size:0.8rem;">
+    <p>Based on Andrej Karpathy's nanoGPT lecture. Math roadmap designed for hand-calculation practice.</p>
+    <p style="margin-top:0.2rem;"><a href="#" onclick="window.print()" style="color:var(--accent);">Print / Save as PDF</a></p>
+  </div>
+</div>
+
+<script>
+  // Initialize Mermaid
+  mermaid.initialize({
+    startOnLoad: true, theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1e293b', primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#1e3a5f', lineColor: '#38bdf8',
+      secondaryColor: '#0b1120', tertiaryColor: '#1e293b', fontSize: '14px'
+    },
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' }
+  });
+
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+      // Scroll to top of content
+      document.querySelector('.main').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Toggle answer buttons
+  function toggleAnswer(btn) {
+    const answer = btn.nextElementSibling;
+    if (answer && answer.classList.contains('answer')) {
+      answer.classList.toggle('show');
+      btn.textContent = answer.classList.contains('show') ? 'Hide Answer' : 'Show Answer';
+    }
+  }
+  window.toggleAnswer = toggleAnswer;
+</script>
+</body>
+</html>

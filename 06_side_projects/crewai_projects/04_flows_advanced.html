@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrewAI 04 · Flows, Memory &amp; Planning</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="crew">CW</span>CrewAI · 04 Advanced</div>
+        <div class="links">
+            <a href="index.html">CrewAI Hub</a>
+            <a href="03_tools.html">← 03</a>
+            <a href="../agent_frameworks_comparison/index.html">Compare →</a>
+        </div>
+    </div>
+
+    <div class="header crew">
+        <p class="badge">Build 04 · Advanced</p>
+        <h1>Flows, memory &amp; production polish</h1>
+        <p class="subtitle">Crews are autonomous; <strong>Flows</strong> give you precise, event-driven
+            orchestration that can wrap crews. Plus built-in <strong>memory</strong>,
+            <strong>planning</strong>, and observability.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section crew">
+            <h2>What this build covers</h2>
+            <div class="pill-row">
+                <span class="level advanced">Advanced</span>
+                <span class="tag orange">Flow</span>
+                <span class="tag orange">@start / @listen</span>
+                <span class="tag orange">memory=True</span>
+                <span class="tag orange">planning=True</span>
+                <span class="tag orange">AgentOps</span>
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>Crews vs Flows — when to use which</h2>
+            <div class="grid-2">
+                <div class="mini crew">
+                    <h3>Crew</h3>
+                    <p>Autonomous, role-playing agents that figure out <em>how</em>. Great when you want
+                        emergent collaboration and minimal wiring.</p>
+                </div>
+                <div class="mini crew">
+                    <h3>Flow</h3>
+                    <p>Event-driven, deterministic orchestration. <strong>You</strong> control the path with
+                        <code>@start</code>/<code>@listen</code>, conditionals, and shared state — and can call
+                        crews from inside steps.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>A CrewAI Flow</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    S["@start<br/>generate_topic"] --> L1["@listen<br/>run_research_crew"]
+    L1 --> L2["@listen<br/>write_report"]
+    L2 --> END["state.report"]
+                </pre>
+                <p class="caption">Each method emits an event; <code>@listen</code> wires the next step. State
+                    is shared and type-safe.</p>
+            </div>
+            <pre><code><span class="c-kw">from</span> crewai.flow.flow <span class="c-kw">import</span> Flow, listen, start
+<span class="c-kw">from</span> pydantic <span class="c-kw">import</span> BaseModel
+
+<span class="c-kw">class</span> <span class="c-cls">ReportState</span>(BaseModel):
+    topic: <span class="c-cls">str</span> = <span class="c-str">""</span>
+    report: <span class="c-cls">str</span> = <span class="c-str">""</span>
+
+<span class="c-kw">class</span> <span class="c-cls">ReportFlow</span>(Flow[ReportState]):
+
+    <span class="c-cls">@start</span>()
+    <span class="c-kw">def</span> <span class="c-fn">pick_topic</span>(self):
+        self.state.topic = <span class="c-str">"agentic AI in 2025"</span>
+
+    <span class="c-cls">@listen</span>(pick_topic)
+    <span class="c-kw">def</span> <span class="c-fn">research</span>(self):
+        <span class="c-com"># call a Crew here and store its output in state</span>
+        result = research_crew.kickoff(inputs={<span class="c-str">"topic"</span>: self.state.topic})
+        self.state.report = <span class="c-fn">str</span>(result)
+
+    <span class="c-cls">@listen</span>(research)
+    <span class="c-kw">def</span> <span class="c-fn">finish</span>(self):
+        <span class="c-fn">print</span>(<span class="c-str">"DONE:"</span>, self.state.report[:<span class="c-cls">200</span>])
+
+ReportFlow().kickoff()</code></pre>
+            <div class="callout orange">
+                Flows also support <code>@router</code> for conditional branching and <code>or_</code>/<code>and_</code>
+                to listen on multiple events — this is CrewAI's answer to graph-style control flow.
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>Memory — agents that remember</h2>
+            <p>Turn on memory and the crew gains short-term, long-term, and entity memory automatically
+                (backed by a local vector store).</p>
+            <pre><code>crew = Crew(
+    agents=[researcher, writer],
+    tasks=[research_task, write_task],
+    process=Process.sequential,
+    memory=<span class="c-kw">True</span>,        <span class="c-com"># short-term + long-term + entity memory</span>
+    verbose=<span class="c-kw">True</span>,
+)</code></pre>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Memory type</th>
+                        <th>Holds</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Short-term</td>
+                        <td>Context within the current run (RAG over recent steps).</td>
+                    </tr>
+                    <tr>
+                        <td>Long-term</td>
+                        <td>Insights persisted across runs (improves over time).</td>
+                    </tr>
+                    <tr>
+                        <td>Entity</td>
+                        <td>Facts about people/places/things the crew encounters.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section crew">
+            <h2>Planning — a plan before execution</h2>
+            <pre><code>crew = Crew(
+    agents=[...], tasks=[...],
+    planning=<span class="c-kw">True</span>,            <span class="c-com"># an LLM drafts a step-by-step plan first</span>
+    planning_llm=<span class="c-str">"gpt-4o"</span>,
+)</code></pre>
+            <p>With <code>planning=True</code>, CrewAI generates an explicit plan before the crew runs, which
+                improves coordination on multi-step tasks.</p>
+        </div>
+
+        <div class="section crew">
+            <h2>Observability &amp; guardrails</h2>
+            <ul>
+                <li><strong>AgentOps</strong> — one-line integration for dashboards, traces, and cost/latency
+                    tracking of every agent step.</li>
+                <li><strong>OpenTelemetry / Langtrace / OpenLIT</strong> — CrewAI emits telemetry these tools
+                    can ingest.</li>
+                <li><strong>Task guardrails</strong> — pass a <code>guardrail</code> function to a
+                    <code>Task</code> to validate/repair output before it passes downstream.
+                </li>
+            </ul>
+            <pre><code><span class="c-kw">import</span> agentops
+agentops.init()      <span class="c-com"># now every kickoff is traced in the AgentOps dashboard</span>
+crew.kickoff(inputs={<span class="c-str">"topic"</span>: <span class="c-str">"RAG patterns"</span>})</code></pre>
+        </div>
+
+        <div class="section crew">
+            <h2>Production checklist</h2>
+            <ul>
+                <li><strong>Use Flows for anything with branching or external triggers;</strong> keep Crews for
+                    the autonomous sub-tasks.</li>
+                <li><strong>Enable <code>memory=True</code></strong> for assistants that should learn across
+                    runs.</li>
+                <li><strong>Add task <code>guardrail</code>s</strong> to enforce output shape.</li>
+                <li><strong>Instrument with AgentOps</strong> before shipping — multi-agent cost adds up fast.</li>
+                <li><strong>Scaffold with <code>crewai create crew</code></strong> and keep agents/tasks in
+                    YAML for maintainability.</li>
+            </ul>
+        </div>
+
+        <div class="section crew">
+            <h2>Where CrewAI stands first</h2>
+            <div class="callout orange">
+                CrewAI <strong>stands first for getting a believable role-based team running fastest</strong> —
+                the role/goal/backstory model is the most intuitive on-ramp to multi-agent AI, and Flows add
+                deterministic orchestration when you need it. For conversational research swarms pick
+                <strong>AutoGen</strong>; for graph-shaped, tightly-controlled production agents pick
+                <strong>LangGraph</strong>. See the full
+                <a href="../agent_frameworks_comparison/index.html">comparison</a>.
+            </div>
+        </div>
+
+        <div class="pager">
+            <a href="03_tools.html"><span class="dir">Previous</span>
+                <div class="ttl">← 03 · Tools</div>
+            </a>
+            <a class="next" href="../agent_frameworks_comparison/index.html"><span class="dir">Next</span>
+                <div class="ttl">Framework comparison →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>CrewAI Projects · 04 of 04</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

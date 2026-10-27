@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ch. 02 — Routing</title>
+<link rel="stylesheet" href="../assets/style.css" />
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "default" });
+</script>
+</head>
+<body>
+<header class="hero">
+  <nav class="crumbs"><a href="../index.html">← Hub</a></nav>
+  <h1>Chapter 02 — Routing</h1>
+  <p>Conditional dispatch. Classify the request, then send it to the right specialist.</p>
+  <p><span class="tag">Strategy</span><span class="tag">Factory</span><span class="tag">Dispatch</span></p>
+</header>
+<main>
+
+<section>
+<h2>What is it?</h2>
+<p>Where chaining is a <em>fixed</em> path, routing is a <em>chosen</em> path. A classifier (LLM, embedding similarity, or rules) reads the input and picks one of several downstream handlers.</p>
+<div class="callout tip"><strong>Mental model:</strong> the receptionist at a hospital — looks at your problem, sends you to cardiology, dermatology, or the pharmacy.</div>
+</section>
+
+<section>
+<h2>Pattern flow</h2>
+<div class="mermaid">
+flowchart TD
+  Q([Incoming query]) --> R{Router / Classifier}
+  R -->|"billing"| H1[Billing handler]
+  R -->|"technical"| H2[Tech-support handler]
+  R -->|"refund"| H3[Refunds handler + escalation]
+  R -->|"general"| H4[FAQ retriever]
+  H1 --> O([Response])
+  H2 --> O
+  H3 --> O
+  H4 --> O
+</div>
+</section>
+
+<section>
+<h2>2026 real-time scenario — Telecom support copilot</h2>
+<div class="callout scenario">
+A telecom rolls out an in-app copilot in 2026. ~70% of tickets are repetitive (data balance, plan info), 25% need account access, 5% are billing disputes that legally require a human. Routing decides the path within ~150ms so the LLM never even sees a refund-dispute ticket — it goes straight to a human queue with context attached.
+</div>
+<div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as Customer
+  participant R as Router
+  participant FAQ as FAQ-RAG agent
+  participant Acct as Account-tools agent
+  participant H as Human queue
+  U->>R: "Why was I charged ₹499 extra?"
+  R->>R: classify → "billing-dispute"
+  R->>H: escalate with full context
+  H-->>U: human responds within SLA
+</div>
+</section>
+
+<section>
+<h2>Frameworks</h2>
+<table>
+  <tr><th>Framework</th><th>Routing primitive</th></tr>
+  <tr><td>LangChain</td><td><code>RunnableBranch</code> / <code>RouterRunnable</code> / semantic router.</td></tr>
+  <tr><td>LangGraph</td><td>Conditional edges via <code>add_conditional_edges()</code>.</td></tr>
+  <tr><td>Google ADK</td><td><code>LlmAgent</code> with <code>sub_agents</code> + auto-routing.</td></tr>
+  <tr><td>Semantic Router (lib)</td><td>Embedding-distance routing — sub-100ms, no LLM call.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Design patterns used</h2>
+<table>
+  <tr><th>Pattern</th><th>Where</th></tr>
+  <tr><td><strong>Strategy</strong></td><td>Each <code>Handler</code> is an interchangeable strategy.</td></tr>
+  <tr><td><strong>Factory</strong></td><td><code>HandlerRegistry</code> resolves a handler by intent label.</td></tr>
+  <tr><td><strong>Open/Closed</strong></td><td>Add a new intent → register a handler; no router code change.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Project layout</h2>
+<pre><code>project/
+├── main.py
+├── router.py        # IntentClassifier + Router (Strategy)
+├── handlers.py      # 4 concrete handlers + registry (Factory)
+└── requirements.txt</code></pre>
+</section>
+
+<section>
+<h2>Interview Q&amp;A</h2>
+<details class="qa"><summary>LLM router vs embedding router?</summary><div>LLM router = highest accuracy, ~500ms, costs tokens. Embedding router (semantic-router) = ~50ms, free after embedding cache, slightly less accurate. Hybrid: embedding first, fallback to LLM on low confidence.</div></details>
+<details class="qa"><summary>How do you handle "no match"?</summary><div>Always include a <code>default</code> / <code>fallback</code> route. Log the input for offline review and either ask the user to clarify or hand off to a human.</div></details>
+</section>
+
+</main>
+<footer>Chapter 02 of 21.</footer>
+</body>
+</html>

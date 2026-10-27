@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust P8 — Authentication Platform</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Rust projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p8_authentication_platform/README.html">Python p8</a>
+                <a href="../../go_projects/p8_authentication_platform/README.html">Go p8</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust · P8</span></p>
+            <h1>Authentication — strategies behind a trait</h1>
+            <p class="lead">Two providers, one trait, one service. The new wrinkle in Rust is the lifetime annotation on
+                <code>AuthService&lt;'a&gt;</code> — it says "this service borrows an authenticator that lives at least
+                as long as <code>'a</code>".</p>
+        </section>
+
+        <section class="card">
+            <h2>Lifetimes in 30 seconds</h2>
+            <pre><code>struct AuthService&lt;'a&gt; { a: &amp;'a dyn Authenticator }</code></pre>
+            <ul>
+                <li><strong><code>&amp;'a dyn Authenticator</code></strong> = a borrowed trait object that lives for the
+                    lifetime <code>'a</code>.</li>
+                <li>The compiler infers <code>'a</code> from the call site. You rarely have to spell it out, but you do
+                    have to <em>name</em> it on the struct.</li>
+                <li>If you want owned data instead, swap to <code>Box&lt;dyn Authenticator&gt;</code> — same idea, no
+                    lifetime in the struct.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>What's missing for production</h2>
+            <ul>
+                <li>Replace the demo hash with the <code>argon2</code> crate. <strong>Do not ship the demo
+                        hash.</strong></li>
+                <li>Add a session/JWT issuer at the service layer, not in the strategies.</li>
+                <li>Add rate-limiting on failed logins (see <a
+                        href="../../../system_design_academy/system_design_fundamentals/p1_rate_limiter/README.html">Rate
+                        Limiter</a>).</li>
+            </ul>
+            <div class="callout warn"><strong>Security note:</strong> the FNV fold here is not a real hash. It is here
+                only so the demo runs without dependencies.</div>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd rust_projects/p8_authentication_platform
+cargo run</code></pre>
+            <p>Files: <a href="src/main.rs">src/main.rs</a> · <a href="Cargo.toml">Cargo.toml</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

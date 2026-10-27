@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<title>Project E · Audio Translator · Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+ :root{--accent:#7cf0ff;--line:#2a345a;--panel:#121a33;--ink:#e8ecf7;--muted:#a8b3d1}
+ body{margin:0;font-family:'Segoe UI',Roboto,sans-serif;background:#070a17;color:var(--ink);line-height:1.55}
+ header{padding:36px 28px;background:radial-gradient(900px 320px at 0 0,#1a2452 0,transparent 60%);border-bottom:1px solid var(--line)}
+ header h1{margin:0;color:#fff;font-size:1.9rem}header .tag{color:var(--accent);font-size:.85rem}
+ main{padding:28px;max-width:1200px;margin:auto}
+ section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px}
+ section h2{margin-top:0;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:8px}
+ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem}
+ th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left}
+ th{background:#1b2549;color:#cfe1ff}tr:hover td{background:#192142}
+ code{background:#0a0f24;padding:1px 6px;border-radius:4px;color:#ffd6a5}
+ .mermaid{background:#0a0f24;border-radius:8px;padding:16px}
+ .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:600}
+ .ok{background:rgba(124,255,178,.12);color:#7CFFB2;border:1px solid rgba(124,255,178,.4)}
+ .warn{background:rgba(255,209,102,.12);color:#ffd166;border:1px solid rgba(255,209,102,.4)}
+ a{color:var(--accent)} .crumbs{margin-bottom:14px;color:var(--muted)}
+</style></head><body>
+<header><div class="crumbs"><a href="../INDEX.html">← Back to Suite Index</a></div>
+<div class="tag">🎧 Audio · Whisper · LLM Translate · Kokoro TTS</div>
+<h1>Project E — Multilingual Audio Translator</h1></header>
+<main>
+
+<section><h2>1 · Pipeline</h2>
+<div class="mermaid">
+flowchart LR
+  WAV[Input audio<br/>any language] --> W[faster-whisper<br/>large-v3 + VAD]
+  W --> SEGS[(Segments + lang)]
+  SEGS --> TR[GPT-5 segment-aligned<br/>JSON translation]
+  TR --> TTS[Kokoro TTS<br/>or gpt-4o-mini-tts]
+  TTS --> OUT[Translated audio]
+</div>
+</section>
+
+<section><h2>2 · Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+  participant U as User
+  participant P as Pipeline
+  participant W as Whisper
+  participant L as LLM
+  participant T as TTS
+  U->>P: input.mp3, target=es
+  P->>W: transcribe(input)
+  W-->>P: lang=hi, [seg1..segN]
+  P->>L: translate(segs, hi→es)
+  L-->>P: ["t1","t2",...]
+  P->>T: synthesize(joined)
+  T-->>P: out.wav
+  P-->>U: out.wav
+</div>
+</section>
+
+<section><h2>3 · Component Table</h2>
+<table><thead><tr><th>Stage</th><th>Module</th><th>Tech</th></tr></thead><tbody>
+<tr><td>STT</td><td><code>stt.Transcriber</code></td><td>faster-whisper large-v3 + Silero VAD</td></tr>
+<tr><td>Translation</td><td><code>translate.Translator</code></td><td>GPT-5 with JSON-mode segment alignment</td></tr>
+<tr><td>TTS</td><td><code>tts.TTS</code></td><td>Kokoro (open-weights) or gpt-4o-mini-tts</td></tr>
+<tr><td>Orchestration</td><td><code>pipeline.run</code></td><td>plain Python; can be wrapped in FastAPI</td></tr>
+</tbody></table>
+</section>
+
+<section><h2>4 · 2026 Stack Evaluation</h2>
+<table><thead><tr><th>Layer</th><th>Status</th><th>2026 Note</th></tr></thead><tbody>
+<tr><td>STT model</td><td><span class="pill ok">SOTA</span></td><td>Whisper-Large-v3 Turbo, NVIDIA Canary 1B are alternatives.</td></tr>
+<tr><td>Translation</td><td><span class="pill ok">Modern</span></td><td>JSON-mode preserves segment alignment (lip-sync ready).</td></tr>
+<tr><td>TTS</td><td><span class="pill ok">Modern</span></td><td>Kokoro = best open MIT TTS; ElevenLabs v3 for voice clone.</td></tr>
+<tr><td>Streaming</td><td><span class="pill warn">Add</span></td><td>For real-time, switch to streaming whisper + chunked TTS.</td></tr>
+</tbody></table>
+</section>
+</main>
+<script>mermaid.initialize({startOnLoad:true,theme:'dark'});</script>
+</body></html>

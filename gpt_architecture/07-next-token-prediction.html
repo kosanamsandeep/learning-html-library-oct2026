@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 — From Attention to Next-Token Prediction</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #00cec9; }
+  h3 { font-size: 1.05rem; margin: 1rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #6c5ce7; color: #e1e4f0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  .hl-box { background: rgba(108,92,231,0.08); border-left: 3px solid #6c5ce7; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #6c5ce7; }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .arch-flow { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 0; }
+  .arch-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: #232740; border-radius: 8px; border-left: 3px solid #6c5ce7; }
+  .arch-num { font-size: 1.5rem; font-weight: 700; color: #6c5ce7; min-width: 2rem; }
+  .arch-desc { font-size: 0.9rem; }
+  .arch-desc strong { color: #55efc4; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #00cec9; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #6c5ce7; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  .pred-example { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; }
+  .prob-bar { display: inline-block; height: 10px; border-radius: 5px; margin-right: 0.5rem; vertical-align: middle; }
+  ul, ol { color: #c8cbe0; padding-left: 1.25rem; line-height: 2; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="06-training-and-loss.html">← 06: Training</a>
+  <a href="08-cheatsheet.html">Next: Cheatsheet →</a>
+</div>
+
+<h1>07 · From Attention to Next-Token Prediction</h1>
+<p>The full forward pass — how QKV attention in every layer ultimately produces a probability distribution over the vocabulary.</p>
+
+<h2>🏗️ The Full Architecture</h2>
+
+<div class="card">
+<div class="arch-flow">
+  <div class="arch-item">
+    <div class="arch-num">1</div>
+    <div class="arch-desc"><strong>Tokenization</strong> — Split text into tokens (subwords). "the cat sat" → ["the", "cat", "sat"]</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#6c5ce7;">
+    <div class="arch-num">2</div>
+    <div class="arch-desc"><strong>Embedding</strong> — Map each token to a high-dimensional vector. Shape: (T × n_embd)</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#6c5ce7;">
+    <div class="arch-num">3</div>
+    <div class="arch-desc"><strong>Positional Encoding</strong> — Add position information so the model knows token order.</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#55efc4;">
+    <div class="arch-num">4</div>
+    <div class="arch-desc"><strong>For each of N layers</strong> (e.g. 12 for GPT-2, 96 for GPT-4):</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#636e72;margin-left:2rem;">
+    <div class="arch-num">a</div>
+    <div class="arch-desc"><span style="color:#6c5ce7;">Q</span><span style="color:#00cec9;">K</span><span style="color:#fd79a8;">V</span> <strong>Self-Attention</strong> — Each token gathers context from all previous tokens (as detailed in files 01–05)</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#636e72;margin-left:2rem;">
+    <div class="arch-num">b</div>
+    <div class="arch-desc"><strong>Residual connection</strong> — Add input back: <code>output = x + Attention(x)</code> — preserves gradient flow</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#636e72;margin-left:2rem;">
+    <div class="arch-num">c</div>
+    <div class="arch-desc"><strong>Layer Normalization</strong> — Stabilize activations, reduce covariate shift</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#636e72;margin-left:2rem;">
+    <div class="arch-num">d</div>
+    <div class="arch-desc"><strong>Feed-Forward Network (FFN)</strong> — MLP: expand → ReLU/GELU → project back. Each token processes independently</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#636e72;margin-left:2rem;">
+    <div class="arch-num">e</div>
+    <div class="arch-desc"><strong>Residual + LayerNorm</strong> — Another residual and normalization before next layer</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#fdcb6e;">
+    <div class="arch-num">5</div>
+    <div class="arch-desc"><strong>Unembedding (LM Head)</strong> — Project final hidden state → vocabulary logits. Shape: (T × vocab_size)</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#ff6b6b;">
+    <div class="arch-num">6</div>
+    <div class="arch-desc"><strong>Softmax</strong> — Convert logits to probabilities over the vocabulary</div>
+  </div>
+  <div class="arch-item" style="border-left-color:#55efc4;">
+    <div class="arch-num">7</div>
+    <div class="arch-desc"><strong>Sample / Argmax</strong> — Pick the next token: highest probability (greedy) or sample from distribution (creative)</div>
+  </div>
+</div>
+</div>
+
+<h2>🔮 Concrete Example: "the cat sat"</h2>
+
+<div class="card">
+<h3>Predicting the word after "the cat"</h3>
+<p>At position 2 (index 2, processing "sat" — wait, let's be precise):</p>
+
+<p>We have 3 input tokens: <code>["the", "cat", "sat"]</code>. The model needs to predict <strong>token 4</strong> (which could be "on", ".", "down", etc. depending on the training distribution).</p>
+
+<p>But during <strong>training</strong>, we know the actual fourth token. For this example, let's say the full sentence is: <em>"the cat sat on the mat"</em> and the model is trying to predict <code>"on"</code> after <code>"sat"</code>.</p>
+
+<div class="pred-example">
+  <div style="font-size:1.1rem;margin-bottom:1rem;">
+    Input: <code style="font-size:1rem;">the &nbsp; cat &nbsp; sat</code>
+    <span style="color:#636e72;">→</span>
+    <strong style="color:#55efc4;">?</strong>
+  </div>
+
+  <p style="font-size:0.9rem;">After passing through all N layers (each applying QKV attention + FFN), the <strong>final hidden state at position 2</strong> (the last token) is projected through the unembedding matrix:</p>
+
+  <div class="math-block">
+    <span class="dim">// Final hidden state at position of "sat" — now rich with context</span>
+    h<sub>last</sub> = [0.2, -1.5, 3.1, ..., 0.7]   <span class="dim">// size: n_embd (e.g., 768)</span>
+
+    <span class="dim">// Multiply by unembedding matrix W_U (vocab_size × n_embd)</span>
+    logits = W_U · h<sub>last</sub>                <span class="dim">// size: vocab_size (e.g., 50,257)</span>
+
+    <span class="dim">// Softmax converts logits to probabilities</span>
+    P(token) = softmax(logits)
+  </div>
+
+  <table>
+    <thead><tr><th>Token</th><th>Logit</th><th>Probability</th><th>Bar</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>"on"</code> ✓ (actual)</td>
+        <td>4.2</td>
+        <td><strong style="color:#55efc4;">85%</strong></td>
+        <td><div class="prob-bar" style="width:170px;background:linear-gradient(90deg,#6c5ce7,#55efc4);"></div></td>
+      </tr>
+      <tr>
+        <td><code>"down"</code></td>
+        <td>2.1</td>
+        <td>8%</td>
+        <td><div class="prob-bar" style="width:40px;background:rgba(108,92,231,0.3);"></div></td>
+      </tr>
+      <tr>
+        <td><code>"and"</code></td>
+        <td>1.0</td>
+        <td>3%</td>
+        <td><div class="prob-bar" style="width:15px;background:rgba(108,92,231,0.2);"></div></td>
+      </tr>
+      <tr>
+        <td><code>"was"</code></td>
+        <td>0.5</td>
+        <td>2%</td>
+        <td><div class="prob-bar" style="width:10px;background:rgba(108,92,231,0.15);"></div></td>
+      </tr>
+      <tr>
+        <td><code>"."</code></td>
+        <td>-0.3</td>
+        <td>1%</td>
+        <td><div class="prob-bar" style="width:5px;background:rgba(255,255,255,0.1);"></div></td>
+      </tr>
+      <tr>
+        <td colspan="4" style="color:#636e72;font-size:0.85rem;">... 50,252 other tokens with lower probabilities ...</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<h2>🧠 How QKV Makes This Possible</h2>
+
+<div class="card">
+<p>Without QKV attention, the hidden state at position "sat" would only know about itself. With attention, it carries information from <strong>"the"</strong> and <strong>"cat"</strong> — gathered layer by layer, head by head.</p>
+
+<table>
+  <thead><tr><th>Layer</th><th>What Attention Contributes</th><th>How It Helps Prediction</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Layer 1</td>
+      <td>Adjacent token patterns</td>
+      <td>"sat" knows "cat" is right before it — syntactic chunking</td>
+    </tr>
+    <tr>
+      <td>Layer 2</td>
+      <td>Determiner-noun relationship</td>
+      <td>"cat" knows "the" is its determiner — noun phrase formed</td>
+    </tr>
+    <tr>
+      <td>Layer 3</td>
+      <td>Subject-verb relationship</td>
+      <td>"sat" attends to "cat" as its subject — predicts verb form</td>
+    </tr>
+    <tr>
+      <td>Layer 4+</td>
+      <td>Semantic role labeling</td>
+      <td>"sat" expects a location preposition ("on") — predicts "on"</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="hl-box">
+  <strong>⭐ The core insight:</strong> Every layer's attention uses QKV. Every layer's QKV weights were shaped by the loss gradient. The entire system — from tokenization to the final softmax — is <strong>jointly optimized</strong> so that QKV projections in every layer cooperate to make the final prediction as accurate as possible. This is why scaling (more layers, more heads, more dimensions) works: more QKV heads can capture more relationship types.
+</div>
+</div>
+
+<h2>🔄 Autoregressive Generation</h2>
+
+<div class="card">
+<p>At inference time, the model generates text <strong>one token at a time</strong>:</p>
+<ol>
+  <li>Feed the prompt: <code>"the cat sat"</code></li>
+  <li>Predict next token: <code>"on"</code> (85%)</li>
+  <li>Append to input: <code>"the cat sat on"</code></li>
+  <li>Predict next: <code>"the"</code></li>
+  <li>Append: <code>"the cat sat on the"</code></li>
+  <li>Predict next: <code>"mat"</code></li>
+  <li>Append: <code>"the cat sat on the mat"</code></li>
+  <li>Predict next: <code>"."</code> or <code>"</s>"</code> (end token)</li>
+</ol>
+<p>At each step, <strong>every token attends to all previous tokens</strong> via QKV. The key insight: position 0 ("the") never changes its representation across steps (because it only attends to itself), but later tokens get richer context each time.</p>
+
+<div class="hl-box">
+  <strong>⚡ Why QKV is revolutionary:</strong> Before Transformers, RNNs processed tokens sequentially — each token had to be "squeezed through" the hidden state one step at a time, creating a bottleneck. With QKV attention, every token can <strong>directly access</strong> any earlier token's representation in <strong>constant time</strong> (matrix multiply). This parallel access is what made training on massive datasets feasible.
+</div>
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

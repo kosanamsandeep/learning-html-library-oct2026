@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design — 30 Day Roadmap</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html"><span class="brand-mark">SD</span><span>System Design · 30-Day
+                    Roadmap</span></a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="00_intro_hld_lld.html">Start here</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">4-week plan · ~60 minutes per day</p>
+                <h1>30-Day System Design Roadmap</h1>
+                <p>Two weeks of LLD, two weeks of HLD. Each day = one focused reading + one whiteboard exercise.
+                    By Day 30 you should be able to walk into a product-company round and design any of the
+                    canonical systems out loud.</p>
+            </section>
+
+            <section class="card">
+                <h2>Week 1 — LLD Foundations</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Topic</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td><a href="00_intro_hld_lld.html">What is System Design? HLD vs LLD</a></td>
+                            <td>Read; sketch the mental map.</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td><a href="lld_01_oop_solid.html">OOP fundamentals</a></td>
+                            <td>Refactor one class from <code>07_learning_projects/p2_banking_system</code> using
+                                encapsulation.</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td><a href="lld_01_oop_solid.html#solid">SOLID — SRP &amp; OCP</a></td>
+                            <td>Pick a violating class in your repo; refactor.</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td><a href="lld_01_oop_solid.html#solid">SOLID — LSP, ISP, DIP</a></td>
+                            <td>Identify a fat interface; split it.</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td><a href="lld_02_design_patterns.html#creational">Creational patterns</a></td>
+                            <td>Implement Factory + Builder for a Pizza class.</td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td><a href="lld_02_design_patterns.html#structural">Structural patterns</a></td>
+                            <td>Implement Adapter + Decorator for a logger.</td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td><a href="lld_02_design_patterns.html#behavioral">Behavioral patterns</a></td>
+                            <td>Implement Strategy + Observer for a payment flow.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="card">
+                <h2>Week 2 — LLD Case Studies</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Topic</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>8</td>
+                            <td><a href="lld_03_uml.html">UML class &amp; sequence diagrams</a></td>
+                            <td>Draw the diagram for your Day-7 payment flow.</td>
+                        </tr>
+                        <tr>
+                            <td>9</td>
+                            <td><a href="lld_04_case_studies.html#parking">Parking Lot</a></td>
+                            <td>Identify classes; code skeleton in Python.</td>
+                        </tr>
+                        <tr>
+                            <td>10</td>
+                            <td><a href="lld_04_case_studies.html#elevator">Elevator System</a></td>
+                            <td>Model state machine; multiple elevators.</td>
+                        </tr>
+                        <tr>
+                            <td>11</td>
+                            <td><a href="lld_04_case_studies.html#library">Library Management</a></td>
+                            <td>Member, Book, Loan; reservations.</td>
+                        </tr>
+                        <tr>
+                            <td>12</td>
+                            <td><a href="lld_04_case_studies.html#atm">ATM Machine</a></td>
+                            <td>Hardware abstraction + state machine.</td>
+                        </tr>
+                        <tr>
+                            <td>13</td>
+                            <td>Free practice</td>
+                            <td>Time-box: design a Splitwise in 45 min. Compare to standard answer online.</td>
+                        </tr>
+                        <tr>
+                            <td>14</td>
+                            <td>Free practice</td>
+                            <td>Time-box: design a Snake-and-Ladders game in 30 min.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="card">
+                <h2>Week 3 — HLD Primitives</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Topic</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>15</td>
+                            <td><a href="hld_01_fundamentals.html">HLD Fundamentals</a></td>
+                            <td>Memorize the back-of-envelope numbers table.</td>
+                        </tr>
+                        <tr>
+                            <td>16</td>
+                            <td><a href="hld_01_fundamentals.html#scaling">Vertical vs Horizontal Scaling</a></td>
+                            <td>Sketch a stateless web tier.</td>
+                        </tr>
+                        <tr>
+                            <td>17</td>
+                            <td><a href="hld_02_databases_caching.html#sqlnosql">SQL vs NoSQL</a></td>
+                            <td>Pick the right DB for 3 scenarios.</td>
+                        </tr>
+                        <tr>
+                            <td>18</td>
+                            <td><a href="hld_02_databases_caching.html#sharding">Sharding &amp; Replication</a></td>
+                            <td>Diagram a 4-shard MySQL cluster with read replicas.</td>
+                        </tr>
+                        <tr>
+                            <td>19</td>
+                            <td><a href="hld_02_databases_caching.html#cache">Caching strategies</a></td>
+                            <td>Diagram cache-aside vs write-through for a product catalog.</td>
+                        </tr>
+                        <tr>
+                            <td>20</td>
+                            <td><a href="hld_03_distributed.html#lb">Load Balancers</a></td>
+                            <td>L4 vs L7; sticky sessions; health checks.</td>
+                        </tr>
+                        <tr>
+                            <td>21</td>
+                            <td><a href="hld_03_distributed.html#mq">Message Queues</a></td>
+                            <td>Sync vs async; Kafka vs RabbitMQ vs SQS.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="card">
+                <h2>Week 4 — HLD Case Studies</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Topic</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>22</td>
+                            <td><a href="hld_03_distributed.html#microservices">Microservices &amp; API Gateway</a></td>
+                            <td>Identify service boundaries for an e-commerce app.</td>
+                        </tr>
+                        <tr>
+                            <td>23</td>
+                            <td><a href="hld_03_distributed.html#cap">CAP theorem &amp; consistency</a></td>
+                            <td>Classify 5 real systems as CP or AP.</td>
+                        </tr>
+                        <tr>
+                            <td>24</td>
+                            <td><a href="hld_04_case_studies.html#urlshortener">URL Shortener (TinyURL)</a></td>
+                            <td>Design in 45 min; compare to standard answer.</td>
+                        </tr>
+                        <tr>
+                            <td>25</td>
+                            <td><a href="hld_04_case_studies.html#twitter">Twitter Newsfeed</a></td>
+                            <td>Push vs pull model; fan-out problem.</td>
+                        </tr>
+                        <tr>
+                            <td>26</td>
+                            <td><a href="hld_04_case_studies.html#whatsapp">WhatsApp Chat</a></td>
+                            <td>Online presence; last-seen; group chat.</td>
+                        </tr>
+                        <tr>
+                            <td>27</td>
+                            <td><a href="hld_04_case_studies.html#uber">Uber Dispatch</a></td>
+                            <td>Geo-sharding; driver matching.</td>
+                        </tr>
+                        <tr>
+                            <td>28</td>
+                            <td><a href="hld_04_case_studies.html#youtube">YouTube</a></td>
+                            <td>Video encoding pipeline; CDN; recommendation pipeline.</td>
+                        </tr>
+                        <tr>
+                            <td>29</td>
+                            <td>Mock interview</td>
+                            <td>Pick a system you haven't designed; 45-min mock.</td>
+                        </tr>
+                        <tr>
+                            <td>30</td>
+                            <td>Reflect</td>
+                            <td>What can you design confidently? What still wobbles?</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+    <footer>30-day plan · <a href="index.html">back to hub</a></footer>
+</body>
+
+</html>

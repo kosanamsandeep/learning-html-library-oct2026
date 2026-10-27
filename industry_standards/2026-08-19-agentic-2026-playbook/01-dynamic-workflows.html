@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01 — Dynamic Workflows: Claude writes its own harness</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38; --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575; --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f; --green:#a3e077; --violet:#c09bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← Agentic Engineering Playbook</a> · Module 01</div>
+  <h1>Dynamic Workflows: <em style="color:var(--violet);font-style:normal;">Claude writes its own harness</em></h1>
+  <p>Anthropic's biggest 2026 methodology leap. In <strong>late May / June 2026</strong>, Claude Code gained the ability to <strong>write and orchestrate its own multi-agent JavaScript harness at runtime</strong> — one task, one custom harness, instead of a human authoring a fixed pipeline. It's the shipped, official version of what Boris Cherny described abstractly at the Opus 5 launch.</p>
+
+  <h2>Why it was needed — the three single-context failure modes</h2>
+  <p>The default Claude Code harness plans and executes in <em>one context window</em>. That works for routine coding but breaks down on long, parallel, or adversarial tasks. Anthropic named three structural failure modes:</p>
+  <table>
+    <thead><tr><th>Failure mode</th><th>What it looks like</th><th>Why prompting can't fix it</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Agentic laziness</strong></td><td>Stops early and declares completion — "addressed 35 of the 50 items" in a security review.</td><td>More prompt text doesn't change the incentive to stop at diminishing returns.</td></tr>
+      <tr><td><strong>Self-preferential bias</strong></td><td>Favors its own results when judging them against a rubric.</td><td>A model grading its own work is a conflict of interest; you need a separate skeptic.</td></tr>
+      <tr><td><strong>Goal drift</strong></td><td>Across many turns and context compactions, edge-case constraints like "don't do X" get lost.</td><td>Constraints decay with distance; they need to be re-checked in fresh context.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><strong>Key insight:</strong> workflows fix these <em>structurally</em> — isolated context windows, focused goals, adversarial verifiers — not by writing longer prompts.</div>
+
+  <h2>The orchestration shape</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph TB
+    U["You (1 prompt)"] --> H["Claude writes a JS harness<br/>at runtime, tailored to the task"]
+    H --> A["Subagent A<br/>clean context"]
+    H --> B["Subagent B<br/>clean context"]
+    H --> C["Subagent C<br/>clean context"]
+    B --> V["Adversarial verifier<br/>separate agent, rubric"]
+    A --> V
+    C --> V
+    V -->|fail → redo| A
+    V -->|pass → merge| OUT["Synthesize<br/>resumable · tracked"]
+  </div>
+  </div>
+
+  <h2>The six core workflow patterns</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>Pattern</th><th>Shape</th><th>Use when</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Classify-and-act</strong></td><td>A classifier routes the task to the right agent/behavior — or judges the final output.</td><td>Tasks that split by type (bug vs feature; simple vs complex).</td></tr>
+        <tr><td><strong>Fan-out-and-synthesize</strong></td><td>Split work into small steps, one agent per step in clean context, then a synthesize barrier merges structured outputs.</td><td>Migrations, sweeps, anything parallelizable.</td></tr>
+        <tr><td><strong>Adversarial verification</strong></td><td>Every producing agent gets a separate verifier that checks output against a rubric — it never trusts the producer.</td><td>High-stakes output that must be audited.</td></tr>
+        <tr><td><strong>Generate-and-filter</strong></td><td>Generate many ideas, then filter by rubric + verification + dedupe; return only the highest-quality tested ones.</td><td>Design/naming exploration, option generation.</td></tr>
+        <tr><td><strong>Tournament</strong></td><td>N agents attempt the same task differently; a judge compares results pairwise until a winner emerges.</td><td>Ranking/sorting where absolute scoring degrades — e.g. 1,000+ rows in one prompt fails; pairwise works.</td></tr>
+        <tr><td><strong>Loop until done</strong></td><td>Spawn agents repeatedly until a stop condition (no new findings, no more errors), not a fixed number of passes.</td><td>Unknown-size discovery: bug hunts, review sweeps.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>How it works under the hood</h2>
+  <div class="card">
+    <ul>
+      <li><strong>A workflow is a JavaScript file</strong> with special functions for spawning and coordinating subagents, plus standard JS (<code>JSON</code>, <code>Math</code>, <code>Array</code>) for data processing, loops, and branching.</li>
+      <li><strong>Per-agent model choice</strong> — subagents can each run a different model (Opus for heavy work, Sonnet/Haiku for light) and can run in <strong>their own git worktree</strong> to avoid workspace conflicts.</li>
+      <li><strong>Coordination runs outside the main context</strong> — the main session doesn't track every branch detail; it reads the funneled result.</li>
+      <li><strong>Resumable</strong> — if you interrupt or quit the terminal, resuming picks the workflow back up from its breakpoint.</li>
+      <li><strong>Cap the token budget</strong> explicitly, e.g. <code>use 10k tokens</code>.</li>
+    </ul>
+  </div>
+
+  <h2>How to trigger it</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Natural language:</strong> "Create a workflow to…" with clear goals, scope, and acceptance criteria.</li>
+      <li><strong>The trigger word <code>ultracode</code>:</strong> include it in a prompt (or set effort to xhigh) and Claude Code auto-generates a workflow for substantive tasks — the first trigger shows a plan for confirmation.</li>
+    </ul>
+  </div>
+
+  <h2>Static vs dynamic workflows</h2>
+  <table>
+    <thead><tr><th></th><th>Static workflows</th><th>Dynamic workflows</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Who writes them</strong></td><td>Human, via Claude Agent SDK or <code>claude -p</code></td><td>Claude, at runtime, tailored to the task</td></tr>
+      <tr><td><strong>Robustness</strong></td><td>Must handle all edge cases up front → tends to be generic &amp; verbose</td><td>"Claude is now intelligent enough to write a custom harness tailor-made for your use case"</td></tr>
+      <tr><td><strong>Cost</strong></td><td>Predictable, lower</td><td>Often significantly more tokens — a form of test-time compute</td></tr>
+      <tr><td><strong>Best for</strong></td><td>Repetitive, lightweight, well-understood flows</td><td>Complex, long-running, adversarial, high-stakes tasks</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Real deployments</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Bun's Zig→Rust rewrite</strong> (Jarred Sumner) — a 100K-line codebase fan-out: one subagent per module in a worktree, adversarial review, per-module merge.</li>
+      <li><strong>/deep-research</strong> — a skill that fans out web searches, fetches sources, adversarially verifies claims, and synthesizes a cited report.</li>
+      <li><strong>Race-condition triage</strong> — "this test fails maybe 1 in 50 runs…" spawns a loop-until-done investigation.</li>
+      <li><strong>Deep verification</strong> — one agent enumerates every factual claim; subagents check each; an auditor scores source quality.</li>
+      <li><strong>Memory / rule adherence</strong> — mine sessions for recurring corrections and distill them into <code>CLAUDE.md</code>.</li>
+    </ul>
+    <div class="callout"><strong>Operational tips from the field:</strong> pair repeatable workflows with <code>/loop</code> for continuous operation and <code>/goal</code> for a hard completion requirement; save workflows with <kbd>s</kbd> into <code>~/.claude/workflows</code> or distribute via a skill; use the <strong>quarantine pattern</strong> — agents that read untrusted public content are barred from high-privilege actions.</div>
+  </div>
+
+  <div class="callout warn"><strong>⚠️ The trap:</strong> this is powerful and expensive. Fan-out + adversarial verification can multiply token spend several-fold. Reserve it for tasks where the stakes justify test-time compute; don't wrap routine edits in a 12-agent harness. See <a href="04-verification-funnel.html">the verification funnel</a> for right-sizing.</div>
+
+  <div class="card">
+    <h3>Sources</h3>
+    <p style="font-size:0.85rem;color:var(--mute);">
+      · <a href="https://claude.com/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code">Anthropic · A harness for every task: dynamic workflows in Claude Code</a> (primary)<br>
+      · <a href="https://verygood.ventures/blog/claude-dynamic-workflows-flutter/">Very Good Ventures · Dynamic Workflows for Flutter at Scale</a> (field failure-modes)<br>
+      · <a href="../2026-08-03-boris-cherny-opus5-elicitation/03-dynamic-workflows.html">This track · Boris Cherny on dynamic workflows at thousand-agent scale</a>
+    </p>
+  </div>
+
+  <a class="prev" href="index.html">← Back to hub</a>
+  <a class="next" href="02-spec-driven-development.html">Next: Spec-Driven Development →</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#10141c',primaryColor:'#161b26',primaryBorderColor:'#6ee7d8',primaryTextColor:'#e7e9f0',lineColor:'#6ee7d8',secondaryColor:'#0a0c10'}});</script>
+</body>
+</html>

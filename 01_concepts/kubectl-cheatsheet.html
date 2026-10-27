@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubectl Commands Cheat Sheet</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">AI</span>
+                <span>AI Engineer Interview Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="docker-cheatsheet.html">Docker</a>
+                <a href="fastapi-flask.html">FastAPI/Flask</a>
+                <a href="grpc.html">gRPC</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#concepts">Core Concepts</a>
+            <a href="#context">Cluster and Context</a>
+            <a href="#pods">Pods</a>
+            <a href="#deployments">Deployments</a>
+            <a href="#services">Services</a>
+            <a href="#configmaps">ConfigMaps and Secrets</a>
+            <a href="#debugging">Debugging</a>
+            <a href="#scaling">Scaling and Updates</a>
+            <a href="#namespaces">Namespaces</a>
+            <a href="#yaml">YAML Manifests</a>
+            <a href="#production">Production Patterns</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Container orchestration</p>
+                    <h1>Kubectl Commands Cheat Sheet</h1>
+                    <p>kubectl is the command-line tool for interacting with Kubernetes clusters. This cheat sheet
+                        covers the essential commands for deploying, managing, debugging, and scaling containerized
+                        applications in production.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Kubernetes core objects</h2>
+                    <ul>
+                        <li><strong>Pod:</strong> Smallest deployable unit (1+ containers)</li>
+                        <li><strong>Deployment:</strong> Manages replica sets and rollouts</li>
+                        <li><strong>Service:</strong> Stable network endpoint for pods</li>
+                        <li><strong>ConfigMap/Secret:</strong> External configuration</li>
+                        <li><strong>Ingress:</strong> HTTP routing to services</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Core Concepts -->
+            <section class="section" id="concepts">
+                <h2>Core concepts quick reference</h2>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Object</th>
+                                <th>Purpose</th>
+                                <th>Key command</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Pod</strong></td>
+                                <td>Run containers</td>
+                                <td>kubectl get pods</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Deployment</strong></td>
+                                <td>Manage replicas and updates</td>
+                                <td>kubectl get deployments</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Service</strong></td>
+                                <td>Network exposure</td>
+                                <td>kubectl get svc</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Namespace</strong></td>
+                                <td>Logical isolation</td>
+                                <td>kubectl get ns</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ConfigMap</strong></td>
+                                <td>Configuration data</td>
+                                <td>kubectl get configmaps</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Secret</strong></td>
+                                <td>Sensitive data</td>
+                                <td>kubectl get secrets</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ingress</strong></td>
+                                <td>HTTP routing rules</td>
+                                <td>kubectl get ingress</td>
+                            </tr>
+                            <tr>
+                                <td><strong>PVC</strong></td>
+                                <td>Persistent storage</td>
+                                <td>kubectl get pvc</td>
+                            </tr>
+                            <tr>
+                                <td><strong>HPA</strong></td>
+                                <td>Auto-scaling</td>
+                                <td>kubectl get hpa</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Job/CronJob</strong></td>
+                                <td>Batch/scheduled tasks</td>
+                                <td>kubectl get jobs</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Cluster and Context -->
+            <section class="section" id="context">
+                <h2>Cluster and context management</h2>
+                <div class="code-card">
+                    <h3>Context and cluster commands</h3>
+                    <pre># View current context
+kubectl config current-context
+
+# List all contexts
+kubectl config get-contexts
+
+# Switch context
+kubectl config use-context &lt;context-name&gt;
+
+# Set default namespace for context
+kubectl config set-context --current --namespace=my-namespace
+
+# View cluster info
+kubectl cluster-info
+
+# View all nodes
+kubectl get nodes
+
+# View node details
+kubectl describe node &lt;node-name&gt;
+
+# Check component status
+kubectl get componentstatuses
+
+# View API resources available
+kubectl api-resources
+
+# View API versions
+kubectl api-versions</pre>
+                </div>
+            </section>
+
+            <!-- Pods -->
+            <section class="section" id="pods">
+                <h2>Pods</h2>
+                <div class="code-card">
+                    <h3>Pod operations</h3>
+                    <pre># List pods in current namespace
+kubectl get pods
+
+# List pods in all namespaces
+kubectl get pods -A
+kubectl get pods --all-namespaces
+
+# List pods with more info (IP, node)
+kubectl get pods -o wide
+
+# Watch pods in real-time
+kubectl get pods -w
+
+# Filter pods by label
+kubectl get pods -l app=myapp
+kubectl get pods -l "app=myapp,env=prod"
+
+# Get pod YAML definition
+kubectl get pod &lt;pod-name&gt; -o yaml
+
+# Describe pod (events, conditions, containers)
+kubectl describe pod &lt;pod-name&gt;
+
+# Run a temporary pod (for debugging)
+kubectl run debug --image=busybox -it --rm -- /bin/sh
+kubectl run curl-test --image=curlimages/curl -it --rm -- sh
+
+# Delete a pod
+kubectl delete pod &lt;pod-name&gt;
+
+# Delete pods by label
+kubectl delete pods -l app=myapp
+
+# Force delete stuck pod
+kubectl delete pod &lt;pod-name&gt; --grace-period=0 --force</pre>
+                </div>
+            </section>
+
+            <!-- Deployments -->
+            <section class="section" id="deployments">
+                <h2>Deployments</h2>
+                <div class="code-card">
+                    <h3>Deployment commands</h3>
+                    <pre># Create deployment
+kubectl create deployment myapp --image=myapp:v1
+
+# Apply from YAML file
+kubectl apply -f deployment.yaml
+
+# List deployments
+kubectl get deployments
+kubectl get deploy
+
+# Describe deployment
+kubectl describe deployment myapp
+
+# Update image (triggers rolling update)
+kubectl set image deployment/myapp app=myapp:v2
+
+# Check rollout status
+kubectl rollout status deployment/myapp
+
+# View rollout history
+kubectl rollout history deployment/myapp
+
+# Rollback to previous version
+kubectl rollout undo deployment/myapp
+
+# Rollback to specific revision
+kubectl rollout undo deployment/myapp --to-revision=3
+
+# Pause/resume rollout
+kubectl rollout pause deployment/myapp
+kubectl rollout resume deployment/myapp
+
+# Restart deployment (recreate all pods)
+kubectl rollout restart deployment/myapp
+
+# Scale deployment
+kubectl scale deployment myapp --replicas=5
+
+# Delete deployment
+kubectl delete deployment myapp</pre>
+                </div>
+            </section>
+
+            <!-- Services -->
+            <section class="section" id="services">
+                <h2>Services</h2>
+                <div class="code-card">
+                    <h3>Service commands</h3>
+                    <pre># Expose deployment as a service
+kubectl expose deployment myapp --port=80 --target-port=8000 --type=ClusterIP
+kubectl expose deployment myapp --port=80 --target-port=8000 --type=NodePort
+kubectl expose deployment myapp --port=80 --target-port=8000 --type=LoadBalancer
+
+# List services
+kubectl get services
+kubectl get svc
+
+# Describe service (see endpoints)
+kubectl describe svc myapp
+
+# Get service endpoints
+kubectl get endpoints myapp
+
+# Port forward (local dev access to cluster service)
+kubectl port-forward svc/myapp 8080:80
+kubectl port-forward pod/myapp-abc123 8080:8000
+
+# Delete service
+kubectl delete svc myapp
+
+# Service types explained:
+# ClusterIP  → internal only (default)
+# NodePort   → expose on each node's IP:port (30000-32767)
+# LoadBalancer → cloud provider load balancer (external IP)
+# ExternalName → DNS CNAME alias</pre>
+                </div>
+            </section>
+
+            <!-- ConfigMaps and Secrets -->
+            <section class="section" id="configmaps">
+                <h2>ConfigMaps and Secrets</h2>
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>ConfigMap commands</h3>
+                        <pre># Create from literal values
+kubectl create configmap myconfig \
+  --from-literal=DB_HOST=postgres \
+  --from-literal=DB_PORT=5432
+
+# Create from file
+kubectl create configmap myconfig \
+  --from-file=config.yaml
+
+# Create from env file
+kubectl create configmap myconfig \
+  --from-env-file=.env
+
+# View configmap
+kubectl get configmap myconfig -o yaml
+
+# Edit configmap
+kubectl edit configmap myconfig
+
+# Delete configmap
+kubectl delete configmap myconfig</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Secret commands</h3>
+                        <pre># Create generic secret
+kubectl create secret generic mysecret \
+  --from-literal=password=s3cr3t \
+  --from-literal=api-key=abc123
+
+# Create from file
+kubectl create secret generic tls-cert \
+  --from-file=cert.pem \
+  --from-file=key.pem
+
+# Create docker registry secret
+kubectl create secret docker-registry \
+  regcred \
+  --docker-server=registry.io \
+  --docker-username=user \
+  --docker-password=pass
+
+# View secret (base64 encoded)
+kubectl get secret mysecret -o yaml
+
+# Decode secret value
+kubectl get secret mysecret \
+  -o jsonpath='{.data.password}' \
+  | base64 -d
+
+# Delete secret
+kubectl delete secret mysecret</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Debugging -->
+            <section class="section" id="debugging">
+                <h2>Debugging and troubleshooting</h2>
+                <div class="code-card">
+                    <h3>Essential debugging commands</h3>
+                    <pre># View pod logs
+kubectl logs &lt;pod-name&gt;
+kubectl logs &lt;pod-name&gt; -f              # follow/stream
+kubectl logs &lt;pod-name&gt; --tail=100      # last 100 lines
+kubectl logs &lt;pod-name&gt; --since=1h      # last hour
+kubectl logs &lt;pod-name&gt; -c &lt;container&gt;  # specific container in multi-container pod
+kubectl logs &lt;pod-name&gt; --previous      # previous crashed instance
+
+# Execute command in running pod
+kubectl exec -it &lt;pod-name&gt; -- /bin/bash
+kubectl exec -it &lt;pod-name&gt; -- /bin/sh
+kubectl exec &lt;pod-name&gt; -- env          # view env vars
+kubectl exec &lt;pod-name&gt; -- cat /etc/hosts
+
+# Get events (cluster-wide troubleshooting)
+kubectl get events --sort-by=.metadata.creationTimestamp
+kubectl get events -n &lt;namespace&gt;
+
+# Top (resource usage) — requires metrics-server
+kubectl top nodes
+kubectl top pods
+kubectl top pods --sort-by=memory
+
+# Debug with ephemeral container (K8s 1.23+)
+kubectl debug -it &lt;pod-name&gt; --image=busybox --target=&lt;container&gt;
+
+# Copy files to/from pod
+kubectl cp &lt;pod-name&gt;:/path/to/file ./local-file
+kubectl cp ./local-file &lt;pod-name&gt;:/path/to/file
+
+# Check pod readiness/liveness
+kubectl describe pod &lt;pod-name&gt; | grep -A 5 "Conditions"
+
+# Common pod issues:
+# CrashLoopBackOff → check logs, app keeps crashing
+# ImagePullBackOff → wrong image name/tag or registry auth
+# Pending → insufficient resources or no matching node
+# OOMKilled → container exceeded memory limit</pre>
+                </div>
+            </section>
+
+            <!-- Scaling and Updates -->
+            <section class="section" id="scaling">
+                <h2>Scaling and rolling updates</h2>
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Manual scaling</h3>
+                        <pre># Scale to specific replicas
+kubectl scale deploy myapp --replicas=5
+
+# Scale to zero (stop all pods)
+kubectl scale deploy myapp --replicas=0
+
+# Scale multiple deployments
+kubectl scale deploy myapp myworker \
+  --replicas=3</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Horizontal Pod Autoscaler</h3>
+                        <pre># Create HPA (CPU-based)
+kubectl autoscale deployment myapp \
+  --min=2 --max=10 --cpu-percent=70
+
+# View HPA status
+kubectl get hpa
+
+# Describe HPA (see scaling decisions)
+kubectl describe hpa myapp
+
+# Delete HPA
+kubectl delete hpa myapp</pre>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>Rolling update strategy</h3>
+                    <pre># Update image (triggers rolling update)
+kubectl set image deployment/myapp app=myapp:v2
+
+# Watch the rollout progress
+kubectl rollout status deployment/myapp
+
+# The rolling update strategy in YAML:
+# spec:
+#   strategy:
+#     type: RollingUpdate
+#     rollingUpdate:
+#       maxSurge: 25%        ← extra pods during update
+#       maxUnavailable: 25%  ← pods that can be down
+
+# If something goes wrong:
+kubectl rollout undo deployment/myapp
+
+# Blue-green: deploy v2 separately, switch service selector
+# Canary: run v2 with fewer replicas alongside v1</pre>
+                </div>
+            </section>
+
+            <!-- Namespaces -->
+            <section class="section" id="namespaces">
+                <h2>Namespaces</h2>
+                <div class="code-card">
+                    <h3>Namespace commands</h3>
+                    <pre># List namespaces
+kubectl get namespaces
+kubectl get ns
+
+# Create namespace
+kubectl create namespace staging
+
+# Set default namespace
+kubectl config set-context --current --namespace=staging
+
+# Run commands in specific namespace
+kubectl get pods -n staging
+kubectl get all -n staging
+
+# Get resources across ALL namespaces
+kubectl get pods -A
+kubectl get svc --all-namespaces
+
+# Delete namespace (deletes EVERYTHING in it!)
+kubectl delete namespace staging
+
+# Apply resources to specific namespace
+kubectl apply -f deployment.yaml -n staging</pre>
+                </div>
+            </section>
+
+            <!-- YAML Manifests -->
+            <section class="section" id="yaml">
+                <h2>YAML manifest examples</h2>
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Deployment manifest</h3>
+                        <pre>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-api
+  labels:
+    app: ml-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ml-api
+  template:
+    metadata:
+      labels:
+        app: ml-api
+    spec:
+      containers:
+      - name: api
+        image: myregistry/ml-api:v1
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        env:
+        - name: MODEL_PATH
+          value: "/models/v1"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: password
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Service + Ingress</h3>
+                        <pre># Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-api-svc
+spec:
+  selector:
+    app: ml-api
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ml-api-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/
+      rewrite-target: /
+spec:
+  rules:
+  - host: api.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ml-api-svc
+            port:
+              number: 80
+---
+# HPA
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ml-api-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ml-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Production Patterns -->
+            <section class="section" id="production">
+                <h2>Production patterns for ML</h2>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>ML model deployment checklist</h3>
+                        <ul>
+                            <li><strong>Resource limits:</strong> Set CPU/memory requests and limits</li>
+                            <li><strong>Health checks:</strong> Readiness probe (model loaded?) + liveness probe</li>
+                            <li><strong>Horizontal scaling:</strong> HPA on CPU/memory or custom metrics</li>
+                            <li><strong>Rolling updates:</strong> Zero-downtime deployments</li>
+                            <li><strong>Secrets:</strong> API keys and credentials in Kubernetes Secrets</li>
+                            <li><strong>Monitoring:</strong> Prometheus metrics exposed at /metrics</li>
+                            <li><strong>Logging:</strong> Structured JSON logs to stdout</li>
+                            <li><strong>GPU scheduling:</strong> nvidia.com/gpu resource requests</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Common kubectl shortcuts</h3>
+                        <ul>
+                            <li><strong>po</strong> = pods</li>
+                            <li><strong>deploy</strong> = deployments</li>
+                            <li><strong>svc</strong> = services</li>
+                            <li><strong>ns</strong> = namespaces</li>
+                            <li><strong>cm</strong> = configmaps</li>
+                            <li><strong>pvc</strong> = persistentvolumeclaims</li>
+                            <li><strong>rs</strong> = replicasets</li>
+                            <li><strong>ing</strong> = ingresses</li>
+                            <li><strong>-o wide</strong> = extra info columns</li>
+                            <li><strong>-o yaml</strong> = full YAML output</li>
+                            <li><strong>-o json</strong> = JSON output</li>
+                            <li><strong>--dry-run=client -o yaml</strong> = generate YAML without applying</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>GPU workload manifest (ML inference)</h3>
+                    <pre>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-inference
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gpu-inference
+  template:
+    metadata:
+      labels:
+        app: gpu-inference
+    spec:
+      containers:
+      - name: inference
+        image: myregistry/gpu-model:v1
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            nvidia.com/gpu: 1      # Request 1 GPU
+            memory: "8Gi"
+          requests:
+            nvidia.com/gpu: 1
+            memory: "4Gi"
+            cpu: "2"
+        volumeMounts:
+        - name: model-store
+          mountPath: /models
+      volumes:
+      - name: model-store
+        persistentVolumeClaim:
+          claimName: model-pvc
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+      nodeSelector:
+        accelerator: nvidia-tesla-t4</pre>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Kubectl commands cheat sheet — from cluster basics to production ML deployment.</p>
+            <div class="mini-links">
+                <a href="index.html">Home</a>
+                <a href="docker-cheatsheet.html">Docker</a>
+                <a href="fastapi-flask.html">FastAPI/Flask</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

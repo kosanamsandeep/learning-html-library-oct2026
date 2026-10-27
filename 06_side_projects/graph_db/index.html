@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph DB & Cypher — from zero to expert</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="index.html"><span class="mark">◆</span>Graph DB Mastery</a>
+            <nav class="top-links">
+                <a href="../index.html">Side Projects</a>
+                <a href="01_setup_neo4j.html">Setup</a>
+                <a href="04_cypher_basics.html">Cypher</a>
+                <a href="08_practice_tests.html">Practice</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Neo4j · Cypher · Knowledge graphs</p>
+            <h1>Become a graph database & Cypher expert — free, on your own machine</h1>
+            <p class="lead">A complete, hands-on path: install a free graph database locally, import a real
+                dataset, learn Cypher from <code>MATCH</code> to multi-hop traversals, see exactly when a graph
+                database crushes relational/document DBs, and prove your skill with graded practice tests.</p>
+            <div class="toc">
+                <a href="01_setup_neo4j.html">① Install</a>
+                <a href="02_graph_thinking.html">② Think in graphs</a>
+                <a href="03_load_dataset.html">③ Load data</a>
+                <a href="04_cypher_basics.html">④ Cypher basics</a>
+                <a href="05_cypher_intermediate.html">⑤ Intermediate</a>
+                <a href="06_cypher_advanced.html">⑥ Advanced</a>
+                <a href="07_graph_power.html">⑦ Why graphs win</a>
+                <a href="08_practice_tests.html">⑧ Practice</a>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>What is a graph database in one picture?</h2>
+            <p>A graph database stores data the way you draw it on a whiteboard: <strong>nodes</strong> (things)
+                connected by <strong>relationships</strong> (how they relate), each carrying
+                <strong>properties</strong>. There are no foreign keys or JOIN tables — the connections
+                <em>are</em> the data.
+            </p>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+graph LR
+    A(["👤 Alice"]) -- FOLLOWS --> B(["👤 Bob"])
+    B -- FOLLOWS --> C(["👤 Carol"])
+    A -- LIKES --> P(["🎬 Inception"])
+    C -- ACTED_IN --> P
+    A -- LIVES_IN --> L(["🏙️ London"])
+    B -- LIVES_IN --> L
+    classDef person fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef thing fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+    class A,B,C person;
+    class P,L thing;
+                </pre>
+                <p class="caption">Nodes (circles) + relationships (arrows) + properties = the property graph
+                    model. "Who does Alice follow that likes a movie Carol acted in?" is one short query here —
+                    and a painful multi-JOIN in SQL.</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Your 8-step road to expert</h2>
+            <div class="grid">
+                <a class="card-link mini info" href="01_setup_neo4j.html">
+                    <h3>① Install Neo4j (free, local)</h3>
+                    <p class="quiet">Three free ways — Neo4j Desktop, Community Edition, or Docker — and how to
+                        open the browser console.</p>
+                </a>
+                <a class="card-link mini note" href="02_graph_thinking.html">
+                    <h3>② Think in graphs</h3>
+                    <p class="quiet">Nodes, relationships, labels, properties — and how the model differs from
+                        relational, document, and key-value stores.</p>
+                </a>
+                <a class="card-link mini good" href="03_load_dataset.html">
+                    <h3>③ Load a dataset</h3>
+                    <p class="quiet">Start with the built-in Movies graph, then build your own social + commerce
+                        dataset you can paste in one block.</p>
+                </a>
+                <a class="card-link mini info" href="04_cypher_basics.html">
+                    <h3>④ Cypher basics</h3>
+                    <p class="quiet"><code>MATCH</code>, <code>CREATE</code>, <code>MERGE</code>,
+                        <code>WHERE</code>, <code>RETURN</code> — drawing patterns in ASCII art.
+                    </p>
+                </a>
+                <a class="card-link mini warn" href="05_cypher_intermediate.html">
+                    <h3>⑤ Intermediate Cypher</h3>
+                    <p class="quiet">Traversals, variable-length paths, aggregation, <code>WITH</code> pipelines,
+                        and recommendation queries.</p>
+                </a>
+                <a class="card-link mini note" href="06_cypher_advanced.html">
+                    <h3>⑥ Advanced & performance</h3>
+                    <p class="quiet">Shortest paths, subqueries, indexes & constraints,
+                        <code>EXPLAIN</code>/<code>PROFILE</code>, APOC & GDS.</p>
+                </a>
+                <a class="card-link mini good" href="07_graph_power.html">
+                    <h3>⑦ Why graphs win</h3>
+                    <p class="quiet">The power of graph DBs vs SQL/Mongo, with the use cases where they're the
+                        only sane choice — and when NOT to use them.</p>
+                </a>
+                <a class="card-link mini bad" href="08_practice_tests.html">
+                    <h3>⑧ Practice tests</h3>
+                    <p class="quiet">Graded quizzes (easy → hard) with hidden answers, plus challenge tasks to
+                        confirm you're an expert.</p>
+                </a>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>When should you reach for a graph database?</h2>
+            <div class="grid-2">
+                <div class="mini good">
+                    <h3>✅ Great fit</h3>
+                    <ul>
+                        <li><strong>Relationships are the question</strong> — "friends of friends", paths, networks.
+                        </li>
+                        <li><strong>Recommendations</strong> — "people who bought X also bought…".</li>
+                        <li><strong>Fraud / AML rings</strong> — find suspicious connection patterns.</li>
+                        <li><strong>Knowledge graphs</strong> — entities + facts, GraphRAG for LLMs.</li>
+                        <li><strong>Network/IT, supply chain, identity & access</strong> graphs.</li>
+                    </ul>
+                </div>
+                <div class="mini warn">
+                    <h3>⚠️ Probably not</h3>
+                    <ul>
+                        <li>Simple CRUD over flat, tabular records.</li>
+                        <li>Heavy aggregation/analytics on huge columns (use a warehouse).</li>
+                        <li>Blob/document storage with no meaningful links.</li>
+                        <li>Pure key→value lookups at massive scale.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="callout">
+                <strong>Rule of thumb:</strong> if your most valuable questions contain the word
+                <em>"connected"</em>, <em>"path"</em>, <em>"network"</em>, or <em>"related"</em>, and SQL would
+                need 3+ JOINs or recursive CTEs, a graph database will be simpler <em>and</em> faster.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How to use this folder</h2>
+            <ol>
+                <li>Do <strong>① Install</strong> first — you'll want to run every query as you read.</li>
+                <li>Read <strong>②</strong> once to rewire your brain from tables to graphs.</li>
+                <li>Load the dataset in <strong>③</strong>, then keep Neo4j Browser open for <strong>④–⑥</strong>.</li>
+                <li>Read <strong>⑦</strong> to articulate <em>why</em> graphs to your team.</li>
+                <li>Hammer <strong>⑧</strong> until every answer is automatic — that's expertise.</li>
+            </ol>
+            <p>👉 Start now: <a href="01_setup_neo4j.html"><strong>① Install Neo4j locally for free</strong></a></p>
+        </section>
+    </main>
+
+    <footer>Graph DB Mastery · built for the learning_path · <a href="../index.html">back to Side Projects</a></footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true, theme: 'base',
+            themeVariables: { primaryColor: '#d4f3e9', primaryTextColor: '#14241f', primaryBorderColor: '#0f9d77', lineColor: '#0b7a5d', fontFamily: 'Segoe UI, Aptos, system-ui, sans-serif' }
+        });
+    </script>
+</body>
+
+</html>

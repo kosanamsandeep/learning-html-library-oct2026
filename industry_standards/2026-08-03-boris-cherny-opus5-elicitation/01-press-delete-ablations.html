@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01 — Press Delete: The Ablation Mindset</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0a0c10; --surface:#10141c; --surface2:#161b26; --border:#222a38; --text:#e7e9f0; --dim:#8b93a7; --mute:#5c6575; --accent:#6ee7d8; --accent2:#8bb5ff; --amber:#f2c063; --rose:#f2797f; --green:#a3e077; --violet:#c09bfa; }
+  body{ font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap{ max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+  .crumbs{ font-size:0.8rem; color:var(--mute); margin-bottom:1.5rem; } .crumbs a{ color:var(--accent2); text-decoration:none; }
+  h1{ font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.6rem; }
+  h2{ font-size:1.5rem; font-weight:700; margin:2.5rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+  h3{ font-size:1.1rem; font-weight:600; margin:1.5rem 0 0.5rem; }
+  p{ color:var(--dim); margin-bottom:0.9rem; } strong{ color:var(--text); }
+  code{ font-family:'JetBrains Mono',monospace; font-size:0.85em; background:var(--surface2); border:1px solid var(--border); padding:0.15em 0.4em; border-radius:4px; color:var(--accent); }
+  .callout{ border-left:3px solid var(--accent); background:rgba(110,231,216,0.06); padding:1rem 1.25rem; border-radius:0 10px 10px 0; margin:1.25rem 0; }
+  .callout.warn{ border-left-color:var(--amber); background:rgba(242,192,99,0.06); }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; margin:1.25rem 0; }
+  .card h3{ margin-top:0; }
+  .mermaid-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.75rem; margin:1.5rem 0; overflow-x:auto; text-align:center; }
+  table{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.9rem; }
+  th{ text-align:left; color:var(--accent2); border-bottom:2px solid var(--border); padding:0.6rem 0.8rem; font-weight:600; }
+  td{ border-bottom:1px solid var(--border); padding:0.6rem 0.8rem; color:var(--dim); }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; } @media(max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .next{ display:block; text-align:right; margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--accent2); text-decoration:none; font-weight:600; }
+  .next:hover{ color:var(--accent); }
+  .prev{ display:block; text-align:left; margin-top:1rem; color:var(--accent2); text-decoration:none; font-weight:600; }
+  ul,ol{ color:var(--dim); padding-left:1.3rem; margin-bottom:0.9rem; } li{ margin-bottom:0.35rem; }
+  pre{ background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:1.1rem; overflow-x:auto; font-family:'JetBrains Mono',monospace; font-size:0.8rem; line-height:1.6; color:var(--dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← Boris Cherny · Elicitation Era</a> · Module 01</div>
+  <h1>Press <em style="color:var(--rose);font-style:normal;">Delete</em>: The Ablation Mindset</h1>
+  <p>When a new frontier model ships, Cherny's team deletes over 80% of Claude Code's system prompt. Behaviours tuned for older models frequently don't transfer — they become <strong>dead weight</strong>.</p>
+
+  <div class="callout"><strong>The core move:</strong> stop treating system prompts as permanent code. Treat the model as an <em>organic co-worker</em> — observe its raw behaviour first, then add scaffolding only where it repeatedly stumbles.</div>
+
+  <h2>Why Delete Works</h2>
+  <div class="mermaid-box">
+  <div class="mermaid">
+  graph LR
+    OLD["Old model<br/>needs corrective instructions"] --> PROMPT["System prompt tuned<br/>for old behaviour"]
+    PROMPT --> NEW["New model ships<br/>more capable than old"]
+    NEW --> M["Old prompt = dead weight<br/>constrains the new model"]
+    M --> D["Press delete<br/>test raw performance"]
+    D --> R["Re-add only<br/>where it stumbles"]
+  </div>
+  </div>
+  <p>Each generation of model can natively do more than the last. Instructions written to correct a weaker model often <strong>hobble</strong> a stronger one — telling it exactly what to do prevents it from doing what it now could, more flexibly. The default should be less, not more.</p>
+
+  <h2>The Ablation Practice</h2>
+  <div class="card">
+    <h3>Line-by-line ablation of your harness</h3>
+    <ol>
+      <li><strong>Delete everything:</strong> system prompt, <code>CLAUDE.md</code>, custom skills, hooks.</li>
+      <li><strong>Test raw performance</strong> on a representative task suite.</li>
+      <li><strong>Re-add one thing at a time</strong>, only where the model visibly fails.</li>
+      <li><strong>Measure each addition's contribution</strong> — if a line of instruction doesn't change output quality, it's dead weight.</li>
+    </ol>
+    <div class="callout warn" style="margin-top:1rem;"><strong>Cadence:</strong> every six months, try deleting your <code>CLAUDE.md</code>, custom skills, and hooks to see what the model can now do natively. Model capability only moves one direction — up — so scaffolding that was essential six months ago is often noise today.</div>
+  </div>
+
+  <div class="card">
+    <h3>Internal ablation with environment variables</h3>
+    <p>Cherny's team uses flags like <code>claude_code_simple=1</code> to strip back prompting and tooling internally — isolating exactly what each line of instruction contributes.</p>
+    <pre># strip prompting/tooling to a bare minimum
+claude_code_simple=1
+
+# run the same task with full harness vs stripped
+# compare output quality side-by-side
+</pre>
+    <p>The goal: measure <em>contribution</em>, not assume <em>importance</em>. If output is identical stripped vs full, you've found scaffolding to delete.</p>
+  </div>
+
+  <h2>Unhobbling &amp; Product Overhang</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="color:var(--green);">Product Overhang</h3>
+      <p><strong>The model can do more than your harness lets it express.</strong></p>
+      <p style="font-size:0.9rem;">Example: limiting an agent to single-line autocomplete when it can write entire functions. Your UI/scaffolding is the bottleneck, not the model.</p>
+      <p style="font-size:0.9rem;"><strong>Fix:</strong> give the model simpler, higher-level access — full terminal access, broader tools — rather than rigid, over-specified scaffolding.</p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--amber);">Product Underhang</h3>
+      <p><strong>You're forcing a model to do something it isn't capable of yet.</strong></p>
+      <p style="font-size:0.9rem;">Here the answer is the opposite: you need <em>more</em> scaffolding and a domain-specific harness to compensate.</p>
+      <p style="font-size:0.9rem;"><strong>Diagnose first:</strong> which side are you on? Most teams default to over-specifying (underhang thinking) when they actually have overhang — and the over-specification is what's blocking capability.</p>
+    </div>
+  </div>
+
+  <div class="callout"><strong>📌 Takeaway:</strong> before you add a prompt line, a skill, or a hook — ask "is this compensating for the model, or constraining it?" If the model has moved past the failure mode, delete the compensation.</div>
+
+  <a class="next" href="02-verification-loops.html">Next: Verification Loops &amp; Goal-Oriented Prompting →</a>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'dark', themeVariables:{background:'#10141c',primaryColor:'#161b26',primaryBorderColor:'#6ee7d8',primaryTextColor:'#e7e9f0',lineColor:'#6ee7d8',secondaryColor:'#0a0c10'}});</script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The DOM, explained</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>DOM</span>Web Track</a>
+            <nav class="top-links">
+                <a href="index.html">Web Hub</a>
+                <a href="why_javascript.html">Why JS</a>
+                <a href="python_vs_javascript.html">Python vs JS</a>
+                <a href="javascript_vs_typescript.html">JS vs TS</a>
+                <a href="the_dom_explained.html">The DOM</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Web Track · 04 of 04</p>
+            <h1>The DOM, explained (and one thing corrected)</h1>
+            <p class="lead">You said you heard "JavaScript carries a DOM sort of convention." Let's fix that gently,
+                because getting this right makes the whole browser stop feeling like magic.</p>
+        </section>
+
+        <section class="card">
+            <h2>The correction</h2>
+            <div class="callout bad">
+                <strong>Not quite:</strong> the DOM is <em>not</em> a coding convention (like naming style or
+                indentation). And it is <em>not</em> part of the JavaScript language itself.
+            </div>
+            <div class="callout react">
+                <strong>What it actually is:</strong> <strong>DOM = Document Object Model.</strong> When the browser
+                loads your HTML, it parses that text into a live, in-memory <em>tree of objects</em> — one object per
+                tag. That tree is the DOM. The browser then hands JavaScript a set of functions to read and change that
+                tree. Change the tree, and the screen redraws.
+            </div>
+            <p>So the accurate sentence is: <em>"The browser builds a DOM from my HTML, and JavaScript uses the DOM API
+                    to read and modify the live page."</em></p>
+        </section>
+
+        <section class="card">
+            <h2>HTML text becomes a tree of objects</h2>
+            <div class="two-col">
+                <div class="col js">
+                    <h4>The HTML you write</h4>
+                    <pre><code>&lt;body&gt;
+  &lt;h1&gt;Hello&lt;/h1&gt;
+  &lt;ul&gt;
+    &lt;li&gt;One&lt;/li&gt;
+    &lt;li&gt;Two&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/body&gt;</code></pre>
+                </div>
+                <div class="col react">
+                    <h4>The tree the browser builds (the DOM)</h4>
+                    <div class="diagram" style="margin:0;border:0;padding:0;background:transparent;">
+                        <pre class="mermaid">
+flowchart TD
+    body["body"] --> h1["h1<br/>'Hello'"]
+    body --> ul["ul"]
+    ul --> li1["li 'One'"]
+    ul --> li2["li 'Two'"]
+    style body fill:#fef9c3,stroke:#a16207,color:#0f172a
+    style ul fill:#cff4fc,stroke:#0b7285,color:#0f172a
+                        </pre>
+                    </div>
+                </div>
+            </div>
+            <p class="cap">Each box is a real object in memory. JavaScript can grab any of them and change its text,
+                style, or children.</p>
+        </section>
+
+        <section class="card">
+            <h2>A Python analogy that makes it click</h2>
+            <p>Imagine the browser parsed your HTML into a nested Python structure and let you mutate it — except
+                mutating it instantly repaints the screen.</p>
+            <pre><code># Mental model only — not real code
+page = {
+    "tag": "body",
+    "children": [
+        {"tag": "h1", "text": "Hello"},
+        {"tag": "ul", "children": [
+            {"tag": "li", "text": "One"},
+            {"tag": "li", "text": "Two"},
+        ]},
+    ],
+}
+page["children"][0]["text"] = "Hi!"   # the screen would redraw</code></pre>
+            <div class="callout py">
+                <strong>The key difference from Python:</strong> mutating a normal Python object changes memory only.
+                Mutating a DOM node changes what the user <em>sees</em>, immediately.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How JavaScript actually touches the DOM</h2>
+            <pre><code>// 1. Find a node in the tree
+const title = document.querySelector("h1");
+
+// 2. Change it — the page updates instantly
+title.textContent = "Hi there!";
+title.style.color = "teal";
+
+// 3. Create and add a new node
+const li = document.createElement("li");
+li.textContent = "Three";
+document.querySelector("ul").appendChild(li);
+
+// 4. React to the user
+document.querySelector("button")
+  .addEventListener("click", () =&gt; {
+    alert("clicked!");
+  });</code></pre>
+            <div class="callout js">
+                <strong>Notice:</strong> <code>document</code> is the entry point. It is provided by the
+                <em>browser</em>, not by JavaScript itself — which is exactly why this next point matters.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Why "not part of JavaScript" matters</h2>
+            <p>JavaScript the language (officially "ECMAScript") only defines things like numbers, strings, arrays,
+                functions, and loops. It knows nothing about web pages. The DOM is provided by the <em>host
+                    environment</em>.</p>
+            <div class="diagram">
+                <pre class="mermaid">
+flowchart TB
+    subgraph Lang["JavaScript language (ECMAScript)"]
+        core["numbers, strings,<br/>arrays, functions, loops"]
+    end
+    subgraph BrowserEnv["Browser adds..."]
+        dom["document / DOM"]
+        fetchApi["fetch, events, timers"]
+    end
+    subgraph NodeEnv["Node.js adds..."]
+        fs["file system, http server"]
+        nodom["NO document / NO DOM"]
+    end
+    core --> BrowserEnv
+    core --> NodeEnv
+    style core fill:#fef9c3,stroke:#a16207,color:#0f172a
+    style dom fill:#cff4fc,stroke:#0b7285,color:#0f172a
+    style nodom fill:#fee2e2,stroke:#b91c1c,color:#0f172a
+                </pre>
+            </div>
+            <p class="cap">Same language, two hosts. The browser gives you the DOM; Node.js does not have one — there is
+                no page on a server.</p>
+            <div class="callout warn">
+                <strong>Practical takeaway:</strong> <code>document.querySelector(...)</code> works in the browser but
+                crashes in Node.js. That single fact explains a lot of beginner confusion.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Where React fits: the "virtual DOM"</h2>
+            <p>Directly editing the DOM by hand gets messy fast in a big app. React lets you <em>describe</em> what the
+                UI should look like for the current data, and React figures out the minimal DOM changes for you.</p>
+            <div class="diagram">
+                <pre class="mermaid">
+flowchart LR
+    Data["Your data / state"] --> React["React: describe the UI<br/>for this data"]
+    React --> VDOM["Virtual DOM<br/>a lightweight copy"]
+    VDOM -->|"React diffs old vs new"| Patch["Minimal real DOM updates"]
+    Patch --> Real["Real DOM = the visible page"]
+    style Data fill:#e2e8f0,stroke:#1e293b,color:#0f172a
+    style React fill:#cff4fc,stroke:#0b7285,color:#0f172a
+    style VDOM fill:#cff4fc,stroke:#0b7285,color:#0f172a
+    style Real fill:#fef9c3,stroke:#a16207,color:#0f172a
+                </pre>
+            </div>
+            <div class="callout react">
+                <strong>In one line:</strong> with plain JS you tell the DOM <em>how</em> to change step by step. With
+                React you declare <em>what</em> the page should be for your data, and it updates the DOM for you.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>The full loop, end to end</h2>
+            <div class="diagram">
+                <pre class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant D as DOM (page)
+    participant J as JavaScript
+    participant A as API (Python model)
+    U->>D: clicks "Summarize"
+    D->>J: fires a click event
+    J->>A: fetch() the request
+    A-->>J: JSON response
+    J->>D: update nodes with the result
+    D-->>U: sees the new content
+                </pre>
+            </div>
+            <p class="cap">This is the shape of nearly every interactive web feature — including a UI on top of your own
+                model.</p>
+        </section>
+
+        <section class="card">
+            <h2>Recap</h2>
+            <ul>
+                <li>The DOM is a <strong>live tree of objects</strong> the browser builds from your HTML — not a
+                    convention.</li>
+                <li>It is provided by the <strong>browser</strong>, not by the JavaScript language.</li>
+                <li>JavaScript <strong>reads and mutates</strong> that tree via <code>document</code>; the screen
+                    redraws.</li>
+                <li><strong>Node.js has no DOM</strong> — there is no page on a server.</li>
+                <li><strong>React</strong> hides manual DOM work behind a virtual DOM and a declarative model.</li>
+            </ul>
+            <p class="quiet">Back to the <a href="index.html">Web Track hub</a>.</p>
+        </section>
+    </main>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#cff4fc',
+                primaryTextColor: '#0f172a',
+                primaryBorderColor: '#0b7285',
+                lineColor: '#7c83b8',
+                fontFamily: 'Segoe UI, system-ui, sans-serif',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+
+</html>

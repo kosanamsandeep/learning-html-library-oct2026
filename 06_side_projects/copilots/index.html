@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilots — 6 Purpose-Built AI Copilots</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="cop">CP</span>Copilots</div>
+        <div class="links">
+            <a href="../index.html">Side Projects</a>
+            <a href="../mcp_projects/index.html">MCP</a>
+            <a href="../agent_frameworks_comparison/index.html">Frameworks</a>
+            <a href="01_docs_qa_copilot.html">Start →</a>
+        </div>
+    </div>
+
+    <div class="header cop">
+        <p class="badge">Applied AI · 6 copilots people actually ship</p>
+        <h1>🚀 Build copilots with a purpose</h1>
+        <p class="subtitle">A <strong>copilot</strong> is an AI assistant embedded in a real workflow — it sees
+            your context, suggests or acts, and keeps a human in control. These six projects rebuild the ideas
+            behind the most-starred copilots on GitHub, from a docs Q&amp;A bot to a multi-agent software
+            builder, each with the <strong>story (why)</strong>, the <strong>architecture</strong>, and the
+            <strong>advantages</strong> it brings.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section cop">
+            <h2>What makes something a "copilot" (not just a chatbot)?</h2>
+            <div class="grid-3">
+                <div class="mini cop">
+                    <h3>① Context-aware</h3>
+                    <p>It reads <em>your</em> data — repo, docs, database, tickets — instead of answering from
+                        generic training knowledge.</p>
+                </div>
+                <div class="mini cop">
+                    <h3>② Action-capable</h3>
+                    <p>It can <em>do</em> things via tools (open a PR, run SQL, restart a pod), not just talk.</p>
+                </div>
+                <div class="mini cop">
+                    <h3>③ Human-in-control</h3>
+                    <p>It <em>suggests</em> and asks for approval on risky steps — you stay the pilot, it's the
+                        co-pilot.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The shared anatomy of every copilot</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    CTX["Context source<br/>docs · code · DB · logs"] --> RET["Retrieve / gather"]
+    USER["User intent"] --> BRAIN["LLM reasoning"]
+    RET --> BRAIN
+    BRAIN --> TOOLS["Tools / actions"]
+    TOOLS --> GATE{"risky?"}
+    GATE -->|yes| HUMAN["Human approval"]
+    GATE -->|no| OUT["Result / suggestion"]
+    HUMAN --> OUT
+    OUT -.feedback.-> BRAIN
+                </pre>
+                <p class="caption">Every project below is a variation on this loop — what changes is the context
+                    source, the tools, and how much autonomy you grant.</p>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The learning arc — simple grounding → autonomous team</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    P1["01 · Docs Q&amp;A<br/>(RAG, read-only)"] --> P2["02 · Code Review<br/>(read + comment)"]
+    P2 --> P3["03 · Support<br/>(tools + escalate)"]
+    P3 --> P4["04 · Data Analyst<br/>(NL→SQL + run)"]
+    P4 --> P5["05 · DevOps/SRE<br/>(diagnose + fix)"]
+    P5 --> P6["06 · Builder<br/>(multi-agent ships code)"]
+    classDef b fill:#3b0d47,stroke:#e879f9,color:#fae8ff
+    classDef i fill:#1e3a5f,stroke:#60a5fa,color:#dbeafe
+    classDef a fill:#500724,stroke:#f472b6,color:#fbcfe8
+    class P1,P2 b
+    class P3,P4 i
+    class P5,P6 a
+                </pre>
+                <p class="caption">Autonomy and number of tools grow with each build; the final project combines
+                    everything into a team of copilots.</p>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>Pick a copilot to build</h2>
+            <div class="grid">
+                <a class="fw-card cop" href="01_docs_qa_copilot.html">
+                    <span class="level beginner">Beginner</span>
+                    <h3>01 · Docs Q&amp;A Copilot</h3>
+                    <p style="color:#9ca3af">"Chat with your documents." Ground answers in your own PDFs/wiki
+                        with RAG + citations.</p>
+                    <div><span class="tag fuchsia">RAG</span><span class="tag fuchsia">embeddings</span><span
+                            class="tag fuchsia">citations</span></div>
+                    <p style="color:#6b7280;font-size:.82em;margin-top:.5rem">Inspired by privateGPT, AnythingLLM,
+                        Danswer</p>
+                </a>
+                <a class="fw-card cop" href="02_code_review_copilot.html">
+                    <span class="level beginner">Beginner+</span>
+                    <h3>02 · Code Review Copilot</h3>
+                    <p style="color:#9ca3af">Auto-review pull requests: summarise the diff, flag bugs, suggest
+                        fixes as inline comments.</p>
+                    <div><span class="tag fuchsia">PR diff</span><span class="tag fuchsia">GitHub Action</span></div>
+                    <p style="color:#6b7280;font-size:.82em;margin-top:.5rem">Inspired by PR-Agent (Qodo), Sweep,
+                        CodeRabbit</p>
+                </a>
+                <a class="fw-card cop" href="03_support_copilot.html">
+                    <span class="level intermediate">Intermediate</span>
+                    <h3>03 · Customer Support Copilot</h3>
+                    <p style="color:#9ca3af">Tier-1 agent: answer from the KB, call tools (order status,
+                        refunds), escalate hard cases to a human.</p>
+                    <div><span class="tag fuchsia">tools</span><span class="tag fuchsia">escalation</span><span
+                            class="tag fuchsia">HITL</span></div>
+                    <p style="color:#6b7280;font-size:.82em;margin-top:.5rem">Inspired by Chatwoot, Dify support agents
+                    </p>
+                </a>
+                <a class="fw-card cop" href="04_data_analyst_copilot.html">
+                    <span class="level intermediate">Intermediate</span>
+                    <h3>04 · Data Analyst Copilot</h3>
+                    <p style="color:#9ca3af">"Talk to your database." Turn plain English into validated SQL, run
+                        it, and explain/plot the result.</p>
+                    <div><span class="tag fuchsia">NL→SQL</span><span class="tag fuchsia">schema RAG</span></div>
+                    <p style="color:#6b7280;font-size:.82em;margin-top:.5rem">Inspired by Vanna AI, Wren AI, LangChain
+                        SQL agent</p>
+                </a>
+                <a class="fw-card cop" href="05_devops_copilot.html">
+                    <span class="level advanced">Advanced</span>
+                    <h3>05 · DevOps / SRE Copilot</h3>
+                    <p style="color:#9ca3af">Incident triage: gather logs/metrics/k8s state, correlate, propose
+                        a root cause and a fix — apply with approval.</p>
+                    <div><span class="tag fuchsia">k8s tools</span><span class="tag fuchsia">runbooks</span></div>
+                    <p style="color:#6b7280;font-size:.82em;margin-top:.5rem">Inspired by K8sGPT, HolmesGPT</p>
+                </a>
+                <a class="fw-card cop" href="06_builder_copilot.html">
+                    <span class="level advanced">Advanced</span>
+                    <h3>06 · Multi-Agent Builder Copilot</h3>
+                    <p style="color:#9ca3af">A team of copilots — planner, coder, tester — that turns a spec into
+                        a tested, reviewed change. The capstone.</p>
+                    <div><span class="tag fuchsia">multi-agent</span><span class="tag fuchsia">code+test loop</span>
+                    </div>
+                    <p style="color:#6b7280;font-size:.82em;margin-top:.5rem">Inspired by OpenHands, gpt-engineer,
+                        MetaGPT, Aider</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>Why build copilots at all?</h2>
+            <div class="grid-2">
+                <div class="callout fuchsia">
+                    <strong>For the user:</strong> work stays in their tool of choice (IDE, Slack, the PR), the
+                    AI has the right context, and they keep final say. Adoption is high because it removes toil
+                    without removing control.
+                </div>
+                <div class="callout fuchsia">
+                    <strong>For the business:</strong> faster cycle times, consistent quality, 24/7 coverage,
+                    and captured tribal knowledge — measurable wins (deflection rate, MTTR, review time, PR
+                    throughput).
+                </div>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The toolbox these projects use</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Layer</th>
+                        <th>Typical choice</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>LLM</td>
+                        <td>GPT-4o / Claude / a local model via Ollama</td>
+                    </tr>
+                    <tr>
+                        <td>Orchestration</td>
+                        <td>LangGraph / LangChain (agents covered in sibling folders)</td>
+                    </tr>
+                    <tr>
+                        <td>Retrieval</td>
+                        <td>Chroma / FAISS / pgvector + an embedding model</td>
+                    </tr>
+                    <tr>
+                        <td>Tools / actions</td>
+                        <td>Function tools or <a href="../mcp_projects/index.html">MCP servers</a></td>
+                    </tr>
+                    <tr>
+                        <td>Surface (UI)</td>
+                        <td>Streamlit / FastAPI / a GitHub Action / Slack bot</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pager">
+            <a href="../index.html"><span class="dir">Back</span>
+                <div class="ttl">Side Projects</div>
+            </a>
+            <a class="next" href="01_docs_qa_copilot.html"><span class="dir">Start</span>
+                <div class="ttl">01 · Docs Q&amp;A Copilot →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Copilots · 6 purpose-built AI copilots inspired by top GitHub repos</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

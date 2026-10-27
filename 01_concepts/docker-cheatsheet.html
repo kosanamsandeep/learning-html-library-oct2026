@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Commands Cheat Sheet</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">AI</span>
+                <span>AI Engineer Interview Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="kubectl-cheatsheet.html">Kubectl</a>
+                <a href="fastapi-flask.html">FastAPI/Flask</a>
+                <a href="grpc.html">gRPC</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#basics">Container Basics</a>
+            <a href="#images">Image Management</a>
+            <a href="#running">Running Containers</a>
+            <a href="#networking">Networking</a>
+            <a href="#volumes">Volumes and Storage</a>
+            <a href="#compose">Docker Compose</a>
+            <a href="#dockerfile">Dockerfile Best Practices</a>
+            <a href="#debugging">Debugging</a>
+            <a href="#cleanup">Cleanup Commands</a>
+            <a href="#production">Production Patterns</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">DevOps essentials</p>
+                    <h1>Docker Commands Cheat Sheet</h1>
+                    <p>Essential Docker commands for building, running, debugging, and deploying containerized
+                        applications. Organized by workflow: from basic container operations to production-ready
+                        multi-stage builds and Docker Compose orchestration.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Core concepts</h2>
+                    <ul>
+                        <li><strong>Image:</strong> Read-only template (blueprint)</li>
+                        <li><strong>Container:</strong> Running instance of an image</li>
+                        <li><strong>Dockerfile:</strong> Script to build an image</li>
+                        <li><strong>Volume:</strong> Persistent storage outside container</li>
+                        <li><strong>Network:</strong> Communication between containers</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Container Basics -->
+            <section class="section" id="basics">
+                <h2>Container basics</h2>
+                <div class="code-card">
+                    <h3>Lifecycle commands</h3>
+                    <pre># Run a container (pull image if not local)
+docker run &lt;image&gt;
+
+# Run interactively with terminal
+docker run -it &lt;image&gt; /bin/bash
+
+# Run in background (detached)
+docker run -d &lt;image&gt;
+
+# Run with a name
+docker run --name my-app -d &lt;image&gt;
+
+# Stop a running container
+docker stop &lt;container_id|name&gt;
+
+# Start a stopped container
+docker start &lt;container_id|name&gt;
+
+# Restart a container
+docker restart &lt;container_id|name&gt;
+
+# Remove a stopped container
+docker rm &lt;container_id|name&gt;
+
+# Force remove a running container
+docker rm -f &lt;container_id|name&gt;
+
+# List running containers
+docker ps
+
+# List ALL containers (including stopped)
+docker ps -a
+
+# Show container resource usage
+docker stats</pre>
+                </div>
+            </section>
+
+            <!-- Image Management -->
+            <section class="section" id="images">
+                <h2>Image management</h2>
+                <div class="code-card">
+                    <h3>Build, tag, push, pull</h3>
+                    <pre># Build image from Dockerfile in current directory
+docker build -t myapp:v1 .
+
+# Build with specific Dockerfile
+docker build -f Dockerfile.prod -t myapp:prod .
+
+# Build with build arguments
+docker build --build-arg ENV=production -t myapp:prod .
+
+# Build without cache (fresh build)
+docker build --no-cache -t myapp:v1 .
+
+# Tag an image
+docker tag myapp:v1 registry.example.com/myapp:v1
+
+# Push to registry
+docker push registry.example.com/myapp:v1
+
+# Pull from registry
+docker pull registry.example.com/myapp:v1
+
+# List local images
+docker images
+
+# Remove an image
+docker rmi &lt;image_id|name:tag&gt;
+
+# Show image history (layers)
+docker history &lt;image&gt;
+
+# Inspect image metadata
+docker inspect &lt;image&gt;
+
+# Save image to tar file
+docker save -o myapp.tar myapp:v1
+
+# Load image from tar file
+docker load -i myapp.tar</pre>
+                </div>
+            </section>
+
+            <!-- Running Containers -->
+            <section class="section" id="running">
+                <h2>Running containers — common patterns</h2>
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Port mapping</h3>
+                        <pre># Map host:container port
+docker run -p 8080:80 nginx
+
+# Map multiple ports
+docker run -p 8080:80 -p 443:443 nginx
+
+# Map to specific host interface
+docker run -p 127.0.0.1:8080:80 nginx
+
+# Random host port
+docker run -P nginx</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>Environment variables</h3>
+                        <pre># Single env var
+docker run -e DB_HOST=localhost myapp
+
+# Multiple env vars
+docker run -e DB_HOST=db -e DB_PORT=5432 myapp
+
+# From env file
+docker run --env-file .env myapp
+
+# Override entrypoint
+docker run --entrypoint /bin/sh myapp</pre>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>Resource limits and restart policies</h3>
+                    <pre># Limit memory
+docker run -m 512m myapp
+
+# Limit CPU
+docker run --cpus="1.5" myapp
+
+# Memory + CPU limits
+docker run -m 1g --cpus="2" myapp
+
+# GPU access (NVIDIA)
+docker run --gpus all nvidia/cuda:12.0-base nvidia-smi
+docker run --gpus '"device=0,1"' myapp
+
+# Restart policies
+docker run --restart=no myapp          # Never restart (default)
+docker run --restart=always myapp      # Always restart
+docker run --restart=unless-stopped myapp  # Restart unless manually stopped
+docker run --restart=on-failure:5 myapp    # Restart on failure, max 5 attempts</pre>
+                </div>
+            </section>
+
+            <!-- Networking -->
+            <section class="section" id="networking">
+                <h2>Networking</h2>
+                <div class="code-card">
+                    <h3>Network commands</h3>
+                    <pre># List networks
+docker network ls
+
+# Create a network
+docker network create my-network
+
+# Run container on specific network
+docker run --network my-network --name api myapp
+
+# Connect running container to network
+docker network connect my-network &lt;container&gt;
+
+# Disconnect from network
+docker network disconnect my-network &lt;container&gt;
+
+# Inspect network (see connected containers)
+docker network inspect my-network
+
+# Container DNS: containers on same network can reach
+# each other by container name
+docker run --network my-network --name db postgres
+docker run --network my-network --name api -e DB_HOST=db myapp
+# api can reach db at hostname "db"</pre>
+                </div>
+            </section>
+
+            <!-- Volumes -->
+            <section class="section" id="volumes">
+                <h2>Volumes and storage</h2>
+                <div class="code-card">
+                    <h3>Volume commands</h3>
+                    <pre># Named volume (Docker manages location)
+docker volume create my-data
+docker run -v my-data:/app/data myapp
+
+# Bind mount (host directory → container)
+docker run -v /host/path:/container/path myapp
+docker run -v $(pwd)/src:/app/src myapp
+
+# Read-only mount
+docker run -v $(pwd)/config:/app/config:ro myapp
+
+# Tmpfs mount (in-memory, not persisted)
+docker run --tmpfs /app/tmp myapp
+
+# List volumes
+docker volume ls
+
+# Inspect volume
+docker volume inspect my-data
+
+# Remove volume
+docker volume rm my-data
+
+# Remove unused volumes
+docker volume prune
+
+# Copy files to/from container
+docker cp myfile.txt container:/app/
+docker cp container:/app/logs ./local-logs/</pre>
+                </div>
+            </section>
+
+            <!-- Docker Compose -->
+            <section class="section" id="compose">
+                <h2>Docker Compose</h2>
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>Compose commands</h3>
+                        <pre># Start all services
+docker compose up
+
+# Start in background
+docker compose up -d
+
+# Start specific service
+docker compose up -d api
+
+# Stop all services
+docker compose down
+
+# Stop and remove volumes
+docker compose down -v
+
+# Rebuild images
+docker compose build
+
+# Rebuild and start
+docker compose up --build
+
+# View logs
+docker compose logs
+docker compose logs -f api
+
+# Scale a service
+docker compose up -d --scale worker=3
+
+# Execute command in running service
+docker compose exec api bash
+
+# List running services
+docker compose ps</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>docker-compose.yml example</h3>
+                        <pre>services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://
+          user:pass@db:5432/mydb
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dockerfile Best Practices -->
+            <section class="section" id="dockerfile">
+                <h2>Dockerfile best practices</h2>
+                <div class="code-card">
+                    <h3>Multi-stage build (production pattern)</h3>
+                    <pre># Stage 1: Build dependencies
+FROM python:3.12-slim AS builder
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Stage 2: Production image (smaller)
+FROM python:3.12-slim AS production
+WORKDIR /app
+
+# Copy only installed packages from builder
+COPY --from=builder /install /usr/local
+
+# Copy application code
+COPY ./src ./src
+
+# Non-root user for security
+RUN useradd -m appuser
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s \
+  CMD curl -f http://localhost:8000/health || exit 1
+
+EXPOSE 8000
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]</pre>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <div class="card">
+                        <h3>Layer caching tips</h3>
+                        <ul>
+                            <li>Put rarely-changing instructions first (base image, system deps)</li>
+                            <li>COPY requirements.txt before COPY . (dependencies cached separately)</li>
+                            <li>Use .dockerignore to exclude unnecessary files</li>
+                            <li>Combine RUN commands to reduce layers</li>
+                            <li>Use --no-cache-dir for pip to reduce image size</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Security best practices</h3>
+                        <ul>
+                            <li>Use specific image tags (python:3.12-slim, not python:latest)</li>
+                            <li>Run as non-root user (USER directive)</li>
+                            <li>Don't store secrets in image (use env vars or secrets)</li>
+                            <li>Use multi-stage builds (no build tools in production)</li>
+                            <li>Scan images: docker scout cves &lt;image&gt;</li>
+                            <li>Use slim/alpine base images when possible</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="code-card" style="margin-top: 18px;">
+                    <h3>.dockerignore example</h3>
+                    <pre>__pycache__
+*.pyc
+.git
+.env
+.venv
+node_modules
+*.egg-info
+.pytest_cache
+.mypy_cache
+dist/
+build/
+*.log</pre>
+                </div>
+            </section>
+
+            <!-- Debugging -->
+            <section class="section" id="debugging">
+                <h2>Debugging containers</h2>
+                <div class="code-card">
+                    <h3>Essential debugging commands</h3>
+                    <pre># Execute shell in running container
+docker exec -it &lt;container&gt; /bin/bash
+docker exec -it &lt;container&gt; /bin/sh  # alpine images
+
+# View container logs
+docker logs &lt;container&gt;
+docker logs -f &lt;container&gt;          # follow (stream)
+docker logs --tail 100 &lt;container&gt;   # last 100 lines
+docker logs --since 1h &lt;container&gt;   # last hour
+
+# Inspect container details (env, network, mounts)
+docker inspect &lt;container&gt;
+
+# View container processes
+docker top &lt;container&gt;
+
+# View filesystem changes
+docker diff &lt;container&gt;
+
+# Export container filesystem for inspection
+docker export &lt;container&gt; -o container-fs.tar
+
+# View real-time events
+docker events
+
+# Check why container exited
+docker inspect &lt;container&gt; --format='{{.State.ExitCode}}'
+docker inspect &lt;container&gt; --format='{{.State.Error}}'</pre>
+                </div>
+            </section>
+
+            <!-- Cleanup -->
+            <section class="section" id="cleanup">
+                <h2>Cleanup commands</h2>
+                <div class="code-card">
+                    <h3>Reclaim disk space</h3>
+                    <pre># Remove all stopped containers
+docker container prune
+
+# Remove unused images
+docker image prune
+
+# Remove ALL unused images (not just dangling)
+docker image prune -a
+
+# Remove unused volumes
+docker volume prune
+
+# Remove unused networks
+docker network prune
+
+# Nuclear option: remove everything unused
+docker system prune -a --volumes
+
+# Check disk usage
+docker system df
+
+# Remove specific containers by filter
+docker rm $(docker ps -aq --filter "status=exited")</pre>
+                </div>
+            </section>
+
+            <!-- Production Patterns -->
+            <section class="section" id="production">
+                <h2>Production patterns for ML</h2>
+                <div class="grid two">
+                    <div class="code-card">
+                        <h3>ML model serving container</h3>
+                        <pre>FROM python:3.12-slim
+
+WORKDIR /app
+
+# System deps for ML libraries
+RUN apt-get update &amp;&amp; \
+    apt-get install -y --no-install-recommends \
+    libgomp1 &amp;&amp; \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir \
+    -r requirements.txt
+
+COPY ./models ./models
+COPY ./src ./src
+
+RUN useradd -m appuser
+USER appuser
+
+EXPOSE 8000
+CMD ["uvicorn", "src.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "4"]</pre>
+                    </div>
+                    <div class="code-card">
+                        <h3>GPU-enabled container</h3>
+                        <pre>FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+
+# Install Python
+RUN apt-get update &amp;&amp; \
+    apt-get install -y python3.11 \
+    python3-pip &amp;&amp; \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY requirements-gpu.txt .
+RUN pip install --no-cache-dir \
+    -r requirements-gpu.txt
+
+COPY . .
+
+# Run with: docker run --gpus all
+CMD ["python3", "serve.py"]
+
+# docker-compose GPU:
+# services:
+#   inference:
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: 1
+#               capabilities: [gpu]</pre>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Docker commands cheat sheet — from basics to production ML patterns.</p>
+            <div class="mini-links">
+                <a href="index.html">Home</a>
+                <a href="kubectl-cheatsheet.html">Kubectl</a>
+                <a href="fastapi-flask.html">FastAPI/Flask</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

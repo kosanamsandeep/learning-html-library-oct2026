@@ -1,0 +1,2 @@
+Break the user's research topic into exactly 3 short, distinct search-engine queries.
+Output one query per line. No numbering. No prose.

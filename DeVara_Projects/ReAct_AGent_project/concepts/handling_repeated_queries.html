@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Concept · Handling 20 user queries efficiently</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <a class="back" href="../index.html">← Portfolio home</a>
+  <h1>How to handle 20 user queries without paying for all 20</h1>
+  <p>"If a user asks query #1, how do I make sure I'm not redoing the same work on queries #2–20?"</p>
+</header>
+<main>
+
+<h2>📖 Story mode — the bouncer at Club LLM</h2>
+<div class="callout good">
+<b>The scene.</b> Outside <i>Club LLM</i> there's a velvet rope and a long queue of 20 partygoers.
+Every time someone gets in, the club's DJ (the expensive GPT-4 inside) has to spin a brand-new track — that costs <b>$$ and 4 seconds</b>.
+The owner hires <b>four bouncers</b>, standing one behind the other, to stop most people from ever bothering the DJ.
+</div>
+
+<ol>
+<li><b>Bouncer 1 — “Same face?” (exact cache)</b><br/>
+He has a Polaroid of everyone who entered today. If your face matches a Polaroid <i>pixel-for-pixel</i>, he waves you through with the same wristband as last time.
+→ <code>InMemoryCache</code> / Redis keyed by <code>hash(query)</code>. Zero LLM cost. Misses anything reworded.</li>
+
+<li><b>Bouncer 2 — “Look-alike?” (semantic cache)</b><br/>
+If you're not in the Polaroid book, she <i>squints</i>: <i>“You look 96% like Priya who came in at 9 pm — close enough.”</i> Same wristband, no DJ needed.
+→ GPTCache / vector similarity on the query embedding. Catches <i>“refund policy?”</i> ≈ <i>“how do I return?”</i>.</li>
+
+<li><b>Bouncer 3 — “I know the playlist for your vibe” (plan / skill cache)</b><br/>
+If you're brand new but you say <i>“I want 90s hip-hop”</i>, he hands the DJ a pre-written setlist instead of making him compose one. The DJ still plays — but much faster and cheaper.
+→ Cache the <b>plan / tool sequence / retrieved chunks</b>, not the final answer. Saves planning tokens and tool calls.</li>
+
+<li><b>Bouncer 4 — “Weren't you just inside?” (conversation memory)</b><br/>
+For the <i>same</i> partygoer asking again 30 seconds later, he just lets them back in with their old wristband and tells the DJ <i>“keep playing what they liked.”</i>
+→ Per-session <code>ConversationBufferMemory</code> / LangGraph thread checkpoint. No re-retrieval, no re-planning.</li>
+</ol>
+
+<div class="callout warn">
+<b>One-line recall trick:</b> <i>“Same face → look-alike → same vibe → same person.”</i>
+Four bouncers, each looser than the last. By the time query #20 reaches the DJ, only ~3 actually got past all four.
+</div>
+
+<div class="mermaid">
+flowchart LR
+    Q["🙋 Partygoer #N"] --> B1["🚪 Bouncer 1<br/>exact cache"]
+    B1 -- hit --> Done["🎟️ in"]
+    B1 -- miss --> B2["🚪 Bouncer 2<br/>semantic cache"]
+    B2 -- hit --> Done
+    B2 -- miss --> B3["🚪 Bouncer 3<br/>plan cache"]
+    B3 -- partial --> DJ["🎧 DJ (LLM)<br/>only what's missing"]
+    B3 -- miss --> DJ
+    B4["🚪 Bouncer 4<br/>session memory"] -.same person again.-> Done
+    DJ --> Done
+</div>
+
+<h2>The 4 layers of reuse</h2>
+<div class="mermaid">
+flowchart LR
+    Q[Incoming query] --> L1{Exact-match cache?}
+    L1 -- hit --> R1[return cached answer]
+    L1 -- miss --> L2{Semantic cache?<br/>cosine &gt; 0.95}
+    L2 -- hit --> R2[return cached answer]
+    L2 -- miss --> L3{Same intent?<br/>route to memoised plan}
+    L3 -- yes --> R3[reuse plan, only run new steps]
+    L3 -- no --> L4[Full agent run] --> Persist[(cache answer + embedding)]
+    Persist --> R4[return]
+</div>
+
+<h2>Layer-by-layer</h2>
+<table>
+<tr><th>Layer</th><th>What it does</th><th>Cost saved</th><th>Library / pattern</th></tr>
+<tr><td><b>1. Exact-string cache</b></td><td>Hash the query &amp; user context; return prior answer if identical.</td><td>100%</td><td>Redis / <code>functools.lru_cache</code> / <code>langchain.cache.InMemoryCache</code></td></tr>
+<tr><td><b>2. Semantic cache</b></td><td>Embed query, look up nearest prior query; reuse if similarity &gt; threshold.</td><td>~90%</td><td><a style="color:#fbbf24" href="https://github.com/zilliztech/GPTCache">GPTCache</a>, Redis VectorSearch, <code>SemanticCache</code> in LangChain</td></tr>
+<tr><td><b>3. Plan / tool-call memoisation</b></td><td>Cache the <i>tool calls</i>, not the LLM answer. New query reuses search results, only the final summary is redone.</td><td>50–80%</td><td>Custom — wrap each skill with a TTL'd dict keyed by input.</td></tr>
+<tr><td><b>4. Conversation memory</b></td><td>Within a session, the LLM "remembers" prior answers — so user just says "yes, do that for product B too".</td><td>variable</td><td><code>MemorySaver</code> / <code>ConversationBufferMemory</code></td></tr>
+</table>
+
+<h2>Concrete example: 20 user questions about the same dataset</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant U as User (20 queries)
+    participant API as /ask
+    participant CE as Exact cache
+    participant CS as Semantic cache
+    participant SK as Skill cache (run_sql)
+    participant A as Agent
+    U->>API: Q1 "top region by revenue"
+    API->>CE: miss
+    API->>CS: miss
+    API->>A: full run
+    A->>SK: run_sql("SELECT region...")
+    SK-->>A: rows + cache
+    A-->>API: "North"
+    API->>CE: store("North")
+    API->>CS: store(embed(Q1) → answer)
+    U->>API: Q2 "which region tops revenue?"
+    API->>CE: miss (different wording)
+    API->>CS: hit (cosine 0.97) → "North"
+    U->>API: Q3 "top region by revenue" (identical)
+    API->>CE: hit → "North"
+    U->>API: Q4 "top region by UNITS"
+    API->>CS: miss
+    API->>A: agent runs
+    A->>SK: run_sql("SELECT region, SUM(units)...")
+    Note over SK: different SQL, still uses cached schema fetch
+</div>
+
+<h2>Implementation snippets</h2>
+
+<h3>Exact-string LangChain cache (1 line)</h3>
+<pre>from langchain.globals import set_llm_cache
+from langchain_community.cache import InMemoryCache
+set_llm_cache(InMemoryCache())   # identical prompts → no LLM call</pre>
+
+<h3>Semantic cache via GPTCache</h3>
+<pre>from gptcache import Cache
+from gptcache.adapter.api import init_similar_cache
+cache = Cache()
+init_similar_cache(cache_obj=cache, data_dir="cache_dir")
+# every wrapped LLM call now checks embedding similarity first</pre>
+
+<h3>Skill-level cache (your own)</h3>
+<pre>from functools import lru_cache
+@lru_cache(maxsize=256)
+def _cached_sql(query: str) -> tuple:
+    return tuple(run_sql_sync(query))</pre>
+
+<h2>What about cost vs freshness?</h2>
+<table>
+<tr><th>Strategy</th><th>Freshness</th><th>When to use</th></tr>
+<tr><td>TTL on cache (e.g. 1 h)</td><td>Bounded staleness</td><td>News, prices</td></tr>
+<tr><td>Invalidate on data write</td><td>Always fresh</td><td>SQL/CRUD apps</td></tr>
+<tr><td>No cache for tools, cache only LLM</td><td>Data fresh, reasoning reused</td><td>BI dashboards</td></tr>
+<tr><td>Hybrid: cache LLM + tools with different TTLs</td><td>Tunable</td><td>Production default</td></tr>
+</table>
+
+<h2>Practical advice (the 1 → 20 path)</h2>
+<table>
+<tr><th>Step</th><th>What to add when</th></tr>
+<tr><td>Day 1</td><td>Turn on <code>InMemoryCache</code> for the LLM.</td></tr>
+<tr><td>~ 100 queries</td><td>Add a semantic cache so paraphrases hit.</td></tr>
+<tr><td>~ 1k queries</td><td>Cache expensive tools (web_search, SQL) with TTL.</td></tr>
+<tr><td>multi-tenant</td><td>Scope every cache key by <code>session_id</code> / <code>tenant_id</code>.</td></tr>
+<tr><td>10k+/day</td><td>Move caches to Redis; add metrics; SLA on cache hit ratio.</td></tr>
+</table>
+
+<div class="callout good">In real systems you'll see 60–90% of follow-up queries hit a cache or reuse a prior plan — the agent only does original thinking on the first one.</div>
+
+<h2>Scenario: 20 queries against a 10-page doc (500-chunk vector DB)</h2>
+<p>Suppose you indexed a 10-page doc as 500 separate vectors. The user fires 20 questions. What gets reused?</p>
+
+<div class="mermaid">
+flowchart LR
+    Q1[Q1: full retrieval<br/>+ LLM answer] --> Cache[(Caches:<br/>LLM answer + retrieval results)]
+    Q2[Q2 = same wording] --> Hit1{Exact cache?}
+    Hit1 -- hit --> A1[return cached answer]
+    Q3[Q3 = paraphrase of Q1] --> Hit2{Semantic cache?}
+    Hit2 -- hit --> A1
+    Q4[Q4 = new question,<br/>same section] --> Hit3{Retrieval cache?}
+    Hit3 -- hit chunks --> LLM[only LLM call runs] --> Cache
+    Q5[Q5 = new question,<br/>new section] --> Full[full retrieval + LLM] --> Cache
+</div>
+
+<table>
+<tr><th>Query</th><th>What gets reused</th><th>What runs</th><th>Cost vs Q1</th></tr>
+<tr><td>Q1 "Who is the CEO?"</td><td>nothing</td><td>retrieve 5 of 500 vectors + LLM</td><td>100%</td></tr>
+<tr><td>Q2 "Who is the CEO?" (identical)</td><td>exact-string cache</td><td>nothing</td><td>0%</td></tr>
+<tr><td>Q3 "Tell me the CEO's name"</td><td>semantic cache (cosine &gt; 0.95)</td><td>nothing</td><td>0%</td></tr>
+<tr><td>Q4 "When did she join?" (same chunks)</td><td>retrieval cache → same 5 chunks</td><td>only LLM</td><td>~50%</td></tr>
+<tr><td>Q5 "What's the Q3 revenue?" (new section)</td><td>nothing (different topic)</td><td>full retrieval + LLM</td><td>100%</td></tr>
+<tr><td>Q6–Q20</td><td>mostly semantic or retrieval cache</td><td>some LLM, rare retrieval</td><td>average ~20%</td></tr>
+</table>
+
+<h3>Total cost across 20 queries</h3>
+<table>
+<tr><th>Strategy</th><th>Embedding calls</th><th>Vector searches</th><th>LLM calls</th></tr>
+<tr><td>No caching at all</td><td>20</td><td>20</td><td>20</td></tr>
+<tr><td>Exact-string cache only</td><td>20</td><td>~17</td><td>~17</td></tr>
+<tr><td>+ semantic cache</td><td>20 (cheap)</td><td>~10</td><td>~10</td></tr>
+<tr><td>+ retrieval cache</td><td>20</td><td>~6</td><td>~10</td></tr>
+<tr><td><b>All 4 layers</b></td><td>20 (tiny)</td><td><b>~6</b></td><td><b>~8</b></td></tr>
+</table>
+
+<div class="callout good">
+The vector DB still holds 500 rows (one per chunk) — caching doesn't change that. What caching changes is <b>how often you have to touch those 500 rows</b>. With all 4 layers you'll typically do retrieval against the DB only ~6 times out of 20.
+</div>
+
+</main>
+<footer>concepts · handling_repeated_queries</footer>
+</body>
+</html>

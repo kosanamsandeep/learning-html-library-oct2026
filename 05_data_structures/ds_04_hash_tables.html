@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DS 04 — Hash Tables</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html"><span class="brand-mark">DS</span><span>DS · 04 Hash Tables</span></a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="ds_03_stacks_queues.html">← Prev</a>
+                <a href="ds_05_trees.html">Next →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">The O(1) workhorse</p>
+                <h1>Hash Tables — the most-used data structure on Earth</h1>
+                <p>A hash table maps keys to values, with average-case O(1) for insert, lookup, and delete. It is
+                    by far the most important data structure to master after arrays — and the most common
+                    "trick" to turn an O(n²) interview problem into O(n).</p>
+            </section>
+
+            <section class="concept">
+                <h2>Story <span class="badge warm">Why this matters</span></h2>
+                <div class="story"><strong>Story:</strong> "find two numbers that sum to a target". Naive: nested
+                    loop, O(n²). With a hash set: one pass, for each number check if <code>target - x</code> has
+                    been seen. O(n). Same idea, 1000× faster. <em>If you only learn one optimization trick,
+                        learn this one.</em></div>
+            </section>
+
+            <section class="concept">
+                <h2>How it works under the hood</h2>
+                <ol>
+                    <li>You have an array of <strong>buckets</strong> (say, size 16).</li>
+                    <li>To insert key <code>k</code>: compute <code>hash(k) % 16</code> → that's the bucket index.</li>
+                    <li>Put the (key, value) pair into that bucket.</li>
+                    <li>If two keys land in the same bucket (a <strong>collision</strong>), store them in a list
+                        or open-address into the next bucket.</li>
+                    <li>When the table gets too full (load factor &gt; ~0.75), <strong>resize</strong>: allocate
+                        a bigger array and rehash everything. O(n) one-time cost; amortized to O(1) per op.</li>
+                </ol>
+                <h3>Two collision strategies</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>What happens</th>
+                            <th>Used by</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Separate chaining</td>
+                            <td>Each bucket holds a linked list / tree of entries.</td>
+                            <td>Java's HashMap</td>
+                        </tr>
+                        <tr>
+                            <td>Open addressing</td>
+                            <td>On collision, probe the next bucket(s) by some rule.</td>
+                            <td>Python's dict (open addressing)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="concept">
+                <h2>Complexity</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>Average</th>
+                            <th>Worst</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Insert</td>
+                            <td>O(1)</td>
+                            <td>O(n) — pathological hash collisions</td>
+                        </tr>
+                        <tr>
+                            <td>Lookup</td>
+                            <td>O(1)</td>
+                            <td>O(n)</td>
+                        </tr>
+                        <tr>
+                            <td>Delete</td>
+                            <td>O(1)</td>
+                            <td>O(n)</td>
+                        </tr>
+                        <tr>
+                            <td>Space</td>
+                            <td>O(n)</td>
+                            <td>O(n)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>Worst case happens only with adversarial inputs (e.g., attacker chooses keys that all collide).
+                    Modern languages use randomized hash seeds to defeat this.</p>
+            </section>
+
+            <section class="concept">
+                <h2>Hash set vs hash map</h2>
+                <ul>
+                    <li><strong>Set</strong> — just the keys, no values. "Have I seen this?"</li>
+                    <li><strong>Map</strong> (a.k.a. dictionary) — keys → values. "What's associated with this?"</li>
+                </ul>
+                <p>Both have the same O(1) average behavior. Choose based on whether you need an associated
+                    value.</p>
+            </section>
+
+            <section class="concept">
+                <h2>Common patterns</h2>
+                <h3>1. Lookup with complement</h3>
+                <pre><code>def two_sum(nums, target):
+    seen = {}   # value -&gt; index
+    for i, x in enumerate(nums):
+        if target - x in seen:
+            return [seen[target - x], i]
+        seen[x] = i</code></pre>
+
+                <h3>2. Frequency count</h3>
+                <pre><code>from collections import Counter
+counts = Counter("statistics")  # {'s':3, 't':3, 'a':1, ...}</code></pre>
+
+                <h3>3. Grouping</h3>
+                <pre><code>from collections import defaultdict
+groups = defaultdict(list)
+for word in words:
+    key = "".join(sorted(word))   # sorted letters = anagram key
+    groups[key].append(word)</code></pre>
+
+                <h3>4. Seen-set memoization</h3>
+                <p>Mark visited nodes in a graph, seen states in a search — anywhere you'd otherwise revisit work.</p>
+            </section>
+
+            <section class="concept">
+                <h2>When to use vs when NOT</h2>
+                <div class="grid-2">
+                    <div class="mini good">
+                        <h4>Use a hash table when</h4>
+                        <ul>
+                            <li>You need fast lookup by key.</li>
+                            <li>You're counting frequencies, grouping, or de-duplicating.</li>
+                            <li>You're caching computed results (memoization).</li>
+                        </ul>
+                    </div>
+                    <div class="mini bad">
+                        <h4>Don't use when</h4>
+                        <ul>
+                            <li>You need <em>ordered</em> traversal — use a sorted container or BST.</li>
+                            <li>You need <em>range queries</em> ("all keys between 10 and 50") — use BST /
+                                sorted structure.</li>
+                            <li>Keys aren't hashable (mutable objects in Python).</li>
+                            <li>Memory is tight — hash tables have overhead (typically 1.3–2× the raw data).</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="concept">
+                <h2>Bonus — LRU Cache with hash + doubly linked list</h2>
+                <p>The classic LeetCode 146. Hash gives O(1) lookup by key; doubly linked list gives O(1)
+                    move-to-front. Together: an LRU cache with O(1) get and put.</p>
+                <pre><code>from collections import OrderedDict
+
+class LRUCache:
+    def __init__(self, capacity):
+        self.cap = capacity
+        self.cache = OrderedDict()
+    def get(self, key):
+        if key not in self.cache: return -1
+        self.cache.move_to_end(key)
+        return self.cache[key]
+    def put(self, key, val):
+        if key in self.cache: self.cache.move_to_end(key)
+        self.cache[key] = val
+        if len(self.cache) &gt; self.cap:
+            self.cache.popitem(last=False)</code></pre>
+            </section>
+
+            <section class="concept">
+                <h2>Practice problems</h2>
+                <ol>
+                    <li>Two Sum (Easy).</li>
+                    <li>Valid Anagram (Easy).</li>
+                    <li>Group Anagrams (Medium).</li>
+                    <li>Longest Consecutive Sequence (Medium).</li>
+                    <li>Top K Frequent Elements (Medium).</li>
+                    <li>LRU Cache (Medium).</li>
+                    <li>Subarray Sum Equals K (Medium) — prefix sum + hash.</li>
+                </ol>
+                <p>👉 Next: <a href="ds_05_trees.html"><strong>Trees</strong></a>.</p>
+            </section>
+        </div>
+    </main>
+    <footer><a href="index.html">Back to hub</a></footer>
+</body>
+
+</html>

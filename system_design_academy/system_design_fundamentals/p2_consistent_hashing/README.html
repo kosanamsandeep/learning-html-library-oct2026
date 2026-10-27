@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2 · Consistent Hashing</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>Fundamentals</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a href="../p1_rate_limiter/README.html">Prev:
+                    P1</a><a href="../p3_bloom_filter/README.html">Next: P3</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">Fundamentals · Project 2</p>
+            <h1>Consistent hashing — add a server without breaking the cache</h1>
+            <p class="lead">If you shard data with <code>hash(key) % N</code>, adding a single server can move nearly
+                every key. Consistent hashing keeps the move small — only the slice owned by the new server changes.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You scale from 3 cache servers to 4 to handle Black Friday traffic. With naive modulo sharding, ~75% of
+                keys change owner — cache miss storm. With a consistent hash ring, only ~25% of keys move. The site
+                stays warm.</p>
+        </section>
+
+        <section class="card">
+            <h2>Mental model</h2>
+            <div class="flow">
+                <div class="step">Hash key to a slot</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Walk clockwise on the ring</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">First server you meet owns the key</div>
+            </div>
+            <p>Each server is placed on the ring at many "virtual nodes" so the load distribution stays even. Removing a
+                server only re-maps the keys that fell on its slots.</p>
+        </section>
+
+        <section class="card">
+            <h2>Why virtual nodes matter</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Setup</th>
+                        <th>What happens</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1 slot per server</td>
+                        <td>Unbalanced load; some servers carry much more than others.</td>
+                    </tr>
+                    <tr>
+                        <td>~100–200 virtual nodes per server</td>
+                        <td>Smooth distribution and small remap when membership changes.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Core code</h2>
+            <pre><code>slot = _hash(key)
+index = bisect_right(self._ring, slot) % len(self._ring)
+return self._slot_to_node[self._ring[index]]</code></pre>
+            <p>The ring is just a sorted list of integers; <code>bisect_right</code> gives the next slot in O(log N).
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>How to run</h2>
+            <pre><code>cd system_design_academy/system_design_fundamentals/p2_consistent_hashing
+python main.py</code></pre>
+            <p>You will see the distribution across 3 nodes, then the small fraction of keys remapped after adding and
+                removing nodes.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"I use consistent hashing whenever I need to shard data across servers that may be
+                added or removed — cache layers, partitioned queues, or session stores. Virtual nodes keep the load
+                even, and only the slice belonging to a changed server is re-mapped, which avoids cache miss storms
+                during scaling."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

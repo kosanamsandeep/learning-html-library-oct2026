@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W2 · Agent decomposition (StockPilot) — Claude Workshops</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Workshops hub</a>
+                <a href="../anthropic_building_agents.html">Building Agents</a>
+                <a href="../anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">CWC · Workshop 2</span></p>
+            <h1>Agent decomposition (StockPilot): break the 402-line prompt apart on purpose</h1>
+            <p class="lead">A "before" agent has 12 tools, three hard-coded sub-agents, and a 402-line system prompt.
+                Score: 71%. The workshop teaches you to <em>decompose</em> — push procedural know-how into Skills,
+                push numeric work into sandboxed code execution, and keep only one sub-agent for the work that needs
+                an isolated context. Score after: 92%.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · What you build</h2>
+            <ul>
+                <li><code>agents/before/</code> — the bloated baseline so you can A/B against it.</li>
+                <li><code>agents/starter/</code> — a slim Managed Agent configuration with a focused system prompt and
+                    a curated tool list.</li>
+                <li>One or two Skills under <code>.claude/skills/</code> for repeated procedures (e.g. "compute total
+                    return", "produce the standard portfolio summary").</li>
+                <li>One remaining sub-agent for the deep-research task that needs its own context window.</li>
+                <li>An eval suite of 12 tasks — <code>R1&ndash;R9</code> (research) and <code>F1&ndash;F3</code>
+                    (financial computation). F1 alone drops from <strong>488 seconds / 102 tool calls</strong> to
+                    <strong>100 seconds / 3 scripts</strong>.
+                </li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>2 · The stack</h2>
+            <div class="flow">
+                <div class="step">Claude Managed Agent</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Skills (procedural)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Code execution (numeric)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">One sub-agent (deep research)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">12-task eval</div>
+            </div>
+            <p>The workshop ships with <code>uv run seed</code>, <code>uv run deploy starter</code>, and
+                <code>uv run evals --agent starter --task F1</code> so the inner loop is fast.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>3 · Levers the workshop teaches</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>The decision framework</h3>
+                    <p><strong>Tool call &rarr; Skill &rarr; Sub-agent.</strong> Default to a tool. Promote to a Skill
+                        when the same procedure repeats. Promote to a sub-agent only when an isolated context is
+                        required.</p>
+                </div>
+                <div class="mini">
+                    <h3>Smell tests</h3>
+                    <p>"&gt;2k tokens of data" &rArr; code execution. "Always do X first" &rArr; Skill. "Answer is one
+                        number" &rArr; <em>not</em> a sub-agent.</p>
+                </div>
+                <div class="mini">
+                    <h3>System-prompt diet</h3>
+                    <p>Cut from 402 lines to under 60. The cut content moves into Skills that load on demand.</p>
+                </div>
+                <div class="mini">
+                    <h3>Tool curation</h3>
+                    <p>Drop tools that are never selected by the model on the eval set. Each surviving tool gets a
+                        sharper description.</p>
+                </div>
+                <div class="mini">
+                    <h3>Sandboxed code execution</h3>
+                    <p>For financial math, the agent writes a small Python script in the sandbox instead of
+                        orchestrating
+                        many tool calls.</p>
+                </div>
+                <div class="mini">
+                    <h3>The 12-task eval</h3>
+                    <p>R1&ndash;R9 cover research breadth; F1&ndash;F3 cover financial computation. Each task has a
+                        deterministic grader.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Use vs don't use — the trade-offs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lever</th>
+                        <th>If you use it</th>
+                        <th>If you skip it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Push procedures into Skills</td>
+                        <td>System prompt stays small, the procedure is loaded only when needed, and you can edit it
+                            without redeploying the agent.</td>
+                        <td>The 402-line prompt grows every sprint, latency climbs, and the agent sometimes ignores
+                            steps that "got buried" in the middle.</td>
+                    </tr>
+                    <tr>
+                        <td>Sandboxed code execution for numeric work</td>
+                        <td>F1: 100 seconds, 3 scripts, deterministic answer. The agent stops orchestrating dozens of
+                            calls and just writes the calculation.</td>
+                        <td>F1: 488 seconds, 102 tool calls, rounding errors compound, and the bill is ~10&times;.</td>
+                    </tr>
+                    <tr>
+                        <td>One sub-agent (not three)</td>
+                        <td>Deep-research lives in its own context, so the main agent isn't drowning in source text. The
+                            handoff is one message in, one summary out.</td>
+                        <td>Three sub-agents = three places to keep prompts in sync, three context windows to pay for,
+                            and the parent agent loses the thread.</td>
+                    </tr>
+                    <tr>
+                        <td>Tool curation</td>
+                        <td>Cleaner tool descriptions mean the model picks the right one on the first try.</td>
+                        <td>Twelve overlapping tools mean the model picks the second-best tool, then a third, then
+                            recovers — burning tokens and time.</td>
+                    </tr>
+                    <tr>
+                        <td>12-task eval before/after</td>
+                        <td>71% &rarr; 92% is a number you can defend in a review. F1's wall-clock drop is the
+                            screenshot you put in the deck.</td>
+                        <td>"Feels better" is the only evidence, and the team rolls back the next time a refactor
+                            regresses something silently.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>The lesson:</strong> decomposition is <em>subtraction first</em>. Every
+                feature should justify its place by moving a measurable score; if it doesn't, it goes back into a
+                Skill or out of the agent.</div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Adoption playbook for your repo</h2>
+            <ol>
+                <li>Make an "as-is" snapshot of your biggest agent and write down its current eval score.</li>
+                <li>Run the "smell tests" against every tool and every sub-agent. Anything that fails moves to Skill or
+                    code execution.</li>
+                <li>Cut the system prompt by removing every "always" / "before you do X" sentence and re-homing each
+                    one into a Skill description.</li>
+                <li>Add a code-execution sandbox for any numeric or transform-heavy work.</li>
+                <li>Keep <em>at most one</em> sub-agent. Justify it in writing.</li>
+                <li>Re-run the eval. If the score didn't move, you decomposed the wrong thing — and your eval just
+                    saved you a release.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source"
+                    href="https://github.com/anthropics/cwc-workshops/tree/main/agent-decomposition-workshop"
+                    target="_blank" rel="noopener">cwc-workshops/agent-decomposition-workshop</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/overview" target="_blank"
+                    rel="noopener">Claude Managed Agents — Overview</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/tools/code-execution"
+                    target="_blank" rel="noopener">CMA — Code execution tool</a>
+                <a class="source" href="https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview"
+                    target="_blank" rel="noopener">Claude Skills — Overview</a>
+                <a class="source" href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank"
+                    rel="noopener">Anthropic — Building effective agents</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

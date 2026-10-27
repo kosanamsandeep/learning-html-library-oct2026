@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P4 · Context Engineering</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>AI Engineering</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p3_ai_agent_memory/README.html">Prev: P3</a><a
+                    href="../p5_knowledge_qa_system/README.html">Next: P5</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">AI Engineering · Project 4</p>
+            <h1>Context engineering — fit the most useful text into the budget</h1>
+            <p class="lead">Prompt engineering picks the words you write. Context engineering picks the text the model
+                sees. Most production LLM bugs are not bad prompts — they are too much (or wrong) context.</p>
+        </section>
+
+        <section class="card">
+            <h2>The four jobs of a context pipeline</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Step</th>
+                        <th>Goal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Retrieve</td>
+                        <td>Pull candidate chunks from your sources.</td>
+                    </tr>
+                    <tr>
+                        <td>Dedupe</td>
+                        <td>Drop near-identical chunks so the same paragraph does not fill the window twice.</td>
+                    </tr>
+                    <tr>
+                        <td>Compress</td>
+                        <td>Summarise or truncate long chunks before they spend the budget.</td>
+                    </tr>
+                    <tr>
+                        <td>Fit to budget</td>
+                        <td>Greedy pack by combined relevance + recency until tokens run out.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Why this matters more than prompt wording</h2>
+            <div class="grid">
+                <div class="mini bad"><strong>Too much context</strong> = the model gets confused, latency rises, cost
+                    rises, and quality often falls (lost-in-the-middle problem).</div>
+                <div class="mini bad"><strong>Wrong context</strong> = the model confidently quotes irrelevant material.
+                </div>
+                <div class="mini good"><strong>Right context, tight</strong> = better answers, faster, cheaper.</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Ranking signal</h2>
+            <pre><code>score = 0.7 * relevance + 0.3 * recency</code></pre>
+            <p>The exact weights vary by domain. News-heavy systems weigh recency higher; reference manuals weigh
+                relevance higher.</p>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/ai_engineering/p4_context_engineering
+python main.py</code></pre>
+            <p>You will see five candidate chunks shrink through dedupe + compress, then greedy-pack into a 40-token
+                window.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"For any LLM feature past a toy I set an explicit token budget and write the retrieval
+                → dedupe → compress → fit pipeline as four named steps. Ranking is a small weighted score of relevance
+                and recency. Long chunks are summarised before they enter the budget, never after. This makes cost
+                predictable and avoids the lost-in-the-middle quality drop."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

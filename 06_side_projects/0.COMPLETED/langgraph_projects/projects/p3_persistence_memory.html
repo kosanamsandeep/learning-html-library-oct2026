@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P3 · Persistence & Memory — LangGraph Projects</title>
+    <link rel="stylesheet" href="projects.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span>LG</span>P3 · Persistence &amp; Memory</div>
+        <div class="links">
+            <a href="index.html">Projects Hub</a>
+            <a href="p2_react_tool_agent.html">← P2</a>
+            <a href="p4_human_in_the_loop.html">Next: P4 →</a>
+        </div>
+    </div>
+
+    <div class="header">
+        <p class="badge">Project 3 · Intermediate</p>
+        <h1>Memory done efficiently: checkpoints, threads & a store</h1>
+        <p class="subtitle">The state in P1–P2 vanished when the call ended. Here you make it
+            <strong>durable</strong>. You'll learn the two kinds of memory LangGraph offers — short-term
+            (thread checkpoints) and long-term (the cross-thread <code>Store</code>) — and how to keep both
+            cheap.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>What this project does</h2>
+            <p>Add a <strong>checkpointer</strong> at compile time and pass a <code>thread_id</code> at runtime.
+                Now every step is saved. Re-invoking with the same <code>thread_id</code> resumes the exact
+                conversation — across requests, processes, even crashes. Then add a <strong>Store</strong> so
+                the agent remembers facts about a user <em>across different</em> conversations.</p>
+            <div class="pill-row">
+                <span class="level intermediate">Intermediate</span>
+                <span class="tag amber">checkpointer</span>
+                <span class="tag">thread_id</span>
+                <span class="tag">SqliteSaver</span>
+                <span class="tag">Store</span>
+                <span class="tag">summarization</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Two kinds of memory — don't confuse them</h2>
+            <div class="grid-2">
+                <div class="mini">
+                    <h3>🧵 Short-term = thread state</h3>
+                    <p>The message history of <em>one</em> conversation. Stored by a
+                        <strong>checkpointer</strong>, keyed by <code>thread_id</code>. This is "what we said in
+                        this chat".
+                    </p>
+                </div>
+                <div class="mini">
+                    <h3>🗄️ Long-term = the Store</h3>
+                    <p>Facts that should outlive any single chat — "the user is vegetarian", "prefers metric
+                        units". Stored in a <strong>Store</strong>, keyed by a namespace like
+                        <code>(user_id, "facts")</code>.
+                    </p>
+                </div>
+            </div>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TB
+    subgraph Short["Short-term · Checkpointer"]
+        T1["thread: user-42-chat-A<br/>[msgs...]"]
+        T2["thread: user-42-chat-B<br/>[msgs...]"]
+    end
+    subgraph Long["Long-term · Store"]
+        S1["(user-42, 'facts')<br/>diet=vegetarian<br/>units=metric"]
+    end
+    T1 -. reads/writes .-> S1
+    T2 -. reads/writes .-> S1
+                </pre>
+                <p class="caption">Two chats (threads) share one long-term memory (store namespace).</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Short-term: add a checkpointer</h2>
+            <pre><code><span class="c-kw">from</span> langgraph.graph <span class="c-kw">import</span> StateGraph, MessagesState, START
+<span class="c-kw">from</span> langgraph.checkpoint.memory <span class="c-kw">import</span> InMemorySaver
+
+<span class="c-kw">def</span> <span class="c-fn">chatbot</span>(state: MessagesState):
+    <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: [llm.invoke(state[<span class="c-str">"messages"</span>])]}
+
+builder = StateGraph(MessagesState)
+builder.add_node(<span class="c-str">"chatbot"</span>, chatbot)
+builder.add_edge(START, <span class="c-str">"chatbot"</span>)
+
+<span class="c-com"># THE ONE LINE that turns on memory:</span>
+checkpointer = InMemorySaver()                 <span class="c-com"># dev only; swap for SqliteSaver/Postgres in prod</span>
+graph = builder.compile(checkpointer=checkpointer)
+
+<span class="c-com"># thread_id = the conversation's identity</span>
+config = {<span class="c-str">"configurable"</span>: {<span class="c-str">"thread_id"</span>: <span class="c-str">"user-42-chat-A"</span>}}
+
+graph.invoke({<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"My name is Aria."</span>}]}, config)
+<span class="c-com"># Later, SAME thread_id -> it remembers:</span>
+graph.invoke({<span class="c-str">"messages"</span>: [{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"What's my name?"</span>}]}, config)
+<span class="c-com"># -> "Your name is Aria."</span></code></pre>
+            <div class="callout green">
+                <strong>That's the whole feature.</strong> <code>compile(checkpointer=...)</code> +
+                <code>thread_id</code>. Every super-step is snapshotted, so you also get crash-recovery and
+                time-travel (P4) for free.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Production checkpointers</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Checkpointer</th>
+                        <th>Use for</th>
+                        <th>Survives restart?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>InMemorySaver</code></td>
+                        <td>Notebooks, tests</td>
+                        <td>❌</td>
+                    </tr>
+                    <tr>
+                        <td><code>SqliteSaver</code></td>
+                        <td>Single-node apps, prototypes</td>
+                        <td>✅ (file)</td>
+                    </tr>
+                    <tr>
+                        <td><code>PostgresSaver</code></td>
+                        <td>Production, multi-node</td>
+                        <td>✅</td>
+                    </tr>
+                </tbody>
+            </table>
+            <pre><code><span class="c-kw">from</span> langgraph.checkpoint.sqlite <span class="c-kw">import</span> SqliteSaver
+
+<span class="c-kw">with</span> SqliteSaver.from_conn_string(<span class="c-str">"checkpoints.sqlite"</span>) <span class="c-kw">as</span> cp:
+    graph = builder.compile(checkpointer=cp)
+    graph.invoke(..., {<span class="c-str">"configurable"</span>: {<span class="c-str">"thread_id"</span>: <span class="c-str">"abc"</span>}})</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Long-term: the Store (cross-thread memory)</h2>
+            <p>Inject a <code>Store</code> at compile time. Any node can receive it and read/write namespaced
+                facts that persist across every thread for that user.</p>
+            <pre><code><span class="c-kw">from</span> langgraph.store.memory <span class="c-kw">import</span> InMemoryStore
+<span class="c-kw">from</span> langgraph.store.base <span class="c-kw">import</span> BaseStore
+<span class="c-kw">from</span> langchain_core.runnables <span class="c-kw">import</span> RunnableConfig
+
+store = InMemoryStore()        <span class="c-com"># prod: PostgresStore, optionally with embeddings for semantic recall</span>
+
+<span class="c-kw">def</span> <span class="c-fn">chatbot</span>(state: MessagesState, config: RunnableConfig, *, store: BaseStore):
+    user_id = config[<span class="c-str">"configurable"</span>][<span class="c-str">"user_id"</span>]
+    namespace = (user_id, <span class="c-str">"facts"</span>)
+
+    <span class="c-com"># 1) recall long-term facts</span>
+    facts = store.search(namespace)
+    memory = <span class="c-str">"\n"</span>.join(f.value[<span class="c-str">"text"</span>] <span class="c-kw">for</span> f <span class="c-kw">in</span> facts)
+
+    sys = {<span class="c-str">"role"</span>: <span class="c-str">"system"</span>, <span class="c-str">"content"</span>: <span class="c-str">f"Known about user:\n{memory}"</span>}
+    reply = llm.invoke([sys, *state[<span class="c-str">"messages"</span>]])
+
+    <span class="c-com"># 2) optionally write a new fact</span>
+    store.put(namespace, <span class="c-str">"latest"</span>, {<span class="c-str">"text"</span>: <span class="c-str">"Prefers concise answers."</span>})
+    <span class="c-kw">return</span> {<span class="c-str">"messages"</span>: [reply]}
+
+graph = builder.compile(checkpointer=checkpointer, store=store)
+graph.invoke(state, {<span class="c-str">"configurable"</span>: {<span class="c-str">"thread_id"</span>: <span class="c-str">"chat-B"</span>, <span class="c-str">"user_id"</span>: <span class="c-str">"user-42"</span>}})</code></pre>
+            <div class="callout">
+                <strong>Semantic memory:</strong> give the store an embeddings index and use
+                <code>store.search(namespace, query="dietary preferences")</code> to retrieve only the relevant
+                facts instead of dumping everything into the prompt.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Keeping memory <em>efficient</em> — the part people skip</h2>
+            <p>A naive agent re-sends the entire history every turn. Tokens (and cost, and latency) grow without
+                bound. Three standard fixes:</p>
+            <div class="grid">
+                <div class="mini">
+                    <h3>✂️ Trim</h3>
+                    <p>Keep only the last N messages (or last N tokens) before calling the model.</p>
+                    <pre style="margin:.5rem 0 0"><code><span class="c-kw">from</span> langchain_core.messages <span class="c-kw">import</span> trim_messages
+msgs = trim_messages(state[<span class="c-str">"messages"</span>], max_tokens=<span class="c-cls">2000</span>,
+    strategy=<span class="c-str">"last"</span>, token_counter=llm)</code></pre>
+                </div>
+                <div class="mini">
+                    <h3>📝 Summarize</h3>
+                    <p>When history gets long, replace old turns with a running summary message. Bounded tokens,
+                        preserved context.</p>
+                </div>
+                <div class="mini">
+                    <h3>🎯 Selective recall</h3>
+                    <p>Pull only relevant long-term facts from the Store via semantic search — not the whole
+                        profile.</p>
+                </div>
+            </div>
+            <div class="callout amber">
+                <strong>Rule of thumb:</strong> short-term memory should be <em>bounded</em> (trim/summarize),
+                long-term memory should be <em>retrieved</em> (search, not dump). That combination keeps an
+                agent fast and cheap even after thousands of turns.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Inspecting state</h2>
+            <pre><code>snap = graph.get_state(config)          <span class="c-com"># current checkpoint</span>
+<span class="c-fn">print</span>(snap.values[<span class="c-str">"messages"</span>])           <span class="c-com"># the saved messages</span>
+<span class="c-fn">print</span>(snap.next)                         <span class="c-com"># which node runs next</span>
+
+<span class="c-kw">for</span> state <span class="c-kw">in</span> graph.get_state_history(config):  <span class="c-com"># every past checkpoint</span>
+    <span class="c-fn">print</span>(state.config[<span class="c-str">"configurable"</span>][<span class="c-str">"checkpoint_id"</span>])</code></pre>
+            <p>This visibility is the foundation for P4's time-travel debugging.</p>
+        </div>
+
+        <div class="pager">
+            <a href="p2_react_tool_agent.html"><span class="dir">Previous</span>
+                <div class="ttl">← P2 · ReAct Tool Agent</div>
+            </a>
+            <a class="next" href="p4_human_in_the_loop.html"><span class="dir">Next</span>
+                <div class="ttl">P4 · Human-in-the-Loop →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>LangGraph Projects · P3 of 6</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

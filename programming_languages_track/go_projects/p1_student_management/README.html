@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go P1 — Student Management</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Go projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p1_student_management/README.html">Python p1</a>
+                <a href="../../rust_projects/p1_student_management/README.html">Rust p1</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go · P1</span></p>
+            <h1>Student Management — Go edition</h1>
+            <p class="lead">Same domain, same operations as the Python version: a service that owns an in-memory store
+                of students and exposes add / get / list / average. The interesting bit is what changes when you remove
+                classes, exceptions, and dynamic types.</p>
+        </section>
+
+        <section class="card">
+            <h2>What the Python version did</h2>
+            <ul>
+                <li><code>Student</code> dataclass with <code>id</code>, <code>name</code>, <code>grade</code>.</li>
+                <li><code>StudentService</code> class holding a <code>dict</code> store and an <code>__init__</code>.
+                </li>
+                <li>Raises <code>ValueError</code> if validation fails.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>What changes in Go</h2>
+            <ol>
+                <li><strong>No classes.</strong> A <code>struct</code> holds the data; methods are functions with a
+                    receiver: <code>func (svc *StudentService) Add(...)</code>.</li>
+                <li><strong>No exceptions.</strong> <code>Add</code> returns <code>(Student, error)</code>. The caller
+                    writes <code>if err != nil { ... }</code>.</li>
+                <li><strong>No <code>__repr__</code>.</strong> Implementing <code>String() string</code> makes
+                    <code>fmt.Println</code> print nicely — Go's "stringer" interface.</li>
+                <li><strong>Pointer receiver vs value receiver.</strong> <code>(svc *StudentService)</code> means the
+                    method can mutate <code>svc</code>. A method on <code>(s Student)</code> can not mutate the
+                    original.</li>
+                <li><strong>Capitalisation = visibility.</strong> <code>Student</code>, <code>Add</code>,
+                    <code>List</code> are exported. Lowercase names like <code>students</code> are package-private.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>The shape</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>@dataclass
+class Student:
+    id: int
+    name: str
+    grade: int
+
+class StudentService:
+    def __init__(self):
+        self.students = {}
+        self.next_id = 1
+
+    def add(self, name, grade):
+        if not name:
+            raise ValueError("name required")
+        s = Student(self.next_id, name, grade)
+        self.students[s.id] = s
+        self.next_id += 1
+        return s</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>type Student struct {
+    ID    int
+    Name  string
+    Grade int
+}
+
+type StudentService struct {
+    students map[int]Student
+    nextID   int
+}
+
+func (svc *StudentService) Add(name string, grade int) (Student, error) {
+    if name == "" {
+        return Student{}, errors.New("name required")
+    }
+    s := Student{ID: svc.nextID, Name: name, Grade: grade}
+    svc.students[s.ID] = s
+    svc.nextID++
+    return s, nil
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>Win for Go</h4>
+                    <p>Errors are visible at every call site — no hidden control flow. The struct + method receiver is
+                        more verbose than a Python class, but easier to reason about: there's no inheritance ladder to
+                        walk.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd go_projects/p1_student_management
+go run .</code></pre>
+            <p>Files: <a href="main.go">main.go</a> · <a href="go.mod">go.mod</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

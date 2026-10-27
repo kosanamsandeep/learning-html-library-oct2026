@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootcamp 4 — Why Go and Rust are fast</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="why_go_rust.html">Why</a>
+                <a href="syntax_python_vs_go.html">Syntax · Go</a>
+                <a href="syntax_python_vs_rust.html">Syntax · Rust</a>
+                <a href="pick_them_fast.html">Pick fast</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Bootcamp · 4 of 5</p>
+            <h1>Why are Go and Rust so much faster than Python?</h1>
+            <p class="lead">"Faster" isn't a single thing. There are five separate decisions Python made for ergonomics
+                that each cost some performance. Go undoes some; Rust undoes all. Once you understand the five, the
+                speed gap stops being magic.</p>
+        </section>
+
+        <section class="card">
+            <h2>The five ergonomic-vs-speed trade-offs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Decision</th>
+                        <th>Python</th>
+                        <th>Go</th>
+                        <th>Rust</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Compilation</td>
+                        <td>Interpreted (CPython bytecode VM)</td>
+                        <td>Compiled to native</td>
+                        <td>Compiled to native, optimising</td>
+                    </tr>
+                    <tr>
+                        <td>Type information</td>
+                        <td>Looked up at runtime (every attribute access is a dict lookup)</td>
+                        <td>Known at compile time</td>
+                        <td>Known at compile time + monomorphisation</td>
+                    </tr>
+                    <tr>
+                        <td>Memory layout</td>
+                        <td>Everything is a heap-allocated boxed object</td>
+                        <td>Structs live on the stack by default; pointers are explicit</td>
+                        <td>Same as Go, plus zero-cost abstractions over them</td>
+                    </tr>
+                    <tr>
+                        <td>Concurrency</td>
+                        <td>One Python thread runs at a time (GIL); asyncio is cooperative</td>
+                        <td>Goroutines + M:N scheduler use all cores</td>
+                        <td>Threads + async, no GIL</td>
+                    </tr>
+                    <tr>
+                        <td>Memory management</td>
+                        <td>Reference counting + cycle GC</td>
+                        <td>Concurrent tracing GC (sub-ms pauses)</td>
+                        <td>Compile-time ownership — no runtime GC at all</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="quiet">Each row is a 2-10× speedup on its own. They compound.</p>
+        </section>
+
+        <section class="card">
+            <h2>Speed factor 1 — compiled vs interpreted</h2>
+            <p>Python source is compiled to <em>bytecode</em> at import time, then a virtual machine in C executes it
+                instruction by instruction. Every <code>x.y</code>, every <code>+</code>, every <code>for</code> is
+                several CPU instructions of dispatch overhead. Go and Rust compile to native machine code;
+                <code>x.y</code> is one mov, <code>+</code> is one add.</p>
+            <div class="callout">A naive numeric loop in Python is 30-100× slower than the same loop in Go, and 50-200×
+                slower than in Rust. Most of that gap is interpreter dispatch — not algorithmic.</div>
+        </section>
+
+        <section class="card">
+            <h2>Speed factor 2 — types known at compile time</h2>
+            <p>In Python, <code>obj.method()</code> walks the MRO at runtime: check the instance dict, then the class,
+                then base classes. The interpreter cannot inline anything because the next call could resolve to a
+                totally different function.</p>
+            <p>In Go and Rust, the compiler knows the exact type. Most calls are direct or virtual through a small
+                vtable. Many become inlined. The CPU branch predictor stays happy.</p>
+            <h3>Rust's special trick: monomorphisation</h3>
+            <pre><code>fn print_all&lt;T: Display&gt;(xs: &amp;[T]) {
+    for x in xs { println!("{x}"); }
+}
+
+print_all(&amp;[1, 2, 3]);          // monomorphised to print_all_i32
+print_all(&amp;["a", "b"]);          // monomorphised to print_all_str</code></pre>
+            <p>The Rust compiler generates a separate, fully-specialised copy for each type used. That copy can be
+                inlined and aggressively optimised — there's no runtime polymorphism cost.</p>
+        </section>
+
+        <section class="card">
+            <h2>Speed factor 3 — memory layout</h2>
+            <p>In CPython, even an integer is a 28-byte heap-allocated object: refcount + type pointer + the actual
+                value. A <code>list[int]</code> with a million entries is a million pointers to a million little boxes.
+                Cache behaviour is poor.</p>
+            <p>In Go and Rust, primitive types are <em>values</em>: 8 bytes for an <code>int64</code>, period.
+                <code>[]int64</code> in Go and <code>Vec&lt;i64&gt;</code> in Rust are contiguous arrays. The CPU cache
+                loves them.</p>
+            <div class="callout">For numeric / bytes-heavy work the layout difference alone is 5-20×. This is why
+                <code>tokenizers</code> (Rust) and <code>polars</code> (Rust) leave their pure-Python predecessors in
+                the dust.</div>
+        </section>
+
+        <section class="card">
+            <h2>Speed factor 4 — concurrency</h2>
+            <h3>Python's Global Interpreter Lock</h3>
+            <p>The GIL makes only <em>one</em> Python thread execute Python bytecode at a time. Multi-threading helps
+                with I/O (the lock is released around blocking calls) but cannot scale CPU-bound work across cores.
+                Workarounds are real but heavy: <code>multiprocessing</code> (separate processes, IPC overhead) or
+                rewriting the hot path in C/Rust.</p>
+            <p class="quiet">Note: Python 3.13+ ships an experimental no-GIL build, but it is not the default and most C
+                extensions are not yet ready for it.</p>
+            <h3>Go: goroutines + M:N scheduler</h3>
+            <p>Go's runtime maps thousands of goroutines onto a small pool of OS threads. Each goroutine is ~2 KB of
+                stack (vs ~1 MB for an OS thread). One process can run a million goroutines comfortably.</p>
+            <h3>Rust: threads + async, no GIL</h3>
+            <p>Rust uses real OS threads when you want them and zero-cost futures + an async runtime (Tokio) when you
+                don't. There is no global lock — and the borrow checker statically prevents data races.</p>
+        </section>
+
+        <section class="card">
+            <h2>Speed factor 5 — memory management</h2>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Python</th>
+                        <td>Reference counting on every assignment, + a cycle collector. Refcount writes are atomic
+                            (under the GIL) — that's part of why removing the GIL is hard. Frees can cascade
+                            unpredictably.</td>
+                    </tr>
+                    <tr>
+                        <th>Go</th>
+                        <td>Concurrent, tri-colour, write-barrier mark-and-sweep GC. Pauses are usually under 1 ms in
+                            production.</td>
+                    </tr>
+                    <tr>
+                        <th>Rust</th>
+                        <td>No runtime GC. The compiler knows exactly when each value goes out of scope and inserts
+                            <code>drop()</code> there. Memory release is predictable, deterministic, and free at
+                            runtime.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout rust">Rust's lack of GC is what makes it suitable for kernels, browsers, and the
+                absolute hot path of inference engines. Go's tiny-pause GC is what makes it perfect for network
+                services.</div>
+        </section>
+
+        <section class="card">
+            <h2>Where the gap actually shows up</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Workload</th>
+                        <th>Python</th>
+                        <th>Go vs Py</th>
+                        <th>Rust vs Py</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>JSON parsing per request</td>
+                        <td>baseline</td>
+                        <td>5-10×</td>
+                        <td>10-30×</td>
+                    </tr>
+                    <tr>
+                        <td>HTTP handler hot loop</td>
+                        <td>baseline</td>
+                        <td>10-30×</td>
+                        <td>20-50×</td>
+                    </tr>
+                    <tr>
+                        <td>Tokenisation of 1 MB text</td>
+                        <td>baseline</td>
+                        <td>3-8×</td>
+                        <td>20-100×</td>
+                    </tr>
+                    <tr>
+                        <td>Vector similarity over 100k embeddings</td>
+                        <td>baseline (NumPy already C)</td>
+                        <td>1-3×</td>
+                        <td>2-10×</td>
+                    </tr>
+                    <tr>
+                        <td>Concurrent fan-out to 1000 endpoints</td>
+                        <td>baseline (asyncio)</td>
+                        <td>3-5× (less ceremony)</td>
+                        <td>3-8×</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="quiet">Numbers are order-of-magnitude rules-of-thumb from public benchmarks. Your mileage will
+                differ; what won't differ is the direction.</p>
+        </section>
+
+        <section class="card">
+            <h2>The mental model</h2>
+            <ul>
+                <li><strong>Python is fast to write.</strong> Each line is the slowest, but you write fewer lines.</li>
+                <li><strong>Go is fast to ship.</strong> Each line is fast, the compile is fast, the binary is one file.
+                </li>
+                <li><strong>Rust is fast to run.</strong> Each line is the fastest possible, with a compiler that
+                    pre-checks correctness — at the cost of a steeper learning curve.</li>
+            </ul>
+            <div class="callout"><strong>The honest take:</strong> for most CRUD APIs Python is plenty. The bar isn't
+                "is it faster?" — it's "is the speed bottleneck big enough that it justifies the productivity hit?" For
+                a gateway, a tokeniser, a vector index, the answer is usually yes. For your agent and your evaluation
+                harness, usually no.</div>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://go.dev/doc/" target="_blank" rel="noopener">go.dev — runtime + GC
+                    docs</a>
+                <a class="source" href="https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html"
+                    target="_blank" rel="noopener">Rust Book — Ownership</a>
+                <a class="source"
+                    href="https://docs.python.org/3/c-api/init.html#thread-state-and-the-global-interpreter-lock"
+                    target="_blank" rel="noopener">CPython docs — the GIL</a>
+                <a class="source" href="https://peps.python.org/pep-0703/" target="_blank" rel="noopener">PEP 703 —
+                    Making the GIL optional</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

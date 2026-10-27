@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 — LoRA — Low-Rank Adaptation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, system-ui, sans-serif; background: #0f1117; color: #e1e4f0; line-height: 1.7; padding: 2rem; max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  h2 { font-size: 1.3rem; margin: 1.5rem 0 0.75rem; color: #feca57; }
+  h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  p { margin-bottom: 1rem; color: #c8cbe0; }
+  .nav { display: flex; justify-content: space-between; padding: 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid #2d3154; }
+  .nav a { color: #8b8fa8; text-decoration: none; font-size: 0.9rem; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #2d3154; transition: border-color 0.2s; }
+  .nav a:hover { border-color: #ff6b6b; color: #e1e4f0; }
+  .card { background: #1a1d2e; border: 1px solid #2d3154; border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .hl-box { background: rgba(255,107,107,0.08); border-left: 3px solid #ff6b6b; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .hl-yellow { background: rgba(254,202,87,0.08); border-left: 3px solid #feca57; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .hl-green { background: rgba(85,239,196,0.08); border-left: 3px solid #55efc4; padding: 1rem 1.5rem; border-radius: 0 10px 10px 0; margin: 1.25rem 0; }
+  .math-block { background: #12141d; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; }
+  .dim { color: #636e72; font-size: 0.8rem; }
+  .r-highlight { color: #ff6b6b; font-weight:700; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  .back-link { display: inline-block; margin-top: 2rem; color: #8b8fa8; text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { color: #ff6b6b; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: #232740; color: #feca57; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid #ff6b6b; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #2d3154; }
+  ul, ol { color: #c8cbe0; padding-left: 1.25rem; line-height: 2; }
+  .matrix-grid { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; margin: 1rem 0; }
+  .matrix-row { display: flex; gap: 0.1rem; align-items: center; }
+  .cell { width: 60px; height: 40px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; border-radius: 5px; font-weight: 500; }
+  .cell-w { background: rgba(108,92,231,0.12); color: #6c5ce7; border: 1px solid rgba(108,92,231,0.15); }
+  .cell-a { background: rgba(255,107,107,0.12); color: #ff6b6b; border: 1px solid rgba(255,107,107,0.15); }
+  .cell-b { background: rgba(254,202,87,0.12); color: #feca57; border: 1px solid rgba(254,202,87,0.15); }
+  .cell-dim { background: transparent; color: #636e72; width: auto; padding: 0 0.5rem; font-size: 0.7rem; }
+  .label { font-size: 0.85rem; font-weight: 600; margin: 0.3rem 0; text-align: center; }
+  .shape { font-size: 0.7rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; text-align: center; margin-top: 0.15rem; }
+  .flow-row { display: flex; align-items: center; gap: 1rem; justify-content: center; flex-wrap: wrap; padding: 1rem; }
+  .flow-box { background: #232740; border: 1px solid #2d3154; border-radius: 10px; padding: 0.75rem 1.25rem; text-align: center; font-size: 0.85rem; min-width: 90px; }
+  .flow-arrow { font-size: 1.2rem; color: #636e72; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="02-full-finetuning.html">← 02: Full FT</a>
+  <a href="04-qlora.html">Next: QLoRA →</a>
+</div>
+
+<h1>03 · LoRA — Low-Rank Adaptation</h1>
+<p>The paper that changed open-source fine-tuning forever: <em>"LoRA: Low-Rank Adaptation of Large Language Models"</em> (Hu et al., 2021).</p>
+
+<h2>🎯 The Core Idea</h2>
+
+<div class="card">
+<p>Instead of updating the full weight matrix W (which is (d × k) — potentially billions of parameters), LoRA <strong>freezes W</strong> and injects a small trainable pair of matrices <strong>A and B</strong> whose product BA approximates the update ΔW.</p>
+
+<div class="math-block">
+<span class="dim">// Full fine-tuning would update every element of W:</span>
+W' = W + ΔW &nbsp;&nbsp;<span class="dim">// ΔW is (d × k) — same size as W</span>
+
+<span class="dim">// LoRA decomposes ΔW into two smaller matrices:</span>
+W' = W + <span class="r-highlight">BA</span> &nbsp;&nbsp;<span class="dim">// B: (d × r), A: (r × k), where r << min(d, k)</span>
+
+<span class="dim">// Only A and B are trained. W is frozen.</span>
+</div>
+
+<div class="hl-yellow">
+  <strong>💡 "Low-rank" means:</strong> Instead of learning N<sup>2</sup> parameters (the full matrix), we learn 2×N×r parameters. With r = 8 and N = 4096 (GPT-3 dimension), that's 65,536 vs 16,777,216 — a <strong>256× reduction</strong>.
+</div>
+</div>
+
+<h2>📐 The Matrix Decomposition — Visualized</h2>
+
+<div class="card">
+<div style="display:flex;align-items:center;gap:1rem;justify-content:center;flex-wrap:wrap;padding:1rem;">
+
+<div>
+<div class="label">Pretrained Weight <span style="color:#6c5ce7;">W</span> (frozen)</div>
+<div class="matrix-grid">
+  <div class="matrix-row">
+    <div class="cell cell-w">w₁₁</div><div class="cell cell-w">w₁₂</div><div class="cell cell-w">w₁₃</div><div class="cell cell-w">...</div><div class="cell cell-w">w₁ₖ</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-w">...</div><div class="cell cell-w">...</div><div class="cell cell-w">...</div><div class="cell cell-w">...</div><div class="cell cell-w">...</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-w">w<sub>d1</sub></div><div class="cell cell-w">w<sub>d2</sub></div><div class="cell cell-w">w<sub>d3</sub></div><div class="cell cell-w">...</div><div class="cell cell-w">w<sub>dk</sub></div>
+  </div>
+</div>
+<div class="shape">Shape: (d × k) — e.g., 4096 × 4096</div>
+</div>
+
+<div style="font-size:2rem;color:#636e72;">+</div>
+
+<div>
+<div class="label">LoRA Adapter <span style="color:#ff6b6b;">B</span> × <span style="color:#feca57;">A</span> (trainable)</div>
+<div class="matrix-grid">
+  <div class="matrix-row">
+    <div class="cell cell-b">a₁₁</div><div class="cell cell-b">a₁₂</div><div class="cell cell-cell-dim">...</div><div class="cell cell-b">a₁ᵣ</div>
+  </div>
+  <div class="matrix-row" style="font-size:0.7rem;color:#636e72;">&nbsp;(r × k)&nbsp;</div>
+</div>
+<div style="font-size:1.2rem;color:#636e72;">×</div>
+<div class="matrix-grid">
+  <div class="matrix-row">
+    <div class="cell cell-a">b₁₁</div><div class="cell cell-a">b₂₁</div><div class="cell cell-dim">...</div><div class="cell cell-a">b<sub>r1</sub></div>
+  </div>
+  <div class="matrix-row" style="font-size:0.7rem;color:#636e72;">&nbsp;(d × r)&nbsp;</div>
+</div>
+</div>
+
+<div style="font-size:2rem;color:#636e72;">=</div>
+
+<div>
+<div class="label">New Weight <span style="color:#55efc4;">W'</span> (used in forward pass)</div>
+<div class="matrix-grid">
+  <div class="matrix-row">
+    <div class="cell cell-w" style="background:rgba(85,239,196,0.08);color:#55efc4;">w'₁₁</div><div class="cell cell-w" style="background:rgba(85,239,196,0.08);color:#55efc4;">w'₁₂</div><div class="cell cell-dim">...</div><div class="cell cell-w" style="background:rgba(85,239,196,0.08);color:#55efc4;">w'₁ₖ</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-w" style="background:rgba(85,239,196,0.08);color:#55efc4;">...</div><div class="cell cell-dim">...</div><div class="cell cell-dim">...</div><div class="cell cell-w" style="background:rgba(85,239,196,0.08);color:#55efc4;">...</div>
+  </div>
+  <div class="matrix-row">
+    <div class="cell cell-w" style="background:rgba(85,239,196,0.08);color:#55efc4;">w'<sub>d1</sub></div><div class="cell cell-w" style="background:rgba(85,239,196,0.08);color:#55efc4;">w'<sub>d2</sub></div><div class="cell cell-dim">...</div><div class="cell cell-w" style="background:rgba(85,239,196,0.08);color:#55efc4;">w'<sub>dk</sub></div>
+  </div>
+</div>
+<div class="shape">W' = W + BA (computed on-the-fly, never stored separately)</div>
+</div>
+
+<div class="hl-box">
+  <strong>📌 Forward pass with LoRA:</strong> h = <strong>W</strong>x + <strong>BA</strong>x. The frozen W handles the pretrained computation; BA adds the task-specific adaptation. At inference, you can <strong>merge</strong> BA into W: W' = W + BA (no extra latency).
+</div>
+</div>
+
+<h2>🧠 Why Does Low-Rank Work?</h2>
+
+<div class="card">
+<p>This is the most important conceptual question. The answer:</p>
+
+<h3 style="font-size:1rem;">The Intrinsic Dimensionality Hypothesis</h3>
+<p>Fine-tuning makes <strong>small, structured changes</strong> to the weights. The update ΔW doesn't need the full parameter space — it lives in a much lower-dimensional subspace.</p>
+
+<ul>
+  <li><strong>Pretrained models are over-parameterized</strong> — the model has far more parameters than needed for any single task.</li>
+  <li><strong>Task-specific adaptation is "narrow"</strong> — learning to follow instructions or write in a specific style only requires adjusting a few directions in weight space.</li>
+  <li><strong>Empirical evidence</strong> — The LoRA paper showed that even r = 1 (a single rank) captures meaningful adaptation, with diminishing returns after r = 8–64 depending on model size.</li>
+</ul>
+
+<div class="hl-green">
+  <strong>🔬 What the paper found:</strong> The learned ΔW (full fine-tuning update) has a much higher effective rank than random noise. LoRA with r=64 captures ~90% of the full fine-tuning performance. For most tasks, r=8 is the sweet spot.
+</div>
+</div>
+
+<h2>📊 Choosing the Rank r</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Rank r</th><th>Parameters Added</th><th>Adapter Size (7B model)</th><th>Best For</th></tr></thead>
+  <tbody>
+    <tr><td><strong>1</strong></td><td>0.0002%</td><td>~0.2 MB</td><td>Simple style adaptation, quick experiments</td></tr>
+    <tr><td><strong>8</strong></td><td>0.002%</td><td>~1.6 MB</td><td><strong>Default — most tasks</strong></td></tr>
+    <tr><td><strong>16</strong></td><td>0.004%</td><td>~3.2 MB</td><td>Complex tasks, domain adaptation</td></tr>
+    <tr><td><strong>64</strong></td><td>0.015%</td><td>~13 MB</td><td>Maximum quality, approaching full FT</td></tr>
+    <tr><td><strong>256</strong></td><td>0.06%</td><td>~50 MB</td><td>Overkill for most tasks — diminishing returns</td></tr>
+  </tbody>
+</table>
+
+<div class="hl-yellow">
+  <strong>⚡ Practical advice:</strong> Start with r = 8 for attention projection matrices (Q, K, V, O). Only increase r if you see underfitting. The adapter file size is tiny — you can store hundreds of LoRA adapters for different tasks in the space of one full model checkpoint.
+</div>
+</div>
+
+<h2>🔧 Where to Apply LoRA</h2>
+
+<div class="card">
+<p>LoRA can be applied to any weight matrix in the Transformer. The paper found the best results when targeting <strong>attention projection matrices</strong>:</p>
+
+<div class="flow-row">
+  <div class="flow-box" style="border-color:#6c5ce7;">W<sub>Q</sub> + LoRA</div>
+  <div class="flow-arrow">+</div>
+  <div class="flow-box" style="border-color:#00cec9;">W<sub>K</sub> + LoRA</div>
+  <div class="flow-arrow">+</div>
+  <div class="flow-box" style="border-color:#fd79a8;">W<sub>V</sub> + LoRA</div>
+  <div class="flow-arrow">+</div>
+  <div class="flow-box" style="border-color:#b8a9ff;">W<sub>O</sub> + LoRA</div>
+</div>
+
+<p>In practice, applying LoRA to all four attention matrices (Q, K, V, O) at r=8 works well. Some recipes also target the FFN layers, but the gains are usually marginal.</p>
+
+<div class="math-block">
+<span class="dim">// Typical LoRA config for Llama-2 7B:</span>
+<span class="dim">// Targets: q_proj, k_proj, v_proj, o_proj</span>
+<span class="dim">// Rank r = 8, alpha = 16, dropout = 0.05</span>
+<span class="dim">// Trainable parameters: ~4.2M out of 6.7B (0.06%)</span>
+<span class="dim">// Memory: ~16 GB vs ~112 GB for full FT</span>
+</div>
+</div>
+
+<h2>📐 Scaling α (Alpha)</h2>
+
+<div class="card">
+<p>LoRA has a scaling hyperparameter α (alpha) that controls the magnitude of the adaptation:</p>
+
+<div class="math-block">
+h = Wx + <span style="color:#ff6b6b;">α</span>/r · BAx
+
+<span class="dim">// The scaling factor α/r controls how much the LoRA update influences the output.</span>
+<span class="dim">// Typical: α = 16 for r = 8 (scale = 2).</span>
+<span class="dim">// Think of α as the "learning rate" for the LoRA adapter's contribution.</span>
+</div>
+
+<p><strong>Rule of thumb:</strong> Set α = 2× r as a starting point. If the model isn't adapting enough, increase α. If it's forgetting pretrained knowledge, decrease α.</p>
+</div>
+
+<h2>💾 Inference: The "No Extra Cost" Trick</h2>
+
+<div class="card">
+<p>At inference time, LoRA adds <strong>zero latency</strong>. Here's why:</p>
+
+<div class="math-block">
+<span class="dim">// After training, you merge the adapter into the weights:</span>
+W_merged = W + (α/r) · BA
+
+<span class="dim">// The forward pass is just: h = W_merged · x</span>
+<span class="dim">// Same computation as the original model!</span>
+</div>
+
+<div class="hl-green">
+  <strong>🎯 This is a killer feature:</strong> You can fine-tune 100 different tasks, merge each adapter into a separate copy of the base model (or swap them at load time), and serve all 100 with the same inference latency as the single base model. Adapter files are megabytes, not gigabytes.
+</div>
+</div>
+
+<h2>📋 LoRA vs Full Fine-Tuning Summary</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Dimension</th><th>Full Fine-Tuning</th><th>LoRA</th></tr></thead>
+  <tbody>
+    <tr><td>Parameters trained</td><td>100% (billions)</td><td>&lt;1% (millions)</td></tr>
+    <tr><td>Memory (7B model)</td><td>~112 GB</td><td>~16 GB</td></tr>
+    <tr><td>Output artifact</td><td>Full checkpoint (14–28 GB)</td><td>Adapter file (~2–50 MB)</td></tr>
+    <tr><td>Swap tasks</td><td>Reload entire model</td><td>Swap adapter</td></tr>
+    <tr><td>Inference latency</td><td>Baseline</td><td>Same (merged) or +0–5% (unmerged)</td></tr>
+    <tr><td>Catastrophic forgetting</td><td>Higher risk</td><td>Much lower (base frozen)</td></tr>
+    <tr><td>Quality ceiling</td><td>Theoretical max</td><td>~95–99% of full FT in practice</td></tr>
+  </tbody>
+</table>
+</div>
+
+<a href="index.html" class="back-link">← Back to Index</a>
+
+</body>
+</html>

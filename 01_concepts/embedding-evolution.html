@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GloVe vs Word2Vec vs BERT Embeddings</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="vectorization-methods.html">Vectorization</a>
+                <a href="rag.html">RAG</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#why">Why this evolution happened</a>
+            <a href="#word2vec">Word2Vec</a>
+            <a href="#glove">GloVe</a>
+            <a href="#bert">BERT contextual embeddings</a>
+            <a href="#comparison">Direct comparison</a>
+            <a href="#which">Which one should you use</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card">
+                <div>
+                    <p class="eyebrow">Representation learning</p>
+                    <h1>GloVe vs Word2Vec vs BERT-style contextual embeddings</h1>
+                    <p>These three methods represent three different stages in NLP representation learning. Word2Vec learns meaning from local context windows. GloVe learns from global word co-occurrence statistics. BERT-style embeddings are contextual, meaning the same word can produce different vectors in different sentences.</p>
+                    <p>The key shift is from <strong>one vector per word type</strong> to <strong>different vectors for the same word depending on context</strong>.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>Simple map</h2>
+                    <p class="formula">Word2Vec = local context learning
+GloVe = global co-occurrence learning
+BERT = contextual token representations</p>
+                </div>
+            </section>
+
+            <section class="section" id="why">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Why Word2Vec and GloVe were a big step</h3>
+                        <p>Bag-of-words methods could count tokens but could not learn that related words behave similarly. Word2Vec and GloVe gave dense semantic spaces where related words moved closer together.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why transformers changed the game again</h3>
+                        <p>Static word embeddings still give one vector for each word in the vocabulary. That breaks when a word has multiple meanings. Contextual embeddings fix this by generating token representations after looking at surrounding words.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="word2vec">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Stage 1</p>
+                        <h2>Word2Vec</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How it works</h3>
+                        <p>Word2Vec trains a shallow neural objective. In Skip-Gram it predicts nearby context words from a target word. In CBOW it predicts a target word from surrounding context.</p>
+                        <p class="formula">word -> predict context
+or
+context -> predict word</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What it gets right</h3>
+                        <ul class="stack-list">
+                            <li>Learns useful semantic neighborhoods.</li>
+                            <li>Compact dense vectors are efficient.</li>
+                            <li>Often works well for similarity and clustering baselines.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Main limitation:</strong> Word2Vec is static. The word <strong>bank</strong> has one vector whether the sentence is about a river bank or a financial bank.</p>
+                </div>
+            </section>
+
+            <section class="section" id="glove">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Stage 2</p>
+                        <h2>GloVe</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>How it works</h3>
+                        <p>GloVe stands for Global Vectors. Instead of only learning from small local prediction tasks, it factorizes information from the global word co-occurrence matrix. The training objective tries to preserve ratios of co-occurrence probabilities.</p>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What it gets right</h3>
+                        <ul class="stack-list">
+                            <li>Uses corpus-wide statistics more directly than Word2Vec.</li>
+                            <li>Often produces strong static embeddings with good global structure.</li>
+                            <li>Historically popular for pretrained embeddings in classic NLP pipelines.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Main limitation:</strong> GloVe is still static. It is better understood as a different way to learn one vector per word, not a fix for contextual ambiguity.</p>
+                </div>
+            </section>
+
+            <section class="section" id="bert">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Stage 3</p>
+                        <h2>BERT-style contextual embeddings</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>How they work</h3>
+                        <p>BERT processes the full sentence with a transformer encoder. Each token representation is updated by attention over surrounding tokens. So the vector for a word is produced after the model has seen its context.</p>
+                        <p class="formula">token + context -> contextual token embedding</p>
+                    </div>
+                    <div class="card">
+                        <h3>Why this matters</h3>
+                        <ul class="stack-list">
+                            <li>The same word can mean different things in different sentences.</li>
+                            <li>Sentence-level and token-level meaning become much stronger.</li>
+                            <li>These embeddings are usually far better for modern semantic search and downstream NLP tasks.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Most important difference</h2>
+                    <p><strong>Word2Vec and GloVe store meaning in the vocabulary table itself.</strong> <strong>BERT computes meaning dynamically from context.</strong> That is why contextual embeddings usually beat static embeddings on ambiguity-heavy tasks.</p>
+                </div>
+            </section>
+
+            <section class="section" id="comparison">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Word2Vec</th>
+                                <th>GloVe</th>
+                                <th>BERT-style embeddings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Representation type</td>
+                                <td>Static dense word vectors</td>
+                                <td>Static dense word vectors</td>
+                                <td>Contextual token vectors</td>
+                            </tr>
+                            <tr>
+                                <td>Training signal</td>
+                                <td>Local context prediction</td>
+                                <td>Global co-occurrence statistics</td>
+                                <td>Transformer pretraining over context</td>
+                            </tr>
+                            <tr>
+                                <td>Handles ambiguity well?</td>
+                                <td>No</td>
+                                <td>No</td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td>Compute cost</td>
+                                <td>Low</td>
+                                <td>Low to moderate</td>
+                                <td>Higher</td>
+                            </tr>
+                            <tr>
+                                <td>Best fit</td>
+                                <td>Classic similarity baselines</td>
+                                <td>Pretrained static embedding pipelines</td>
+                                <td>Modern semantic retrieval and NLP tasks</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="which">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Decision guide</p>
+                        <h2>Which one should you use?</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Use Word2Vec or GloVe when</h3>
+                        <ul class="stack-list">
+                            <li>You need lightweight classic embeddings.</li>
+                            <li>You are building older or resource-constrained pipelines.</li>
+                            <li>You need a simple baseline before moving to transformers.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>Use BERT-style embeddings when</h3>
+                        <ul class="stack-list">
+                            <li>Context changes meaning significantly.</li>
+                            <li>You care about semantic search quality.</li>
+                            <li>You are building modern retrieval, ranking, or classification systems.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Most honest answer:</strong> among these three, contextual embeddings are usually the strongest representation. Static embeddings are mainly useful today when cost, simplicity, or legacy compatibility matters more than peak semantic quality.</p>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why did NLP move from Word2Vec and GloVe to BERT-style embeddings?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because static embeddings give one vector per word and cannot model context-specific meaning. Contextual embeddings produce different token vectors depending on the sentence, which improves ambiguity handling and downstream task quality.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>What is the real difference between Word2Vec and GloVe?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Both are static dense word embeddings, but Word2Vec learns mainly from local context prediction while GloVe uses global co-occurrence statistics. They differ in training signal more than in deployment behavior.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You need a cheap baseline for clustering short product descriptions. What would you start with?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Start with TF-IDF or Word2Vec depending on whether exact wording or broader similarity matters more. Use BERT embeddings only if the semantic gain justifies the added cost.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You need to distinguish "apple" the company from "apple" the fruit. Which representation helps most?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>BERT-style contextual embeddings help most because the representation depends on sentence context, while Word2Vec and GloVe would use the same static vector for both meanings.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>This page shows the progression from static dense word vectors to contextual transformer-based embeddings.</p>
+            <div class="mini-links">
+                <a href="vectorization-methods.html">Vectorization basics</a>
+                <a href="transformer-basics.html">Transformers</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

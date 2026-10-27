@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilot 01 · Docs Q&amp;A Copilot (RAG)</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="cop">CP</span>Copilot · 01 Docs Q&amp;A</div>
+        <div class="links">
+            <a href="index.html">Copilots Hub</a>
+            <a href="02_code_review_copilot.html">Next: 02 →</a>
+        </div>
+    </div>
+
+    <div class="header cop">
+        <p class="badge">Build 01 · Beginner · "Chat with your documents"</p>
+        <h1>📚 Docs Q&amp;A Copilot</h1>
+        <p class="subtitle">A copilot that answers questions using <strong>your own</strong> documents — PDFs,
+            a wiki, a handbook — and cites where each answer came from. The foundational copilot pattern:
+            <strong>Retrieval-Augmented Generation (RAG)</strong>.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="section cop">
+            <h2>The story — why this copilot exists</h2>
+            <p>A raw LLM knows a lot about the world but <em>nothing</em> about your company's onboarding guide,
+                your product manual, or last quarter's policy doc. Ask it and it will confidently make
+                something up. Teams waste hours digging through wikis and Slack for answers that already exist
+                somewhere.</p>
+            <p>A Docs Q&amp;A copilot fixes this by <strong>grounding</strong> every answer in your real
+                documents and showing citations, so people get trustworthy answers in seconds — and can verify
+                them.</p>
+            <div class="callout fuchsia">
+                <strong>Inspired by:</strong> <code>imartinez/privateGPT</code>,
+                <code>Mintplex-Labs/anything-llm</code>,
+                and <code>danswer-ai/danswer</code> — all top-starred "chat with your data" projects.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>How RAG works — two phases</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    subgraph Ingest["① Ingest (once, offline)"]
+        D["Docs: PDF, MD, HTML"] --> CH["Chunk into passages"]
+        CH --> EM["Embed each chunk"]
+        EM --> VS[("Vector store")]
+    end
+    subgraph Query["② Query (per question)"]
+        Q["User question"] --> QE["Embed question"]
+        QE --> SR["Similarity search"]
+        VS --> SR
+        SR --> TOP["Top-k relevant chunks"]
+        TOP --> P["Prompt: question + chunks"]
+        P --> LLM["LLM"]
+        LLM --> A["Answer + citations"]
+    end
+                </pre>
+                <p class="caption">Ingest turns documents into searchable vectors; query retrieves the most
+                    relevant chunks and asks the LLM to answer <em>only</em> from them.</p>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — ingest your documents</h2>
+            <pre><code><span class="c-kw">from</span> langchain_community.document_loaders <span class="c-kw">import</span> PyPDFDirectoryLoader
+<span class="c-kw">from</span> langchain_text_splitters <span class="c-kw">import</span> RecursiveCharacterTextSplitter
+<span class="c-kw">from</span> langchain_openai <span class="c-kw">import</span> OpenAIEmbeddings
+<span class="c-kw">from</span> langchain_chroma <span class="c-kw">import</span> Chroma
+
+<span class="c-com"># 1) Load every PDF in a folder.</span>
+docs = PyPDFDirectoryLoader(<span class="c-str">"./handbook"</span>).load()
+
+<span class="c-com"># 2) Split into overlapping chunks so retrieval is precise.</span>
+splitter = RecursiveCharacterTextSplitter(chunk_size=<span class="c-cls">1000</span>, chunk_overlap=<span class="c-cls">150</span>)
+chunks = splitter.split_documents(docs)
+
+<span class="c-com"># 3) Embed + store. This is your searchable knowledge base.</span>
+store = Chroma.from_documents(chunks, OpenAIEmbeddings(), persist_directory=<span class="c-str">"./kb"</span>)</code></pre>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — answer with citations</h2>
+            <pre><code><span class="c-kw">from</span> langchain_openai <span class="c-kw">import</span> ChatOpenAI
+<span class="c-kw">from</span> langchain_core.prompts <span class="c-kw">import</span> ChatPromptTemplate
+
+retriever = store.as_retriever(search_kwargs={<span class="c-str">"k"</span>: <span class="c-cls">4</span>})
+
+prompt = ChatPromptTemplate.from_template(
+    <span class="c-str">"""Answer the question using ONLY the context below.
+If the answer isn't in the context, say you don't know.
+
+Context:
+{context}
+
+Question: {question}"""</span>
+)
+llm = ChatOpenAI(model=<span class="c-str">"gpt-4o"</span>, temperature=<span class="c-cls">0</span>)
+
+<span class="c-kw">def</span> <span class="c-fn">ask</span>(question: <span class="c-cls">str</span>):
+    hits = retriever.invoke(question)
+    context = <span class="c-str">"\n\n"</span>.join(d.page_content <span class="c-kw">for</span> d <span class="c-kw">in</span> hits)
+    answer = llm.invoke(prompt.format(context=context, question=question))
+    sources = {d.metadata.get(<span class="c-str">"source"</span>) <span class="c-kw">for</span> d <span class="c-kw">in</span> hits}
+    <span class="c-kw">return</span> answer.content, sources
+
+text, srcs = ask(<span class="c-str">"How many vacation days do new hires get?"</span>)
+<span class="c-fn">print</span>(text, <span class="c-str">"\nSources:"</span>, srcs)</code></pre>
+            <div class="callout fuchsia">
+                <strong>The "only from context" instruction is the safety rail.</strong> It turns a creative
+                model into a grounded one — if the docs don't contain the answer, the copilot says so instead of
+                hallucinating.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>Wrap it in a UI</h2>
+            <pre><code><span class="c-kw">import</span> streamlit <span class="c-kw">as</span> st
+
+st.title(<span class="c-str">"📚 Handbook Copilot"</span>)
+<span class="c-kw">if</span> q := st.chat_input(<span class="c-str">"Ask about the handbook…"</span>):
+    answer, sources = ask(q)
+    st.write(answer)
+    st.caption(<span class="c-str">"Sources: "</span> + <span class="c-str">", "</span>.join(sources))</code></pre>
+        </div>
+
+        <div class="section cop">
+            <h2>Advantages this copilot brings</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Advantage</th>
+                        <th>Why it matters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Grounded answers</td>
+                        <td>Cuts hallucinations — replies come from your real docs.</td>
+                    </tr>
+                    <tr>
+                        <td>Citations</td>
+                        <td>Users can verify; builds trust and meets compliance needs.</td>
+                    </tr>
+                    <tr>
+                        <td>Private</td>
+                        <td>Your data stays in your store; works with local models too.</td>
+                    </tr>
+                    <tr>
+                        <td>Always current</td>
+                        <td>Re-ingest to update knowledge — no model retraining.</td>
+                    </tr>
+                    <tr>
+                        <td>Cheap to run</td>
+                        <td>One retrieval + one LLM call per question.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section cop">
+            <h2>Level it up</h2>
+            <ul>
+                <li><strong>Hybrid search</strong> (keyword + vector) for names, IDs, and acronyms.</li>
+                <li><strong>Re-ranking</strong> the top-k with a cross-encoder for sharper context.</li>
+                <li><strong>Per-user access control</strong> so the copilot only retrieves docs a user may see.</li>
+                <li><strong>Evaluation</strong> with a golden Q&amp;A set to catch regressions (faithfulness,
+                    answer relevance).</li>
+            </ul>
+        </div>
+
+        <div class="section cop">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Tune chunk size/overlap</strong> — too big dilutes relevance, too small loses
+                    context.</li>
+                <li><strong>Always carry metadata</strong> (source, page) so citations are precise.</li>
+                <li><strong>Set <code>temperature=0</code></strong> for factual, repeatable answers.</li>
+                <li><strong>Handle "I don't know" gracefully</strong> — it's a feature, not a failure.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="index.html"><span class="dir">Back</span>
+                <div class="ttl">Copilots Hub</div>
+            </a>
+            <a class="next" href="02_code_review_copilot.html"><span class="dir">Next</span>
+                <div class="ttl">02 · Code Review Copilot →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Copilots · 01 of 06</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust P7 — HealthTrack</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Rust projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p7_healthtrack/README.html">Python p7</a>
+                <a href="../../go_projects/p7_healthtrack/README.html">Go p7</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust · P7</span></p>
+            <h1>HealthTrack — layered service + <code>Arc&lt;Mutex&lt;Repo&gt;&gt;</code></h1>
+            <p class="lead">The Go version uses <code>net/http</code>. To stay dependency-free in Rust this version
+                simulates the HTTP boundary with two functions — <code>simulate_post</code> and
+                <code>simulate_get</code> — but everything else (service, repo, locking) is exactly what a real
+                <code>axum</code> app would have.</p>
+        </section>
+
+        <section class="card">
+            <h2>The new piece — <code>Arc&lt;Mutex&lt;T&gt;&gt;</code></h2>
+            <pre><code>struct HealthService { repo: Arc&lt;Mutex&lt;RecordRepo&gt;&gt; }</code></pre>
+            <ul>
+                <li><strong><code>Arc</code></strong> = atomic reference-counted pointer. Lets multiple threads (or
+                    async tasks) share ownership of the same value.</li>
+                <li><strong><code>Mutex</code></strong> = exclusive lock around the inner value. Only one thread at a
+                    time can mutate.</li>
+                <li>Together: the canonical "shared mutable state" pattern in Rust.
+                    <code>repo.lock().unwrap().save(rec)</code> takes the lock, mutates, releases when the guard drops
+                    at the end of the line.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Upgrade path to a real server</h2>
+            <ol>
+                <li>Add <code>axum</code> + <code>tokio</code> in <code>Cargo.toml</code>.</li>
+                <li>Write
+                    <code>async fn create_record(State(svc): State&lt;HealthService&gt;, Json(req): Json&lt;RecordRequest&gt;)</code>.
+                </li>
+                <li>Wire routes; everything else stays.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd rust_projects/p7_healthtrack
+cargo run</code></pre>
+            <p>Files: <a href="src/main.rs">src/main.rs</a> · <a href="Cargo.toml">Cargo.toml</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

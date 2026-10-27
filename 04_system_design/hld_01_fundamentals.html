@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLD 01 — Fundamentals &amp; Scalability</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html"><span class="brand-mark">SD</span><span>HLD · 01 Fundamentals</span></a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="lld_04_case_studies.html">← LLD</a>
+                <a href="hld_02_databases_caching.html">Next →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">The vocabulary of distributed systems</p>
+                <h1>HLD Fundamentals — latency, throughput, scaling</h1>
+                <p>Before you can design Twitter, you need the language. This page gives you the 12 words you'll
+                    use in every HLD round, the numbers every senior engineer carries in their head, and the
+                    one mental model behind all scaling decisions.</p>
+            </section>
+
+            <div class="layout">
+                <aside class="toc">
+                    <h3>On this page</h3>
+                    <ol>
+                        <li><a href="#vocab">Vocabulary</a></li>
+                        <li><a href="#numbers">Numbers every engineer knows</a></li>
+                        <li><a href="#scaling">Vertical vs Horizontal</a></li>
+                        <li><a href="#stateless">Stateless services</a></li>
+                        <li><a href="#bottleneck">The bottleneck principle</a></li>
+                        <li><a href="#estimation">Back-of-envelope estimation</a></li>
+                    </ol>
+                </aside>
+
+                <div>
+                    <section class="concept" id="vocab">
+                        <h2>Vocabulary you must own</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Term</th>
+                                    <th>Plain meaning</th>
+                                    <th>Unit / typical value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Latency</td>
+                                    <td>How long one request takes.</td>
+                                    <td>ms; aim &lt; 200 ms p99 for web APIs.</td>
+                                </tr>
+                                <tr>
+                                    <td>Throughput</td>
+                                    <td>How many requests/sec the system handles.</td>
+                                    <td>req/sec (QPS).</td>
+                                </tr>
+                                <tr>
+                                    <td>Concurrency</td>
+                                    <td>How many requests are in flight at once.</td>
+                                    <td>≈ throughput × avg latency.</td>
+                                </tr>
+                                <tr>
+                                    <td>Availability</td>
+                                    <td>Fraction of time the system is reachable.</td>
+                                    <td>99.9% = ~9 hrs downtime/year; 99.99% = 52 min/year.</td>
+                                </tr>
+                                <tr>
+                                    <td>Durability</td>
+                                    <td>Probability a stored item won't be lost.</td>
+                                    <td>S3: 11 nines.</td>
+                                </tr>
+                                <tr>
+                                    <td>Consistency</td>
+                                    <td>All readers see the same value.</td>
+                                    <td>Strong / eventual / read-your-writes.</td>
+                                </tr>
+                                <tr>
+                                    <td>Partition tolerance</td>
+                                    <td>System keeps working if the network splits.</td>
+                                    <td>Required for any multi-node system.</td>
+                                </tr>
+                                <tr>
+                                    <td>p50 / p99 / p99.9</td>
+                                    <td>Latency at the 50th / 99th / 99.9th percentile.</td>
+                                    <td>Tail latency &gt; average latency in importance.</td>
+                                </tr>
+                                <tr>
+                                    <td>SLA / SLO / SLI</td>
+                                    <td>Promise / target / measurement.</td>
+                                    <td>SLA = contract; SLO = internal goal; SLI = the metric.</td>
+                                </tr>
+                                <tr>
+                                    <td>QPS</td>
+                                    <td>Queries per second.</td>
+                                    <td>Used for back-of-envelope.</td>
+                                </tr>
+                                <tr>
+                                    <td>Hot key / hot shard</td>
+                                    <td>One key or partition gets disproportionate traffic.</td>
+                                    <td>Most common cause of "scaling broke".</td>
+                                </tr>
+                                <tr>
+                                    <td>Back-pressure</td>
+                                    <td>Mechanism to slow producers when consumers can't keep up.</td>
+                                    <td>Bounded queues, rate-limits, circuit breakers.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </section>
+
+                    <section class="concept" id="numbers">
+                        <h2>Numbers every senior engineer carries in their head</h2>
+                        <p>Jeff Dean's "latency numbers" — memorize the orders of magnitude.</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Operation</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>L1 cache reference</td>
+                                    <td>~0.5 ns</td>
+                                </tr>
+                                <tr>
+                                    <td>L2 cache reference</td>
+                                    <td>~7 ns</td>
+                                </tr>
+                                <tr>
+                                    <td>Main memory reference</td>
+                                    <td>~100 ns</td>
+                                </tr>
+                                <tr>
+                                    <td>Read 1 MB sequentially from memory</td>
+                                    <td>~250 µs</td>
+                                </tr>
+                                <tr>
+                                    <td>SSD random read</td>
+                                    <td>~150 µs</td>
+                                </tr>
+                                <tr>
+                                    <td>HDD seek</td>
+                                    <td>~10 ms</td>
+                                </tr>
+                                <tr>
+                                    <td>Round trip same DC</td>
+                                    <td>~0.5 ms</td>
+                                </tr>
+                                <tr>
+                                    <td>Round trip CA → Netherlands</td>
+                                    <td>~150 ms</td>
+                                </tr>
+                                <tr>
+                                    <td>Read 1 MB over network</td>
+                                    <td>~10 ms (1 Gbps LAN)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p>Takeaway: <strong>network is 200× slower than RAM, disk is another 100× slower.</strong>
+                            Every architecture choice flows from this hierarchy.</p>
+                    </section>
+
+                    <section class="concept" id="scaling">
+                        <h2>Vertical vs Horizontal scaling</h2>
+                        <div class="grid-2">
+                            <div class="mini">
+                                <h4>Vertical (scale up)</h4>
+                                <p>Bigger machine. 2 CPU → 64 CPU.</p>
+                                <p><strong>Pros:</strong> easy, no code change, single source of truth.</p>
+                                <p><strong>Cons:</strong> hard ceiling (biggest machine on the market), single
+                                    point of failure, expensive.</p>
+                            </div>
+                            <div class="mini">
+                                <h4>Horizontal (scale out)</h4>
+                                <p>More machines. 1 server → 100 servers behind a load balancer.</p>
+                                <p><strong>Pros:</strong> ~unlimited ceiling, fault tolerant.</p>
+                                <p><strong>Cons:</strong> requires <em>stateless</em> services, distributed
+                                    coordination, more moving parts.</p>
+                            </div>
+                        </div>
+                        <div class="callout"><strong>Modern default:</strong> design for horizontal scaling from
+                            day one, even if you deploy only one instance. Switching from vertical to horizontal
+                            later is a rewrite; the other way around is a deployment change.</div>
+                    </section>
+
+                    <section class="concept" id="stateless">
+                        <h2>Stateless services — the magic that enables horizontal scaling</h2>
+                        <div class="story"><strong>Story:</strong> a session is kept in server memory on
+                            <code>web-1</code>. Load balancer routes the next request to <code>web-2</code> — and
+                            the user is logged out. Now you either pin users to a server (sticky session = single
+                            point of failure) or you fix the design.
+                        </div>
+                        <p>The fix: <strong>move state out of the service</strong>. Session in Redis. File
+                            uploads in S3. Long-running counters in the database. The web tier becomes pure
+                            functions of (request → response). Any instance can serve any request.</p>
+                        <p>Once stateless: add instances when traffic spikes, drop them when it falls. This is
+                            what auto-scaling assumes.</p>
+                    </section>
+
+                    <section class="concept" id="bottleneck">
+                        <h2>The bottleneck principle</h2>
+                        <p>A system is only as fast as its slowest component, and only as available as its least
+                            available component.</p>
+                        <p>When designing, ask: "<em>where will this break first?</em>"</p>
+                        <ul>
+                            <li>10 web servers + 1 DB → DB is the bottleneck. Adding web servers helps nothing
+                                until you scale the DB.</li>
+                            <li>Fast app + slow third-party API → tail latency dominated by them. Add a cache /
+                                circuit breaker / async pattern.</li>
+                            <li>Plenty of CPU, but a single Redis instance → that Redis is your bottleneck.
+                                Shard it.</li>
+                        </ul>
+                        <p>This is also why scaling is iterative: fix one bottleneck, the next one appears.</p>
+                    </section>
+
+                    <section class="concept" id="estimation">
+                        <h2>Back-of-envelope estimation</h2>
+                        <p>Every HLD round starts with capacity numbers. Practice the math; it's the same shape
+                            every time.</p>
+                        <h3>Example: Twitter feed</h3>
+                        <ul>
+                            <li>300M monthly active users → assume 100M daily.</li>
+                            <li>Each user reads feed 20× / day → 2B reads/day → ~23k reads/sec average,
+                                ~70k peak (3× average is a safe peak multiplier).</li>
+                            <li>Each user posts 0.1 tweets/day → 10M tweets/day → ~120 writes/sec average,
+                                ~400 peak.</li>
+                            <li>Read:Write ratio ≈ 200:1 → optimize the read path heavily (caching, fanout-on-write).
+                            </li>
+                            <li>Each tweet ~280 bytes + 200 bytes metadata = 500 B → 5 GB/day → ~2 TB/year.</li>
+                        </ul>
+                        <p>These numbers drive every design choice: 200:1 read:write means you precompute feeds;
+                            70k QPS means you must horizontally scale the read API; 2 TB/year means a single
+                            instance can hold a year of data if hot — but you'll still shard for parallelism.</p>
+                        <h3>Cheat formulas</h3>
+                        <ul>
+                            <li>Daily active ≈ 30–40% of monthly.</li>
+                            <li>Peak QPS ≈ 3× average.</li>
+                            <li>Average / day → /sec: divide by 86,400 ≈ <code>÷ 100,000</code> for quick math.</li>
+                            <li>1 modern CPU core ≈ ~1k–10k simple HTTP req/sec.</li>
+                        </ul>
+                        <p>👉 Next: <a href="hld_02_databases_caching.html"><strong>Databases &amp;
+                                    Caching</strong></a>.</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer><a href="index.html">Back to hub</a></footer>
+</body>
+
+</html>

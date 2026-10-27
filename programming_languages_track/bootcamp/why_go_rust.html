@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootcamp 1 — Why Go and Rust</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="syntax_python_vs_go.html">Syntax · Go</a>
+                <a href="syntax_python_vs_rust.html">Syntax · Rust</a>
+                <a href="why_they_are_fast.html">Why fast</a>
+                <a href="pick_them_fast.html">Pick fast</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Bootcamp · 1 of 5</p>
+            <h1>Why learn Go and Rust — concretely, and when to choose which</h1>
+            <p class="lead">If Python pays your bills, you don't pick up Go or Rust because they're trendy. You pick
+                them up because there's a class of problems Python is genuinely the wrong tool for — and most modern
+                AI-infrastructure code lives in exactly that class.</p>
+        </section>
+
+        <section class="card">
+            <h2>The honest comparison</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Dimension</th>
+                        <th>Python</th>
+                        <th>Go</th>
+                        <th>Rust</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Typical p99 latency for a network service</td>
+                        <td>30-200 ms (with overhead)</td>
+                        <td>1-20 ms</td>
+                        <td>0.3-5 ms</td>
+                    </tr>
+                    <tr>
+                        <td>Memory footprint of an idle service</td>
+                        <td>80-200 MB</td>
+                        <td>10-30 MB</td>
+                        <td>2-15 MB</td>
+                    </tr>
+                    <tr>
+                        <td>Concurrency model</td>
+                        <td>asyncio / threads (limited by GIL)</td>
+                        <td>goroutines + channels (M:N scheduler)</td>
+                        <td>async/await + threads, no GIL</td>
+                    </tr>
+                    <tr>
+                        <td>Type system</td>
+                        <td>Dynamic + optional hints</td>
+                        <td>Static, simple</td>
+                        <td>Static, very rich (sum types, ownership)</td>
+                    </tr>
+                    <tr>
+                        <td>Memory safety</td>
+                        <td>GC</td>
+                        <td>GC</td>
+                        <td>Ownership + borrow checker (no GC)</td>
+                    </tr>
+                    <tr>
+                        <td>Time to write a CRUD API</td>
+                        <td>Fastest</td>
+                        <td>Fast</td>
+                        <td>Slow at first, fast once experienced</td>
+                    </tr>
+                    <tr>
+                        <td>Learning curve</td>
+                        <td>Gentle</td>
+                        <td>Gentle (≈1 week to productive)</td>
+                        <td>Steep (≈1 month to productive)</td>
+                    </tr>
+                    <tr>
+                        <td>Deployment artefact</td>
+                        <td>Source + interpreter + venv</td>
+                        <td>One static binary (10-20 MB)</td>
+                        <td>One static binary (3-15 MB)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>What you actually <em>gain</em></h2>
+            <h3>From Go</h3>
+            <ul>
+                <li><strong>One static binary.</strong> No venv, no Docker layer for system Python, no "works on my
+                    machine". <code>scp</code> to a server, run.</li>
+                <li><strong>True concurrency without ceremony.</strong> <code>go func() { … }()</code> spawns a
+                    goroutine; channels coordinate them. No GIL, no <code>asyncio</code> boilerplate.</li>
+                <li><strong>Predictable performance.</strong> Compile time in seconds, GC pauses in microseconds,
+                    performance close to C.</li>
+                <li><strong>Tiny memory footprint per service.</strong> You can run hundreds of Go services on a single
+                    small VM. Python services elbow each other for RAM.</li>
+                <li><strong>Boring on purpose.</strong> Go is deliberately limited (no generics for years, no
+                    inheritance, one way to format code). It scales beautifully across a team.</li>
+            </ul>
+            <h3>From Rust</h3>
+            <ul>
+                <li><strong>Performance at C/C++ levels with safety.</strong> The borrow checker eliminates whole
+                    classes of bugs (use-after-free, data races, null pointers) at compile time.</li>
+                <li><strong>Zero-cost abstractions.</strong> Iterators, generics, closures, async — none of them
+                    allocate behind your back. What you write is what runs.</li>
+                <li><strong>Sum types and exhaustive pattern matching.</strong> <code>Result&lt;T, E&gt;</code> and
+                    <code>Option&lt;T&gt;</code> make error and absence handling explicit and unmissable.</li>
+                <li><strong>Best-in-class FFI.</strong> Hugging Face's <code>tokenizers</code>, NumPy's
+                    <code>polars</code>, every modern vector DB — written in Rust, exposed to Python via
+                    <code>PyO3</code>. You can drop Rust into a Python codebase one function at a time.</li>
+                <li><strong>Reliable in adversarial conditions.</strong> No runtime, no GC pauses, predictable
+                    allocations. Suitable for embedded, kernels, browsers, and the hot path of inference engines.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>When to pick which — a one-line decision rule</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>If your problem is…</th>
+                        <th>Pick</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Research, prototyping, agents, glue between models and APIs.</td>
+                        <td><span class="tag py">Python</span></td>
+                    </tr>
+                    <tr>
+                        <td>A network service that needs predictable latency and easy deploys (gateways, proxies,
+                            control planes, CLIs, daemons).</td>
+                        <td><span class="tag go">Go</span></td>
+                    </tr>
+                    <tr>
+                        <td>Anything where the bytes-on-the-wire / numerical kernel / parser is the bottleneck
+                            (tokenisation, vector search, compression, browsers, embedded).</td>
+                        <td><span class="tag rust">Rust</span></td>
+                    </tr>
+                    <tr>
+                        <td>You want a typed scripting language with a 1-week learning curve.</td>
+                        <td><span class="tag go">Go</span></td>
+                    </tr>
+                    <tr>
+                        <td>You want maximum compile-time guarantees and you can afford the learning curve.</td>
+                        <td><span class="tag rust">Rust</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout"><strong>Working rule:</strong> in a real team you don't replace Python with Go or Rust
+                — you <em>complement</em> it. Keep the agent in Python, push the hot 5-10% into Go (services) or Rust
+                (libraries) where it pays for itself.</div>
+        </section>
+
+        <section class="card">
+            <h2>How real teams use Go and Rust in modern GenAI / agentic stacks</h2>
+            <h3>Go in production AI infra</h3>
+            <ul>
+                <li><strong>Ollama</strong> — local LLM runner. Written in Go for the control plane; calls into
+                    <code>llama.cpp</code> (C++) for the math.</li>
+                <li><strong>Kubernetes, Docker, containerd, etcd</strong> — the entire container/orchestration stack
+                    that AI workloads run on.</li>
+                <li><strong>GitHub Copilot's proxy/auth layer</strong> and many internal services at OpenAI, Anthropic,
+                    and Hugging Face are Go.</li>
+                <li><strong>MCP host implementations</strong> — a number of Model Context Protocol hosts are Go because
+                    they need to be a thin, fast, sandboxed tool runner.</li>
+                <li><strong>Most agent gateways</strong> (Portkey, LiteLLM Router, Helicone-style proxies) — Go-style
+                    services in front of multiple LLM providers.</li>
+            </ul>
+
+            <h3>Rust in production AI infra</h3>
+            <ul>
+                <li><strong>Hugging Face <code>tokenizers</code></strong> — every Python <code>transformers</code>
+                    install ships a Rust tokeniser. 5-50× faster than the pure-Python predecessors.</li>
+                <li><strong>Hugging Face <code>candle</code> + <code>text-generation-inference</code></strong> — Rust ML
+                    framework and Rust-based serving stack.</li>
+                <li><strong>Vector databases:</strong> Qdrant, Pinecone (core), LanceDB, Vespa's tensor engine — Rust.
+                </li>
+                <li><strong>Polars</strong> — the dataframes library you'll meet replacing pandas in pipelines. Rust
+                    core, Python bindings.</li>
+                <li><strong>Tokio + Axum / Actix</strong> — the async stack underneath many vendor-neutral inference
+                    proxies.</li>
+                <li><strong>Embedding services and re-rankers</strong> — when latency budgets are sub-millisecond, the
+                    math is Rust.</li>
+            </ul>
+
+            <h3>The pattern, in one diagram</h3>
+            <div class="flow">
+                <div class="step" style="background: var(--py-soft);">Python<br /><small>agent · prompt · eval</small>
+                </div>
+                <div class="arrow">→</div>
+                <div class="step" style="background: var(--go-soft);">Go<br /><small>gateway · router · MCP host</small>
+                </div>
+                <div class="arrow">→</div>
+                <div class="step" style="background: var(--rust-soft);">Rust<br /><small>tokeniser · vector index ·
+                        inference</small></div>
+            </div>
+            <p class="quiet">Each box is the thing the layer is good at. Each arrow crosses a process boundary (HTTP,
+                gRPC, or FFI). You can ship a real GenAI product without ever writing Go or Rust — but the bottlenecks
+                always end up in those layers, and someone you work with will eventually need to read or write them.
+                That's why this track exists.</p>
+        </section>
+
+        <section class="card">
+            <h2>Career angle (be honest with yourself)</h2>
+            <ul>
+                <li>If you stay in <strong>application / agent code</strong>, Python is plenty. Learn enough Go to read
+                    it.</li>
+                <li>If you move into <strong>platform / infra / DevX</strong>, Go is the table-stakes second language.
+                </li>
+                <li>If you move into <strong>ML systems / inference / data engines</strong>, Rust is the multiplier —
+                    and you'll often write Rust libraries with Python bindings rather than full Rust services.</li>
+            </ul>
+            <p class="quiet">Both Go and Rust are individually small wins on a CV; together they double your range. The
+                bigger payoff is engineering taste — once you've felt how Go and Rust handle errors, concurrency, and
+                types, you'll write better Python.</p>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://go.dev/doc/" target="_blank" rel="noopener">go.dev — Go
+                    documentation</a>
+                <a class="source" href="https://doc.rust-lang.org/book/" target="_blank" rel="noopener">The Rust
+                    Programming Language (the Book)</a>
+                <a class="source" href="https://github.com/ollama/ollama" target="_blank" rel="noopener">Ollama — Go
+                    control plane</a>
+                <a class="source" href="https://github.com/huggingface/tokenizers" target="_blank"
+                    rel="noopener">Hugging Face tokenizers — Rust</a>
+                <a class="source" href="https://github.com/huggingface/text-generation-inference" target="_blank"
+                    rel="noopener">Hugging Face TGI — Rust</a>
+                <a class="source" href="https://github.com/qdrant/qdrant" target="_blank" rel="noopener">Qdrant — Rust
+                    vector DB</a>
+                <a class="source" href="https://www.pola.rs/" target="_blank" rel="noopener">Polars — Rust
+                    dataframes</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

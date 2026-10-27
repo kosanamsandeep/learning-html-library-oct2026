@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P5 · TDD password validator — Red, Green, Refactor</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>T</span>Testing Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p4_mocking_external_apis/README.html">Prev: P4</a>
+                <a href="../p6_database_integration/README.html">Next: P6</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 5 · Intermediate</p>
+            <h1>Test-Driven Development — build the test first, then make it pass</h1>
+            <p class="lead">This project answers your question directly: <em>should I write the test first or the
+                    code first?</em> Both work, but writing the test first has a name (TDD) and a famous rhythm:
+                <strong>Red, Green, Refactor</strong>. Here we build a password validator one failing test at a time.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>The TDD loop</h2>
+            <div class="state-row">
+                <div class="state red">
+                    <h3>1. Red</h3>
+                    <p>Write a test for behavior that does not exist yet. Run it. It fails because the code is not
+                        there. That failure is good — it proves the test can detect the bug it claims to detect.</p>
+                </div>
+                <div class="state green">
+                    <h3>2. Green</h3>
+                    <p>Write the smallest, ugliest code that makes the test pass. No extra features. No
+                        future-proofing. Just turn the red bar green.</p>
+                </div>
+                <div class="state blue">
+                    <h3>3. Refactor</h3>
+                    <p>Clean the code while every test stays green. Extract functions, rename variables, remove
+                        duplication. Tests act as your safety net.</p>
+                </div>
+            </div>
+            <p>Then repeat for the next rule. Each loop is a few minutes. The code grows together with its tests.</p>
+        </section>
+
+        <section class="card">
+            <h2>TDD vs Test-After — the honest comparison</h2>
+            <div class="grid">
+                <div class="mini good">
+                    <h3>TDD (test first)</h3>
+                    <ul>
+                        <li>Forces a tiny, well-defined design step before coding.</li>
+                        <li>Tests really do drive the API of the function (what arguments, what return).</li>
+                        <li>You never have untested code, because code only exists to satisfy a test.</li>
+                        <li>Great for bug fixes: write a failing test that reproduces the bug, then fix it.</li>
+                        <li>Forces small, composable functions.</li>
+                    </ul>
+                </div>
+                <div class="mini warn">
+                    <h3>Test-After (code first)</h3>
+                    <ul>
+                        <li>Faster when you are exploring an unfamiliar library.</li>
+                        <li>Easier when the requirements are still fuzzy.</li>
+                        <li>Risk: tests get written to match existing code, even if the code is wrong.</li>
+                        <li>Risk: some branches never get a test.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="callout"><strong>Pragmatic rule:</strong> use TDD for bug fixes and for any code you can
+                describe in input/output terms. Use test-after for exploratory work, but never ship a feature without
+                tests. Both styles land in the same place: behavior is locked in by tests.</div>
+        </section>
+
+        <section class="card">
+            <h2>The narrative — building the validator one test at a time</h2>
+            <p>Below is the order we would actually type things. After each step we run <code>pytest</code> and
+                expect the new test to fail, then pass.</p>
+
+            <h3>Step 1 — minimum length</h3>
+            <pre><code># RED — write the test first
+def test_short_password_is_rejected():
+    result = validate_password("Ab1!")
+    assert result.ok is False
+    assert any("at least 8" in e for e in result.errors)
+
+# GREEN — smallest code that passes
+def validate_password(password):
+    errors = []
+    if len(password) &lt; 8:
+        errors.append("must be at least 8 characters")
+    return ValidationResult(ok=not errors, errors=errors)</code></pre>
+
+            <h3>Step 2 — must contain uppercase</h3>
+            <pre><code># RED
+def test_password_without_uppercase_is_rejected():
+    result = validate_password("abcdefg1!")
+    assert any("uppercase" in e for e in result.errors)
+
+# GREEN — add ONE line of logic
+if not any(c.isupper() for c in password):
+    errors.append("must contain at least one uppercase letter")</code></pre>
+
+            <h3>Steps 3-5 — digit, special, no spaces</h3>
+            <p>Same loop, three more times. After each rule the code has exactly the logic the tests demand and
+                nothing else.</p>
+
+            <h3>Step 6 — happy path</h3>
+            <pre><code>def test_strong_password_is_accepted():
+    assert validate_password("Strong1!").ok is True</code></pre>
+            <p>This is the test that proves "all the rules combined do not over-reject".</p>
+
+            <h3>Step 7 — refactor</h3>
+            <p>Once all tests are green, look at the code. Notice that every rule is "check a condition, append a
+                message". The current implementation is already clean enough. If the rules grow to twenty, refactor
+                each rule into a small function and iterate. Tests stay green throughout, so refactoring is safe.</p>
+        </section>
+
+        <section class="card">
+            <h2>Why we return a list of errors instead of raising</h2>
+            <p>A subtle TDD lesson: tests <em>shape</em> the API.</p>
+            <p>If we had decided "raise an exception on the first failure", we would never have written
+                <code>test_all_failures_are_collected_at_once</code>. Returning a structured
+                <code>ValidationResult</code> with all errors is friendlier for forms (the user sees every problem,
+                not just the first one). TDD revealed that requirement because the test "tell me everything wrong
+                at once" was easy to imagine and easy to write.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>validator.py</code></td>
+                        <td>The finished validator. Read it after you read the tests.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_validator.py</code></td>
+                        <td>Tests in the same order the README narrates.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 06_side_projects/testing_projects/p5_tdd_password_validator
+pip install -r requirements.txt
+pytest -v</code></pre>
+            <p>Now try the loop yourself. Delete <code>validator.py</code>, copy the first test into a fresh file,
+                run pytest (it should error because the import fails), then write the smallest code that imports and
+                passes. Repeat.</p>
+        </section>
+
+        <section class="card">
+            <h2>What you should take away from P5</h2>
+            <ul>
+                <li>TDD has three steps: Red, Green, Refactor.</li>
+                <li>Writing the test first forces a real design decision before code.</li>
+                <li>For bug fixes, always start with a failing test that reproduces the bug.</li>
+                <li>For exploratory work, code first is fine — but never ship without tests.</li>
+                <li>Tests shape the API. A different test would have produced a different function signature.</li>
+            </ul>
+            <div class="callout"><strong>Interview-ready answer:</strong> "I use TDD for any code with a clear
+                input/output contract and for every bug fix — I reproduce the bug with a failing test first. For
+                exploratory work I write code first and add tests before merging. The non-negotiable is that
+                behavior is covered by tests before it reaches production."</div>
+        </section>
+
+        <section class="card">
+            <h2>Reading order</h2>
+            <ol>
+                <li>Read this README's "Narrative" section step by step.</li>
+                <li>Open <code>test_validator.py</code> and read the tests in order.</li>
+                <li>Open <code>validator.py</code> and see how the code maps to the tests.</li>
+                <li>Optional: delete <code>validator.py</code> and try to rebuild it from the tests alone.</li>
+                <li>Continue to <a href="../p6_database_integration/README.html">P6 · Integration tests with SQLite</a>.
+                </li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

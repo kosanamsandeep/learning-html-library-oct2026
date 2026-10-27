@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 15 Explained Simply - CQRS & Event Sourcing</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --green: #198754;
+            --green-dark: #146c43;
+            --green-soft: #eaf7ef;
+            --blue: #0d6efd;
+            --blue-soft: #eaf2ff;
+            --orange: #fd7e14;
+            --orange-soft: #fff4e8;
+            --red: #dc3545;
+            --red-soft: #fff1f2;
+            --ink: #172033;
+            --muted: #5f6b7a;
+            --border: #d8e2ec;
+            --card: #ffffff;
+        }
+
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            max-width: 1100px;
+            margin: 36px auto;
+            padding: 0 22px 44px;
+            line-height: 1.68;
+            color: var(--ink);
+            background: #f7faf9;
+        }
+
+        h1 {
+            color: var(--green);
+            border-bottom: 4px solid var(--green);
+            padding-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        h2 {
+            color: var(--green-dark);
+            margin-top: 36px;
+        }
+
+        h3 {
+            color: #244b38;
+            margin-bottom: 6px;
+        }
+
+        code {
+            background: #dff3e7;
+            color: #0f5132;
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-size: 0.93em;
+        }
+
+        pre {
+            background: #111827;
+            color: #e5e7eb;
+            padding: 18px;
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 18px 0;
+            background: var(--card);
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 12px 14px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: var(--green);
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f2fbf5;
+        }
+
+        .tag {
+            display: inline-block;
+            background: var(--green);
+            color: white;
+            padding: 4px 11px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            margin: 3px;
+        }
+
+        .card {
+            background: var(--card);
+            border-left: 5px solid var(--green);
+            padding: 16px 20px;
+            margin: 18px 0;
+            border-radius: 0 12px 12px 0;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+        }
+
+        .blue {
+            border-left-color: var(--blue);
+            background: var(--blue-soft);
+        }
+
+        .orange {
+            border-left-color: var(--orange);
+            background: var(--orange-soft);
+        }
+
+        .red {
+            border-left-color: var(--red);
+            background: var(--red-soft);
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .mermaid {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+        }
+
+        .story-step {
+            display: grid;
+            grid-template-columns: 48px 1fr;
+            gap: 14px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 12px 0;
+        }
+
+        .number {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--green);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        @media (max-width: 760px) {
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Project 15 Explained Simply: CQRS & Event Sourcing</h1>
+
+    <p>
+        This project is a small banking system. The goal is to show how a serious banking-style application can keep
+        a perfect audit trail. Instead of only storing <code>balance = 1450</code>, it stores the full story:
+        account opened, money deposited, money withdrawn, transfer completed, account frozen, and so on.
+    </p>
+
+    <p>
+        <span class="tag">CQRS</span>
+        <span class="tag">Event Sourcing</span>
+        <span class="tag">Commands</span>
+        <span class="tag">Events</span>
+        <span class="tag">DTOs</span>
+        <span class="tag">Aggregate</span>
+        <span class="tag">Projections</span>
+        <span class="tag">Queries</span>
+    </p>
+
+    <div class="card">
+        <h2>One-line idea</h2>
+        <p>
+            <strong>Commands</strong> ask the system to do something, <strong>events</strong> record what actually
+            happened,
+            <strong>projections</strong> build easy-to-read views, and <strong>queries</strong> read those views.
+        </p>
+    </div>
+
+    <h2>1. The project story</h2>
+
+    <div class="card blue">
+        <p>
+            Imagine a bank employee named Alice opens an account. Later, Alice deposits money, withdraws money,
+            transfers money, and maybe the account gets frozen for safety.
+        </p>
+        <p>
+            In a normal CRUD app, the database row may simply say: <code>ACC-001 balance = 1150</code>.
+            But that does not explain <em>how</em> the account reached 1150.
+        </p>
+        <p>
+            In this project, the system keeps a diary. Every important thing that happened is saved as an event.
+            The current balance is rebuilt from that diary whenever needed.
+        </p>
+    </div>
+
+    <h2>2. The simplest mental model</h2>
+
+    <table>
+        <tr>
+            <th>Thing</th>
+            <th>Simple meaning</th>
+            <th>Example from this project</th>
+        </tr>
+        <tr>
+            <td><code>Command</code></td>
+            <td>A request to do something. It is an intention.</td>
+            <td><code>DepositCommand("ACC-001", 500)</code></td>
+        </tr>
+        <tr>
+            <td><code>Event</code></td>
+            <td>A fact that already happened. It is history.</td>
+            <td><code>MoneyDeposited</code></td>
+        </tr>
+        <tr>
+            <td><code>DTO</code></td>
+            <td>A simple data carrier. It holds fields and usually has no business logic.</td>
+            <td><code>OpenAccountCommand</code>, <code>GetBalanceQuery</code></td>
+        </tr>
+        <tr>
+            <td><code>Aggregate</code></td>
+            <td>The business-rule brain for one account.</td>
+            <td><code>BankAccountAggregate</code></td>
+        </tr>
+        <tr>
+            <td><code>EventStore</code></td>
+            <td>The permanent diary of all events.</td>
+            <td><code>EventStore.append(event)</code></td>
+        </tr>
+        <tr>
+            <td><code>Projection</code></td>
+            <td>A read-friendly view built from events.</td>
+            <td><code>BalanceProjection</code></td>
+        </tr>
+        <tr>
+            <td><code>Query</code></td>
+            <td>A request to read information. It does not change anything.</td>
+            <td><code>GetTransactionHistoryQuery</code></td>
+        </tr>
+        <tr>
+            <td><code>Handler</code></td>
+            <td>The class that receives a command/query and performs the correct work.</td>
+            <td><code>BankCommandHandler</code>, <code>BankQueryHandler</code></td>
+        </tr>
+    </table>
+
+    <h2>3. Why is it called CQRS?</h2>
+
+    <p>
+        CQRS means <strong>Command Query Responsibility Segregation</strong>. In simple words:
+    </p>
+
+    <div class="two-col">
+        <div class="card blue">
+            <h3>Write side</h3>
+            <p>
+                Used when the user wants to change something. It receives commands, checks business rules,
+                and writes events.
+            </p>
+            <p><code>Command -> CommandHandler -> Aggregate -> EventStore</code></p>
+        </div>
+
+        <div class="card orange">
+            <h3>Read side</h3>
+            <p>
+                Used when the user wants to know something. It receives queries and reads from projections.
+            </p>
+            <p><code>Query -> QueryHandler -> Projection -> Response</code></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <strong>Why separate them?</strong>
+        Writing needs strict rules and correctness. Reading needs speed and convenient shapes. CQRS allows each side
+        to be designed for its own job.
+    </div>
+
+    <h2>4. Why is it called Event Sourcing?</h2>
+
+    <p>
+        Event Sourcing means the source of truth is not the current balance table. The source of truth is the list of
+        events.
+    </p>
+
+    <pre>AccountOpened(initial_deposit=1000)
+MoneyDeposited(amount=500)
+MoneyWithdrawn(amount=200)
+
+Current balance = 1000 + 500 - 200 = 1300</pre>
+
+    <div class="card blue">
+        <strong>Simple analogy:</strong> Your bank statement is the truth. The balance is calculated from the statement.
+        If someone asks, "Why is my balance 1300?", the system can show every event that produced it.
+    </div>
+
+    <h2>5. Full architecture flow</h2>
+
+    <div class="mermaid">
+        graph LR
+        User[User wants action] --> Command[Command DTO]
+        Command --> CommandHandler[BankCommandHandler]
+        CommandHandler --> Aggregate[BankAccountAggregate]
+        Aggregate --> Rules[Business rules]
+        Rules --> Event[Domain Event]
+        Event --> Store[EventStore]
+        Store --> Projection1[BalanceProjection]
+        Store --> Projection2[TransactionHistoryProjection]
+        Store --> Projection3[DailySummaryProjection]
+        User2[User wants data] --> Query[Query DTO]
+        Query --> QueryHandler[BankQueryHandler]
+        QueryHandler --> Projection1
+        QueryHandler --> Projection2
+        QueryHandler --> Projection3
+        Projection1 --> Answer[Fast answer]
+        Projection2 --> Answer
+        Projection3 --> Answer
+    </div>
+
+    <h2>6. File-by-file explanation</h2>
+
+    <table>
+        <tr>
+            <th>File</th>
+            <th>What it contains</th>
+            <th>Why it exists</th>
+        </tr>
+        <tr>
+            <td><code>events/event_store.py</code></td>
+            <td><code>DomainEvent</code>, concrete event classes, <code>EventStore</code></td>
+            <td>Stores the permanent event diary.</td>
+        </tr>
+        <tr>
+            <td><code>commands/handlers.py</code></td>
+            <td>Command DTOs, <code>BankAccountAggregate</code>, <code>BankCommandHandler</code></td>
+            <td>Handles the write side: validate requests and create events.</td>
+        </tr>
+        <tr>
+            <td><code>projections/read_models.py</code></td>
+            <td>Read model DTOs and projection classes</td>
+            <td>Turns raw events into easy-to-read views.</td>
+        </tr>
+        <tr>
+            <td><code>queries/handlers.py</code></td>
+            <td>Query DTOs and <code>BankQueryHandler</code></td>
+            <td>Handles the read side: answer user questions from projections.</td>
+        </tr>
+        <tr>
+            <td><code>main.py</code></td>
+            <td>Demos that connect and run everything</td>
+            <td>Shows how the system behaves end to end.</td>
+        </tr>
+    </table>
+
+    <h2>7. Why are commands called DTOs?</h2>
+
+    <p>
+        DTO means <strong>Data Transfer Object</strong>. It is a small object used to move data from one layer to
+        another.
+        It does not make decisions. It simply carries information.
+    </p>
+
+    <pre>@dataclass
+class DepositCommand:
+    account_id: str
+    amount: float
+    description: str = ""</pre>
+
+    <div class="card">
+        <p>
+            <code>DepositCommand</code> is called a command because it represents the user's intention:
+            "Please deposit this amount into this account."
+        </p>
+        <p>
+            It is also a DTO because it is just a data packet containing <code>account_id</code>, <code>amount</code>,
+            and <code>description</code>.
+        </p>
+    </div>
+
+    <h2>8. Command classes and why they exist</h2>
+
+    <table>
+        <tr>
+            <th>Command class</th>
+            <th>User is saying</th>
+            <th>Why this separate class is useful</th>
+        </tr>
+        <tr>
+            <td><code>OpenAccountCommand</code></td>
+            <td>Open a new account.</td>
+            <td>Clearly carries account opening fields like owner and initial deposit.</td>
+        </tr>
+        <tr>
+            <td><code>DepositCommand</code></td>
+            <td>Add money to an account.</td>
+            <td>Keeps deposit data separate from withdrawal or transfer data.</td>
+        </tr>
+        <tr>
+            <td><code>WithdrawCommand</code></td>
+            <td>Remove money from an account.</td>
+            <td>Allows withdrawal-specific validation like sufficient balance.</td>
+        </tr>
+        <tr>
+            <td><code>TransferCommand</code></td>
+            <td>Move money from one account to another.</td>
+            <td>Needs both source and destination accounts.</td>
+        </tr>
+        <tr>
+            <td><code>FreezeAccountCommand</code></td>
+            <td>Freeze an account.</td>
+            <td>Carries the account and reason for freezing.</td>
+        </tr>
+        <tr>
+            <td><code>CloseAccountCommand</code></td>
+            <td>Close an account.</td>
+            <td>Represents a separate business action with its own rules.</td>
+        </tr>
+    </table>
+
+    <h2>9. Why are events separate classes?</h2>
+
+    <p>
+        Events are not requests. Events are facts. They are named in past tense because they already happened.
+    </p>
+
+    <table>
+        <tr>
+            <th>Event class</th>
+            <th>Meaning</th>
+            <th>Why it matters</th>
+        </tr>
+        <tr>
+            <td><code>AccountOpened</code></td>
+            <td>An account was created.</td>
+            <td>Starts an account's event stream.</td>
+        </tr>
+        <tr>
+            <td><code>MoneyDeposited</code></td>
+            <td>Money was added.</td>
+            <td>Increases balance when replayed.</td>
+        </tr>
+        <tr>
+            <td><code>MoneyWithdrawn</code></td>
+            <td>Money was removed.</td>
+            <td>Decreases balance when replayed.</td>
+        </tr>
+        <tr>
+            <td><code>TransferInitiated</code></td>
+            <td>Transfer started from source account.</td>
+            <td>Debits the sender.</td>
+        </tr>
+        <tr>
+            <td><code>TransferCompleted</code></td>
+            <td>Transfer reached destination account.</td>
+            <td>Credits the receiver.</td>
+        </tr>
+        <tr>
+            <td><code>TransferFailed</code></td>
+            <td>Transfer failed.</td>
+            <td>Can reverse a debit if needed.</td>
+        </tr>
+        <tr>
+            <td><code>AccountFrozen</code></td>
+            <td>Account was frozen.</td>
+            <td>Future deposits/withdrawals are blocked.</td>
+        </tr>
+        <tr>
+            <td><code>AccountClosed</code></td>
+            <td>Account was closed.</td>
+            <td>Marks account as no longer active.</td>
+        </tr>
+    </table>
+
+    <div class="card orange">
+        <strong>Important difference:</strong>
+        <code>DepositCommand</code> means "I want to deposit money." <code>MoneyDeposited</code> means
+        "money was actually deposited." A command can fail. An event is already accepted history.
+    </div>
+
+    <h2>10. Why is <code>DomainEvent</code> frozen?</h2>
+
+    <pre>@dataclass(frozen=True)
+class DomainEvent:
+    event_id: str
+    event_type: str
+    aggregate_id: str
+    timestamp: str
+    version: int
+    data: dict
+    metadata: dict</pre>
+
+    <p>
+        The project uses <code>frozen=True</code> because events should be immutable. Once something happened in the
+        bank,
+        you should not secretly edit history. If a mistake happened, you add another event to correct it.
+    </p>
+
+    <table>
+        <tr>
+            <th>Field</th>
+            <th>Simple meaning</th>
+        </tr>
+        <tr>
+            <td><code>event_id</code></td>
+            <td>Unique id for this event.</td>
+        </tr>
+        <tr>
+            <td><code>event_type</code></td>
+            <td>Name of what happened, like <code>MoneyDeposited</code>.</td>
+        </tr>
+        <tr>
+            <td><code>aggregate_id</code></td>
+            <td>The account this event belongs to.</td>
+        </tr>
+        <tr>
+            <td><code>timestamp</code></td>
+            <td>When it happened.</td>
+        </tr>
+        <tr>
+            <td><code>version</code></td>
+            <td>Event sequence number inside that account's stream.</td>
+        </tr>
+        <tr>
+            <td><code>data</code></td>
+            <td>The business details, like amount or owner name.</td>
+        </tr>
+        <tr>
+            <td><code>metadata</code></td>
+            <td>Extra technical details, if needed.</td>
+        </tr>
+    </table>
+
+    <h2>11. The EventStore: the bank diary</h2>
+
+    <p>
+        <code>EventStore</code> has three main responsibilities:
+    </p>
+
+    <table>
+        <tr>
+            <th>Part</th>
+            <th>What it does</th>
+            <th>Why it exists</th>
+        </tr>
+        <tr>
+            <td><code>_global_log</code></td>
+            <td>Stores all events in order.</td>
+            <td>Gives a complete bank-wide audit trail.</td>
+        </tr>
+        <tr>
+            <td><code>_streams</code></td>
+            <td>Stores events grouped by account id.</td>
+            <td>Quickly rebuilds one account.</td>
+        </tr>
+        <tr>
+            <td><code>_subscribers</code></td>
+            <td>Stores projections that should hear about new events.</td>
+            <td>Keeps read models updated automatically.</td>
+        </tr>
+    </table>
+
+    <pre>self._global_log.append(event)
+self._streams[event.aggregate_id].append(event)
+
+for subscriber in self._subscribers:
+    subscriber.handle_event(event)</pre>
+
+    <div class="card">
+        <strong>Simple meaning:</strong> when a new event is appended, it is saved forever and then announced to all
+        projections so they can update their read views.
+    </div>
+
+    <h2>12. The Aggregate: the business-rule brain</h2>
+
+    <p>
+        <code>BankAccountAggregate</code> represents one account's business state. It is not loaded from a balance
+        table.
+        It is rebuilt by replaying that account's events.
+    </p>
+
+    <pre>events = event_store.get_stream("ACC-001")
+aggregate = BankAccountAggregate.from_events(events)</pre>
+
+    <p>
+        After replaying events, the aggregate knows facts like:
+    </p>
+
+    <ul>
+        <li>account exists or not</li>
+        <li>current balance</li>
+        <li>whether the account is frozen</li>
+        <li>whether the account is closed</li>
+        <li>current version</li>
+    </ul>
+
+    <div class="card blue">
+        <strong>Why create this class?</strong>
+        The aggregate is the place where business rules are enforced before events are created. For example:
+        do not withdraw more than the balance, do not deposit into a frozen account, do not close an account with money
+        still inside.
+    </div>
+
+    <h2>13. The CommandHandler: the write-side worker</h2>
+
+    <p>
+        <code>BankCommandHandler</code> receives command DTOs and decides whether they can become events.
+    </p>
+
+    <div class="story-step">
+        <div class="number">1</div>
+        <div>
+            <strong>Receive command.</strong>
+            Example: <code>WithdrawCommand("ACC-001", 100)</code>.
+        </div>
+    </div>
+
+    <div class="story-step">
+        <div class="number">2</div>
+        <div>
+            <strong>Load account aggregate.</strong>
+            It gets events for <code>ACC-001</code> and replays them.
+        </div>
+    </div>
+
+    <div class="story-step">
+        <div class="number">3</div>
+        <div>
+            <strong>Check business rules.</strong>
+            Does account exist? Is it frozen? Is there enough balance?
+        </div>
+    </div>
+
+    <div class="story-step">
+        <div class="number">4</div>
+        <div>
+            <strong>Create event if valid.</strong>
+            If rules pass, create <code>MoneyWithdrawn</code>.
+        </div>
+    </div>
+
+    <div class="story-step">
+        <div class="number">5</div>
+        <div>
+            <strong>Append event to store.</strong>
+            The event becomes permanent history and projections are notified.
+        </div>
+    </div>
+
+    <h2>14. Projections: read-friendly views</h2>
+
+    <p>
+        Raw events are excellent for audit history, but not always convenient for screens. A user may simply want:
+        "show my balance" or "show my last 10 transactions". Projections build these convenient views.
+    </p>
+
+    <table>
+        <tr>
+            <th>Projection</th>
+            <th>Builds this view</th>
+            <th>Optimized question</th>
+        </tr>
+        <tr>
+            <td><code>BalanceProjection</code></td>
+            <td><code>AccountBalanceView</code></td>
+            <td>What is this account's current balance?</td>
+        </tr>
+        <tr>
+            <td><code>TransactionHistoryProjection</code></td>
+            <td><code>TransactionRecord</code> list</td>
+            <td>What transactions happened for this account?</td>
+        </tr>
+        <tr>
+            <td><code>DailySummaryProjection</code></td>
+            <td><code>DailySummary</code></td>
+            <td>What happened today across the bank?</td>
+        </tr>
+    </table>
+
+    <div class="card orange">
+        <strong>Why projections are called disposable:</strong>
+        They are not the source of truth. If a projection is deleted, it can be rebuilt by replaying all events from the
+        <code>EventStore</code>.
+    </div>
+
+    <h2>15. Read model DTOs</h2>
+
+    <p>
+        These are also data carrier classes, but they are for responses/read views rather than write requests.
+    </p>
+
+    <table>
+        <tr>
+            <th>Read model</th>
+            <th>What data it carries</th>
+        </tr>
+        <tr>
+            <td><code>AccountBalanceView</code></td>
+            <td>Account id, owner name, balance, account type, frozen/closed flags, transaction count.</td>
+        </tr>
+        <tr>
+            <td><code>TransactionRecord</code></td>
+            <td>Timestamp, event type, account id, amount, description, balance after transaction.</td>
+        </tr>
+        <tr>
+            <td><code>DailySummary</code></td>
+            <td>Date, total deposits, total withdrawals, total transfers, transaction count, accounts opened.</td>
+        </tr>
+    </table>
+
+    <h2>16. Query DTOs and QueryHandler</h2>
+
+    <p>
+        Query DTOs represent questions. They do not change the system.
+    </p>
+
+    <table>
+        <tr>
+            <th>Query class</th>
+            <th>User is asking</th>
+            <th>Projection used</th>
+        </tr>
+        <tr>
+            <td><code>GetBalanceQuery</code></td>
+            <td>What is this account's balance?</td>
+            <td><code>BalanceProjection</code></td>
+        </tr>
+        <tr>
+            <td><code>GetTransactionHistoryQuery</code></td>
+            <td>Show transaction history for this account.</td>
+            <td><code>TransactionHistoryProjection</code></td>
+        </tr>
+        <tr>
+            <td><code>GetAllAccountsQuery</code></td>
+            <td>Show all accounts.</td>
+            <td><code>BalanceProjection</code></td>
+        </tr>
+        <tr>
+            <td><code>GetDailySummaryQuery</code></td>
+            <td>Show a daily banking summary.</td>
+            <td><code>DailySummaryProjection</code></td>
+        </tr>
+    </table>
+
+    <div class="card">
+        <strong>Why a separate <code>BankQueryHandler</code>?</strong>
+        It gives the read side one clean entry point. Controllers or UI code do not need to know projection internals.
+    </div>
+
+    <h2>17. Complete story flow: opening an account</h2>
+
+    <div class="mermaid">
+        sequenceDiagram
+        participant User
+        participant Cmd as BankCommandHandler
+        participant Store as EventStore
+        participant Bal as BalanceProjection
+        participant Hist as TransactionHistoryProjection
+        participant Query as BankQueryHandler
+
+        User->>Cmd: OpenAccountCommand(ACC-001, Alice, 1000)
+        Cmd->>Store: Check stream for ACC-001
+        Store-->>Cmd: No previous events
+        Cmd->>Store: append(AccountOpened)
+        Store->>Bal: handle_event(AccountOpened)
+        Store->>Hist: handle_event(AccountOpened)
+        User->>Query: GetBalanceQuery(ACC-001)
+        Query->>Bal: get_balance(ACC-001)
+        Bal-->>Query: AccountBalanceView(balance=1000)
+        Query-->>User: Alice has 1000
+    </div>
+
+    <div class="story-step">
+        <div class="number">1</div>
+        <div>User sends <code>OpenAccountCommand("ACC-001", "Alice", 1000)</code>.</div>
+    </div>
+    <div class="story-step">
+        <div class="number">2</div>
+        <div><code>BankCommandHandler</code> checks if <code>ACC-001</code> already exists.</div>
+    </div>
+    <div class="story-step">
+        <div class="number">3</div>
+        <div>If valid, it creates an <code>AccountOpened</code> event.</div>
+    </div>
+    <div class="story-step">
+        <div class="number">4</div>
+        <div><code>EventStore</code> saves the event in the global log and account stream.</div>
+    </div>
+    <div class="story-step">
+        <div class="number">5</div>
+        <div>Projections receive the event and update their read views.</div>
+    </div>
+    <div class="story-step">
+        <div class="number">6</div>
+        <div>User can now query the balance quickly from <code>BalanceProjection</code>.</div>
+    </div>
+
+    <h2>18. Complete story flow: deposit money</h2>
+
+    <pre>User request:
+DepositCommand(account_id="ACC-001", amount=500, description="Salary")
+
+If valid, event created:
+MoneyDeposited(aggregate_id="ACC-001", data={"amount": 500, "description": "Salary"})</pre>
+
+    <ol>
+        <li>The user asks to deposit money using <code>DepositCommand</code>.</li>
+        <li><code>BankCommandHandler</code> loads <code>ACC-001</code> from its event stream.</li>
+        <li><code>BankAccountAggregate</code> now knows whether the account exists and whether it is frozen or closed.
+        </li>
+        <li>The handler checks: account exists, not frozen, not closed, amount is positive.</li>
+        <li>If checks pass, the handler creates <code>MoneyDeposited</code>.</li>
+        <li><code>EventStore</code> appends the event.</li>
+        <li><code>BalanceProjection</code> increases balance.</li>
+        <li><code>TransactionHistoryProjection</code> adds a transaction record.</li>
+        <li><code>DailySummaryProjection</code> increases daily deposits.</li>
+    </ol>
+
+    <h2>19. Complete story flow: withdraw money</h2>
+
+    <pre>User request:
+WithdrawCommand(account_id="ACC-001", amount=200, description="ATM")
+
+If valid, event created:
+MoneyWithdrawn(aggregate_id="ACC-001", data={"amount": 200, "description": "ATM"})</pre>
+
+    <p>
+        Withdrawal is stricter than deposit because it must check balance.
+    </p>
+
+    <table>
+        <tr>
+            <th>Rule</th>
+            <th>If rule fails</th>
+        </tr>
+        <tr>
+            <td>Account must exist.</td>
+            <td>Returns <code>ERROR: Account not found</code>.</td>
+        </tr>
+        <tr>
+            <td>Account must not be frozen.</td>
+            <td>Returns <code>ERROR: Account is frozen</code>.</td>
+        </tr>
+        <tr>
+            <td>Account must not be closed.</td>
+            <td>Returns <code>ERROR: Account is closed</code>.</td>
+        </tr>
+        <tr>
+            <td>Amount must be positive.</td>
+            <td>Returns <code>ERROR: Withdrawal amount must be positive</code>.</td>
+        </tr>
+        <tr>
+            <td>Balance must be enough.</td>
+            <td>Returns <code>ERROR: Insufficient funds</code>.</td>
+        </tr>
+    </table>
+
+    <div class="card red">
+        If a command fails validation, no event is created. This is important: the event store only contains accepted
+        facts, not failed intentions.
+    </div>
+
+    <h2>20. Complete story flow: transfer money</h2>
+
+    <p>
+        A transfer touches two accounts. The source account loses money, and the destination account receives money.
+    </p>
+
+    <div class="mermaid">
+        sequenceDiagram
+        participant User
+        participant Cmd as BankCommandHandler
+        participant Source as Source Aggregate
+        participant Dest as Destination Aggregate
+        participant Store as EventStore
+        participant Proj as Projections
+
+        User->>Cmd: TransferCommand(ACC-A, ACC-B, 1500)
+        Cmd->>Source: Rebuild ACC-A from events
+        Cmd->>Dest: Rebuild ACC-B from events
+        Cmd->>Cmd: Validate both accounts and source balance
+        Cmd->>Store: append(TransferInitiated for ACC-A)
+        Store->>Proj: Debit ACC-A in read models
+        Cmd->>Store: append(TransferCompleted for ACC-B)
+        Store->>Proj: Credit ACC-B in read models
+        Cmd-->>User: OK
+    </div>
+
+    <div class="card">
+        <p>
+            This project models transfer as two events:
+        </p>
+        <ul>
+            <li><code>TransferInitiated</code> belongs to the source account and debits it.</li>
+            <li><code>TransferCompleted</code> belongs to the destination account and credits it.</li>
+        </ul>
+    </div>
+
+    <h2>21. What happens when an account is frozen?</h2>
+
+    <pre>FreezeAccountCommand("ACC-X", "Suspicious activity")
+-- creates --&gt;
+AccountFrozen(aggregate_id="ACC-X", data={"reason": "Suspicious activity"})</pre>
+
+    <p>
+        Later, when someone tries to deposit or withdraw, the aggregate is rebuilt from events. During replay,
+        it sees <code>AccountFrozen</code> and sets <code>is_frozen = True</code>. Then command validation blocks the
+        action.
+    </p>
+
+    <div class="card blue">
+        This is why event history matters. The current frozen state is not guessed. It is rebuilt from the exact event
+        that froze the account.
+    </div>
+
+    <h2>22. How projections update themselves</h2>
+
+    <p>
+        Every projection has a method named <code>handle_event(event)</code>. The event store calls this method whenever
+        a
+        new event is appended.
+    </p>
+
+    <pre>store.subscribe(balance_projection)
+store.subscribe(history_projection)
+store.subscribe(daily_projection)
+
+store.append(MoneyDeposited(...))
+
+# EventStore then calls:
+balance_projection.handle_event(event)
+history_projection.handle_event(event)
+daily_projection.handle_event(event)</pre>
+
+    <table>
+        <tr>
+            <th>Event</th>
+            <th>BalanceProjection does</th>
+            <th>HistoryProjection does</th>
+            <th>DailySummaryProjection does</th>
+        </tr>
+        <tr>
+            <td><code>MoneyDeposited</code></td>
+            <td>Adds amount to balance.</td>
+            <td>Adds deposit row.</td>
+            <td>Adds to total deposits.</td>
+        </tr>
+        <tr>
+            <td><code>MoneyWithdrawn</code></td>
+            <td>Subtracts amount from balance.</td>
+            <td>Adds withdrawal row.</td>
+            <td>Adds to total withdrawals.</td>
+        </tr>
+        <tr>
+            <td><code>TransferInitiated</code></td>
+            <td>Subtracts from source account.</td>
+            <td>Adds transfer-out row.</td>
+            <td>Adds to total transfers.</td>
+        </tr>
+        <tr>
+            <td><code>TransferCompleted</code></td>
+            <td>Adds to destination account.</td>
+            <td>Adds transfer-in row.</td>
+            <td>No transfer total change in this code.</td>
+        </tr>
+    </table>
+
+    <h2>23. Why projections can be rebuilt</h2>
+
+    <p>
+        Since the event store has the full history, a projection can be recreated from zero.
+    </p>
+
+    <pre>fresh_projection = BalanceProjection()
+
+for event in store.get_stream("ACC-TT"):
+    fresh_projection.handle_event(event)</pre>
+
+    <div class="card">
+        <strong>Practical benefit:</strong> if tomorrow you need a new screen called "Top Customers", you do not need to
+        change old events. You create a new projection and replay the existing events into it.
+    </div>
+
+    <h2>24. End-to-end example with numbers</h2>
+
+    <table>
+        <tr>
+            <th>Step</th>
+            <th>Command</th>
+            <th>Event stored</th>
+            <th>Balance after replay/projection</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td><code>OpenAccountCommand("ACC-001", "Alice", 1000)</code></td>
+            <td><code>AccountOpened</code></td>
+            <td>1000</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td><code>DepositCommand("ACC-001", 250)</code></td>
+            <td><code>MoneyDeposited</code></td>
+            <td>1250</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td><code>WithdrawCommand("ACC-001", 100)</code></td>
+            <td><code>MoneyWithdrawn</code></td>
+            <td>1150</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td><code>GetBalanceQuery("ACC-001")</code></td>
+            <td>No new event. Queries do not change state.</td>
+            <td>Reads 1150 from <code>BalanceProjection</code></td>
+        </tr>
+    </table>
+
+    <h2>25. Why not just use one Account class?</h2>
+
+    <p>
+        For a tiny app, one class may be enough. But this project is teaching architecture used when correctness,
+        audit, and scaling matter.
+    </p>
+
+    <table>
+        <tr>
+            <th>Separated class</th>
+            <th>Reason for separation</th>
+        </tr>
+        <tr>
+            <td><code>Command DTOs</code></td>
+            <td>Clearly describe user intentions.</td>
+        </tr>
+        <tr>
+            <td><code>Event classes</code></td>
+            <td>Clearly describe accepted historical facts.</td>
+        </tr>
+        <tr>
+            <td><code>Aggregate</code></td>
+            <td>Keeps business rules in one place.</td>
+        </tr>
+        <tr>
+            <td><code>EventStore</code></td>
+            <td>Keeps the source of truth separate and append-only.</td>
+        </tr>
+        <tr>
+            <td><code>Projections</code></td>
+            <td>Create fast read models for different screens/reports.</td>
+        </tr>
+        <tr>
+            <td><code>Query DTOs</code></td>
+            <td>Clearly describe user questions.</td>
+        </tr>
+        <tr>
+            <td><code>Handlers</code></td>
+            <td>Coordinate work without mixing all responsibilities into one class.</td>
+        </tr>
+    </table>
+
+    <h2>26. Command vs Event vs Query</h2>
+
+    <table>
+        <tr>
+            <th>Type</th>
+            <th>Time meaning</th>
+            <th>Name style</th>
+            <th>Can fail?</th>
+            <th>Changes system?</th>
+        </tr>
+        <tr>
+            <td>Command</td>
+            <td>Future/intention</td>
+            <td>Imperative: <code>DepositCommand</code></td>
+            <td>Yes</td>
+            <td>Maybe, if accepted</td>
+        </tr>
+        <tr>
+            <td>Event</td>
+            <td>Past/fact</td>
+            <td>Past tense: <code>MoneyDeposited</code></td>
+            <td>No, it already happened</td>
+            <td>Yes, when replayed into state/views</td>
+        </tr>
+        <tr>
+            <td>Query</td>
+            <td>Present/question</td>
+            <td>Question-like: <code>GetBalanceQuery</code></td>
+            <td>It can return no data</td>
+            <td>No</td>
+        </tr>
+    </table>
+
+    <h2>27. Project demos in <code>main.py</code></h2>
+
+    <table>
+        <tr>
+            <th>Demo</th>
+            <th>What it teaches</th>
+        </tr>
+        <tr>
+            <td><code>demo_1_event_sourcing()</code></td>
+            <td>Events are stored, and state is derived from them.</td>
+        </tr>
+        <tr>
+            <td><code>demo_2_cqrs_separation()</code></td>
+            <td>Commands write events; queries read projections.</td>
+        </tr>
+        <tr>
+            <td><code>demo_3_transfers()</code></td>
+            <td>Transfers affect two accounts through events.</td>
+        </tr>
+        <tr>
+            <td><code>demo_4_business_rules()</code></td>
+            <td>Aggregate blocks invalid actions like overdraft and frozen account operations.</td>
+        </tr>
+        <tr>
+            <td><code>demo_5_projection_rebuild()</code></td>
+            <td>Read models can be rebuilt by replaying events.</td>
+        </tr>
+    </table>
+
+    <h2>28. Final big picture</h2>
+
+    <div class="card">
+        <ol>
+            <li>User sends a <code>Command</code> because they want to change something.</li>
+            <li><code>BankCommandHandler</code> loads the account by replaying events.</li>
+            <li><code>BankAccountAggregate</code> knows the current business state and rules.</li>
+            <li>If rules pass, the handler creates a <code>DomainEvent</code>.</li>
+            <li><code>EventStore</code> appends the event permanently.</li>
+            <li>Subscribed <code>Projections</code> update their read models.</li>
+            <li>User sends a <code>Query</code> when they want information.</li>
+            <li><code>BankQueryHandler</code> reads fast answers from projections.</li>
+        </ol>
+    </div>
+
+    <div class="card blue">
+        <h2>Final takeaway</h2>
+        <p>
+            Project 15 is not mainly about banking. It is about designing systems where every change is traceable.
+            Commands are requests, events are facts, aggregates protect rules, the event store keeps history,
+            projections create fast views, and queries read those views.
+        </p>
+    </div>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

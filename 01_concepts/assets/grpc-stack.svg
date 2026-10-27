@@ -1,0 +1,15 @@
+<svg width="920" height="500" viewBox="0 0 920 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="920" height="500" rx="28" fill="#FFFBF5"/>
+  <text x="460" y="56" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700" fill="#1C1917">gRPC stack at a glance</text>
+  <rect x="150" y="110" width="620" height="72" rx="18" fill="#D7F3EF" stroke="#0F766E" stroke-width="2"/>
+  <text x="460" y="152" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#115E59">Protocol Buffers contract</text>
+  <rect x="150" y="202" width="620" height="72" rx="18" fill="#FFF1E7" stroke="#C2410C" stroke-width="2"/>
+  <text x="460" y="244" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#9A3412">Generated client and server stubs</text>
+  <rect x="150" y="294" width="620" height="72" rx="18" fill="#D7F3EF" stroke="#0F766E" stroke-width="2"/>
+  <text x="460" y="336" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#115E59">HTTP/2 transport + binary serialization</text>
+  <rect x="150" y="386" width="620" height="72" rx="18" fill="#1C1917"/>
+  <text x="460" y="428" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFF7ED">Unary and streaming RPC calls</text>
+  <path d="M460 182V202" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M460 274V294" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M460 366V386" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+</svg>

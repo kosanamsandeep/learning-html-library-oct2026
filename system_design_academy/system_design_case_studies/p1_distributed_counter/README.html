@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P1 · Distributed Counter</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>Case Studies</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p2_realtime_leaderboard/README.html">Next: P2</a><a href="../../index.html">Academy</a>
+            </nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">Case Studies · Project 1</p>
+            <h1>Distributed counter — make view counts not melt</h1>
+            <p class="lead">A YouTube-style view counter can take 100k increments per second on a single hot video. One
+                row in one database cannot keep up. The standard fix is to shard the counter and sum at read time.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>A video goes viral. Every play needs to increment the view count. If the counter is a single row, every
+                writer fights for the same lock — throughput collapses. Shard the counter into 16 (or 256) buckets, let
+                each writer pick one at random, and reads simply sum the buckets. Writes parallelise; reads are slightly
+                more expensive but still fast.</p>
+        </section>
+
+        <section class="card">
+            <h2>Mental model</h2>
+            <div class="flow">
+                <div class="step">writer picks random shard</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">increments only that shard</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">reader sums all shards</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">cache the sum for ~1s</div>
+            </div>
+            <p>The cache means most reads never even hit the shards.</p>
+        </section>
+
+        <section class="card">
+            <h2>Tradeoffs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Choice</th>
+                        <th>Effect</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>More shards (e.g. 256)</td>
+                        <td>Less write contention; read sum is wider.</td>
+                    </tr>
+                    <tr>
+                        <td>Random shard pick</td>
+                        <td>Even distribution without any coordination.</td>
+                    </tr>
+                    <tr>
+                        <td>Cache the read total</td>
+                        <td>Hides the sum cost when display rate &gt;&gt; write rate.</td>
+                    </tr>
+                    <tr>
+                        <td>Strict real-time count</td>
+                        <td>Hard at high scale — accept eventual consistency.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/system_design_case_studies/p1_distributed_counter
+python main.py</code></pre>
+            <p>Eight writer threads each do 50,000 increments. The final total matches exactly, and you can see the
+                per-shard distribution.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"For a hot counter I shard the value across N keys — Redis hash slots or DB rows — and
+                pick a random shard per write. Reads sum all shards and cache the result for a second or two. This
+                trades small read latency for huge write throughput, and the count is eventually consistent which is
+                fine for displays like view counts and likes."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

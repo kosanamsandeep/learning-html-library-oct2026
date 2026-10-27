@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Agentic Workflows — ReAct & LangGraph Portfolio (FastAPI async)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="assets/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header>
+  <h1>Agentic Workflows — ReAct &amp; LangGraph Portfolio</h1>
+  <p>Six end-to-end projects (3 ReAct + 3 LangGraph mirrors), each scaffolded with the canonical Python agent folder layout and served via <b>async FastAPI</b>. Plus 4 concept deep-dives with mermaid diagrams.</p>
+</header>
+<main>
+
+<h2>Canonical project layout (every project uses this)</h2>
+<pre>
+project_root/
+├── agents/
+│   ├── base_agent.py          # async ABC
+│   ├── &lt;agent&gt;.py             # concrete agent
+│   └── skills/                # reusable async skills
+├── core/                       # config, logger, bootstrap
+├── data/
+│   ├── prompts/                # text templates
+│   └── &lt;artifacts&gt;/            # csv, db, charts, reports
+├── models/                     # LLM client wrapper
+├── workflows/                  # orchestration glue (singleton agent + API entry)
+├── tests/                      # pytest
+├── main.py                     # async FastAPI (uvicorn)
+├── requirements.txt
+├── .env.example
+└── explanation.html            # this design, visualised
+</pre>
+
+<h2>1) ReAct projects (LangChain AgentExecutor + async tools)</h2>
+<table>
+<tr><th>Level</th><th>Project</th><th>Port</th><th>Endpoint</th><th>Docs</th></tr>
+<tr><td><span class="pill">Basic</span></td><td>01 · Calculator + Wikipedia</td><td>8001</td><td><code>POST /ask</code></td><td><a href="react_agents/01_basic_calculator_wiki/explanation.html">open →</a></td></tr>
+<tr><td><span class="pill mid">Mid</span></td><td>02 · Research Assistant</td><td>8002</td><td><code>POST /research</code></td><td><a href="react_agents/02_research_assistant/explanation.html">open →</a></td></tr>
+<tr><td><span class="pill adv">Advanced</span></td><td>03 · Data Analyst (6 tools + memory)</td><td>8003</td><td><code>POST /ask</code></td><td><a href="react_agents/03_data_analyst/explanation.html">open →</a></td></tr>
+</table>
+
+<h2>2) LangGraph mirror projects (state graphs + checkpointers)</h2>
+<table>
+<tr><th>Level</th><th>Project</th><th>Port</th><th>Endpoint</th><th>Docs</th></tr>
+<tr><td><span class="pill">Basic</span></td><td>01 · Calculator + Wikipedia (prebuilt ReAct + MemorySaver)</td><td>8101</td><td><code>POST /ask</code></td><td><a href="langgraph_agents/01_basic_calculator_wiki/explanation.html">open →</a></td></tr>
+<tr><td><span class="pill mid">Mid</span></td><td>02 · Research Assistant (custom StateGraph)</td><td>8102</td><td><code>POST /research</code></td><td><a href="langgraph_agents/02_research_assistant/explanation.html">open →</a></td></tr>
+<tr><td><span class="pill adv">Advanced</span></td><td>03 · Data Analyst — Supervisor &amp; specialists</td><td>8103</td><td><code>POST /ask</code></td><td><a href="langgraph_agents/03_data_analyst/explanation.html">open →</a></td></tr>
+</table>
+
+<h2>3) Concept deep-dives</h2>
+<table>
+<tr><th>Topic</th><th>Page</th></tr>
+<tr><td>What memory types exist in agentic workflows (short-term, episodic, semantic, procedural, entity)</td><td><a href="concepts/memory_types.html">open →</a></td></tr>
+<tr><td>How to handle the next 20 user queries without re-doing the work — 4 layers of reuse + cache patterns</td><td><a href="concepts/handling_repeated_queries.html">open →</a></td></tr>
+<tr><td>Chunking strategies side-by-side, with examples and why we need chunk overlap</td><td><a href="concepts/chunking_strategies.html">open →</a></td></tr>
+<tr><td>How to ingest tables, images, audio, PDFs into a vector DB (with diagrams)</td><td><a href="concepts/multimodal_to_vectordb.html">open →</a></td></tr>
+</table>
+
+<h2>How everything fits together</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph "ReAct stack"
+      R1[01 Calc+Wiki<br/>:8001]
+      R2[02 Research<br/>:8002]
+      R3[03 Analyst<br/>:8003]
+    end
+    subgraph "LangGraph stack"
+      G1[01 Calc+Wiki<br/>:8101]
+      G2[02 Research<br/>:8102]
+      G3[03 Analyst-Supervisor<br/>:8103]
+    end
+    subgraph "Concepts"
+      C1[Memory types]
+      C2[20-query reuse]
+      C3[Chunking]
+      C4[Multimodal → VDB]
+    end
+    R1 -. mirrors .-> G1
+    R2 -. mirrors .-> G2
+    R3 -. mirrors .-> G3
+</div>
+
+<h2>One-shot install (any project)</h2>
+<pre>cd &lt;project_folder&gt;
+pip install -r requirements.txt
+copy .env.example .env      # put your OPENAI_API_KEY
+python main.py              # uvicorn binds to its port
+# test:
+curl -X POST http://127.0.0.1:&lt;port&gt;/ask -H "Content-Type: application/json" -d "{\"question\":\"hi\"}"</pre>
+
+<h2>ReAct vs LangGraph (cheat sheet)</h2>
+<table>
+<tr><th>Aspect</th><th>ReAct (LangChain AgentExecutor)</th><th>LangGraph</th></tr>
+<tr><td>Mental model</td><td>Loop: Thought → Action → Observation</td><td>State machine / DAG of nodes</td></tr>
+<tr><td>Control flow</td><td>Implicit, driven by LLM text</td><td>Explicit, you draw the graph</td></tr>
+<tr><td>Multi-agent</td><td>Manual orchestration</td><td>Native: supervisor / swarm patterns</td></tr>
+<tr><td>Resumable conversations</td><td>Add <code>ConversationBufferMemory</code></td><td>Built-in: <code>MemorySaver</code>, <code>SqliteSaver</code>, <code>PostgresSaver</code></td></tr>
+<tr><td>Best for</td><td>Quick prototypes, single-agent tools</td><td>Production, long-running, multi-agent</td></tr>
+</table>
+
+</main>
+<footer>Open any HTML in a browser. Mermaid diagrams render via CDN.</footer>
+</body>
+</html>

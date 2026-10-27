@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The harness showdown</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        :root {
+            --accent: #6d28d9;
+            --accent-soft: #ede9fe;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>AH</span>Agent Harness</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="what-is-an-agent-harness.html">Concept</a>
+                <a href="anatomy-of-a-harness.html">Anatomy</a>
+                <a href="harness-vs-framework-vs-app.html">Layers</a>
+                <a href="harness-showdown.html">Showdown</a>
+                <a href="build-your-own-harness.html">Build one</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Agent harness · page 4 of 5</p>
+            <h1>The harness showdown — the coding agents, compared on the same axes</h1>
+            <p class="lead">The landscape changes monthly, so instead of a stale feature table this page gives you a
+                durable <strong>way to compare</strong>: for each harness ask the same six questions (what loop, what
+                tools, how trusted, how extensible, how it remembers, how it plugs in). We apply the template to the
+                mainline harnesses — Claude Code, Codex CLI, Gemini CLI, Cursor, Copilot, and the open-source set — and
+                flag the trade-offs that matter in practice.</p>
+        </section>
+
+        <section class="callout warn">
+            <strong>Read this disclaimer first.</strong> Coding agents are the fastest-moving product category in
+            software. Any specific capability named here can ship, move, or disappear within a quarter. Use the table to
+            understand the <em>shape</em> of each harness and to know what to verify yourself — not as a buying
+            decision frozen in time.
+        </section>
+
+        <section class="card">
+            <h2>1 · The six questions that separate harnesses</h2>
+            <ol>
+                <li><strong>Loop &amp; mode:</strong> Is it a terminal agent, an IDE-native agent, or both? Plan-first or
+                    go? How does it recover from failure?</li>
+                <li><strong>Tool surface:</strong> repo read/edit/run, web, image, and — importantly — can you add your
+                    own tools?</li>
+                <li><strong>Trust model:</strong> ask-everything, auto-run, read-only plan mode, sandboxing, worktrees?</li>
+                <li><strong>Extensibility:</strong> skills/personas/rules you can package; custom commands.</li>
+                <li><strong>Memory:</strong> project instruction files (<code>CLAUDE.md</code>/<code>AGENTS.md</code>),
+                    persistent memory, session resume.</li>
+                <li><strong>Plug-in protocol:</strong> MCP support, subagents/parallelism, hooks/events, CI-drivability.</li>
+            </ol>
+            <p>Every harness below is a real answer to those six — comparing on the six is comparing apples to apples even
+                when the marketing changes.</p>
+        </section>
+
+        <section class="card">
+            <h2>2 · The mainline harnesses</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Harness</th>
+                        <th>Shape</th>
+                        <th>Distinctive strength</th>
+                        <th>Trade-off to know</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Claude Code</strong></td>
+                        <td>Terminal-first agent (+ IDE/desktop/web) built on Claude</td>
+                        <td>Deep harness: subagents, skills, hooks, MCP, dynamic workflows, strong permissions model</td>
+                        <td>Best unlocked inside a rich repo + explicit guardrails; powerful enough to need them</td>
+                    </tr>
+                    <tr>
+                        <td><strong>OpenAI Codex CLI</strong></td>
+                        <td>Terminal agent for OpenAI models (open source)</td>
+                        <td>Tight pairing with the OpenAI toolchain; AGENTS.md conventions; plan-first workflow</td>
+                        <td>Ecosystem smaller than Claude Code's; capabilities track OpenAI model releases</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gemini CLI</strong></td>
+                        <td>Open-source terminal agent for Gemini models</td>
+                        <td>Long-context Gemini models; MCP support; free tier for personal use</td>
+                        <td>Fewer battle-tested enterprise features than the incumbents</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cursor</strong></td>
+                        <td>IDE-native agent (VS Code fork) + background agents</td>
+                        <td>Best-in-class inline editing + multi-file diff UX in the editor</td>
+                        <td>Loop is tied to the editor; lighter on external, headless automation</td>
+                    </tr>
+                    <tr>
+                        <td><strong>GitHub Copilot coding agent</strong></td>
+                        <td>IDE + terminal + GitHub-native, model-agnostic</td>
+                        <td>Runs where the PR lives (tasks, code review, Actions); model choice</td>
+                        <td>Breadth over depth; agentic autonomy lags the dedicated harnesses</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>3 · The open-source &amp; niche set</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Harness</th>
+                        <th>Shape</th>
+                        <th>Why people pick it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>opencode</strong></td>
+                        <td>Open terminal agent (no SSH needed), many model providers</td>
+                        <td>Model freedom + MCP + a clean TUI; popular for BYO-model setups</td>
+                    </tr>
+                    <tr>
+                        <td><strong>aider</strong></td>
+                        <td>Terminal pair-programmer with git-first diffs</td>
+                        <td>Minimal, reviewable, map-of-repo context; beloved for its simplicity</td>
+                    </tr>
+                    <tr>
+                        <td><strong>goby</strong></td>
+                        <td>Open-source VS Code agent</td>
+                        <td>Free IDE-native alternative; strong out-of-the-box tools</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Roll-your-own (SDK)</strong></td>
+                        <td>Claude Agent SDK / OpenAI Agents SDK wiring your own loop</td>
+                        <td>You need the agent <em>inside</em> your product, not in your editor</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Managed/sandbox agents</strong></td>
+                        <td>Hosted agents (Anthropic Managed Agents, OpenAI sandbox agents)</td>
+                        <td>No local setup; server-side sandboxes; good for apps &amp; CI</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout">
+                <strong>Pattern worth noticing:</strong> the open set converges on the same <em>harness</em> ideas (MCP,
+                git-first diffs, permission gating, instruction files) while diverging on <em>model</em>. That
+                convergence is the whole thesis of this track: the harness shape is becoming a commodity, standardised
+                layer — and MCP is the protocol glue making it portable.
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Choosing with the six questions</h2>
+            <ul>
+                <li><strong>Already live in one?</strong> The marginal switch cost is real — instruction files, hooks,
+                    and muscle memory all transfer, so only move for a capability you've verified (not one you've heard
+                    about).</li>
+                <li><strong>Team safety review?</strong> Weight the trust model (permissions, sandbox, hooks) above raw
+                    coding skill. The best model in the world is a liability in an unaudited auto-run loop.</li>
+                <li><strong>Shipping into a product?</strong> You're not choosing a coding agent, you're choosing an SDK
+                    harness layer — that's <a href="harness-vs-framework-vs-app.html">page 3's</a> decision, not this
+                    page's.</li>
+                <li><strong>Vendor lock-in fear?</strong> Prefer harnesses strong on MCP and open instruction formats so
+                    your config (skills, rules, tools) survives a model or vendor swap.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Related pages in your library</h2>
+            <div class="sources">
+                <a class="source" href="../02_comparisons/coding_ai_tools.html">02_comparisons · coding AI tools (product view)</a>
+                <a class="source" href="../industry_standards/autogpt_godmode_comparison.html">industry_standards · AutoGPT vs Godmode vs coding agents</a>
+                <a class="source" href="../02_comparisons/llm_providers.html">02_comparisons · LLM providers (the brains these harness)</a>
+            </div>
+            <h2>Sources</h2>
+            <p class="quiet">Verify current capabilities at each vendor's docs before relying on them.</p>
+            <div class="sources">
+                <a class="source" href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener">Claude Code</a>
+                <a class="source" href="https://github.com/openai/codex" target="_blank" rel="noopener">OpenAI Codex CLI (GitHub)</a>
+                <a class="source" href="https://github.com/google-gemini/gemini-cli" target="_blank" rel="noopener">Gemini CLI (GitHub)</a>
+                <a class="source" href="https://github.com/code-craft-ai/cursor" target="_blank" rel="noopener">Cursor</a>
+                <a class="source" href="https://github.com/sst/opencode" target="_blank" rel="noopener">opencode (GitHub)</a>
+                <a class="source" href="https://github.com/Aider-AI/aider" target="_blank" rel="noopener">aider (GitHub)</a>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

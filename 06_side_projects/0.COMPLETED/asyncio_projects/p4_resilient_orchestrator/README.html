@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P4 · Resilient Async Orchestrator</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>A</span>Asyncio Projects</a>
+            <nav class="top-links"><a href="../index.html">Hub</a><a
+                    href="../p3_queue_worker_pipeline/README.html">Prev: P3</a><a
+                    href="../p5_async_chat_server/README.html">Next: P5</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 4 · Advanced</p>
+            <h1>Resilient orchestrator — concurrency limits, retries, timeouts, cancellation</h1>
+            <p class="lead">Production async code is not just "run everything at once." It must protect downstream
+                systems, retry temporary failures, stop slow work, and cancel work that no longer matters.</p>
+        </section>
+        <section class="card">
+            <h2>The story</h2>
+            <p>A dashboard endpoint needs profile, orders, payments, recommendations, and inventory. Calling all five at
+                once is faster, but blindly flooding services is dangerous. This project adds the controls that separate
+                toy async code from production async code.</p>
+        </section>
+        <section class="card">
+            <h2>Files</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>main.py</code></td>
+                        <td>Service-call model, unreliable call, retry wrapper, semaphore guard, <code>TaskGroup</code>
+                            orchestration, cancellation demo.</td>
+                    </tr>
+                    <tr>
+                        <td><code>requirements.txt</code></td>
+                        <td>No external dependencies. Python 3.11+ recommended.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="card">
+            <h2>Production controls</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Control</th>
+                        <th>Problem it solves</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Semaphore</td>
+                        <td>Limits concurrency so you do not overwhelm downstream services.</td>
+                    </tr>
+                    <tr>
+                        <td>Timeout</td>
+                        <td>Prevents one slow call from holding the whole request forever.</td>
+                    </tr>
+                    <tr>
+                        <td>Retry</td>
+                        <td>Handles temporary failures without immediately failing the user request.</td>
+                    </tr>
+                    <tr>
+                        <td>TaskGroup</td>
+                        <td>Gives structured concurrency: related tasks are created and awaited as a group.</td>
+                    </tr>
+                    <tr>
+                        <td>Cancellation</td>
+                        <td>Stops work that is no longer needed, such as a user disconnecting.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="card">
+            <h2>Core code</h2>
+            <pre><code>async def guarded_call(call, semaphore):
+    async with semaphore:
+        return await call_with_retry(call)
+
+async with asyncio.TaskGroup() as group:
+    task_map = {
+        group.create_task(guarded_call(call, semaphore)): call.name
+        for call in calls
+    }</code></pre>
+            <p>The semaphore says "only two service calls may run at once." The <code>TaskGroup</code> says "these tasks
+                belong to one orchestration scope."</p>
+        </section>
+        <section class="card">
+            <h2>Cancellation</h2>
+            <p>Cancellation is cooperative. Calling <code>task.cancel()</code> does not kill code in the middle of a CPU
+                instruction. It injects <code>CancelledError</code> at the next await point. That gives your coroutine a
+                chance to clean up.</p>
+            <pre><code>try:
+    while True:
+        await asyncio.sleep(0.4)
+except asyncio.CancelledError:
+    print("cleanup before stopping")
+    raise</code></pre>
+        </section>
+        <section class="card">
+            <h2>How to run</h2>
+            <pre><code>cd 06_side_projects/asyncio_projects/p4_resilient_orchestrator
+python main.py</code></pre>
+        </section>
+        <section class="card">
+            <h2>What to remember</h2>
+            <ul>
+                <li>Unbounded concurrency is a production risk.</li>
+                <li>Semaphores create bulkheads around scarce resources.</li>
+                <li>Timeouts and retries should be close to the network call.</li>
+                <li>Cancellation should be handled, cleaned up, and re-raised.</li>
+                <li><code>TaskGroup</code> makes related tasks easier to reason about than loose background tasks.</li>
+            </ul>
+            <div class="callout"><strong>Interview answer:</strong> In production asyncio code, I combine concurrency
+                with control: semaphore for limits, timeout for deadlines, retry for transient failures, and
+                cancellation handling for graceful shutdown or user disconnects.</div>
+        </section>
+    </main>
+</body>
+
+</html>

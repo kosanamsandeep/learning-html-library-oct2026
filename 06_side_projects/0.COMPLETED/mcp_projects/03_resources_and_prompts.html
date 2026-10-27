@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP 03 · Tools + Resources + Prompts</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="mcp">MCP</span>MCP · 03 Resources &amp; Prompts</div>
+        <div class="links">
+            <a href="index.html">MCP Hub</a>
+            <a href="02_mcp_tools_in_langgraph.html">← 02</a>
+            <a href="04_multi_server_and_remote.html">Next: 04 →</a>
+        </div>
+    </div>
+
+    <div class="header mcp">
+        <p class="badge">Build 03 · Intermediate</p>
+        <h1>A richer server: tools, resources &amp; prompts</h1>
+        <p class="subtitle">Real MCP servers expose more than tools. Add <strong>resources</strong> (read-only
+            data by URI) and <strong>prompts</strong> (reusable templates), and learn exactly how each one
+            surfaces in LangGraph.</p>
+    </div>
+
+    <div class="container">
+        <div class="section mcp">
+            <h2>The three primitives, and who controls them</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    S["FastMCP server"] --> T["🛠️ Tools<br/><i>model-controlled</i><br/>the LLM decides to call"]
+    S --> R["📄 Resources<br/><i>app-controlled</i><br/>the app loads into context"]
+    S --> P["💬 Prompts<br/><i>user-controlled</i><br/>the user invokes a template"]
+                </pre>
+                <p class="caption">Same server, three kinds of capability — each meant for a different
+                    decision-maker.</p>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>The code — <code>kb_server.py</code> (a tiny knowledge base)</h2>
+            <pre><code><span class="c-kw">from</span> fastmcp <span class="c-kw">import</span> FastMCP
+
+mcp = FastMCP(<span class="c-str">"Knowledge Base"</span>)
+
+NOTES = {
+    <span class="c-str">"onboarding"</span>: <span class="c-str">"Welcome! Step 1: clone the repo. Step 2: run setup.sh."</span>,
+    <span class="c-str">"release"</span>:    <span class="c-str">"Releases ship every other Thursday after QA sign-off."</span>,
+}
+
+<span class="c-com"># ---- TOOL: the model can CALL this to take an action ----</span>
+<span class="c-cls">@mcp.tool</span>
+<span class="c-kw">def</span> <span class="c-fn">search_notes</span>(query: <span class="c-cls">str</span>) -> <span class="c-cls">list</span>[<span class="c-cls">str</span>]:
+    <span class="c-str">"""Search internal notes for a keyword and return matching titles."""</span>
+    <span class="c-kw">return</span> [k <span class="c-kw">for</span> k, v <span class="c-kw">in</span> NOTES.items() <span class="c-kw">if</span> query.lower() <span class="c-kw">in</span> v.lower()]
+
+<span class="c-com"># ---- RESOURCE: read-only data addressed by a URI ----</span>
+<span class="c-cls">@mcp.resource</span>(<span class="c-str">"notes://{title}"</span>)
+<span class="c-kw">def</span> <span class="c-fn">get_note</span>(title: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Return the full text of a note by its title."""</span>
+    <span class="c-kw">return</span> NOTES.get(title, <span class="c-str">"Not found."</span>)
+
+<span class="c-com"># ---- PROMPT: a reusable, parameterised template ----</span>
+<span class="c-cls">@mcp.prompt</span>
+<span class="c-kw">def</span> <span class="c-fn">summarize_note</span>(title: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    <span class="c-str">"""Build a prompt that asks the model to summarise a note."""</span>
+    <span class="c-kw">return</span> <span class="c-str">f"Summarise the note titled '{title}' in one sentence."</span>
+
+<span class="c-kw">if</span> __name__ == <span class="c-str">"__main__"</span>:
+    mcp.run()</code></pre>
+        </div>
+
+        <div class="section mcp">
+            <h2>How each primitive maps into LangGraph</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Primitive</th>
+                        <th>Adapter call</th>
+                        <th>What you get</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Tool</td>
+                        <td><code>client.get_tools()</code></td>
+                        <td>LangChain tools the agent calls autonomously.</td>
+                    </tr>
+                    <tr>
+                        <td>Resource</td>
+                        <td><code>client.get_resources(server)</code></td>
+                        <td>Blobs/text you load into state or context yourself.</td>
+                    </tr>
+                    <tr>
+                        <td>Prompt</td>
+                        <td><code>client.get_prompt(server, name, args)</code></td>
+                        <td>A ready-made message list to seed the conversation.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout sky">
+                <strong>Key distinction:</strong> the agent <em>chooses</em> tools on its own, but <em>you</em>
+                decide when to inject resources and prompts. Resources/prompts are app logic, not autonomous
+                actions.
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>Loading a resource into the agent</h2>
+            <pre><code><span class="c-kw">from</span> langchain_mcp_adapters.client <span class="c-kw">import</span> MultiServerMCPClient
+
+client = MultiServerMCPClient({
+    <span class="c-str">"kb"</span>: {<span class="c-str">"command"</span>: <span class="c-str">"python"</span>, <span class="c-str">"args"</span>: [<span class="c-str">"kb_server.py"</span>], <span class="c-str">"transport"</span>: <span class="c-str">"stdio"</span>},
+})
+
+<span class="c-com"># Pull a specific resource by URI and add it to context.</span>
+docs = <span class="c-kw">await</span> client.get_resources(<span class="c-str">"kb"</span>, uris=[<span class="c-str">"notes://onboarding"</span>])
+context = <span class="c-str">"\n"</span>.join(d.data <span class="c-kw">for</span> d <span class="c-kw">in</span> docs)
+
+tools = <span class="c-kw">await</span> client.get_tools()
+agent = create_react_agent(<span class="c-str">"openai:gpt-4o"</span>, tools)
+
+<span class="c-kw">await</span> agent.ainvoke({<span class="c-str">"messages"</span>: [
+    {<span class="c-str">"role"</span>: <span class="c-str">"system"</span>, <span class="c-str">"content"</span>: <span class="c-str">f"Reference docs:\n{context}"</span>},
+    {<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"How do I get started?"</span>},
+]})</code></pre>
+        </div>
+
+        <div class="section mcp">
+            <h2>Using a server-provided prompt</h2>
+            <pre><code><span class="c-com"># Fetch the prompt template, already rendered with args, as messages.</span>
+messages = <span class="c-kw">await</span> client.get_prompt(<span class="c-str">"kb"</span>, <span class="c-str">"summarize_note"</span>, arguments={<span class="c-str">"title"</span>: <span class="c-str">"release"</span>})
+result = <span class="c-kw">await</span> agent.ainvoke({<span class="c-str">"messages"</span>: messages})</code></pre>
+            <p>Prompts let the <em>server</em> own best-practice wording (the team that built the tool knows how
+                to ask), while your agent just invokes them by name.</p>
+        </div>
+
+        <div class="section mcp">
+            <h2>Tool vs Resource — choosing correctly</h2>
+            <div class="grid-2">
+                <div class="mini mcp">
+                    <h3>Make it a Tool when…</h3>
+                    <p>…the model should decide to run it, it takes action or computes, or its result depends on
+                        arguments the LLM chooses (search, create, send).</p>
+                </div>
+                <div class="mini mcp">
+                    <h3>Make it a Resource when…</h3>
+                    <p>…it's just data to read into context, identified by a stable URI, and the <em>app</em>
+                        (not the model) decides when to load it (a file, a config, a doc).</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section mcp">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Don't expose data as a tool just to load it</strong> — use a resource; it keeps the
+                    tool list lean and the model focused.</li>
+                <li><strong>Use URI templates</strong> (<code>notes://{title}</code>) for parameterised
+                    resources.</li>
+                <li><strong>Put canonical wording in prompts</strong> so every client asks the same, tested
+                    way.</li>
+                <li><strong>Keep tool counts modest.</strong> Too many tools degrades selection accuracy —
+                    split into multiple servers if needed (build 04).</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="02_mcp_tools_in_langgraph.html"><span class="dir">Previous</span>
+                <div class="ttl">← 02 · In LangGraph</div>
+            </a>
+            <a class="next" href="04_multi_server_and_remote.html"><span class="dir">Next</span>
+                <div class="ttl">04 · Multi-server &amp; remote →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>MCP × LangGraph Projects · 03 of 05</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

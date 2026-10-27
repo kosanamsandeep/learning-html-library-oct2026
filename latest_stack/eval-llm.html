@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>08 · Evaluating LLM responses — Latest Stack</title>
+    <link rel="stylesheet" href="../industry_standards/_shared.css">
+    <style>
+        pre.mermaid {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1rem;
+            color: inherit;
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../README.html"><span>LS</span>Latest Stack</a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="agentic-rag.html">Agentic RAG</a>
+                <a href="../industry_standards/anthropic_building_agents.html">Building Agents</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Page 8 of 9</p>
+            <h1>Evaluating LLM responses — pick the right scorer for the right question</h1>
+            <p class="lead">"How do I know my LLM is good?" splits into three families: <strong>reference-based</strong>
+                metrics (you have a gold answer), <strong>reference-free</strong> metrics (you don't), and
+                <strong>human evaluation</strong>. The mature workflow uses all three: cheap automatic checks on every
+                CI run, an LLM-judge for nuance, and periodic human spot-checks to calibrate the judge.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>1 · The eval hierarchy</h2>
+            <pre class="mermaid">
+flowchart TB
+  goal[Define success<br/>per task] --> det{Deterministic check possible?}
+  det -->|yes| ref[Reference-based<br/>exact_match, regex, JSON schema,<br/>BLEU, ROUGE, BERTScore]
+  det -->|no| free[Reference-free LLM judge<br/>G-Eval, RAGAS, DeepEval, MT-Bench]
+  ref --> ship[Run in CI on every change]
+  free --> ship
+  ship --> human[Periodic human spot-check<br/>to calibrate the judge]
+            </pre>
+        </section>
+
+        <section class="card">
+            <h2>2 · Reference-based (automatic) metrics</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>What it measures</th>
+                        <th>Use for</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>exact_match</code></td>
+                        <td>1 if string == gold else 0</td>
+                        <td>Classification, JSON keys, intent</td>
+                    </tr>
+                    <tr>
+                        <td><code>regex_match</code></td>
+                        <td>Pattern matches</td>
+                        <td>Extracted entities, dates</td>
+                    </tr>
+                    <tr>
+                        <td><code>set_match</code> / <code>subset_match</code></td>
+                        <td>Set equality / inclusion</td>
+                        <td>Tool-call arguments, tags</td>
+                    </tr>
+                    <tr>
+                        <td><code>json_schema_match</code></td>
+                        <td>Parses and validates against schema</td>
+                        <td>Structured output</td>
+                    </tr>
+                    <tr>
+                        <td><strong>BLEU</strong></td>
+                        <td>n-gram overlap with reference</td>
+                        <td>Translation</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ROUGE-L</strong></td>
+                        <td>Longest common subsequence</td>
+                        <td>Summarisation</td>
+                    </tr>
+                    <tr>
+                        <td><strong>BERTScore</strong></td>
+                        <td>Cosine similarity of contextual embeddings</td>
+                        <td>Paraphrase quality</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Perplexity</strong></td>
+                        <td>How surprised the model is by held-out text</td>
+                        <td>Base-model comparison; <em>not</em> for chat quality</td>
+                    </tr>
+                    <tr>
+                        <td><strong>pass@k</strong></td>
+                        <td>Fraction of problems solved in k tries</td>
+                        <td>Code (HumanEval, MBPP, SWE-bench)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>3 · Reference-free metrics — LLM as judge</h2>
+            <p>When you don't have a gold answer (open-ended chat, RAG answers), you ask a strong LLM to score with
+                a rubric. The pattern that works:</p>
+            <ol>
+                <li>Give the judge a <strong>specific rubric</strong> (1–5 scale, with concrete anchors for each
+                    score), not a vague "rate quality."</li>
+                <li>Use a <strong>different model</strong> as the judge than the one being evaluated.</li>
+                <li>Ask for <strong>reasoning first, score last</strong> — chain-of-thought makes judges more
+                    consistent.</li>
+                <li>For pairwise (A vs B) judging, <strong>swap the order</strong> and average — fights position bias.
+                </li>
+            </ol>
+            <h3>Common scorers</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scorer</th>
+                        <th>What it scores</th>
+                        <th>Library</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>G-Eval</strong></td>
+                        <td>Custom rubric with CoT judge</td>
+                        <td>Original paper / DeepEval</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RAGAS — faithfulness</strong></td>
+                        <td>Is the answer supported by retrieved context?</td>
+                        <td>ragas</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RAGAS — answer relevance</strong></td>
+                        <td>Does the answer address the question?</td>
+                        <td>ragas</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RAGAS — context precision/recall</strong></td>
+                        <td>Quality of the retrieved chunks</td>
+                        <td>ragas</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DeepEval — hallucination</strong></td>
+                        <td>Claims not in source</td>
+                        <td>deepeval</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DeepEval — toxicity / bias</strong></td>
+                        <td>Safety</td>
+                        <td>deepeval</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tool-call match</strong></td>
+                        <td>Did the model pick the right tool with the right args?</td>
+                        <td>Custom / OpenAI evals</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Trajectory eval</strong></td>
+                        <td>Did the multi-step agent take the right path?</td>
+                        <td>LangSmith, Arize</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>4 · Public benchmarks worth knowing</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>MMLU / MMLU-Pro</h3>
+                    <p>57-subject multiple choice; general knowledge.</p>
+                </div>
+                <div class="mini">
+                    <h3>HumanEval / MBPP / SWE-bench</h3>
+                    <p>Code generation; SWE-bench is real GitHub issues.</p>
+                </div>
+                <div class="mini">
+                    <h3>MT-Bench / Arena-Hard</h3>
+                    <p>Open-ended chat judged by GPT-4 or human rankers (LMSYS Arena).</p>
+                </div>
+                <div class="mini">
+                    <h3>GSM8K / MATH / AIME</h3>
+                    <p>Grade-school to olympiad math.</p>
+                </div>
+                <div class="mini">
+                    <h3>GPQA</h3>
+                    <p>Graduate-level physics/biology/chemistry — Google-proof.</p>
+                </div>
+                <div class="mini">
+                    <h3>τ-bench / τ²-bench</h3>
+                    <p>Tool-use / agent benchmarks (used in CWC workshop 1).</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Human evaluation — when and how</h2>
+            <ul>
+                <li><strong>Calibration:</strong> 50–100 examples scored by humans + the LLM-judge. Compute
+                    correlation. If &lt; 0.7, fix the rubric.</li>
+                <li><strong>Pairwise A/B:</strong> rank two models on the same prompts. Cheaper and more reliable than
+                    absolute scoring.</li>
+                <li><strong>Likert + reason:</strong> 1–5 score plus a one-sentence reason. The reasons reveal failure
+                    modes the metric can't.</li>
+                <li><strong>Red-teaming:</strong> humans actively try to break the agent (jailbreak, PII leak, harmful
+                    output).</li>
+                <li><strong>Sample size:</strong> 100–300 examples is enough to detect 5 pt differences with confidence.
+                </li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>6 · A working evaluator in 15 lines (DeepEval)</h2>
+            <pre><code># pip install deepeval
+from deepeval import evaluate
+from deepeval.test_case import LLMTestCase
+from deepeval.metrics import (
+    AnswerRelevancyMetric,
+    FaithfulnessMetric,
+    HallucinationMetric,
+)
+
+case = LLMTestCase(
+    input="What's our refund window?",
+    actual_output="You can request a refund within 30 days of purchase.",
+    expected_output="30 days",
+    retrieval_context=["Customers may request refunds up to 30 days after purchase."],
+    context=["Customers may request refunds up to 30 days after purchase."],
+)
+
+results = evaluate(
+    test_cases=[case],
+    metrics=[
+        AnswerRelevancyMetric(threshold=0.8),
+        FaithfulnessMetric(threshold=0.8),
+        HallucinationMetric(threshold=0.3),
+    ],
+)
+</code></pre>
+            <h3>Or with RAGAS</h3>
+            <pre><code># pip install ragas
+from ragas import evaluate
+from ragas.metrics import faithfulness, answer_relevancy, context_precision
+from datasets import Dataset
+
+ds = Dataset.from_dict({
+    "question":  ["What's the refund window?"],
+    "answer":    ["You can request a refund within 30 days."],
+    "contexts":  [["Refunds allowed within 30 days of purchase."]],
+    "ground_truth": ["30 days"],
+})
+print(evaluate(ds, metrics=[faithfulness, answer_relevancy, context_precision]))
+</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>7 · The production pattern</h2>
+            <pre class="mermaid">
+flowchart LR
+  ci[CI / PR] --> auto[Automatic scorers<br/>exact_match, JSON, RAGAS, DeepEval]
+  auto -->|gate| merge[Merge]
+  merge --> can[Canary 1% traffic] --> log[Log prompts + outputs]
+  log --> sample[Sample 50/day] --> human[Human scorer]
+  human --> cal[Recalibrate LLM-judge<br/>monthly]
+  cal --> auto
+            </pre>
+            <p>Every PR runs deterministic + LLM-judge scorers on a frozen eval set. Production samples are
+                human-scored weekly and used to recalibrate the judge.</p>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://arxiv.org/abs/2303.16634" target="_blank" rel="noopener">G-Eval (Liu et
+                    al., 2023)</a>
+                <a class="source" href="https://docs.ragas.io/" target="_blank" rel="noopener">RAGAS docs</a>
+                <a class="source" href="https://docs.confident-ai.com/" target="_blank" rel="noopener">DeepEval docs</a>
+                <a class="source" href="https://arxiv.org/abs/2306.05685" target="_blank" rel="noopener">MT-Bench /
+                    LLM-as-judge (Zheng et al.)</a>
+                <a class="source" href="https://arxiv.org/abs/2009.03300" target="_blank" rel="noopener">MMLU paper</a>
+                <a class="source" href="https://arxiv.org/abs/2107.03374" target="_blank" rel="noopener">HumanEval
+                    (Codex paper)</a>
+                <a class="source" href="https://www.swebench.com/" target="_blank" rel="noopener">SWE-bench</a>
+                <a class="source" href="https://docs.smith.langchain.com/evaluation" target="_blank"
+                    rel="noopener">LangSmith — Evaluation</a>
+                <a class="source" href="https://docs.claude.com/en/docs/test-and-evaluate/define-success"
+                    target="_blank" rel="noopener">Anthropic — Define success</a>
+                <a class="source" href="https://platform.openai.com/docs/guides/evals" target="_blank"
+                    rel="noopener">OpenAI Evals</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

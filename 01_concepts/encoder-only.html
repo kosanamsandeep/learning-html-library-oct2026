@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encoder to Encoder Transformers</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="transformer-basics.html">Basics</a>
+                <a href="encoder-decoder.html">Encoder Decoder</a>
+                <a href="gpt-level.html">GPT Level</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#definition">Definition</a>
+            <a href="#flow">Input to output flow</a>
+            <a href="#example">Example</a>
+            <a href="#use-cases">Use cases</a>
+            <a href="#limits">Limits</a>
+            <a href="#why-only-encoder">Why this way</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro">
+                <p class="eyebrow">Step 2</p>
+                <h1>Encoder to encoder architecture</h1>
+                <p><strong>Meaning here:</strong> a stack made only of encoder blocks, where the sequence enters, gets
+                    contextualized layer by layer, and exits as contextual embeddings. This is the pattern used by
+                    BERT-like models.</p>
+            </section>
+
+            <section class="section" id="definition">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What an encoder-only transformer does</h3>
+                        <p>Each layer uses bidirectional self-attention. A token can attend to tokens on both its left
+                            and right, so the final representation is deeply contextual.</p>
+                    </div>
+                    <div class="card">
+                        <h3>What it produces</h3>
+                        <p>The output is not usually a generated sentence. It is a sequence of learned vectors that can
+                            be sent into a task-specific head.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="flow">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">In and out</p>
+                        <h2>How information flows</h2>
+                    </div>
+                </div>
+                <div class="flow">
+                    <div class="step">
+                        <h3>Input</h3>
+                        <p>Token embeddings plus positional embeddings enter the first encoder block.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Context building</h3>
+                        <p>Every layer updates every token using information from the entire sentence. Later layers
+                            usually represent more abstract meaning than earlier layers.</p>
+                    </div>
+                    <div class="step">
+                        <h3>Output</h3>
+                        <p>The final hidden states can be pooled for sentence-level tasks or kept token-by-token for
+                            structured prediction tasks.</p>
+                    </div>
+                </div>
+                <div class="note">
+                    <p class="formula">tokens -> embeddings -> encoder stack -> contextual vectors -> task head</p>
+                </div>
+            </section>
+
+            <section class="section" id="example">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Concrete example</p>
+                        <h2>Sentiment classification with an encoder</h2>
+                    </div>
+                </div>
+                <div class="example">
+                    <p><strong>Input:</strong> "The headphones look premium but sound flat."</p>
+                    <p>The token "flat" attends to "sound". The token "premium" attends to "look". The model learns that
+                        visual praise and audio criticism are separate ideas. A pooled representation can then feed a
+                        classifier that predicts mixed or negative sentiment depending on the label scheme.</p>
+                </div>
+            </section>
+
+            <section class="section" id="use-cases">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Why encoder-only models are strong</th>
+                                <th>Typical tasks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Full bidirectional context gives strong understanding of a sentence.</td>
+                                <td>Classification, retrieval, ranking, embedding generation.</td>
+                            </tr>
+                            <tr>
+                                <td>Outputs are stable vector representations rather than generated text.</td>
+                                <td>Semantic search, clustering, sentence similarity.</td>
+                            </tr>
+                            <tr>
+                                <td>Can label each token with rich context.</td>
+                                <td>Named entity recognition, part-of-speech tagging.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="limits">
+                <div class="checkpoint">
+                    <h2>Key limitation</h2>
+                    <p>Encoder-only stacks are optimized for understanding, not open-ended generation. They produce rich
+                        representations, but they do not naturally autoregress one token at a time like GPT models.</p>
+                </div>
+            </section>
+
+            <section class="section" id="why-only-encoder">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Architecture choice</p>
+                        <h2>Why choose encoder-only instead of decoder-only or classical methods?</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Why encoder-only is the right choice for understanding tasks</h3>
+                        <ul class="stack-list">
+                            <li>Bidirectional attention lets each token use both left and right context.</li>
+                            <li>That full context is ideal when the job is to classify, rank, retrieve, or tag rather
+                                than generate.</li>
+                            <li>The output vectors are stable representations that can be reused across many downstream
+                                tasks.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What other approaches often fail at</h3>
+                        <ul class="stack-list">
+                            <li>Decoder-only models can do understanding, but they do not naturally expose a symmetric
+                                bidirectional encoding objective.</li>
+                            <li>RNN encoders capture context more slowly and less efficiently at large scale.</li>
+                            <li>Classical feature engineering or TF-IDF misses rich token interaction and polysemy.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is bidirectional context such a big advantage for BERT-style models?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because many understanding tasks depend on both earlier and later words. For token
+                                disambiguation, sentiment, and entity labeling, seeing both sides of the token produces
+                                a cleaner contextual representation than a left-to-right view alone.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why not just use a decoder-only model for sentence embeddings?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>You can, but encoder-only models are usually more natural for this because the entire
+                                sequence is encoded symmetrically. Decoder-only hidden states are optimized for
+                                next-token prediction, not primarily for a balanced sentence-level representation.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>You need semantic search over product descriptions, with fast offline embedding generation.
+                            Which architecture fits best?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Encoder-only. The target is representation quality, not generation. You want a compact
+                                contextual vector for each description that can be indexed and compared efficiently.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>An interviewer asks why encoder-only models are weak at open-ended text generation. What do
+                            you say?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Because they are not organized around autoregressive decoding. Their hidden states are
+                                excellent for understanding the full input sequence, but they do not naturally implement
+                                the stepwise next-token generation loop that decoder-only systems optimize for.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Next recommended page: encoder-decoder models.</p>
+            <div class="mini-links">
+                <a href="encoder-decoder.html">Continue</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

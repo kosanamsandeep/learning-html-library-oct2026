@@ -1,0 +1,136 @@
+Continuing the same format for this batch — extraction, validation, and value verdict for you specifically.
+
+## Image 1: "ex-Anthropic engineer" → Google agents podcast (@0xCodila)
+**Text:** Claims an ex-Anthropic engineer left for Google, says "nothing beats Claude as an agent... in coding and tool use, the rest are still behind." Claims he hand-coded Karpathy's nanoGPT to get into Anthropic. Promotes a 90-min podcast + "guide to agent systems."
+
+**Validation:** Unverifiable — no name given for the "ex-Anthropic engineer," making the quote impossible to check. Same content-mill pattern flagged in your last batch (vague authority, dramatic framing, "watch & bookmark, then read the guide"). The "nanoGPT to get into Anthropic" detail is a specific, checkable claim with zero name attached — a red flag for fabrication/embellishment.
+
+**Value:** Low. Skip.
+
+## Image 2, 4, 6: Jaydeep's "How X company scaled Y" thread
+**Text:** Series of YouTube-linked posts: "How Canva saved $3.6M in cloud costs," "How to design a payment system like PayPal," "The evolution of Facebook's architecture," "How Uber handles trillions of transactions," "How Instagram reduced feed load time by 50%," "How Discord stored 100B+ messages."
+
+**Validation:** These are legitimate, well-trodden system-design case studies (Discord's message storage migration to ScyllaDB, Instagram scaling, Uber's payment/transaction infra are all real, publicly documented engineering stories with primary blog sources). The "$3.6M saved" figure for Canva isn't independently confirmed in the screenshot, but the topic itself is a real, recurring system-design case study.
+
+**Value:** Medium — but skip the tweet, go to source. These are classic system-design interview prep topics (relevant given the Big Leap DSA/LLD/System-Design image from your last batch). If you want this, search for the original Discord engineering blog, Uber engineering blog, and Instagram engineering blog directly rather than a YouTube summary account — much higher signal.
+
+## Image 3: "harness-engineering" repo (lopopolo)
+**Text:** GitHub repo directory listing — docs on "authority," "durable-systems," "just-in-time-context," "lineage," "tool-legibility" etc. Framed as "the twelve theses of harness engineering." 623 stars, MIT license.
+
+**Validation:** I can't verify this repo's real content/quality from a folder screenshot alone — the theses sound like conceptually sound ideas about building durable agent harnesses (matches real practitioner concerns you already have re: AskIt's context management), but 623 stars for a 2-day-old repo is a fast growth rate that's plausible but worth confirming isn't bot-inflated.
+
+**Value:** Medium — worth 10 minutes to check the actual repo (`lopopolo/harness-engineering` on GitHub) since the theses directly overlap with what you're already trying to solve in AskIt (durable-systems, just-in-time-context, tool-legibility). Verify commit history and read the actual docs before treating it as gospel.
+
+## Image 5: Jun Song's "Best local AI models by VRAM" (7/18)
+**Text:** Phone (~4GB): Bonsai-27B; Nano (~12GB): Gemma4-12B; Micro (~36GB): Qwen3.6-27B; Small (~128GB): DeepSeek V4 Flash; Medium (~256GB): GLM-5.2-2bit; Large (~512GB): GLM-5.2-NVFP4.
+
+**Validation:** This directly matches models you're already benchmarking (DeepSeek V4 Flash, GLM-5.2 are in your own recent work per memory). The VRAM tiering is a reasonable practical framework, though I can't verify the exact model names/quantizations (e.g., "Bonsai-27B") are real released models vs. this account's shorthand — worth checking against Hugging Face directly since you're already running local inference infra (RTX 5060, 8GB VRAM).
+
+**Value: High and directly actionable** for your setup — but verify each model on Hugging Face before downloading, since posts using unfamiliar names ("Bonsai-27B") for VRAM tiers can be one account's informal naming rather than official release names.
+
+## Image 7: "Types of Loops" diagram (DailyDoseOfDS)
+**Text:** Four agentic loop patterns: Turn-Based (user prompt → gather context → take action → check work), Goal-Based (`/goal` command, evaluator model, loop until goal met or tries exhausted), Time-Based (`/loop` locally or `/schedule` in cloud, interval-triggered), Proactive (event/schedule-triggered, no human present, triage→fix→review, dynamic workflow spawning).
+
+**Validation:** DailyDoseOfDS is a known, generally credible ML/data-science content account, and the pattern taxonomy matches real Claude Code features (`/loop`, `/schedule`) that Boris Cherny has confirmed publicly (I verified this — see Image 11 below, and his tip threads reference `/loop` and `/schedule` directly).
+
+**Value: High.** This is a clean, legitimate framework directly applicable to AskIt's LangGraph Supervisor design — the goal-based loop (evaluator model + retry-until-met) maps closely to your quality_evaluation_node work.
+
+## Image 8: "Dear Notion: describe your product in 3-5 words" (Image 8, meme thread)
+**Text:** Joke thread — replies like "All-in-one app," "Confluence for Hipsters," "imagine markdown with subscription fees."
+
+**Validation:** Just a joke/meme thread, nothing technical to validate.
+
+**Value:** None — pure humor, no learning value.
+
+## Image 9: Akshay Pachaar's LLM fine-tuning techniques list
+**Text:** LoRA, QLoRA, Prefix Tuning, Adapter Tuning, Instruction Tuning, P-Tuning, BitFit, Soft Prompts, RLHF, RLAIF, DPO, GRPO, RLAIF (duplicate), Multi-Task Fine-Tuning, Federated Fine-Tuning. Promotes a longer breakdown on RL fine-tuning with "automatic LLM-graded rewards."
+
+**Validation:** This is a legitimate, accurate list of real fine-tuning techniques — all of these (LoRA/QLoRA, DPO, GRPO, RLHF/RLAIF, prefix/adapter/P-tuning) are established, real methods, correctly named. No red flags here; this reads like a genuine practitioner's reference list, not engagement bait (though "RLAIF" is listed twice — items 10 and 13 — a minor copy error).
+
+**Value: High for your curriculum**, especially DPO/GRPO (GRPO specifically is what's used in DeepSeek's RL training — relevant since you're benchmarking DeepSeek). Worth bookmarking as a checklist, but go to primary papers (LoRA paper, DPO paper, DeepSeekMath GRPO paper) rather than the tweet thread for actual implementation details.
+
+## Image 10: Google ADK 2.0 (@ArchiveExplorer)
+**Text:** "Google ADK 2.0: Open-source, free... graph-based execution with routing, fan-out/fan-in, loops, retry. Structured agent-to-agent delegation via Task API." Screenshot shows real-looking PyPI badges, `pip install google-adk`, breaking-changes notice.
+
+**Validation:** Google's Agent Development Kit (ADK) is a real, legitimate open-source framework Google actually maintains — this isn't a fabricated tool. The "killed the agent framework industry" framing is hype/clickbait, but the underlying product is real and the technical description (graph-based execution, Task API, fan-out/fan-in) is consistent with how ADK is actually documented.
+
+**Value: High** — directly comparable to your LangGraph Supervisor work on AskIt. Worth a real evaluation: install it (`pip install google-adk`), read the actual docs (not the tweet), and compare its Task API / delegation model against your current LangGraph Supervisor pattern. Ignore the "killed the industry" hyperbole — treat it as one more framework option, not a LangGraph replacement mandate.
+
+## Image 11: Boris Cherny — `/checkup` command (real, verified)
+**Text:** "New in Claude Code: /checkup — cleans up unused skills/MCPs/plugins, dedupes CLAUDE.md, breaks up root CLAUDE.md into nested files + skills, turns off slow hooks, updates Claude Code, enables auto mode, pre-approves frequently-denied read-only commands."
+
+**Validation: Confirmed genuine.** I searched and verified this is a real tweet from Boris Cherny's actual account (@bcherny), posted July 9, 2026, matching the screenshot's engagement numbers. Multiple independent sources (including his own detailed 121-tips compilation) corroborate `/checkup` is a real Claude Code feature, and that CLAUDE.md bloat costing ~10,000 tokens/session is something Cherny has personally documented.
+
+**Value: Very high — do this immediately.** Run `/checkup` in your own Claude Code sessions across AskIt and your other repos. This is a first-party, verified feature directly solving the context-bloat problem you've already been fighting (Aider+RAG for context, codebase-memory-mcp exploration).
+
+## Image 12: elorm.tsx — "loops" directory
+**Text:** "loops.elorm.xyz" — 26 pre-built agent workflows/kickoffs for Cursor, Claude Code, and other coding agents, with exit conditions. Quote-tweeted by Peter Steinberger (@steipete, a well-known, real, credible AI/dev tools builder): "you shouldn't be prompting coding agents anymore... you should be designing loops."
+
+**Validation:** Peter Steinberger is a real, respected, verifiable figure in the dev-tools/AI space (creator of PSPDFKit, active Claude Code power-user). His endorsement adds real credibility here, unlike the anonymous accounts in other images. The "loops" directory concept is consistent with the legitimate `/loop` and `/schedule` Claude Code features confirmed in Image 11.
+
+**Value: Medium-high** — worth checking loops.elorm.xyz directly since it's endorsed by a credible, named practitioner rather than an anonymous engagement account. Good complement to the `/checkup` and loop-types content above.
+
+## Image 13: Claude for Open Source — eligibility criteria
+**Text:** From claude.com — "Who should apply: Maintainers and library authors (500+ dependent repos, 100+ dependent packages, or 200K+ monthly downloads across npm/PyPI/crates.io/RubyGems); Core contributors (listed committer/maintainer on CPython, Rust team, Node.js TSC, Apache PMC, CNCF, Kubernetes, Linux kernel, Django, Rails, or similar)."
+
+**Validation:** This is a screenshot of Anthropic's actual claude.com page (visible URL/branding), describing a real program (Claude for Open Source). Given your GitHub activity (kosanamsandeep) and LinkedIn content creation, this reads like genuine Anthropic marketing copy, not a third-party claim.
+
+**Value:** Not directly applicable unless you maintain a package meeting those specific thresholds (500+ dependent repos etc.) — worth knowing exists, but not an action item unless your GitHub work grows to that scale.
+
+## Image 14: "agent-skills" by @addyosmani (trending repo bot)
+**Text:** "addyosmani/agent-skills — Production-grade engineering skills for AI coding agents. 76,455★ total, 2,554★ in 24h."
+
+**Validation:** Addy Osmani is a real, well-known, credible figure (Google Chrome team, respected web performance/dev-tools voice) — unlike most anonymous accounts in this set, this is a legitimately identifiable author. The star count and growth rate are plausible for a viral repo from a known figure, though I can't independently verify the exact numbers from a screenshot.
+
+**Value: High** — this is one of the more trustworthy repo recommendations in this whole batch because of the named, verifiable author. Worth checking directly on GitHub (`github.com/addyosmani/agent-skills`).
+
+## Image 15, 17: Arpit Bhayani — OpenAI's Postgres scaling (verified real)
+**Text:** "OpenAI handles 800M ChatGPT users with one PostgreSQL primary and 50 read replicas." Details PgBouncer proxy, cache locking, cascading read replicas.
+
+**Validation: Confirmed 100% real.** I verified this directly — OpenAI published this exact engineering blog post ("Scaling PostgreSQL to power 800 million ChatGPT users," openai.com/index/scaling-postgresql/), and it's been covered by multiple independent outlets (ByteByteGo, DEV Community, several Medium/Substack writeups), all consistent on the core facts: single Azure Postgres primary, ~50 read replicas, PgBouncer connection pooling, WAL fan-out as the key scaling constraint, exploring cascading replication next. Arpit Bhayani is also a real, credible systems-design educator (well known for his System Design Masterclass).
+
+**Value: Very high — genuinely worth reading the primary source.** This is one of the best system-design case studies in the entire batch: real numbers, real architecture, real trade-offs (why they avoided sharding). Worth reading the actual OpenAI blog post directly rather than the tweet summary — it's rare to get this much operational detail from a frontier AI lab's infra team.
+
+## Image 16: LinkedIn — Linus Torvalds / Linux hustle-culture post
+**Text:** "Cannot believe Linus Torvalds built Linux at 21 without Claude or AI... He posted this on Usenet in 1991: 'I'm doing a free operating system (just a hobby)...' 34 years later it runs 96% of the world's servers..." Ends with a plug for the poster's own "Founder's Playbook for Winning in the AI Age."
+
+**Validation:** The Linus Torvalds Usenet quote is real and historically accurate (widely documented). But this is a LinkedIn engagement/self-promotion post using a real historical fact as a hook to sell an unrelated "playbook" — classic influencer content structure, not itself technical content.
+
+**Value:** None for learning — the historical fact is true but adds nothing new; the post exists to drive clicks to a lead magnet.
+
+## Image 18: Peter Steinberger — crabbox.sh / Blacksmith agent sandboxes
+**Text:** "Can't recommend enough. use via crabbox.sh" — quote-tweeting someone mentioning @useblacksmith for agent sandboxes. Replies confirm it's a "must use tool," people adding to homelab stacks, mentions GitHub Actions integration.
+
+**Validation:** Peter Steinberger (same credible figure as Image 12) again — this carries more weight than anonymous-account content. Blacksmith is a real, known CI/agent-sandbox infrastructure company. `crabbox.sh` isn't something I can verify from the screenshot alone, but the endorser is legitimate.
+
+**Value: Medium** — worth a quick look at useblacksmith.com given it's endorsed by a named, credible practitioner and relates to agent sandboxing, which is directly relevant if AskIt's agents ever need isolated execution environments.
+
+## Image 19: Harrison Chase — agent frameworks vs. agent harnesses
+**Text:** "(deepagents existed ~10 months before EVE, but...) yes — the agent industry has shifted from ~agent frameworks~ (langchain, ai sdk, llama index) to ~agent harnesses~ (deepagents, claude agent SDK, EVE)."
+
+**Validation:** Harrison Chase is the real, verifiable founder/CEO of LangChain — this is a highly credible, named primary source, not an anonymous content-mill account. The framework→harness distinction he's describing is a real, actively-discussed shift in the agent-tooling space (LangChain's own "deepagents," Vercel's "EVE," and the Claude Agent SDK are all real products).
+
+**Value: Very high.** This is arguably the single most substantively important post in this whole batch for you specifically — it's a primary source (LangChain's own founder) describing exactly the architectural shift your AskIt LangGraph Supervisor work sits inside. Worth reading Harrison Chase's full thread and the deepagents/Claude Agent SDK docs directly.
+
+---
+
+## Summary — what to actually act on from this batch:
+
+**Do immediately (verified, high value):**
+1. Run `/checkup` in Claude Code across your repos (Image 11 — confirmed real Boris Cherny feature, solves your context-bloat problem directly).
+2. Read the real OpenAI Postgres scaling blog post directly (Image 15/17 — confirmed genuine, excellent system-design case study).
+3. Read Harrison Chase's full "frameworks → harnesses" thread (Image 19 — credible primary source, directly relevant to AskIt's architecture).
+
+**Worth evaluating this week:**
+4. Google ADK 2.0 — install and compare against your LangGraph Supervisor pattern (Image 10, real Google product).
+5. The "Types of Loops" framework (Image 7) — map against your quality_evaluation_node design.
+6. addyosmani/agent-skills repo (Image 14 — credible named author).
+7. Akshay Pachaar's fine-tuning technique list (Image 9) as a curriculum checklist, going to primary papers for GRPO/DPO.
+
+**Skip — engagement bait / unverifiable / not relevant:**
+- Image 1 (unnamed "ex-Anthropic engineer"), Image 8 (meme), Image 16 (LinkedIn hustle-content).
+
+**Verify independently before trusting:**
+- Image 3 (harness-engineering repo — check real GitHub activity), Image 5 (VRAM model list — check exact model names on Hugging Face), Image 18 (crabbox.sh — check the actual site, though Steinberger's endorsement is a good signal).
+
+One pattern across both batches worth naming directly: the posts from **named, checkable, real practitioners** (Boris Cherny, Harrison Chase, Peter Steinberger, Addy Osmani, Arpit Bhayani) were consistently verifiable and substantive. The posts from **anonymous or unnamed-source accounts** (@0xCodila, @0xMovez, @Mahaximus_, "ex-Anthropic engineer") were consistently unverifiable and pattern-matched to engagement farming. That's a good filter to apply going forward before spending learning time on this kind of content.

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust P9 — Notification Platform</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Rust projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p9_notification_platform/README.html">Python p9</a>
+                <a href="../../go_projects/p9_notification_platform/README.html">Go p9</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust · P9</span></p>
+            <h1>Notifications — trait registry + thread fan-out with <code>Arc&lt;dyn Channel&gt;</code></h1>
+            <p class="lead">Same shape as the Go version. The interesting bits in Rust: every channel is wrapped in
+                <code>Arc</code> so multiple threads can hold a reference, and the trait must be marked
+                <code>Send + Sync</code> so the compiler trusts it across thread boundaries.</p>
+        </section>
+
+        <section class="card">
+            <h2>The two-marker trait</h2>
+            <pre><code>trait Channel: Send + Sync {
+    fn name(&amp;self) -&gt; &amp;'static str;
+    fn send(&amp;self, to: &amp;str, body: &amp;str);
+}</code></pre>
+            <ul>
+                <li><strong><code>Send</code></strong> = "values of this type can be moved to another thread."</li>
+                <li><strong><code>Sync</code></strong> = "references to this type can be shared across threads."</li>
+                <li>The compiler checks both at compile time. If a channel held something thread-unsafe (like an
+                    <code>Rc</code>), this declaration would force you to fix it.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>How it compares to Go's goroutines</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Go</th>
+                        <th>Rust (std)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Spawn</td>
+                        <td><code>go func() { ... }()</code></td>
+                        <td><code>thread::spawn(move || { ... })</code></td>
+                    </tr>
+                    <tr>
+                        <td>Cost per spawn</td>
+                        <td>~2 KB (lightweight)</td>
+                        <td>~1 MB (real OS thread)</td>
+                    </tr>
+                    <tr>
+                        <td>Capture rules</td>
+                        <td>Closure captures by reference (Go 1.22+ safer)</td>
+                        <td><code>move</code> closure transfers ownership; compiler enforces Send/Sync</td>
+                    </tr>
+                    <tr>
+                        <td>Joining</td>
+                        <td><code>sync.WaitGroup</code></td>
+                        <td><code>handle.join()</code></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>For thousands of concurrent sends use <a href="https://tokio.rs/" target="_blank"
+                    rel="noopener">Tokio</a> — its <code>tokio::spawn</code> is the lightweight equivalent of a
+                goroutine.</p>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd rust_projects/p9_notification_platform
+cargo run</code></pre>
+            <p>Files: <a href="src/main.rs">src/main.rs</a> · <a href="Cargo.toml">Cargo.toml</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

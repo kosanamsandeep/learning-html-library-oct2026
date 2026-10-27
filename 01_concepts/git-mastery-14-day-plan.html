@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Mastery — 14 Day Plan (Beginner to Pro)</title>
+    <style>
+        :root {
+            --bg: #f4efe6;
+            --paper: #fffaf2;
+            --ink: #1c1917;
+            --muted: #5f564d;
+            --line: #d9ccb8;
+            --accent: #0f766e;
+            --accent-soft: #d7f3ef;
+            --warm: #c2410c;
+            --warm-soft: #fde8db;
+            --good: #166534;
+            --good-soft: #dcfce7;
+            --bad: #991b1b;
+            --bad-soft: #fee2e2;
+            --code-bg: #1c1917;
+            --code-ink: #f5f1e8;
+            --radius: 16px;
+            --shadow: 0 18px 40px rgba(28, 25, 23, 0.08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+            --mono: "Cascadia Mono", "Consolas", "SF Mono", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.65;
+            background:
+                radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 28%),
+                radial-gradient(circle at top right, rgba(194, 65, 12, 0.13), transparent 24%),
+                linear-gradient(180deg, #faf5ec 0%, #f4efe6 100%);
+        }
+
+        header.site {
+            padding: 28px 0 8px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 250, 242, 0.7);
+            backdrop-filter: blur(6px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .shell {
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+        }
+
+        .title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent), #115e59);
+            color: #fff;
+            font-size: 1.05rem;
+            box-shadow: var(--shadow);
+        }
+
+        .top-links {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+        }
+
+        .top-links a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .top-links a:hover {
+            text-decoration: underline;
+        }
+
+        main {
+            padding: 28px 0 80px;
+        }
+
+        .hero {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 28px 32px;
+            box-shadow: var(--shadow);
+            margin-bottom: 28px;
+        }
+
+        .hero h1 {
+            margin: 6px 0 12px;
+            font-size: 1.9rem;
+            line-height: 1.25;
+        }
+
+        .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 0.75rem;
+            color: var(--warm);
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .hero p {
+            margin: 8px 0;
+            color: var(--muted);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 960px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .toc {
+                position: static !important;
+            }
+        }
+
+        .toc {
+            position: sticky;
+            top: 96px;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 18px 18px 12px;
+            box-shadow: var(--shadow);
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .toc h3 {
+            margin: 0 0 10px;
+            font-size: 0.85rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .toc ol {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .toc li {
+            margin: 4px 0;
+        }
+
+        .toc a {
+            display: block;
+            padding: 6px 8px;
+            border-radius: 8px;
+            color: var(--ink);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .toc a:hover {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        .toc .group {
+            margin-top: 14px;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--warm);
+            font-weight: 700;
+        }
+
+        section.day,
+        section.concept {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 26px 28px;
+            box-shadow: var(--shadow);
+            margin-bottom: 22px;
+            scroll-margin-top: 110px;
+        }
+
+        section.day h2,
+        section.concept h2 {
+            margin: 0 0 6px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: var(--accent-soft);
+            color: var(--accent);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .badge.warm {
+            background: var(--warm-soft);
+            color: var(--warm);
+        }
+
+        .badge.good {
+            background: var(--good-soft);
+            color: var(--good);
+        }
+
+        .badge.bad {
+            background: var(--bad-soft);
+            color: var(--bad);
+        }
+
+        h3 {
+            margin-top: 22px;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        h4 {
+            margin-top: 16px;
+            margin-bottom: 6px;
+            font-size: 0.98rem;
+            color: var(--ink);
+        }
+
+        p {
+            margin: 8px 0;
+        }
+
+        ul,
+        ol {
+            margin: 8px 0 8px 22px;
+            padding: 0;
+        }
+
+        li {
+            margin: 4px 0;
+        }
+
+        code {
+            font-family: var(--mono);
+            background: #efe7d6;
+            color: #1c1917;
+            padding: 1px 6px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: var(--code-bg);
+            color: var(--code-ink);
+            padding: 14px 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 0.88rem;
+            line-height: 1.55;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        @media (max-width: 720px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 14px 16px;
+            background: #fffdf7;
+        }
+
+        .card.good {
+            border-color: #86efac;
+            background: var(--good-soft);
+        }
+
+        .card.bad {
+            border-color: #fca5a5;
+            background: var(--bad-soft);
+        }
+
+        .card h4 {
+            margin-top: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 0.92rem;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: 8px 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .callout {
+            border-left: 4px solid var(--accent);
+            background: var(--accent-soft);
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin: 12px 0;
+        }
+
+        .callout.warn {
+            border-left-color: var(--warm);
+            background: var(--warm-soft);
+        }
+
+        .callout.danger {
+            border-left-color: var(--bad);
+            background: var(--bad-soft);
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 6px 14px;
+            font-size: 0.9rem;
+        }
+
+        .kv dt {
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .kv dd {
+            margin: 0;
+        }
+
+        .day-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        footer {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.85rem;
+            padding: 30px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="#top">
+                <span class="brand-mark">Git</span>
+                <span>Git Mastery · 14 Day Plan</span>
+            </a>
+            <nav class="top-links" aria-label="Top">
+                <a href="#overview">Overview</a>
+                <a href="#week1">Week 1</a>
+                <a href="#week2">Week 2</a>
+                <a href="#concepts">Concept Deep Dives</a>
+                <a href="#cheatsheet">Cheat Sheet</a>
+                <a href="index.html">Main docs</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="top">
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">14 day learning track · solo lab simulating a 100-dev team</p>
+                <h1>From Beginner to Pro at Day-to-Day Git in Two Weeks</h1>
+                <p>You will use this repository (<code>poc_iq</code>) as your single lab. Each day adds one real
+                    workflow used by senior engineers in large teams: feature branching, PR etiquette, conflict
+                    resolution, rebasing, cherry-picking, stashing, squashing, environment promotion, and release
+                    hygiene. You will simulate the team by acting as multiple developers using extra local branches
+                    and a second working copy of the repo.</p>
+                <p>Every day has: a <strong>goal</strong>, the <strong>exact commands</strong> to run, a
+                    <strong>what-if comparison</strong> (good vs bad approach), and a small
+                    <strong>self-check</strong>. By Day 14 you should be comfortable owning the Git workflow for a
+                    large team.
+                </p>
+            </section>
+
+            <div class="layout">
+                <aside class="toc" aria-label="Plan navigation">
+                    <h3>Navigate</h3>
+                    <ol>
+                        <li><a href="#overview">Plan overview</a></li>
+                        <li><a href="#setup">Lab setup</a></li>
+                    </ol>
+                    <div class="group">Week 1 · Foundation</div>
+                    <ol>
+                        <li><a href="#day1">Day 1 · Identity, config, status</a></li>
+                        <li><a href="#day2">Day 2 · Commits done right</a></li>
+                        <li><a href="#day3">Day 3 · Branching model</a></li>
+                        <li><a href="#day4">Day 4 · Pull vs fetch</a></li>
+                        <li><a href="#day5">Day 5 · Merge vs rebase</a></li>
+                        <li><a href="#day6">Day 6 · Stash and WIP</a></li>
+                        <li><a href="#day7">Day 7 · First PR end-to-end</a></li>
+                    </ol>
+                    <div class="group">Week 2 · Team-scale</div>
+                    <ol>
+                        <li><a href="#day8">Day 8 · Merge conflicts</a></li>
+                        <li><a href="#day9">Day 9 · Cherry-pick & hotfix</a></li>
+                        <li><a href="#day10">Day 10 · Squash, fixup, amend</a></li>
+                        <li><a href="#day11">Day 11 · Reviewing PRs</a></li>
+                        <li><a href="#day12">Day 12 · QA / Prod promotion</a></li>
+                        <li><a href="#day13">Day 13 · Tags & releases</a></li>
+                        <li><a href="#day14">Day 14 · Recovery & reflog</a></li>
+                    </ol>
+                    <div class="group">Reference</div>
+                    <ol>
+                        <li><a href="#concepts">Concept deep dives</a></li>
+                        <li><a href="#commit-style">Commit message standard</a></li>
+                        <li><a href="#branch-strategy">Branching strategies</a></li>
+                        <li><a href="#pr-playbook">PR playbook</a></li>
+                        <li><a href="#conflict">Conflict resolution</a></li>
+                        <li><a href="#cheatsheet">Daily cheat sheet</a></li>
+                    </ol>
+                </aside>
+
+                <div>
+                    <!-- OVERVIEW -->
+                    <section class="concept" id="overview">
+                        <h2>Plan overview <span class="badge">Read first</span></h2>
+                        <p>This plan assumes you are the only engineer but want to behave like one of 100. To simulate
+                            the team you will:</p>
+                        <ul>
+                            <li>Use <strong>multiple feature branches in parallel</strong> as if different developers
+                                opened them.</li>
+                            <li>Keep a <strong>second clone</strong> of the same repo in a sibling folder (call it
+                                <code>poc_iq_dev2</code>) and use it to push conflicting work, then resolve as the
+                                "other developer".
+                            </li>
+                            <li>Open and review your own <strong>Pull Requests</strong> on GitHub the same way a real
+                                reviewer would: comment, request changes, then approve.</li>
+                            <li>Promote code through <code>dev → qa → main</code> branches the way a release manager
+                                would.</li>
+                        </ul>
+
+                        <div class="callout">
+                            <strong>Mental model:</strong> Git tracks <em>snapshots</em>, not files. A commit is a
+                            snapshot + parent pointer. Branches are just movable pointers to commits. Everything else
+                            (merge, rebase, cherry-pick, revert) is moving or copying these pointers. Once you
+                            internalize
+                            that, every command makes sense.
+                        </div>
+
+                        <h3>How to use each day</h3>
+                        <ol>
+                            <li>Read the <strong>Goal</strong> and <strong>Why it matters</strong>.</li>
+                            <li>Run the <strong>Commands</strong> block in the listed order.</li>
+                            <li>Read the <strong>What if you do it the wrong way</strong> box — this is where most
+                                team incidents come from.</li>
+                            <li>Tick off the <strong>Self-check</strong> before moving on.</li>
+                        </ol>
+
+                        <h3>The big question: how often should I commit?</h3>
+                        <div class="grid-2">
+                            <div class="card good">
+                                <h4>Do</h4>
+                                <ul>
+                                    <li>Commit when a <em>single logical change</em> is complete and the code still
+                                        runs. Could be 1 file or 20 files — size doesn't matter, <em>cohesion</em> does.
+                                    </li>
+                                    <li>Use many small commits while you work, then optionally <strong>squash</strong>
+                                        them into 1–3 meaningful commits before the PR is merged.</li>
+                                    <li>Each commit message must explain <strong>why</strong>, not just what.</li>
+                                </ul>
+                            </div>
+                            <div class="card bad">
+                                <h4>Don't</h4>
+                                <ul>
+                                    <li>Don't make one giant 40-file commit at the end of the day called
+                                        <code>"updates"</code>. Reviewers can't review it and reverting it is dangerous.
+                                    </li>
+                                    <li>Don't commit every keystroke either (<code>"fix typo"</code>, <code>"fix typo
+                                        again"</code>) on the shared branch — squash those locally first.</li>
+                                    <li>Don't commit broken or non-compiling code to a shared branch.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p class="callout warn"><strong>Rule of thumb:</strong> on your <em>feature branch</em>
+                            commit as often as you like (cheap save points). Before merging into <code>dev</code>,
+                            curate the history so each commit tells a story a stranger could read in a year.</p>
+                    </section>
+
+                    <!-- SETUP -->
+                    <section class="concept" id="setup">
+                        <h2>Lab setup <span class="badge warm">Do once</span></h2>
+                        <p>You already pushed this repo to <code>https://github.com/Kosanam-10746767_ltim/poc_iq</code>.
+                            Now set identity, line-endings, and a second clone to simulate a teammate.</p>
+                        <pre><code>git config --global user.name  "Your Name"
+git config --global user.email "your.email@ltimindtree.com"
+git config --global init.defaultBranch main
+git config --global pull.rebase false        # default merge on pull; we will override per-case
+git config --global core.autocrlf true       # Windows line endings safety
+git config --global core.editor "code --wait"
+git config --global alias.st  "status -sb"
+git config --global alias.lg  "log --oneline --graph --decorate --all -20"
+git config --global alias.last "log -1 --stat"</code></pre>
+                        <p>Create the simulated teammate workspace:</p>
+                        <pre><code>cd ..
+git clone https://github.com/Kosanam-10746767_ltim/poc_iq.git poc_iq_dev2
+cd poc_iq_dev2
+git config user.name  "Dev Two"
+git config user.email "dev2@local.test"</code></pre>
+                        <p>Now you have <code>poc_iq</code> (you as Dev One) and <code>poc_iq_dev2</code> (you
+                            pretending to be Dev Two). Throughout the plan, when an exercise says "as Dev Two", switch
+                            into that folder.</p>
+                    </section>
+
+                    <!-- WEEK 1 -->
+                    <section class="concept" id="week1">
+                        <h2>Week 1 · Foundation <span class="badge">Solo fluency</span></h2>
+                        <p>Goal of the week: be unshakeable on the everyday loop —
+                            <code>status → diff → add → commit → push → pull</code>, branching, and your first PR.
+                        </p>
+                    </section>
+
+                    <!-- DAY 1 -->
+                    <section class="day" id="day1">
+                        <div class="day-meta"><span class="badge">Day 1</span><span class="badge warm">~45 min</span>
+                        </div>
+                        <h2>Identity, config, and reading the repo</h2>
+                        <p><strong>Goal:</strong> never again be confused about "what state is my repo in?".</p>
+                        <h3>Commands</h3>
+                        <pre><code>git status              # working tree vs index vs HEAD
+git status -sb          # short format with branch info (your alias: git st)
+git log --oneline -10
+git lg                  # graph of all branches
+git diff                # unstaged changes
+git diff --staged       # what would be in the next commit
+git remote -v
+git branch -vv          # local branches + their upstream tracking</code></pre>
+                        <h3>Why each matters</h3>
+                        <ul>
+                            <li><code>git status</code> answers "what will <code>git commit</code> include?".</li>
+                            <li><code>git diff --staged</code> is the <em>only</em> truth about what your next commit
+                                contains. Always run it before committing.</li>
+                            <li><code>git branch -vv</code> shows which remote branch each local branch tracks. Most
+                                "my push went somewhere weird" incidents come from missing this.</li>
+                        </ul>
+                        <div class="grid-2">
+                            <div class="card good">
+                                <h4>Good habit</h4>
+                                <p>Run <code>git status</code> before <em>and</em> after every Git command for the
+                                    first two weeks. Build the muscle memory.</p>
+                            </div>
+                            <div class="card bad">
+                                <h4>Bad habit</h4>
+                                <p>Running <code>git add .</code> and <code>git commit -am "wip"</code> without
+                                    looking at status. You will eventually commit <code>.env</code>, a 200 MB zip, or
+                                    a half-broken file.</p>
+                            </div>
+                        </div>
+                        <p><strong>Self-check:</strong> can you explain the three areas (working tree, staging index,
+                            HEAD) and which command moves changes between them?</p>
+                    </section>
+
+                    <!-- DAY 2 -->
+                    <section class="day" id="day2">
+                        <div class="day-meta"><span class="badge">Day 2</span><span class="badge warm">~60 min</span>
+                        </div>
+                        <h2>Commits done right (the message standard)</h2>
+                        <p><strong>Goal:</strong> write commit messages a reviewer thanks you for.</p>
+                        <h3>The Conventional Commits format (industry standard)</h3>
+                        <pre><code>&lt;type&gt;(&lt;scope&gt;): &lt;short imperative summary, ≤ 72 chars&gt;
+
+&lt;blank line&gt;
+&lt;body: WHY this change, not WHAT — the diff already shows what&gt;
+
+&lt;blank line&gt;
+Refs: JIRA-1234
+Co-authored-by: Name &lt;email&gt;</code></pre>
+                        <p>Allowed types: <code>feat</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>,
+                            <code>test</code>, <code>chore</code>, <code>perf</code>, <code>build</code>,
+                            <code>ci</code>,
+                            <code>revert</code>.
+                        </p>
+
+                        <div class="grid-2">
+                            <div class="card good">
+                                <h4>Good</h4>
+                                <pre><code>feat(projections): add daily summary read model
+
+Adds DailySummaryProjection to answer "what happened today"
+queries without scanning the full event log. Required for the
+ops dashboard slated for sprint 14.
+
+Refs: BANK-482</code></pre>
+                            </div>
+                            <div class="card bad">
+                                <h4>Bad</h4>
+                                <pre><code>updates
+fixed stuff
+asdf
+final v2 FINAL</code></pre>
+                                <p>Six months later nobody — including you — knows what these did.</p>
+                            </div>
+                        </div>
+
+                        <h3>How often to commit (definitive answer)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Situation</th>
+                                    <th>Commit cadence</th>
+                                    <th>Why</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>On your own feature branch</td>
+                                    <td>Every 15–60 min when a thought is finished</td>
+                                    <td>Cheap save points; you can rewrite history later.</td>
+                                </tr>
+                                <tr>
+                                    <td>Before opening a PR</td>
+                                    <td>Curate to 1–5 meaningful commits via squash/rebase</td>
+                                    <td>Reviewers read the history, not just the diff.</td>
+                                </tr>
+                                <tr>
+                                    <td>On <code>dev</code>/<code>main</code></td>
+                                    <td>Only via PR merge — never direct commits</td>
+                                    <td>Direct commits skip CI and review, the two safety nets.</td>
+                                </tr>
+                                <tr>
+                                    <td>Tiny typo fix in same area</td>
+                                    <td>Use <code>git commit --amend</code> or <code>--fixup</code></td>
+                                    <td>Avoids polluting history with "typo" commits.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>Exercise</h3>
+                        <pre><code># pick one file in this repo, fix something real, commit it properly
+git checkout -b chore/commit-message-practice
+# edit docs/styles.css (e.g. add a comment header)
+git add docs/styles.css
+git diff --staged
+git commit                                 # opens editor, write multi-line message
+git log -1                                 # admire your message</code></pre>
+                        <p><strong>Self-check:</strong> can you write a commit message with type, scope, body, and a
+                            <code>Refs:</code> trailer without looking at a cheat sheet?
+                        </p>
+                    </section>
+
+                    <!-- DAY 3 -->
+                    <section class="day" id="day3">
+                        <div class="day-meta"><span class="badge">Day 3</span><span class="badge warm">~60 min</span>
+                        </div>
+                        <h2>Branching model for a 100-dev team</h2>
+                        <p><strong>Goal:</strong> understand which branch is for what, and never push to the wrong
+                            one.</p>
+                        <h3>Recommended model (trunk-based with env branches)</h3>
+                        <ul>
+                            <li><code>main</code> — production. Always deployable. Only updated by release merges or
+                                hotfixes. Protected: no direct pushes, PR + approvals required.</li>
+                            <li><code>qa</code> (or <code>staging</code>) — what QA tests. Updated by merging
+                                <code>dev</code> at the end of a sprint or candidate freeze.
+                            </li>
+                            <li><code>dev</code> (or <code>develop</code>) — integration branch. All feature PRs land
+                                here. Must stay green.</li>
+                            <li><code>feature/&lt;ticket&gt;-&lt;slug&gt;</code> — one branch per ticket, short-lived
+                                (ideally &lt; 3 days).</li>
+                            <li><code>bugfix/&lt;ticket&gt;-&lt;slug&gt;</code> — non-urgent bug fix, off
+                                <code>dev</code>.</li>
+                            <li><code>hotfix/&lt;ticket&gt;-&lt;slug&gt;</code> — urgent production fix, off
+                                <code>main</code>, merged into <em>both</em> <code>main</code> and <code>dev</code>.
+                            </li>
+                            <li><code>release/v1.4.0</code> — optional stabilization branch when you need to freeze
+                                features but keep fixing bugs for that release.</li>
+                        </ul>
+                        <h3>Setup the three env branches in your lab</h3>
+                        <pre><code>git checkout master
+git branch -m master main          # rename to industry standard
+git push -u origin main
+git push origin --delete master    # only after main is set as default on GitHub
+
+git checkout -b dev
+git push -u origin dev
+git checkout -b qa
+git push -u origin qa
+git checkout dev</code></pre>
+                        <div class="callout warn"><strong>On GitHub:</strong> Settings → Branches → set
+                            <code>main</code> as default → add branch protection on <code>main</code> and
+                            <code>qa</code>: require PR, require status checks, disallow force-push.
+                        </div>
+                        <h3>Create your first feature branch</h3>
+                        <pre><code>git checkout dev
+git pull --ff-only
+git checkout -b feature/BANK-101-add-leaderboard-projection
+# do work, commit, push
+git push -u origin feature/BANK-101-add-leaderboard-projection</code></pre>
+                        <div class="grid-2">
+                            <div class="card good">
+                                <h4>Good</h4>
+                                <p>Short-lived feature branches (&lt; 3 days). Rebased on <code>dev</code> daily so
+                                    they stay current. Merged via PR and deleted right after.</p>
+                            </div>
+                            <div class="card bad">
+                                <h4>Bad</h4>
+                                <p>A <code>feature/big-refactor</code> branch alive for 6 weeks. By merge time it
+                                    conflicts with everything and nobody remembers why decisions were made.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- DAY 4 -->
+                    <section class="day" id="day4">
+                        <div class="day-meta"><span class="badge">Day 4</span><span class="badge warm">~45 min</span>
+                        </div>
+                        <h2>Pull vs Fetch — the single most misunderstood pair</h2>
+                        <p><strong>Goal:</strong> know which to use and why.</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Command</th>
+                                    <th>What it does</th>
+                                    <th>Touches working tree?</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>git fetch</code></td>
+                                    <td>Downloads new commits from remote into
+                                        <code>origin/*</code> tracking branches.
+                                    </td>
+                                    <td>No. Safe. Always.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>git pull</code></td>
+                                    <td>= <code>git fetch</code> + <code>git merge</code>
+                                        (or <code>rebase</code>) of the upstream into your current branch.</td>
+                                    <td>Yes —
+                                        can create merge commits or conflicts.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>git pull --ff-only</code></td>
+                                    <td>Only updates if no local commits would
+                                        be overwritten by merge; otherwise refuses.</td>
+                                    <td>Safest "pull" — recommended
+                                        default.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>git pull --rebase</code></td>
+                                    <td>Fetches then replays your local commits
+                                        on top of the new upstream.</td>
+                                    <td>Keeps history linear, no merge bubbles.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>The pro daily routine</h3>
+                        <pre><code>git fetch --all --prune         # see what changed everywhere; prune deleted remote branches
+git status                       # am I ahead/behind?
+git pull --ff-only               # if behind only, fast-forward; else handle explicitly</code></pre>
+
+                        <div class="grid-2">
+                            <div class="card good">
+                                <h4>What if you fetch first</h4>
+                                <p>You see <em>exactly</em> what's coming before it touches your code. You can decide
+                                    merge vs rebase vs reset on a per-branch basis. Zero surprises.</p>
+                            </div>
+                            <div class="card bad">
+                                <h4>What if you just <code>git pull</code> blindly</h4>
+                                <p>If you had un-pushed local commits and the remote also moved, Git creates a merge
+                                    commit on your branch with a message like <code>"Merge branch 'dev' of github
+                                    into dev"</code>. Multiplied across 100 devs, the history becomes spaghetti and
+                                    bisecting bugs becomes painful.</p>
+                            </div>
+                        </div>
+
+                        <h3>Lab exercise (simulate teammate)</h3>
+                        <pre><code># Terminal A (you, in poc_iq)
+git checkout dev
+echo "// note from dev1" &gt;&gt; docs/styles.css
+git commit -am "chore(docs): dev1 note"
+
+# Terminal B (in poc_iq_dev2)
+git checkout dev
+git pull --ff-only
+echo "// note from dev2" &gt;&gt; docs/styles.css
+git commit -am "chore(docs): dev2 note"
+git push
+
+# Back in Terminal A
+git push                          # rejected: remote has new commits
+git fetch
+git log --oneline --graph --all -10
+git pull --rebase                 # replay your commit on top of dev2's
+git push</code></pre>
+                    </section>
+
+                    <!-- DAY 5 -->
+                    <section class="day" id="day5">
+                        <div class="day-meta"><span class="badge">Day 5</span><span class="badge warm">~75 min</span>
+                        </div>
+                        <h2>Merge vs Rebase — and when to use each</h2>
+                        <p><strong>Goal:</strong> pick the right integration strategy without flipping a coin.</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Use case</th>
+                                    <th>Use</th>
+                                    <th>Why</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Updating <em>my private feature branch</em> with latest <code>dev</code></td>
+                                    <td><code>git rebase dev</code></td>
+                                    <td>Linear history, easier PR review, no merge
+                                        noise.</td>
+                                </tr>
+                                <tr>
+                                    <td>Merging a <em>completed feature</em> into <code>dev</code></td>
+                                    <td>Merge (via PR; squash or merge-commit per team policy)</td>
+                                    <td>The merge point
+                                        records "this feature landed".</td>
+                                </tr>
+                                <tr>
+                                    <td>Branch is <em>shared</em> with other developers</td>
+                                    <td>Merge — never rebase</td>
+                                    <td>Rebase rewrites history; collaborators' branches break.</td>
+                                </tr>
+                                <tr>
+                                    <td>Bringing a hotfix from <code>main</code> back into <code>dev</code></td>
+                                    <td>Merge</td>
+                                    <td>Preserves provenance.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="callout danger"><strong>Golden rule:</strong> never rebase commits that have been
+                            pushed to a branch <em>other people use</em>. Rebase rewrites SHAs; their next
+                            <code>git pull</code> will explode.
+                        </div>
+                        <h3>Practical workflow on your feature branch</h3>
+                        <pre><code>git checkout feature/BANK-101-leaderboard
+git fetch origin
+git rebase origin/dev            # replay my commits on top of latest dev
+# resolve conflicts if any (Day 8)
+git push --force-with-lease      # safe force push: only if remote matches what I expect</code></pre>
+                        <p><code>--force-with-lease</code> is the pro version of <code>--force</code>: it refuses if
+                            someone else pushed to your branch in the meantime, preventing accidental overwrite.</p>
+                    </section>
+
+                    <!-- DAY 6 -->
+                    <section class="day" id="day6">
+                        <div class="day-meta"><span class="badge">Day 6</span><span class="badge warm">~45 min</span>
+                        </div>
+                        <h2>Stash, WIP, and switching context</h2>
+                        <p><strong>Goal:</strong> never lose work because "I just need to check something on
+                            <code>main</code> real quick".
+                        </p>
+                        <pre><code>git stash push -u -m "wip: leaderboard query in progress"
+git checkout main                # safe, your changes are stashed
+# ... do the other thing ...
+git checkout feature/BANK-101-leaderboard
+git stash list
+git stash show -p stash@{0}      # preview
+git stash pop                    # re-apply and drop from stash
+# OR
+git stash apply stash@{0}        # re-apply, keep in stash</code></pre>
+                        <ul>
+                            <li><code>-u</code> includes <strong>untracked</strong> files. Without it, new files are
+                                left behind and you may commit them on the wrong branch later.</li>
+                            <li>Always give a stash a message (<code>-m</code>). Anonymous stashes pile up and you
+                                forget what's in them.</li>
+                        </ul>
+                        <div class="callout warn"><strong>Better than stash for longer breaks:</strong> just commit a
+                            <code>wip:</code> commit on your feature branch and amend/squash later. Stash is for
+                            minute-scale interruptions.
+                        </div>
+                    </section>
+
+                    <!-- DAY 7 -->
+                    <section class="day" id="day7">
+                        <div class="day-meta"><span class="badge">Day 7</span><span class="badge warm">~90 min</span>
+                        </div>
+                        <h2>Your first PR end-to-end</h2>
+                        <p><strong>Goal:</strong> raise a PR a senior reviewer would call clean.</p>
+                        <ol>
+                            <li>Branch from up-to-date <code>dev</code>:
+                                <pre><code>git checkout dev &amp;&amp; git pull --ff-only
+git checkout -b feature/BANK-110-add-leaderboard-projection</code></pre>
+                            </li>
+                            <li>Make small, well-named commits as you work.</li>
+                            <li>Before pushing the final time, sync with <code>dev</code>:
+                                <pre><code>git fetch origin
+git rebase origin/dev</code></pre>
+                            </li>
+                            <li>Run tests locally. Push:
+                                <pre><code>git push -u origin feature/BANK-110-add-leaderboard-projection</code></pre>
+                            </li>
+                            <li>Open PR on GitHub: <code>base: dev ← compare: feature/...</code>.</li>
+                            <li>PR description template (paste this into every PR):
+                                <pre><code>## What
+One-paragraph summary of the change.
+
+## Why
+Business or technical reason. Link the ticket.
+
+## How
+Key design decisions; anything reviewers should look at first.
+
+## Test plan
+- [ ] Unit tests added/updated
+- [ ] Manual scenario: ...
+- [ ] Edge case: ...
+
+## Risk &amp; rollback
+Low/Medium/High. To roll back: revert this PR.
+
+Refs: BANK-110</code></pre>
+                            </li>
+                            <li>Keep PRs small: aim for &lt; 400 lines changed. Big PRs don't get reviewed, they get
+                                rubber-stamped.</li>
+                        </ol>
+                        <div class="grid-2">
+                            <div class="card good">
+                                <h4>Good PR</h4>
+                                <ul>
+                                    <li>One concern. Clear title. Filled-out description.</li>
+                                    <li>Green CI before requesting review.</li>
+                                    <li>Author responds to every comment (even "done").</li>
+                                </ul>
+                            </div>
+                            <div class="card bad">
+                                <h4>Bad PR</h4>
+                                <ul>
+                                    <li>"Misc fixes" title, 38 files, 2,400 lines, red CI, no description.</li>
+                                    <li>Reviewer closes it or rubber-stamps it. Bugs ship.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- WEEK 2 -->
+                    <section class="concept" id="week2">
+                        <h2>Week 2 · Team-scale operations <span class="badge">Owning the workflow</span></h2>
+                        <p>Goal of the week: handle conflicts, hotfixes, promotions, releases, and recovery without
+                            asking anyone for help.</p>
+                    </section>
+
+                    <!-- DAY 8 -->
+                    <section class="day" id="day8">
+                        <div class="day-meta"><span class="badge">Day 8</span><span class="badge warm">~75 min</span>
+                        </div>
+                        <h2>Merge conflicts — reading them and resolving them</h2>
+                        <p><strong>Goal:</strong> conflicts become routine, not panic moments.</p>
+                        <h3>Anatomy of a conflict marker</h3>
+                        <pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD               ← what is currently in your branch
+your version of the line
+=======
+their version of the line
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; origin/dev          ← what is coming from the branch you are merging in</code></pre>
+                        <h3>The pro resolution loop</h3>
+                        <pre><code>git status                         # lists "both modified" files
+git diff                           # see the conflicts
+# Open each conflicted file. Decide:
+#   keep mine? keep theirs? combine both? rewrite entirely?
+# Remove the &lt;&lt;&lt;, ===, &gt;&gt;&gt; markers.
+git add &lt;file&gt;                     # mark resolved
+git status                         # confirm all resolved
+git rebase --continue              # or: git merge --continue
+# If you are lost:
+git rebase --abort                 # safely back out</code></pre>
+                        <h3>Better tools than the markers</h3>
+                        <pre><code>git mergetool                      # opens configured 3-way merge tool
+git config --global merge.tool vscode
+git config --global mergetool.vscode.cmd 'code --wait $MERGED'</code></pre>
+                        <p>VS Code's inline "Accept Current / Incoming / Both" buttons are usually the fastest way.</p>
+                        <h3>Ideation: how to <em>think</em> about a conflict</h3>
+                        <ol>
+                            <li><strong>Understand both intents.</strong> Run <code>git log -p &lt;file&gt;</code> on
+                                both sides. What problem was each change solving?</li>
+                            <li><strong>Pick the right merge, not a syntactic one.</strong> Sometimes the answer is
+                                neither side as-is, but a new third version.</li>
+                            <li><strong>If unsure, ask the other author.</strong> A 2-minute chat beats a 2-hour bug.
+                            </li>
+                            <li><strong>Re-run tests</strong> after resolving. Conflicts often hide semantic bugs.</li>
+                        </ol>
+                        <h3>Lab exercise — create and resolve a real conflict</h3>
+                        <pre><code># in poc_iq_dev2 (dev2)
+git checkout dev &amp;&amp; git pull --ff-only
+git checkout -b feature/dev2-edit-readme
+# edit the SAME line of e.g. docs/index.html
+git commit -am "feat(docs): dev2 wording"
+git push -u origin feature/dev2-edit-readme
+# open PR dev2 → dev, merge it on GitHub
+
+# in poc_iq (dev1), at the same time:
+git checkout dev &amp;&amp; git pull --ff-only   # now has dev2's change
+git checkout -b feature/dev1-edit-readme
+# edit the SAME line differently
+git commit -am "feat(docs): dev1 wording"
+git fetch origin
+git rebase origin/dev                    # CONFLICT — resolve it</code></pre>
+                    </section>
+
+                    <!-- DAY 9 -->
+                    <section class="day" id="day9">
+                        <div class="day-meta"><span class="badge">Day 9</span><span class="badge warm">~60 min</span>
+                        </div>
+                        <h2>Cherry-pick and the hotfix flow</h2>
+                        <p><strong>Goal:</strong> move one specific commit from one branch to another safely.</p>
+                        <h3>When cherry-pick is the right tool</h3>
+                        <ul>
+                            <li>A bug fix landed on <code>dev</code> but production needs it <em>now</em> without
+                                shipping the rest of <code>dev</code>.</li>
+                            <li>A useful commit exists on someone else's branch and you only want that one commit.</li>
+                            <li>You accidentally committed to the wrong branch and want to move just that commit.</li>
+                        </ul>
+                        <h3>Commands</h3>
+                        <pre><code>git log --oneline dev -20          # find the SHA you want, e.g. a1b2c3d
+git checkout main
+git pull --ff-only
+git checkout -b hotfix/BANK-999-null-pointer
+git cherry-pick a1b2c3d            # applies that commit here
+# if conflicts: resolve, then
+git cherry-pick --continue
+git push -u origin hotfix/BANK-999-null-pointer
+# Open PR hotfix → main, merge, deploy.
+# Then forward-merge to keep dev in sync:
+git checkout dev &amp;&amp; git pull --ff-only
+git merge --no-ff main
+git push</code></pre>
+                        <div class="callout warn"><strong>Don't abuse cherry-pick</strong> as a regular promotion
+                            mechanism between <code>dev → qa → main</code>. That causes duplicated commits with
+                            different SHAs. Use proper merges for promotion; reserve cherry-pick for true one-offs.
+                        </div>
+                    </section>
+
+                    <!-- DAY 10 -->
+                    <section class="day" id="day10">
+                        <div class="day-meta"><span class="badge">Day 10</span><span class="badge warm">~75 min</span>
+                        </div>
+                        <h2>Squash, fixup, amend — curating history</h2>
+                        <p><strong>Goal:</strong> turn 12 messy WIP commits into 1–3 clean ones before merge.</p>
+
+                        <h3>The four tools</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tool</th>
+                                    <th>What it does</th>
+                                    <th>When</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>git commit --amend</code></td>
+                                    <td>Modify the <em>last</em> commit
+                                        (message or contents).</td>
+                                    <td>You forgot a file or made a typo in the last commit
+                                        message, and haven't pushed yet.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>git commit --fixup &lt;sha&gt;</code></td>
+                                    <td>Creates a special
+                                        "fixup!" commit that <code>rebase -i --autosquash</code> will merge into the
+                                        target commit.</td>
+                                    <td>Mid-feature, you spot a bug in commit #3; just fixup it.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>git rebase -i HEAD~N</code></td>
+                                    <td>Interactive rebase: reorder, squash,
+                                        fixup, edit, drop commits.</td>
+                                    <td>Final cleanup before PR.</td>
+                                </tr>
+                                <tr>
+                                    <td>PR "Squash and merge"</td>
+                                    <td>GitHub squashes all PR commits into one on the
+                                        target branch.</td>
+                                    <td>Team default for feature PRs to <code>dev</code>.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>Interactive rebase walkthrough</h3>
+                        <pre><code>git log --oneline -8
+# pick: 7f3a1b2 wip
+# pick: 9c2d4e5 wip more
+# pick: 1a2b3c4 actual feature
+# pick: 5d6e7f8 fix typo
+# pick: 9e0f1a2 fix typo again
+
+git rebase -i HEAD~5
+# editor opens; change "pick" to "squash" (s) or "fixup" (f):
+# pick   7f3a1b2 wip
+# fixup  9c2d4e5 wip more
+# squash 1a2b3c4 actual feature
+# fixup  5d6e7f8 fix typo
+# fixup  9e0f1a2 fix typo again
+# Save &amp; close → editor reopens for combined message → rewrite cleanly.</code></pre>
+
+                        <h3>Squash vs Merge vs Rebase-and-merge on GitHub</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Strategy</th>
+                                    <th>Result on <code>dev</code></th>
+                                    <th>Best for</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Merge commit</td>
+                                    <td>All feature commits preserved + a merge commit</td>
+                                    <td>Long-lived feature with meaningful history.</td>
+                                </tr>
+                                <tr>
+                                    <td>Squash and merge</td>
+                                    <td>One commit on <code>dev</code> per PR</td>
+                                    <td>Default for most teams; clean linear <code>dev</code>.</td>
+                                </tr>
+                                <tr>
+                                    <td>Rebase and merge</td>
+                                    <td>Feature commits replayed onto <code>dev</code>, no
+                                        merge commit</td>
+                                    <td>You want every commit individually but no merge bubbles. Rare.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="callout danger"><strong>Never</strong> rebase or amend commits that exist on a
+                            <em>shared</em> branch (<code>dev</code>, <code>qa</code>, <code>main</code>). Only rewrite
+                            history on <em>your own</em> feature branches before they're merged.
+                        </div>
+                    </section>
+
+                    <!-- DAY 11 -->
+                    <section class="day" id="day11">
+                        <div class="day-meta"><span class="badge">Day 11</span><span class="badge warm">~60 min</span>
+                        </div>
+                        <h2>Reviewing PRs like a senior</h2>
+                        <p><strong>Goal:</strong> give reviews that improve code <em>and</em> the author.</p>
+                        <h3>Review checklist (use every time)</h3>
+                        <ol>
+                            <li><strong>Does it do what the ticket says?</strong> Read the PR description first.</li>
+                            <li><strong>Is it the simplest design that works?</strong> Suggest cuts, not additions.</li>
+                            <li><strong>Tests:</strong> happy path + at least one edge case + one failure path.</li>
+                            <li><strong>Naming &amp; readability:</strong> can a stranger understand this in 6 months?
+                            </li>
+                            <li><strong>Security:</strong> input validation, secrets, authz checks.</li>
+                            <li><strong>Performance:</strong> N+1 queries, unbounded loops, blocking I/O.</li>
+                            <li><strong>Backward compatibility:</strong> DB migrations, API contracts, config keys.</li>
+                            <li><strong>Observability:</strong> logs, metrics, error messages.</li>
+                        </ol>
+                        <h3>Review tone</h3>
+                        <div class="grid-2">
+                            <div class="card good">
+                                <h4>Good comment</h4>
+                                <p>"<em>nit:</em> could we rename <code>x</code> to <code>balance_after</code>? Makes
+                                    the call site self-explanatory."</p>
+                                <p>"<em>question:</em> what happens if <code>event.data['amount']</code> is missing?
+                                    The <code>.get(..., 0.0)</code> default silently skews the balance."</p>
+                            </div>
+                            <div class="card bad">
+                                <h4>Bad comment</h4>
+                                <p>"This is wrong."</p>
+                                <p>"Why did you do it like this???"</p>
+                            </div>
+                        </div>
+                        <p>Prefix comments with intent: <code>nit:</code> (optional), <code>question:</code>,
+                            <code>suggestion:</code>, <code>blocking:</code>. It tells the author whether they
+                            <em>must</em> address it before merge.
+                        </p>
+                        <h3>Approval gates</h3>
+                        <ul>
+                            <li>1 approval for routine changes.</li>
+                            <li>2 approvals (including a domain owner) for security, payments, schema, infra.</li>
+                            <li>CI must be green. No "merging with red tests, will fix later".</li>
+                        </ul>
+                    </section>
+
+                    <!-- DAY 12 -->
+                    <section class="day" id="day12">
+                        <div class="day-meta"><span class="badge">Day 12</span><span class="badge warm">~75 min</span>
+                        </div>
+                        <h2>Promoting code dev → qa → prod</h2>
+                        <p><strong>Goal:</strong> a repeatable, boring promotion that anyone on the team can run.</p>
+                        <h3>The promotion flow (merge-based, no cherry-picks)</h3>
+                        <pre><code># 1. Cut a release candidate from dev into qa at end of sprint
+git checkout qa &amp;&amp; git pull --ff-only
+git merge --no-ff origin/dev -m "release: promote dev → qa for sprint-14"
+git push origin qa
+# QA tests on the deployed qa env.
+
+# 2. After QA sign-off, promote qa into main
+git checkout main &amp;&amp; git pull --ff-only
+git merge --ff-only origin/qa     # or --no-ff if you want a merge commit
+git tag -a v1.4.0 -m "Release 1.4.0 — sprint 14 features"
+git push origin main --tags
+# CI/CD deploys main to production.
+
+# 3. Any qa-only fixes get back-merged into dev so dev never drifts behind
+git checkout dev &amp;&amp; git pull --ff-only
+git merge --no-ff origin/qa
+git push</code></pre>
+
+                        <div class="callout warn"><strong>Why not cherry-pick selected commits from dev into
+                                qa?</strong>
+                            Because cherry-picked commits have <em>different SHAs</em> than their originals. Git can't
+                            tell they're the same change, so future merges between the two branches will conflict in
+                            confusing ways. Use cherry-pick only for hotfixes that explicitly need to skip the queue.
+                        </div>
+
+                        <h3>Hotfix flow (skips the queue)</h3>
+                        <pre><code>git checkout main &amp;&amp; git pull --ff-only
+git checkout -b hotfix/BANK-999-prod-crash
+# fix, commit, PR → main
+# after merge to main:
+git tag -a v1.4.1 -m "Hotfix 1.4.1"
+git push origin main --tags
+# Forward-merge the hotfix into qa and dev so they don't lose it:
+git checkout qa  &amp;&amp; git pull &amp;&amp; git merge --no-ff main &amp;&amp; git push
+git checkout dev &amp;&amp; git pull &amp;&amp; git merge --no-ff main &amp;&amp; git push</code></pre>
+                    </section>
+
+                    <!-- DAY 13 -->
+                    <section class="day" id="day13">
+                        <div class="day-meta"><span class="badge">Day 13</span><span class="badge warm">~45 min</span>
+                        </div>
+                        <h2>Tags, semantic versioning, and release notes</h2>
+                        <p><strong>Goal:</strong> a release that auditors and on-call engineers can trace.</p>
+                        <h3>Semantic versioning <code>MAJOR.MINOR.PATCH</code></h3>
+                        <ul>
+                            <li><strong>MAJOR</strong>: breaking change to the public contract.</li>
+                            <li><strong>MINOR</strong>: backwards-compatible new feature.</li>
+                            <li><strong>PATCH</strong>: backwards-compatible bug fix.</li>
+                        </ul>
+                        <h3>Commands</h3>
+                        <pre><code>git tag                                  # list tags
+git tag -a v1.4.0 -m "Sprint 14 release"
+git push origin v1.4.0                   # push one tag
+git push origin --tags                   # push all tags
+
+# generate a quick changelog between two tags
+git log v1.3.0..v1.4.0 --pretty=format:'- %s (%an)'</code></pre>
+                        <p>On GitHub: <strong>Releases → Draft a new release → choose tag <code>v1.4.0</code></strong>,
+                            paste the changelog, attach artifacts. This is what stakeholders read.</p>
+                    </section>
+
+                    <!-- DAY 14 -->
+                    <section class="day" id="day14">
+                        <div class="day-meta"><span class="badge">Day 14</span><span class="badge warm">~75 min</span>
+                        </div>
+                        <h2>Recovery — reflog, reset, revert</h2>
+                        <p><strong>Goal:</strong> never fear losing work again. Almost nothing in Git is truly lost
+                            for ~90 days.</p>
+                        <h3>The three "undo" commands</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Command</th>
+                                    <th>Does what</th>
+                                    <th>Safe on shared branches?</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>git revert &lt;sha&gt;</code></td>
+                                    <td>Creates a <em>new</em> commit that
+                                        undoes <code>&lt;sha&gt;</code>.</td>
+                                    <td><strong>Yes.</strong> The only safe undo
+                                        on <code>main</code>/<code>dev</code>.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>git reset --soft &lt;sha&gt;</code></td>
+                                    <td>Moves branch pointer back;
+                                        keeps changes staged.</td>
+                                    <td>No — rewrites history. Local only.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>git reset --hard &lt;sha&gt;</code></td>
+                                    <td>Moves pointer back; discards
+                                        working tree changes.</td>
+                                    <td>No — destructive. Local only.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h3>Reflog — your safety net</h3>
+                        <pre><code>git reflog                          # every HEAD movement in the last ~90 days
+# Example output:
+# 9e0f1a2 HEAD@{0}: reset: moving to HEAD~3
+# 1a2b3c4 HEAD@{1}: commit: feat(projections): leaderboard
+# ...
+git reset --hard HEAD@{1}           # restore to the state before the bad reset</code></pre>
+                        <div class="callout"><strong>Lost a commit after a bad rebase?</strong>
+                            <code>git reflog</code> → find the SHA → <code>git branch rescue &lt;sha&gt;</code>.
+                            Done. Crisis over.
+                        </div>
+                        <h3>Final exercise — break and recover</h3>
+                        <pre><code>git checkout -b experiment/recovery
+echo "important" &gt; important.txt
+git add . &amp;&amp; git commit -m "feat: very important work"
+git reset --hard HEAD~1             # "oh no"
+git reflog                          # find the SHA of "very important work"
+git reset --hard &lt;that-sha&gt;         # recovered</code></pre>
+                        <p><strong>Self-check:</strong> can you explain in one breath the difference between
+                            <code>revert</code>, <code>reset --soft</code>, and <code>reset --hard</code>?
+                            If yes — you've graduated.
+                        </p>
+                    </section>
+
+                    <!-- CONCEPT DEEP DIVES -->
+                    <section class="concept" id="concepts">
+                        <h2>Concept Deep Dives <span class="badge">Reference</span></h2>
+                        <p>Use these whenever you forget the "why" behind a command.</p>
+                    </section>
+
+                    <section class="concept" id="commit-style">
+                        <h2>Commit message standard</h2>
+                        <h3>The 7 rules (Tim Pope / Conventional Commits hybrid)</h3>
+                        <ol>
+                            <li>Separate subject from body with a blank line.</li>
+                            <li>Limit the subject line to ~72 characters.</li>
+                            <li>Capitalize the subject (after the type prefix).</li>
+                            <li>Do not end the subject with a period.</li>
+                            <li>Use the imperative mood ("Add", not "Added" or "Adds").</li>
+                            <li>Wrap the body at 72 characters.</li>
+                            <li>Use the body to explain <em>what</em> and <em>why</em>, not <em>how</em>.</li>
+                        </ol>
+                        <h3>Cheat — types</h3>
+                        <pre><code>feat:     new user-facing feature
+fix:      bug fix
+refactor: code change with no behavior change
+perf:     code change that improves performance
+docs:     documentation only
+test:     adding or fixing tests
+build:    build system / dependencies
+ci:       CI config changes
+chore:    everything else (tooling, housekeeping)
+revert:   reverts a previous commit</code></pre>
+                    </section>
+
+                    <section class="concept" id="branch-strategy">
+                        <h2>Branching strategy comparison</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Strategy</th>
+                                    <th>Branches</th>
+                                    <th>Best for</th>
+                                    <th>Watch out</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Trunk-based (recommended)</td>
+                                    <td><code>main</code> + short-lived feature
+                                        branches; optional <code>qa</code></td>
+                                    <td>Continuous delivery, &lt; 1 week
+                                        cycles</td>
+                                    <td>Requires strong CI, feature flags for in-progress work</td>
+                                </tr>
+                                <tr>
+                                    <td>GitHub Flow</td>
+                                    <td><code>main</code> + feature branches</td>
+                                    <td>Web apps with
+                                        continuous deploy</td>
+                                    <td>No staging branch — relies on environments</td>
+                                </tr>
+                                <tr>
+                                    <td>Git Flow (classic)</td>
+                                    <td><code>main</code>, <code>develop</code>,
+                                        <code>release/*</code>, <code>hotfix/*</code>, <code>feature/*</code>
+                                    </td>
+                                    <td>Versioned software with explicit releases</td>
+                                    <td>Heavy; many merge bubbles</td>
+                                </tr>
+                                <tr>
+                                    <td>Env-branch (your lab)</td>
+                                    <td><code>dev</code>, <code>qa</code>,
+                                        <code>main</code>
+                                    </td>
+                                    <td>Mirrors deployment environments</td>
+                                    <td>Risk of branch
+                                        drift if promotions aren't disciplined merges</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </section>
+
+                    <section class="concept" id="pr-playbook">
+                        <h2>PR playbook — raising and approving</h2>
+                        <h3>As an author</h3>
+                        <ul>
+                            <li>One concern per PR. Split if you wrote "and" in the title.</li>
+                            <li>&lt; 400 lines changed where possible.</li>
+                            <li>Self-review your own diff on GitHub before requesting reviewers — you will catch 30%
+                                of issues yourself.</li>
+                            <li>Address every comment. Reply "done", "won't fix because…", or push a commit.</li>
+                            <li>Don't force-push after review starts unless asked — it invalidates reviewers' context.
+                                Use <code>--force-with-lease</code> if you must.</li>
+                        </ul>
+                        <h3>As a reviewer</h3>
+                        <ul>
+                            <li>Review within 1 business day. Latency kills team velocity.</li>
+                            <li>Approve OR request changes — never just leave comments and walk away.</li>
+                            <li>Be specific. "This will break on null input" beats "looks fragile".</li>
+                            <li>Praise good code too. Reviews are mentoring, not gate-keeping.</li>
+                        </ul>
+                    </section>
+
+                    <section class="concept" id="conflict">
+                        <h2>Merge conflict resolution — the thinking framework</h2>
+                        <ol>
+                            <li><strong>Stop.</strong> Don't randomly accept one side. Run <code>git status</code>,
+                                list every conflicted file.</li>
+                            <li><strong>Reconstruct intent.</strong> For each file:
+                                <code>git log -p --all -- &lt;file&gt;</code> to see what both sides were trying to do.
+                            </li>
+                            <li><strong>Pick one of three resolutions:</strong>
+                                <ul>
+                                    <li><em>Keep mine</em> if their change is obsolete.</li>
+                                    <li><em>Keep theirs</em> if yours is obsolete.</li>
+                                    <li><em>Synthesize</em> a new version preserving both intents (most common).</li>
+                                </ul>
+                            </li>
+                            <li><strong>Compile and test</strong> before <code>git add</code>. A clean merge that
+                                doesn't run is worse than no merge.</li>
+                            <li><strong>If the conflict is conceptual, not textual</strong> — pair with the other
+                                author for 5 minutes. Saves hours.</li>
+                        </ol>
+                        <p>Escape hatches you should know exist:</p>
+                        <pre><code>git merge --abort        # bail out of a merge, restore previous state
+git rebase --abort       # bail out of a rebase
+git checkout --ours   &lt;file&gt;    # take current-branch version entirely
+git checkout --theirs &lt;file&gt;    # take incoming-branch version entirely
+git rerere               # "reuse recorded resolution" — Git remembers your resolutions
+                         # enable: git config --global rerere.enabled true</code></pre>
+                    </section>
+
+                    <section class="concept" id="cheatsheet">
+                        <h2>Daily cheat sheet</h2>
+                        <pre><code># Morning routine
+git fetch --all --prune
+git checkout dev &amp;&amp; git pull --ff-only
+
+# Start work
+git checkout -b feature/&lt;ticket&gt;-&lt;slug&gt;
+
+# Save points while working
+git add -p                        # stage hunks selectively
+git commit -m "feat(scope): ..."
+
+# Sync with dev mid-work
+git fetch origin
+git rebase origin/dev
+git push --force-with-lease       # only on your own branch
+
+# Wrap up before PR
+git rebase -i origin/dev          # squash WIP into clean commits
+git push --force-with-lease
+# Open PR → dev
+
+# Context switch
+git stash push -u -m "wip: ..."
+git checkout other-branch
+# ... later ...
+git checkout feature/&lt;...&gt;
+git stash pop
+
+# Oh no
+git reflog
+git reset --hard HEAD@{N}
+
+# Promote
+git checkout qa  &amp;&amp; git pull &amp;&amp; git merge --no-ff origin/dev &amp;&amp; git push
+git checkout main &amp;&amp; git pull &amp;&amp; git merge --ff-only origin/qa &amp;&amp; git tag -a vX.Y.Z -m "..." &amp;&amp; git push --tags
+
+# Hotfix
+git checkout main &amp;&amp; git pull
+git checkout -b hotfix/&lt;ticket&gt;
+# ... fix ... PR → main
+# back-merge:
+git checkout dev &amp;&amp; git merge --no-ff main &amp;&amp; git push
+git checkout qa  &amp;&amp; git merge --no-ff main &amp;&amp; git push</code></pre>
+                    </section>
+
+                    <section class="concept">
+                        <h2>Mindset shifts that make you a pro</h2>
+                        <ol>
+                            <li><strong>Read before you write.</strong> Every Git command should be preceded by
+                                <code>git status</code> until it's second nature.
+                            </li>
+                            <li><strong>Local history is yours, shared history is sacred.</strong> Rewrite freely on
+                                your branch; never on <code>dev/qa/main</code>.</li>
+                            <li><strong>Small, frequent, intentional.</strong> Small commits, small PRs, frequent
+                                syncs. Big-bang anything is a code smell.</li>
+                            <li><strong>Communicate via Git.</strong> Branch names, commit messages, PR descriptions
+                                are how the team — including future-you — understands the codebase.</li>
+                            <li><strong>Recover, don't panic.</strong> <code>git reflog</code> +
+                                <code>--force-with-lease</code>
+                                make almost every mistake reversible.</li>
+                        </ol>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        Built for your <code>poc_iq</code> learning lab · use this page as your daily companion.
+    </footer>
+</body>
+
+</html>

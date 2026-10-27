@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Project 3: Hospital Management - Composition Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1100px;
+            margin: auto;
+            padding: 30px;
+            line-height: 1.7;
+            color: #333;
+            background: #fafafa
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #27ae60;
+            padding-bottom: 10px
+        }
+
+        h2 {
+            color: #27ae60;
+            margin-top: 40px
+        }
+
+        h3 {
+            color: #8e44ad
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05)
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .concept {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto
+        }
+
+        .mermaid {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left
+        }
+
+        th {
+            background: #27ae60;
+            color: #fff
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 12px;
+            border-bottom: 2px solid #27ae60;
+            z-index: 100
+        }
+
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #27ae60;
+            font-weight: bold
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🏥 Project 3: Hospital Management</h1>
+    <p><strong>Level:</strong> Intermediate | <strong>Focus:</strong> Composition (HAS-A Relationships)</p>
+
+    <nav>
+        <a href="#why">Why Composition?</a>
+        <a href="#diagram">Object Graph</a>
+        <a href="#vs">vs Inheritance</a>
+        <a href="#flow">Data Flow</a>
+        <a href="#folder">Structure</a>
+    </nav>
+
+    <div id="why">
+        <h2>🤔 Why Composition Over Inheritance Here?</h2>
+
+        <div class="concept">
+            <h3>The Golden Rule</h3>
+            <p><strong>Inheritance:</strong> "X IS-A Y" (SavingsAccount IS-A Account)</p>
+            <p><strong>Composition:</strong> "X HAS-A Y" (Doctor HAS Appointments)</p>
+            <p>Ask: "Is a Doctor a Patient?" → NO! So don't inherit. A Doctor HAS patients.</p>
+        </div>
+
+        <div class="highlight">
+            <h3>Problems with Inheritance Here</h3>
+            <pre>
+# BAD: What if we tried inheritance?
+class Doctor(Person): ...
+class Patient(Person): ...
+
+# What about a doctor who is ALSO a patient? 🤯
+# Python allows multiple inheritance but it's complex!
+# With composition: Doctor HAS health_record (acts as patient when needed)
+</pre>
+        </div>
+    </div>
+
+    <div id="diagram">
+        <h2>📐 Composition Object Graph</h2>
+
+        <div class="mermaid">
+            graph TD
+            H[Hospital Service] -->|HAS many| D[Departments]
+            H -->|HAS registry of| P[Patients]
+            H -->|HAS registry of| DR[Doctors]
+
+            D -->|HAS many| DR
+            DR -->|HAS many| A[Appointments]
+            DR -->|HAS references to| P
+            A -->|HAS one| P
+
+            style H fill:#e74c3c,color:#fff
+            style D fill:#f39c12,color:#fff
+            style DR fill:#3498db,color:#fff
+            style A fill:#9b59b6,color:#fff
+            style P fill:#27ae60,color:#fff
+        </div>
+
+        <div class="mermaid">
+            classDiagram
+            class Patient {
+            +str patient_id
+            +str name
+            +int age
+            +str condition
+            +add_to_history(entry)
+            +get_medical_history()
+            }
+
+            class Appointment {
+            +str appointment_id
+            +Patient patient
+            +str doctor_name
+            +datetime scheduled_time
+            +str status
+            +complete(notes)
+            +cancel(reason)
+            }
+
+            class Doctor {
+            +str doctor_id
+            +str name
+            +str specialty
+            +schedule_appointment()
+            +get_appointments()
+            +get_patients()
+            }
+
+            class Department {
+            +str name
+            +int floor
+            +add_doctor(doctor)
+            +get_doctors()
+            +get_total_patients()
+            }
+
+            Department "1" *-- "*" Doctor : contains
+            Doctor "1" *-- "*" Appointment : manages
+            Appointment "1" o-- "1" Patient : references
+            Doctor "1" o-- "*" Patient : treats
+        </div>
+
+        <div class="card">
+            <h3>UML Composition Symbols</h3>
+            <table>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Meaning</th>
+                    <th>Example</th>
+                </tr>
+                <tr>
+                    <td>◆── (filled diamond)</td>
+                    <td>Strong composition (part dies with whole)</td>
+                    <td>Department ◆── Doctor (if dept closes, doctors reassigned)</td>
+                </tr>
+                <tr>
+                    <td>◇── (empty diamond)</td>
+                    <td>Aggregation (part exists independently)</td>
+                    <td>Doctor ◇── Patient (patient exists without doctor)</td>
+                </tr>
+                <tr>
+                    <td>──></td>
+                    <td>Simple reference</td>
+                    <td>Appointment → Patient</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="vs">
+        <h2>⚔️ Composition vs Inheritance Comparison</h2>
+
+        <div class="card">
+            <table>
+                <tr>
+                    <th>Scenario</th>
+                    <th>Inheritance</th>
+                    <th>Composition</th>
+                    <th>Winner</th>
+                </tr>
+                <tr>
+                    <td>SavingsAccount → Account</td>
+                    <td>IS-A ✓</td>
+                    <td>Possible but overkill</td>
+                    <td>Inheritance</td>
+                </tr>
+                <tr>
+                    <td>Doctor → Hospital</td>
+                    <td>"Doctor IS-A Hospital" ❌</td>
+                    <td>Hospital HAS Doctors ✓</td>
+                    <td>Composition</td>
+                </tr>
+                <tr>
+                    <td>Adding new behavior at runtime</td>
+                    <td>Can't change parent</td>
+                    <td>Swap components</td>
+                    <td>Composition</td>
+                </tr>
+                <tr>
+                    <td>Deep hierarchy (5+ levels)</td>
+                    <td>Fragile, hard to change</td>
+                    <td>Flat, flexible</td>
+                    <td>Composition</td>
+                </tr>
+                <tr>
+                    <td>Code reuse</td>
+                    <td>Rigid (all-or-nothing)</td>
+                    <td>Pick what you need</td>
+                    <td>Composition</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="highlight">
+            <h3>🔑 The Famous Rule</h3>
+            <p><strong>"Favor composition over inheritance"</strong> — Gang of Four (Design Patterns book)</p>
+            <p>This doesn't mean NEVER use inheritance. It means: when in doubt, compose.</p>
+        </div>
+    </div>
+
+    <div id="flow">
+        <h2>🔄 Sequence: Booking & Completing an Appointment</h2>
+
+        <div class="mermaid">
+            sequenceDiagram
+            participant Main
+            participant Hospital as HospitalService
+            participant Doctor
+            participant Apt as Appointment
+            participant Patient
+
+            Main->>Hospital: book_appointment(apt_id, patient_id, doctor_id, time)
+            Hospital->>Hospital: Look up Patient
+            Hospital->>Hospital: Look up Doctor
+            Hospital->>Doctor: schedule_appointment(apt_id, patient, time)
+            Doctor->>Apt: Create Appointment(patient, time)
+            Note over Apt: Appointment now HAS-A Patient reference
+            Doctor->>Doctor: Add to _appointments list
+            Doctor-->>Hospital: Return Appointment
+            Hospital-->>Main: Return Appointment
+
+            Main->>Hospital: complete_appointment(doctor_id, apt_id, notes)
+            Hospital->>Doctor: Find appointment
+            Doctor->>Apt: apt.complete(notes)
+            Apt->>Patient: patient.add_to_history(notes)
+            Note over Patient: History updated through composition chain!
+        </div>
+
+        <div class="concept">
+            <h3>Key Insight: Information Flows Through Composition</h3>
+            <p>When we complete an appointment, the notes automatically flow to the patient's medical history. The
+                appointment KNOWS about the patient (HAS-A), so it can update the patient directly. No inheritance
+                needed!</p>
+        </div>
+    </div>
+
+    <div id="folder">
+        <h2>📁 Folder Structure</h2>
+
+        <div class="card" style="font-family:monospace">
+            p3_hospital_management/<br>
+            ├── main.py<br>
+            ├── models/<br>
+            │ &nbsp;&nbsp;├── __init__.py<br>
+            │ &nbsp;&nbsp;├── patient.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Independent component<br>
+            │ &nbsp;&nbsp;├── appointment.py &nbsp;← HAS-A Patient<br>
+            │ &nbsp;&nbsp;├── doctor.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← HAS-MANY Appointments + Patients<br>
+            │ &nbsp;&nbsp;└── department.py &nbsp;&nbsp;← HAS-MANY Doctors<br>
+            └── services/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;├── __init__.py<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── hospital_service.py ← Orchestrates all composed objects
+        </div>
+
+        <div class="card" style="background:#eaf2f8">
+            <h3>🎯 Key Takeaways</h3>
+            <ol>
+                <li><strong>HAS-A over IS-A</strong> when objects contain/use other objects</li>
+                <li><strong>Objects are independent</strong> - Patient doesn't know about Doctor</li>
+                <li><strong>Flexible</strong> - Add/remove relationships without breaking hierarchies</li>
+                <li><strong>Multi-level composition</strong> scales to complex systems</li>
+                <li><strong>Next:</strong> Project 4 introduces DTOs - how data moves between layers</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

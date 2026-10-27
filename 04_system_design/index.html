@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design — Beginner to Pro</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">SD</span>
+                <span>System Design · Beginner → Pro</span>
+            </a>
+            <nav class="top-links" aria-label="Top">
+                <a href="index.html">Hub</a>
+                <a href="roadmap.html">30-Day Roadmap</a>
+                <a href="00_intro_hld_lld.html">Start here</a>
+                <a href="../01_concepts/index.html">Main concepts</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">System Design learning track · LLD + HLD</p>
+                <h1>From "I know OOP" to "I can design Twitter on a whiteboard"</h1>
+                <p>This track teaches both halves of system design that product companies ask about:
+                    <strong>Low-Level Design (LLD)</strong> — modeling a single system with classes, responsibilities,
+                    and patterns (parking lot, elevator, ATM), and
+                    <strong>High-Level Design (HLD)</strong> — designing distributed systems that scale to millions
+                    of users (URL shortener, Twitter, WhatsApp, Uber).
+                </p>
+                <p>Every page tells a <em>story</em>, shows the <em>industry-standard approach</em>, and gives you
+                    "what if you use it vs what if you don't" comparisons so the tradeoffs stick.</p>
+                <p>👉 New to this? Read <a href="00_intro_hld_lld.html"><strong>What is System Design? HLD vs
+                            LLD</strong></a>
+                    first, then follow the <a href="roadmap.html">30-day roadmap</a>.</p>
+            </section>
+
+            <section class="card">
+                <h2>Track 1 — Low-Level Design (LLD) <span class="badge warm">Beginner → Intermediate</span></h2>
+                <p>LLD is "given a problem statement, design the <em>classes</em>". This is the bread and butter of
+                    rounds 1–2 in product company interviews. You'll learn OOP done right, SOLID, design patterns, UML,
+                    and apply all of it to real interview cases.</p>
+                <div class="tile-grid">
+                    <a class="tile" href="lld_01_oop_solid.html">
+                        <span class="tag">LLD · 01</span>
+                        <h4>OOP &amp; SOLID Principles</h4>
+                        <p>Encapsulation, inheritance, polymorphism, abstraction — then the 5 SOLID principles with
+                            before/after refactors.</p>
+                    </a>
+                    <a class="tile" href="lld_02_design_patterns.html">
+                        <span class="tag">LLD · 02</span>
+                        <h4>Design Patterns Survey</h4>
+                        <p>Creational, Structural, Behavioral — the 12 patterns that come up most often, with code
+                            and "use vs don't" tradeoffs.</p>
+                    </a>
+                    <a class="tile" href="lld_03_uml.html">
+                        <span class="tag">LLD · 03</span>
+                        <h4>UML for the Whiteboard</h4>
+                        <p>Class diagrams, sequence diagrams, state diagrams — only the parts that matter in
+                            interviews and PRs.</p>
+                    </a>
+                    <a class="tile" href="lld_04_case_studies.html">
+                        <span class="tag">LLD · 04</span>
+                        <h4>Case Studies</h4>
+                        <p>Parking Lot, Elevator, Library, ATM — walked end-to-end the way an interviewer expects.</p>
+                    </a>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Track 2 — High-Level Design (HLD) <span class="badge">Intermediate → Advanced</span></h2>
+                <p>HLD is "design a system that handles 100M users". This is where you learn the actual moving parts
+                    of the internet: load balancers, caches, databases, queues, CDNs. You'll first learn the
+                    primitives, then combine them in famous case studies.</p>
+                <div class="tile-grid">
+                    <a class="tile" href="hld_01_fundamentals.html">
+                        <span class="tag">HLD · 01</span>
+                        <h4>Fundamentals &amp; Scalability</h4>
+                        <p>Latency, throughput, vertical vs horizontal scaling, stateless services, back-of-envelope
+                            math.</p>
+                    </a>
+                    <a class="tile" href="hld_02_databases_caching.html">
+                        <span class="tag">HLD · 02</span>
+                        <h4>Databases &amp; Caching</h4>
+                        <p>SQL vs NoSQL, indexes, sharding, replication, cache-aside, write-through, CDN.</p>
+                    </a>
+                    <a class="tile" href="hld_03_distributed.html">
+                        <span class="tag">HLD · 03</span>
+                        <h4>Distributed Systems Building Blocks</h4>
+                        <p>Load balancers, message queues, microservices, API gateways, CAP theorem, consistency.</p>
+                    </a>
+                    <a class="tile" href="hld_04_case_studies.html">
+                        <span class="tag">HLD · 04</span>
+                        <h4>Famous System Designs</h4>
+                        <p>URL shortener, Twitter feed, WhatsApp chat, Uber dispatch, YouTube — the canonical
+                            interview problems.</p>
+                    </a>
+                    <a class="tile" href="hld_05_database_selection.html">
+                        <span class="tag">HLD · 05</span>
+                        <h4>Choosing the Right Database</h4>
+                        <p>SQL · Mongo · Redis · Cassandra · Neo4j · Elasticsearch · Vector · S3 — when to use
+                            what, with Mermaid diagrams and 10 horror stories.</p>
+                    </a>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>How to use this track</h2>
+                <ol>
+                    <li>Spend Week 1 on LLD pages 01–04. Practice drawing the case studies on paper.</li>
+                    <li>Spend Week 2 on HLD pages 01–03 (the primitives).</li>
+                    <li>Spend Weeks 3–4 attacking HLD case studies, one per day. Time-box yourself to 45 minutes
+                        per case as if it were a real interview.</li>
+                    <li>Follow the <a href="roadmap.html">30-day roadmap</a> for the exact daily plan.</li>
+                </ol>
+            </section>
+        </div>
+    </main>
+
+    <footer>System Design track · part of your <code>poc_iq</code> learning lab.</footer>
+</body>
+
+</html>

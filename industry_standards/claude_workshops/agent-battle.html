@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W5 · Agent battle (Minecraft) — Claude Workshops</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Workshops hub</a>
+                <a href="../anthropic_building_agents.html">Building Agents</a>
+                <a href="../anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">CWC · Workshop 5</span></p>
+            <h1>Agent battle: configure a Managed Agent to mine diamonds in five minutes</h1>
+            <p class="lead">Mineflayer drives a Minecraft bot; the bot is driven by a Claude Managed Agent. Your job
+                is to <em>configure</em> the agent — system prompt, model, Skills, MCP servers — so it wins the
+                five-minute run. Decision-probe evals (~30 seconds) let you iterate the config a dozen times before
+                you ever pay for the full run.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · What you build</h2>
+            <ul>
+                <li>A configured Managed Agent that controls a Mineflayer bot. The bot starts at <code>y=-40</code>
+                    with an iron pickaxe.</li>
+                <li>A system prompt tuned for "find diamonds, don't die, don't burn tokens."</li>
+                <li>Optional Skills the agent loads (e.g. crafting recipes).</li>
+                <li>Optional MCP servers (e.g. a Minecraft wiki MCP).</li>
+                <li>An <code>--eval</code> mode that fires fast <em>decision probes</em> at the agent: given a
+                    scenario, does it pick the right next move?</li>
+                <li><code>/cwc-setup</code> and <code>/cwc-fix</code> slash commands to seed and reset the run.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>2 · The stack</h2>
+            <div class="flow">
+                <div class="step">CMA configuration</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Skills + MCP (optional)</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Mineflayer bot</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Decision-probe evals</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">5-min live run</div>
+            </div>
+            <p>Scoring: <strong>most diamonds wins</strong>; <strong>fewest tokens breaks ties</strong>. The dual metric
+                is the whole point — it punishes bloated prompts even when they "work".</p>
+        </section>
+
+        <section class="card">
+            <h2>3 · Levers the workshop teaches</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>System prompt as the lever</h3>
+                    <p>You don't write Mineflayer code in the workshop — you write English. The prompt is the artifact
+                        you ship.</p>
+                </div>
+                <div class="mini">
+                    <h3>Model choice</h3>
+                    <p>Bigger model isn't automatically better. The tie-break is tokens, so a smaller model with a
+                        better prompt often wins.</p>
+                </div>
+                <div class="mini">
+                    <h3>Skills (optional but useful)</h3>
+                    <p>A Skill with crafting recipes loads on demand so the prompt stays small.</p>
+                </div>
+                <div class="mini">
+                    <h3>MCP servers (optional but risky)</h3>
+                    <p>A wiki MCP gives the agent encyclopedic knowledge — but the workshop shows that adding an MCP
+                        without a prompt nudge often leaves the tool <em>unused</em>.</p>
+                </div>
+                <div class="mini">
+                    <h3>Decision-probe evals</h3>
+                    <p>Tiny synthetic scenarios run in ~30s. They let you A/B configs an order of magnitude faster than
+                        the live game.</p>
+                </div>
+                <div class="mini">
+                    <h3><code>/cwc-setup</code> / <code>/cwc-fix</code></h3>
+                    <p>Slash commands so reset and recovery don't waste your iteration time.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Use vs don't use — the trade-offs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lever</th>
+                        <th>If you use it</th>
+                        <th>If you skip it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Configure CMA (don't write the loop)</td>
+                        <td>You spend the whole workshop on intent — prompt, skill, model, eval — not on Mineflayer
+                            plumbing.</td>
+                        <td>You re-implement the agent loop, the bot loses ten minutes per fix, and you ship a worse
+                            prompt because you ran out of time.</td>
+                    </tr>
+                    <tr>
+                        <td>Decision-probe evals (<code>--eval</code>)</td>
+                        <td>You test ten config variants in the time one live run takes. The winning config is the one
+                            with the best probe score, not the one with the best vibes.</td>
+                        <td>Each tweak costs a 5-minute game. After three runs you're out of budget and you ship
+                            whatever the last attempt was.</td>
+                    </tr>
+                    <tr>
+                        <td>Add a wiki MCP</td>
+                        <td>The bot can look up "what depth do diamonds spawn?" — but only if you also tell the prompt
+                            to consult the wiki when uncertain.</td>
+                        <td>You attach the MCP, the prompt never mentions it, the tool is silent, and your tokens
+                            still climb because the MCP descriptions are in the system context.</td>
+                    </tr>
+                    <tr>
+                        <td>Start from the <code>start_kit</code> prompt</td>
+                        <td>The starter codifies hard-won lessons (don't dig straight down, return to base with the
+                            ore). You inherit them for free.</td>
+                        <td>You write from scratch, the bot mines into lava, and you re-discover the same lessons
+                            mid-run.</td>
+                    </tr>
+                    <tr>
+                        <td>Skills (crafting recipes)</td>
+                        <td>The prompt stays focused on strategy; recipes load only when the agent needs to craft.</td>
+                        <td>You inline 40 recipes into the system prompt, the model can't find the verb "mine" behind
+                            the noise, and the bot stands still.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>The lesson:</strong> the system prompt is the agent. Every other lever
+                (model, Skill, MCP) only matters if the prompt knows when to reach for it.</div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Adoption playbook for your repo</h2>
+            <ol>
+                <li>For any agent you own, write down its <em>tie-breaker metric</em> (latency, tokens, $). Not just
+                    quality — quality has a ceiling.</li>
+                <li>Build a "decision-probe" eval: a handful of synthetic scenarios that complete in under a minute.
+                </li>
+                <li>Treat the system prompt as a versioned artifact. PR it. Diff it. Tag the wins.</li>
+                <li>Before attaching an MCP, write the sentence in the system prompt that tells the agent <em>when</em>
+                    to use it. If you can't write the sentence, you don't need the MCP yet.</li>
+                <li>Keep recipes / lookup tables in Skills, not the system prompt. The prompt is for strategy.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://github.com/anthropics/cwc-workshops/tree/main/agent-battle-workshop"
+                    target="_blank" rel="noopener">cwc-workshops/agent-battle-workshop</a>
+                <a class="source" href="https://github.com/PrismarineJS/mineflayer" target="_blank"
+                    rel="noopener">Mineflayer</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/overview" target="_blank"
+                    rel="noopener">CMA — Overview</a>
+                <a class="source" href="https://platform.claude.com/docs/en/managed-agents/mcp" target="_blank"
+                    rel="noopener">CMA — MCP integration</a>
+                <a class="source" href="https://modelcontextprotocol.io/introduction" target="_blank"
+                    rel="noopener">Model Context Protocol</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

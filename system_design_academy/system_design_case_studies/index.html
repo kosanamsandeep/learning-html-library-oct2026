@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design Case Studies — toy versions of real systems</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>SD</span>System Design Academy</a>
+            <nav class="top-links">
+                <a href="../index.html">Academy hub</a>
+                <a href="../system_design_fundamentals/index.html">Fundamentals</a>
+                <a href="../ai_engineering/index.html">AI Engineering</a>
+                <a href="../../README.html">Workspace</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Track 2 · Case Studies</p>
+            <h1>Five tiny versions of real systems</h1>
+            <p class="lead">Each project picks one famous pattern — sharded counters, real-time leaderboards, presence,
+                sagas, geo lookups — and implements just enough to make the design decisions visible.</p>
+        </section>
+
+        <section class="card">
+            <h2>Project order</h2>
+            <a class="project" href="p1_distributed_counter/README.html"><strong>P1 · DISTRIBUTED
+                    COUNTER</strong>Sharded counters with read aggregation. The pattern behind YouTube view counts and
+                post likes.</a>
+            <a class="project" href="p2_realtime_leaderboard/README.html"><strong>P2 · REAL-TIME
+                    LEADERBOARD</strong>Sorted set with top-N and rank-of-user queries. The pattern behind game
+                leaderboards.</a>
+            <a class="project" href="p3_realtime_presence/README.html"><strong>P3 · PRESENCE SERVICE</strong>Heartbeats
+                with TTL. The pattern behind Slack / WhatsApp "online now".</a>
+            <a class="project" href="p4_saga_orchestrator/README.html"><strong>P4 · SAGA
+                    ORCHESTRATOR</strong>Step-by-step distributed transaction with compensations. The pattern behind
+                booking flows.</a>
+            <a class="project" href="p5_geo_nearby_drivers/README.html"><strong>P5 · NEARBY DRIVERS</strong>Geohash
+                bucketing for "drivers within 2 km". The pattern behind Uber / Swiggy dispatch.</a>
+        </section>
+
+        <section class="card">
+            <h2>Why toy versions?</h2>
+            <p>A 100-line implementation forces you to choose: bucket size, refresh interval, compensating action,
+                fan-out path. Those are the conversations interviewers actually want — far more useful than memorising
+                "they use Cassandra".</p>
+        </section>
+    </main>
+</body>
+
+</html>

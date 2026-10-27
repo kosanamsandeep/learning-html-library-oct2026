@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P5 · URL Shortener</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>Fundamentals</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a href="../p4_idempotent_api/README.html">Prev:
+                    P4</a><a href="../../system_design_case_studies/index.html">Next track</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">Fundamentals · Project 5</p>
+            <h1>URL shortener — the classic 5-line system design question</h1>
+            <p class="lead">Turn a long URL into a tiny code. Map the code back at read time. Decide what to do about
+                collisions, hot codes, and analytics. Two strategies in one file.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>Marketing wants short links for SMS campaigns: 160 characters total, so the URL must be tiny. The system
+                is read-heavy — one POST to create, billions of GETs to follow. Latency on resolve matters more than
+                anything else.</p>
+        </section>
+
+        <section class="card">
+            <h2>Two strategies</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Strategy</th>
+                        <th>How it works</th>
+                        <th>Good</th>
+                        <th>Tradeoff</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Hash slice</td>
+                        <td>Take first N chars of SHA-256(url) as the code.</td>
+                        <td>Same URL → same code. No coordination needed across servers.</td>
+                        <td>Collisions need a fallback (lengthen the slice).</td>
+                    </tr>
+                    <tr>
+                        <td>Counter + base62</td>
+                        <td>Allocate a monotonic id, encode in base62.</td>
+                        <td>No collisions ever. Codes stay short.</td>
+                        <td>Needs a global counter (Redis INCR, ticket server, or DB sequence).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Mental model of the read path</h2>
+            <div class="flow">
+                <div class="step">GET /abc1234</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">CDN / edge cache</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Read replica</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">302 redirect</div>
+            </div>
+            <p>The vast majority of traffic should never hit the database. Cache aggressively; URLs are immutable once
+                created.</p>
+        </section>
+
+        <section class="card">
+            <h2>Why base62?</h2>
+            <p>62 = 10 digits + 26 lowercase + 26 uppercase. Fits in URL-safe characters. A 7-character base62 code
+                addresses ~3.5 trillion items — enough for any real shortener.</p>
+            <pre><code>62^7 = 3,521,614,606,208</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/system_design_fundamentals/p5_url_shortener
+python main.py</code></pre>
+            <p>You will see the same URL produce the same hash-based code and a new counter-based code, plus a resolve
+                round-trip.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"I default to counter + base62 because collision handling is built in and codes stay
+                short. I generate the counter with Redis INCR or a ticket server, so the API tier stays stateless. The
+                read path goes CDN → read replica; URLs are immutable, so the cache hit rate is very high. If campaigns
+                demand a deterministic code per URL, I add a hash-based path that re-uses an existing record when
+                present."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

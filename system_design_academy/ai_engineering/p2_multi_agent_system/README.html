@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2 · Multi-Agent System</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav"><a class="brand" href="../index.html"><span>SD</span>AI Engineering</a>
+            <nav class="top-links"><a href="../index.html">Track hub</a><a
+                    href="../p1_agentic_patterns/README.html">Prev: P1</a><a
+                    href="../p3_ai_agent_memory/README.html">Next: P3</a></nav>
+        </div>
+    </header>
+    <main class="shell">
+
+        <section class="hero">
+            <p class="eyebrow">AI Engineering · Project 2</p>
+            <h1>Multi-agent system — supervisor + specialists</h1>
+            <p class="lead">One agent doing everything is a generalist that makes generalist mistakes. Split the work
+                into role-flavoured agents — researcher, writer, critic — and coordinate them with a supervisor. This is
+                the shape behind LangGraph, CrewAI, AutoGen.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You ask the assistant: "explain consistent hashing in one paragraph". A single-agent answer is hit or
+                miss. Split it: researcher pulls the fact from a knowledge base, writer turns it into prose, critic
+                checks it — if the critic flags the draft, the writer expands. Three small calls beat one giant one.</p>
+        </section>
+
+        <section class="card">
+            <h2>Mental model</h2>
+            <div class="flow">
+                <div class="step">user question</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Supervisor</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Researcher (facts)</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Writer (draft)</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Critic (verdict)</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">retry or ship</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Why this beats a single agent</h2>
+            <div class="grid">
+                <div class="mini good"><strong>Each role has a tight prompt.</strong> The researcher prompt is short and
+                    only about retrieval. The writer prompt only knows facts → prose. Clear prompts get better outputs.
+                </div>
+                <div class="mini good"><strong>Critic catches errors.</strong> A second LLM call playing devil's
+                    advocate catches things a single drafting pass misses.</div>
+                <div class="mini warn"><strong>3× the calls.</strong> More tokens, more money. Use this pattern only
+                    where quality matters more than latency or cost.</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Code skeleton</h2>
+            <pre><code>facts    = researcher.act(question)
+draft    = writer.act(facts)
+critique = critic.act(draft)
+if "ok" not in critique.lower():
+    draft = writer.act(f"{facts}\nNOTE: {critique}\nExpand to 2 sentences.")
+return draft</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd system_design_academy/ai_engineering/p2_multi_agent_system
+python main.py</code></pre>
+            <p>Two questions go through the pipeline. The second one triggers a writer retry because the critic flags it
+                as too short.</p>
+        </section>
+
+        <section class="card">
+            <h2>Interview-ready answer</h2>
+            <div class="callout">"I use a supervisor + specialists pattern when the task naturally decomposes into roles
+                — research, write, review, execute. The supervisor owns control flow; specialists each have a short,
+                focused system prompt. I add a critic agent for quality-sensitive output, but I cap iterations because
+                reflection loops can spiral. Frameworks like LangGraph give this shape a state machine; that is what
+                production multi-agent systems use today."</div>
+        </section>
+
+    </main>
+</body>
+
+</html>

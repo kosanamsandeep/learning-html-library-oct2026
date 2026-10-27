@@ -1,0 +1,47 @@
+<svg width="920" height="520" viewBox="0 0 920 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="920" height="520" rx="28" fill="#FFFBF5"/>
+  <rect x="40" y="58" width="180" height="68" rx="18" fill="#D7F3EF" stroke="#0F766E" stroke-width="2"/>
+  <text x="130" y="98" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#115E59">Tokens</text>
+  <text x="130" y="120" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#115E59">words or subwords</text>
+
+  <rect x="260" y="40" width="180" height="104" rx="22" fill="#FFF1E7" stroke="#C2410C" stroke-width="2"/>
+  <text x="350" y="84" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#9A3412">Embedding</text>
+  <text x="350" y="108" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#9A3412">token id -> vector</text>
+
+  <rect x="480" y="40" width="190" height="104" rx="22" fill="#D7F3EF" stroke="#0F766E" stroke-width="2"/>
+  <text x="575" y="84" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#115E59">Positional</text>
+  <text x="575" y="108" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#115E59">where each token sits</text>
+
+  <rect x="710" y="58" width="170" height="68" rx="18" fill="#F5EBDD" stroke="#A16207" stroke-width="2"/>
+  <text x="795" y="98" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#854D0E">x</text>
+  <text x="795" y="120" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#854D0E">input states</text>
+
+  <rect x="110" y="218" width="220" height="118" rx="22" fill="#FFFFFF" stroke="#0F766E" stroke-width="2"/>
+  <text x="220" y="260" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#115E59">Multi-Head Attention</text>
+  <text x="220" y="286" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#115E59">Which tokens matter</text>
+  <text x="220" y="308" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#115E59">for this token now?</text>
+
+  <rect x="364" y="218" width="190" height="118" rx="22" fill="#FFF1E7" stroke="#C2410C" stroke-width="2"/>
+  <text x="459" y="260" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#9A3412">Add + Norm</text>
+  <text x="459" y="286" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#9A3412">keep stable gradients</text>
+  <text x="459" y="308" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#9A3412">and preserve identity path</text>
+
+  <rect x="588" y="218" width="224" height="118" rx="22" fill="#FFFFFF" stroke="#0F766E" stroke-width="2"/>
+  <text x="700" y="260" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#115E59">Feed-Forward Network</text>
+  <text x="700" y="286" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#115E59">expand -> activate -> project</text>
+  <text x="700" y="308" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#115E59">adds nonlinear reasoning</text>
+
+  <rect x="318" y="384" width="284" height="82" rx="22" fill="#1C1917"/>
+  <text x="460" y="422" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFF7ED">Prediction Head</text>
+  <text x="460" y="446" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#FDE8DB">next token, class label, translation token, and more</text>
+
+  <path d="M220 92H260" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M440 92H480" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M670 92H710" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M795 126V176C795 194 780 208 762 208H330" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M330 208H220V218" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M330 208V218H459" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M554 277H588" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M812 277H850V363H602" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M700 336V384" stroke="#5F564D" stroke-width="3" stroke-linecap="round"/>
+</svg>

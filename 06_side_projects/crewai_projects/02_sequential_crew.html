@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrewAI 02 · Sequential Crew</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="crew">CW</span>CrewAI · 02 Sequential Crew</div>
+        <div class="links">
+            <a href="index.html">CrewAI Hub</a>
+            <a href="01_quickstart.html">← 01</a>
+            <a href="03_tools.html">Next: 03 →</a>
+        </div>
+    </div>
+
+    <div class="header crew">
+        <p class="badge">Build 02 · Beginner+</p>
+        <h1>A crew that hands work down a line</h1>
+        <p class="subtitle">A <strong>researcher</strong> gathers facts, then a <strong>writer</strong> turns
+            them into an article. The writer's task pulls the researcher's output via <code>context</code>, and
+            the crew runs as <code>Process.sequential</code>.</p>
+    </div>
+
+    <div class="container">
+        <div class="section crew">
+            <h2>What this build does</h2>
+            <p>Two agents, two tasks, executed in order. The magic is <code>context=[research_task]</code> —
+                that wires the first task's output into the second task's input.</p>
+            <div class="pill-row">
+                <span class="level beginner">Beginner+</span>
+                <span class="tag orange">Process.sequential</span>
+                <span class="tag orange">context</span>
+                <span class="tag orange">multi-agent</span>
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>The pipeline</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    R["researcher"] --> RT["research_task<br/>→ findings"]
+    RT -->|context| WT["write_task"]
+    W["writer"] --> WT
+    WT --> OUT["final article"]
+                </pre>
+                <p class="caption">Tasks run top-to-bottom; <code>context</code> passes one task's result into
+                    the next.</p>
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>The code</h2>
+            <pre><code><span class="c-kw">from</span> crewai <span class="c-kw">import</span> Agent, Task, Crew, Process
+
+researcher = Agent(
+    role=<span class="c-str">"Senior Researcher"</span>,
+    goal=<span class="c-str">"Uncover key facts about {topic}"</span>,
+    backstory=<span class="c-str">"A rigorous analyst who cites concrete details."</span>,
+    llm=<span class="c-str">"gpt-4o"</span>,
+)
+writer = Agent(
+    role=<span class="c-str">"Tech Content Writer"</span>,
+    goal=<span class="c-str">"Write an engaging article from research"</span>,
+    backstory=<span class="c-str">"You turn dense findings into clear, lively prose."</span>,
+    llm=<span class="c-str">"gpt-4o"</span>,
+)
+
+research_task = Task(
+    description=<span class="c-str">"Research the current state of {topic}. List the top findings."</span>,
+    expected_output=<span class="c-str">"5 bullet findings with specifics."</span>,
+    agent=researcher,
+)
+write_task = Task(
+    description=<span class="c-str">"Write a 4-paragraph article on {topic} using the research."</span>,
+    expected_output=<span class="c-str">"A polished 4-paragraph article in markdown."</span>,
+    agent=writer,
+    context=[research_task],          <span class="c-com"># ← receives research_task's output</span>
+    output_file=<span class="c-str">"article.md"</span>,        <span class="c-com"># optionally write result to disk</span>
+)
+
+crew = Crew(
+    agents=[researcher, writer],
+    tasks=[research_task, write_task],
+    process=Process.sequential,       <span class="c-com"># run tasks in listed order</span>
+    verbose=<span class="c-kw">True</span>,
+)
+
+result = crew.kickoff(inputs={<span class="c-str">"topic"</span>: <span class="c-str">"vector databases"</span>})
+<span class="c-fn">print</span>(result)</code></pre>
+        </div>
+
+        <div class="section crew">
+            <h2>Sequential vs Hierarchical</h2>
+            <div class="grid-2">
+                <div class="mini crew">
+                    <h3>Process.sequential</h3>
+                    <p>Tasks run in the order you list them. Output flows down via <code>context</code>.
+                        Predictable and easy to debug — start here.</p>
+                </div>
+                <div class="mini crew">
+                    <h3>Process.hierarchical</h3>
+                    <p>A <strong>manager agent</strong> (you supply <code>manager_llm</code>) plans, delegates
+                        tasks to workers, and validates results. Better for complex, branching work.</p>
+                </div>
+            </div>
+            <pre><code><span class="c-com"># Hierarchical: a manager LLM coordinates the workers</span>
+crew = Crew(
+    agents=[researcher, writer],
+    tasks=[research_task, write_task],
+    process=Process.hierarchical,
+    manager_llm=<span class="c-str">"gpt-4o"</span>,        <span class="c-com"># the coordinator</span>
+)</code></pre>
+            <div class="callout orange">
+                In hierarchical mode you don't pre-assign every task to an agent — the manager decides who does
+                what. Use sequential until you actually need delegation.
+            </div>
+        </div>
+
+        <div class="section crew">
+            <h2>Best practices</h2>
+            <ul>
+                <li><strong>Order tasks deliberately</strong> in sequential mode — the list <em>is</em> the
+                    pipeline.</li>
+                <li><strong>Use <code>context=[...]</code></strong> instead of stuffing prior output into
+                    descriptions manually.</li>
+                <li><strong>Write results with <code>output_file</code></strong> for artifacts you need later.</li>
+                <li><strong>Reach for hierarchical only when needed</strong> — the manager adds LLM calls and
+                    nondeterminism.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="01_quickstart.html"><span class="dir">Previous</span>
+                <div class="ttl">← 01 · Quickstart</div>
+            </a>
+            <a class="next" href="03_tools.html"><span class="dir">Next</span>
+                <div class="ttl">03 · Tools →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>CrewAI Projects · 02 of 04</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample 1 — Claude Code in your SDLC</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../anthropic_building_agents.html">Building Agents</a>
+                <a href="../anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+                <a href="../codex_in_sdlc/README.html">Codex sample</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">Sample 1 · Claude Code</span></p>
+            <h1>Drop Claude Code into a real Python repo — <code>CLAUDE.md</code> + a custom Skill + a checked-in
+                workflow</h1>
+            <p class="lead">A small, opinionated example of how a working Python team can adopt Claude Code without
+                changing their toolchain. We add three things: a project rulebook (<code>CLAUDE.md</code>), one custom
+                Skill (<code>pytest-tdd</code>), and a tiny demo module the agent can iterate on.</p>
+        </section>
+
+        <section class="card">
+            <h2>What is in this sample</h2>
+            <pre><code>claude_code_in_sdlc/
+├── README.html             ← you are here
+├── CLAUDE.md               ← project-wide rules Claude Code reads automatically
+├── requirements.txt
+├── src/
+│   └── orders.py           ← the demo module the agent works on
+├── tests/
+│   └── test_orders.py      ← starting tests
+└── .claude/
+    └── skills/
+        └── pytest-tdd/
+            └── SKILL.md    ← our custom skill: how to add tests in this repo</code></pre>
+            <p class="quiet">This is a <em>shape</em> sample. We aren't shipping a working CLI here — we're showing the
+                files you commit so Claude Code (or any agent following the same conventions) behaves like a teammate
+                from day one.</p>
+        </section>
+
+        <section class="card">
+            <h2>Why each file exists</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>CLAUDE.md</code></td>
+                        <td>Top-level instructions Claude Code injects into every session: project structure, build
+                            commands, code style, what to never touch.</td>
+                    </tr>
+                    <tr>
+                        <td><code>.claude/skills/pytest-tdd/SKILL.md</code></td>
+                        <td>A skill with a YAML frontmatter description Claude scans. When a user asks "write tests" or
+                            "fix this failing test", this skill activates and Claude follows our conventions.</td>
+                    </tr>
+                    <tr>
+                        <td><code>src/orders.py</code></td>
+                        <td>A small domain module — the agent's playground. Has a function with one bug and one missing
+                            feature.</td>
+                    </tr>
+                    <tr>
+                        <td><code>tests/test_orders.py</code></td>
+                        <td>Existing pytest tests. The agent runs these to validate any change.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2><code>CLAUDE.md</code> — what we put in it</h2>
+            <p>Claude Code reads <code>CLAUDE.md</code> at the repo root. Keep it short. Include only what the agent
+                <em>cannot</em> infer from looking at the code.</p>
+            <pre><code># Project: orders-service
+
+## What this is
+A toy order-management library. Pure Python, no framework.
+
+## Build &amp; test
+- Python 3.11+
+- Install: `pip install -r requirements.txt`
+- Run tests: `pytest -q`
+- Lint: `ruff check .`
+
+## Conventions
+- Type hints on every public function.
+- AAA test layout (Arrange, Act, Assert).
+- Money is stored as integer cents — never floats.
+
+## Don't touch
+- `src/orders.py:LEGACY_PRICE_RULES` — we have a deprecation in flight.
+
+## When in doubt
+Ask before changing public function signatures. Open a PR, don't push to main.</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>The custom skill — <code>pytest-tdd</code></h2>
+            <p>A skill is a folder with a <code>SKILL.md</code>. The frontmatter <code>description</code> is what Claude
+                reads to decide whether to load it for a turn. Be explicit about <em>when to use</em> and <em>when not
+                    to</em>.</p>
+            <pre><code>---
+name: pytest-tdd
+description: |
+  Use this skill when the user asks to add tests, write code TDD-style,
+  or fix a failing pytest run in this repo. Provides our conventions:
+  AAA structure, parametrize over loops, integer cents for money.
+  DO NOT use this skill for non-pytest test frameworks.
+---
+
+# pytest-tdd
+
+When a user asks to add tests:
+1. Open `conftest.py` (if any) and reuse fixtures before adding new ones.
+2. Use AAA: one test asserts one thing.
+3. Prefer `@pytest.mark.parametrize` over loops.
+4. Money is integer cents — never floats.
+5. After writing tests, run `pytest -q` and iterate until green.
+
+## Examples
+- "add tests for `src/orders.py::compute_total`"
+- "TDD a discount-code validator"
+
+## Guidelines
+- Never edit production code without first writing a failing test.
+- Use `tmp_path` for any filesystem touchpoint.
+- If a test file does not exist yet, create it under `tests/` mirroring the src path.</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>How a session actually plays out</h2>
+            <ol>
+                <li>Developer types <code>claude</code> in the repo.</li>
+                <li>Claude Code loads <code>CLAUDE.md</code> automatically and lists discovered skills (including ours).
+                </li>
+                <li>Developer asks: <em>"Add tests for <code>compute_total</code> covering empty cart, single item, and
+                        a discount."</em></li>
+                <li>Claude matches the request against skill descriptions, loads <code>pytest-tdd</code>, follows its
+                    rules, drafts the tests, runs <code>pytest -q</code>, fixes anything broken, and produces a diff.
+                </li>
+                <li>Developer reviews and accepts. Claude commits via PR (never to main).</li>
+            </ol>
+            <div class="callout anth"><strong>Verify habit:</strong> always read the diff before accepting. Treat Claude
+                as a fast junior — let it type, you read.</div>
+        </section>
+
+        <section class="card">
+            <h2>Files in this sample</h2>
+            <ul>
+                <li><a href="CLAUDE.md">CLAUDE.md</a> — the project rulebook.</li>
+                <li><a href=".claude/skills/pytest-tdd/SKILL.md">.claude/skills/pytest-tdd/SKILL.md</a> — the skill.
+                </li>
+                <li><a href="src/orders.py">src/orders.py</a> — demo domain module.</li>
+                <li><a href="tests/test_orders.py">tests/test_orders.py</a> — starting tests.</li>
+                <li><a href="requirements.txt">requirements.txt</a> — pytest only.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Adoption checklist for your real repo</h2>
+            <ol>
+                <li>Add <code>CLAUDE.md</code> at root with build/test commands and 5 rules. <em>Keep it under one
+                        page.</em></li>
+                <li>Identify one repetitive task your team does (writing tests, fixing imports, generating CRUD
+                    endpoints) and write a skill for it.</li>
+                <li>Review the first three Claude PRs by hand. Iterate the rules and the skill description until reviews
+                    are mostly thumbs-up.</li>
+                <li>Wire <code>pytest</code>, <code>ruff</code>, and your security scanner into CI — Claude's PRs should
+                    pass the same gates a human's would.</li>
+                <li>Start small. One skill is plenty for the first month.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://docs.claude.com/en/docs/claude-code/overview" target="_blank"
+                    rel="noopener">Claude Code — Overview</a>
+                <a class="source" href="https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview"
+                    target="_blank" rel="noopener">Claude Skills — Overview</a>
+                <a class="source" href="https://github.com/anthropics/skills" target="_blank"
+                    rel="noopener">github.com/anthropics/skills (reference skills)</a>
+                <a class="source" href="https://www.anthropic.com/engineering/claude-code-best-practices"
+                    target="_blank" rel="noopener">Claude Code best practices</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Positional Embeddings</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">T</span>
+                <span>Transformer Architecture Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="transformer-basics.html">Basics</a>
+                <a href="activation-functions.html">Activations</a>
+                <a href="gpt-level.html">GPT Level</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#problem">The problem</a>
+            <a href="#importance">Why it matters</a>
+            <a href="#types">Main approaches</a>
+            <a href="#example">Example</a>
+            <a href="#gpt">GPT implications</a>
+            <a href="#why-this-way">Why this way</a>
+            <a href="#interview">Questionnaire</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro">
+                <p class="eyebrow">Core dependency</p>
+                <h1>Why positional embeddings are important</h1>
+                <p><strong>Simple statement:</strong> self-attention can compare tokens by content, but without a
+                    positional signal it does not inherently know which token came first, second, or last.</p>
+            </section>
+
+            <section class="section" id="problem">
+                <div class="diagram-card">
+                    <img src="assets/positional-encoding.svg"
+                        alt="Diagram showing that two sentences with the same words but different order become distinguishable once position is added.">
+                </div>
+            </section>
+
+            <section class="section" id="importance">
+                <div class="grid two">
+                    <div class="card">
+                        <h3>What fails without position</h3>
+                        <p>If tokens are treated as an unordered bag, the model cannot reliably learn grammar, argument
+                            structure, local order, or causal order.</p>
+                    </div>
+                    <div class="card">
+                        <h3>What position restores</h3>
+                        <p>Order, relative distance, and token index become learnable signals. This lets attention
+                            reason about who modifies what and what can depend on what.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="types">
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Idea</th>
+                                <th>Common use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Learned absolute embeddings</td>
+                                <td>Learn one position vector per index.</td>
+                                <td>Early BERT and GPT variants.</td>
+                            </tr>
+                            <tr>
+                                <td>Sinusoidal encodings</td>
+                                <td>Use fixed periodic functions to encode position.</td>
+                                <td>The original Transformer paper.</td>
+                            </tr>
+                            <tr>
+                                <td>Relative position methods</td>
+                                <td>Focus on token-to-token distance, not just absolute slot.</td>
+                                <td>Useful for length generalization and structured attention.</td>
+                            </tr>
+                            <tr>
+                                <td>Rotary position embeddings</td>
+                                <td>Rotate query and key vectors by position-dependent angles.</td>
+                                <td>Widely used in modern decoder-only LLMs.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="example">
+                <div class="example">
+                    <h2>Example: code generation</h2>
+                    <p>Consider the line: <strong>if x &gt; 0 then print(x)</strong>. The order matters. The model must
+                        understand that the condition appears before the action, and that closing tokens depend on
+                        earlier openings. Positional information is what lets the transformer track these structured
+                        relationships across the sequence.</p>
+                </div>
+            </section>
+
+            <section class="section" id="gpt">
+                <div class="checkpoint">
+                    <h2>GPT-specific implication</h2>
+                    <p>In decoder-only models, position and causal masking work together. Position says where a token
+                        is. The mask says which earlier positions are visible. Without both, autoregressive generation
+                        would be unreliable.</p>
+                </div>
+            </section>
+
+            <section class="section" id="why-this-way">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Design logic</p>
+                        <h2>Why positional encoding is necessary and what fails without it</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>Why we must inject position</h3>
+                        <ul class="stack-list">
+                            <li>Attention compares content similarity, not sequence order, unless order is explicitly
+                                encoded.</li>
+                            <li>Syntax, scope, clause ordering, and program structure all depend on token position.</li>
+                            <li>Long-context models especially need a stable way to represent relative placement.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>What other techniques fail at</h3>
+                        <ul class="stack-list">
+                            <li>Ignoring position makes the model behave closer to a content-matching bag of tokens.
+                            </li>
+                            <li>A weak absolute-only scheme may generalize poorly beyond trained lengths.</li>
+                            <li>Relying on token identity alone cannot distinguish same-word, different-role
+                                occurrences.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="interview">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Interview readiness</p>
+                        <h2>Questionnaire and scenarios</h2>
+                    </div>
+                </div>
+                <div class="interview-grid">
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why is self-attention called permutation-invariant without positional encoding?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because the attention computation itself does not assign meaning to token order. If you
+                                permute tokens and permute their embeddings accordingly, the mechanism still works on
+                                content relations, not original sequence indices. Positional information breaks that
+                                symmetry.</p>
+                        </div>
+                    </div>
+                    <div class="qa-card">
+                        <span class="question-label">Question</span>
+                        <h3>Why are rotary or relative methods popular in modern LLMs?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Strong answer</span>
+                            <p>Because they often preserve relative-distance information better and tend to extrapolate
+                                more gracefully to longer contexts than simple learned absolute embeddings.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>Your model understands local phrases but makes ordering mistakes in long code blocks. What
+                            should you suspect?</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Suspect positional handling and long-range attention. Code is highly order-sensitive, so
+                                failures on bracket pairing, argument order, or block structure often point to weak
+                                positional generalization.</p>
+                        </div>
+                    </div>
+                    <div class="scenario-card">
+                        <span class="question-label">Scenario</span>
+                        <h3>An interviewer asks: “If attention is global, why is position still needed?”</h3>
+                        <div class="answer-block">
+                            <span class="answer-label">Expected reasoning</span>
+                            <p>Global visibility tells the model what tokens exist, not how they are ordered. Language
+                                meaning depends on order, so visibility without positional structure is insufficient.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>Next recommended page: activation functions.</p>
+            <div class="mini-links">
+                <a href="activation-functions.html">Continue</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

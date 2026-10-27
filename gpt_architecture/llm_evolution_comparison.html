@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Evolution &amp; Comparison — GPT · Claude · DeepSeek · Kimi</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0b1120; --bg-card: #1e293b; --bg-code: #0b1120;
+    --text: #e2e8f0; --text-dim: #94a3b8;
+    --border: #1e3a5f; --accent: #38bdf8; --accent2: #a78bfa;
+    --green: #4ade80; --red: #f87171; --amber: #fbbf24;
+    --openai: #10a37f; --anthropic: #d97706; --deepseek: #6366f1; --kimi: #ec4899;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px;
+  }
+  .app { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 270px; flex-shrink: 0; background: #080f1c;
+    border-right: 1px solid var(--border); padding: 1.25rem 0;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  .sidebar h2 {
+    font-size: 0.95rem; padding: 0 1.25rem 0.75rem;
+    background: linear-gradient(135deg, #38bdf8, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    font-weight: 700; line-height: 1.3;
+  }
+  .sidebar nav a {
+    display: block; padding: 0.35rem 1.25rem; color: var(--text-dim);
+    text-decoration: none; font-size: 0.8rem;
+    border-left: 3px solid transparent; transition: all 0.2s;
+  }
+  .sidebar nav a:hover, .sidebar nav a.active {
+    color: var(--text); background: rgba(56,189,248,0.06);
+    border-left-color: var(--accent);
+  }
+  .sidebar .sec-label {
+    padding: 0.75rem 1.25rem 0.1rem;
+    font-size: 0.62rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #3b4a5c; font-weight: 600;
+  }
+
+  /* ── Main ── */
+  .main { flex: 1; max-width: 1050px; margin: 0 auto; padding: 2rem 2rem 5rem; }
+
+  .hero {
+    text-align: center; padding: 2.5rem 0 1.5rem;
+    border-bottom: 1px solid var(--border); margin-bottom: 2rem;
+  }
+  .hero h1 {
+    font-size: 2.2rem; font-weight: 800;
+    background: linear-gradient(135deg, #38bdf8, #a78bfa, #ec4899);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero .sub { color: var(--text-dim); margin-top: 0.4rem; font-size: 1rem; }
+
+  section { margin-bottom: 3rem; scroll-margin-top: 0.5rem; }
+  section h2 { font-size: 1.45rem; font-weight: 700; margin-bottom: 0.5rem; }
+  section h3 { font-size: 1.1rem; font-weight: 600; margin: 1.2rem 0 0.4rem; }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem; margin: 1rem 0;
+  }
+  .card-label {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 600; color: var(--text-dim); margin-bottom: 0.4rem;
+  }
+
+  .mermaid-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem 0.5rem;
+    margin: 1rem 0; overflow-x: auto; text-align: center;
+  }
+  .mermaid-box svg { max-width: 100%; height: auto; }
+
+  /* ── Comparison Tables ── */
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.82rem; }
+  th, td { padding: 0.5rem 0.6rem; border: 1px solid var(--border); text-align: left; }
+  th { background: #0b1120; color: var(--accent); font-weight: 600; white-space: nowrap; }
+  td { color: var(--text-dim); }
+  .brand-openai { border-left: 3px solid var(--openai); }
+  .brand-anthropic { border-left: 3px solid var(--anthropic); }
+  .brand-deepseek { border-left: 3px solid var(--deepseek); }
+  .brand-kimi { border-left: 3px solid var(--kimi); }
+
+  .family-label {
+    display: inline-block; font-size: 0.7rem; font-weight: 600;
+    padding: 0.1rem 0.5rem; border-radius: 3px; margin-right: 0.3rem;
+  }
+  .family-gpt { background: rgba(16,163,127,0.15); color: var(--openai); }
+  .family-claude { background: rgba(217,119,6,0.15); color: var(--anthropic); }
+  .family-ds { background: rgba(99,102,241,0.15); color: var(--deepseek); }
+  .family-kimi { background: rgba(236,72,153,0.15); color: var(--kimi); }
+
+  .tag {
+    display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px;
+    font-size: 0.68rem; font-weight: 600;
+  }
+  .tag-moe { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+  .tag-dense { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+  .tag-hybrid { background: rgba(251,191,36,0.15); color: #fde68a; }
+  .tag-reason { background: rgba(74,222,128,0.15); color: #86efac; }
+
+  .info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.75rem 0;
+  }
+
+  .evo-line {
+    position: relative;
+    padding: 0.5rem 0 0.5rem 2rem;
+    border-left: 2px solid var(--border);
+    margin-left: 0.5rem;
+  }
+  .evo-line:last-child { border-left-color: transparent; }
+  .evo-dot::before {
+    content: "●";
+    position: absolute; left: -0.6rem; font-size: 0.9rem;
+  }
+  .evo-dot { position: relative; }
+  .evo-date { font-size: 0.75rem; color: #64748b; }
+  .evo-title { font-weight: 600; font-size: 0.9rem; }
+  .evo-desc { font-size: 0.82rem; color: var(--text-dim); }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: rgba(56,189,248,0.06); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin: 0.75rem 0; font-size: 0.9rem;
+  }
+  .callout p { margin-bottom: 0; }
+
+  .grid-4 {
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; margin: 0.75rem 0;
+  }
+  .model-card {
+    border-radius: 10px; padding: 1rem;
+    border: 1px solid var(--border); text-align: center;
+  }
+  .model-card h4 { font-size: 0.85rem; }
+  .model-card .params { font-size: 1.1rem; font-weight: 700; margin: 0.25rem 0 0.1rem; }
+  .model-card .detail { font-size: 0.72rem; color: var(--text-dim); }
+
+  @media (max-width: 768px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); padding: 0.5rem 0; }
+    .sidebar nav a { padding: 0.25rem 1rem; font-size: 0.75rem; }
+    .main { padding: 1.25rem 0.75rem 3rem; }
+    .hero h1 { font-size: 1.5rem; }
+    .info-grid, .grid-4 { grid-template-columns: 1fr; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <h2>🧬 LLM Evolution &amp;<br>Comparison</h2>
+    <nav>
+      <div class="sec-label">Overview</div>
+      <a href="#intro">Four Families, One Goal</a>
+      <a href="#latest">Today's Leaders (Jul 2026)</a>
+
+      <div class="sec-label">GPT · OpenAI</div>
+      <a href="#gpt-evo">Evolution: GPT-3 → 5.6</a>
+      <a href="#gpt-key">What Each Gen Brought</a>
+
+      <div class="sec-label">Claude · Anthropic</div>
+      <a href="#claude-evo">Evolution: Claude 1 → Fable 5</a>
+      <a href="#claude-key">What Each Gen Brought</a>
+
+      <div class="sec-label">DeepSeek</div>
+      <a href="#deepseek-evo">Evolution: V1 → V4</a>
+      <a href="#deepseek-key">What Each Gen Brought</a>
+
+      <div class="sec-label">Kimi · Moonshot AI</div>
+      <a href="#kimi-evo">Evolution: K1 → K2.7</a>
+      <a href="#kimi-key">What Each Gen Brought</a>
+
+      <div class="sec-label">Cross-Cutting</div>
+      <a href="#architectures">Architecture Showdown</a>
+      <a href="#innovation">Innovation Matrix</a>
+      <a href="#pricing">💰 Why the Price Differences?</a>
+      <a href="#timeline">Unified Timeline</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <!-- ═══════════════════ HERO ═══════════════════ -->
+    <div class="hero">
+      <h1>LLM Evolution &amp; Comparison</h1>
+      <div class="sub">How GPT, Claude, DeepSeek, and Kimi evolved — what each generation changed — and where they stand today (July 2026).</div>
+    </div>
+
+    <!-- ═══════════════════ INTRO ═══════════════════ -->
+    <section id="intro">
+      <h2>Four Families, One Transformer Core</h2>
+      <p>Every major LLM today descends from the same 2017 Transformer architecture. What makes them different is <strong>how they scaled, trained, and innovated</strong> around that core — and each family took a distinct path.</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Origin["Origin: Attention Is All You Need (2017)"]
+        T["Transformer Architecture"]
+    end
+
+    subgraph GPT["GPT Family — OpenAI"]
+        G1["GPT-3 (2020)<br/>175B dense, in-context learning"]
+        G2["GPT-4o (2024)<br/>Native multimodal"]
+        G3["GPT-5.6 Sol (2026)<br/>Multi-agent orchestration"]
+    end
+
+    subgraph Claude["Claude Family — Anthropic"]
+        C1["Claude 3 (2024)<br/>Hybrid reasoning"]
+        C2["Claude Opus 4.8 (2026)<br/>SWE-Bench 69.2% Pro"]
+        C3["Claude Fable 5 (2026)<br/>Mythos-class frontier"]
+    end
+
+    subgraph DeepSeek["DeepSeek — High-Flyer"]
+        D1["DeepSeek-V2 (2024)<br/>MLA + MoE architecture"]
+        D2["DeepSeek-V3 (2024)<br/>671B MoE, $5.5M training"]
+        D3["DeepSeek-V4 (2026)<br/>1.6T params, mHC"]
+    end
+
+    subgraph Kimi["Kimi — Moonshot AI"]
+        K1["K2 (2025)<br/>1T MoE, open-source"]
+        K2["K2.5 (2026)<br/>Native multimodal MoE"]
+        K3["K2.7 Code (2026)<br/>30% fewer thinking tokens"]
+    end
+
+    T --> GPT & Claude & DeepSeek & Kimi
+
+    style Origin fill:#1e293b,stroke:#38bdf8
+    style GPT fill:#1e293b,stroke:#10a37f
+    style Claude fill:#1e293b,stroke:#d97706
+    style DeepSeek fill:#1e293b,stroke:#6366f1
+    style Kimi fill:#1e293b,stroke:#ec4899
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ LATEST LEADERS ═══════════════════ -->
+    <section id="latest">
+      <h2>Today's Leaders (July 2026)</h2>
+      <p>Each family now has a tiered lineup. Here's how the top models stack up:</p>
+
+      <div class="grid-4">
+        <div class="model-card" style="border-color:var(--openai);">
+          <h4 style="color:var(--openai);">OpenAI</h4>
+          <div class="params" style="color:var(--openai);">GPT-5.6</div>
+          <div class="detail">Sol | Terra | Luna</div>
+          <div class="detail">Multi-agent, effort control</div>
+          <div class="detail" style="margin-top:0.3rem;"><span class="tag-hybrid tag">Hybrid Router</span></div>
+        </div>
+        <div class="model-card" style="border-color:var(--anthropic);">
+          <h4 style="color:var(--anthropic);">Anthropic</h4>
+          <div class="params" style="color:var(--anthropic);">Fable 5</div>
+          <div class="detail">Mythos | Opus 4.8 | Sonnet 5</div>
+          <div class="detail">80.3% SWE-Bench Pro</div>
+          <div class="detail" style="margin-top:0.3rem;"><span class="tag-hybrid tag">Safety-routed</span></div>
+        </div>
+        <div class="model-card" style="border-color:var(--deepseek);">
+          <h4 style="color:var(--deepseek);">DeepSeek</h4>
+          <div class="params" style="color:var(--deepseek);">V4</div>
+          <div class="detail">Pro (1.6T) | Flash (284B)</div>
+          <div class="detail">1M context, Muon optimizer</div>
+          <div class="detail" style="margin-top:0.3rem;"><span class="tag-moe tag">MoE</span></div>
+        </div>
+        <div class="model-card" style="border-color:var(--kimi);">
+          <h4 style="color:var(--kimi);">Kimi</h4>
+          <div class="params" style="color:var(--kimi);">K2.7</div>
+          <div class="detail">Code | Thinking Mode</div>
+          <div class="detail">-30% thinking tokens</div>
+          <div class="detail" style="margin-top:0.3rem;"><span class="tag-moe tag">Open-Source MoE</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📊 Flagship Model Comparison</div>
+        <table>
+          <tr><th>Dimension</th><th>GPT-5.6 Sol</th><th>Claude Fable 5</th><th>DeepSeek V4-Pro</th><th>Kimi K2.7 Code</th></tr>
+          <tr><td>Parameters</td><td>~4T (est.)</td><td>Unknown</td><td>1.6T (49B active)</td><td>~1T (32B active)</td></tr>
+          <tr><td>Architecture</td><td>Dense + Router</td><td>Dense Transformer</td><td>MoE + MLA + mHC</td><td>MoE + Linear Attention</td></tr>
+          <tr><td>Context Window</td><td>1.5M (est.)</td><td>1M</td><td>1M</td><td>256K</td></tr>
+          <tr><td>Multi-modal</td><td>Text + Vision + Audio</td><td>Text + Vision + Design</td><td>Text (+ Vision via Janus)</td><td>Text + Vision + Video</td></tr>
+          <tr><td>Key Differentiator</td><td>Sol/Terra/Luna tiers<br>Multi-agent orchestration</td><td>Safety-routed architecture<br>50M-line migrations</td><td>Cheapest training ($5.5M)<br>KV cache ~10% of peers</td><td>Open-source (MIT-like)<br>-30% thinking tokens</td></tr>
+          <tr><td>Pricing (per 1M tokens)</td><td>$5 / $30 (in/out)</td><td>$10 / $50</td><td>~$0.50 / $2 (est.)</td><td>Open-source / self-host</td></tr>
+          <tr><td>SWE-Bench Pro</td><td>~75% (est.)</td><td>80.3%</td><td>~70% (est.)</td><td>58.6% (K2.6)</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ GPT EVOLUTION ═══════════════════ -->
+    <section id="gpt-evo">
+      <h2 style="color:var(--openai);">GPT Evolution: GPT-3 → GPT-5.6</h2>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+timeline
+    title GPT Evolution (2020–2026)
+    section GPT-3 (2020) : 175B params, first API
+        Few-shot in-context learning discovered
+    section GPT-3.5 / ChatGPT (2022) : RLHF, conversational
+        ChatGPT launch → 100M users in 2 months
+    section GPT-4 (2023) : Multimodal (text+vision)
+        90th percentile bar exam, 32K context
+    section GPT-4 Turbo (2023) : 128K context, cheaper
+        JSON mode, Assistants API
+    section GPT-4o (2024) : Native omni (text+vision+audio)
+        Real-time voice, 232ms response
+    section o1 / o3 (2024–2025) : Reasoning models
+        Chain-of-thought, scaled test-time compute
+    section GPT-5 (2025) : Unified model with router
+        Merged GPT + o-series, 400K context
+    section GPT-5.4 (Mar 2026) : 1M context
+        Native computer use, compaction
+    section GPT-5.5 (Apr 2026) : From-scratch retrain
+        ~4T params, agentic coding default
+    section GPT-5.6 Sol/Terra/Luna (Jul 2026)
+        Multi-agent orchestration, effort tiers
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">🧠 The Big Arc</div>
+        <p>GPT's journey is one of <strong>unification</strong>. GPT-3 was a pure text predictor. GPT-4 added vision. GPT-4o fused audio. o1 added reasoning chains. GPT-5 <strong>merged all lines</strong> into one router that decides per-query whether to think fast (Instant) or deliberate (Thinking/Pro). GPT-5.6 capped this with <strong>Sol/Terra/Luna</strong> — three capability tiers decoupled from the version number, plus <strong>multi-agent orchestration</strong> (Ultra Mode) that spawns sub-agents for complex tasks.</p>
+      </div>
+    </section>
+
+    <section id="gpt-key">
+      <h3>What Each Generation Brought</h3>
+      <table>
+        <tr><th>Generation</th><th>Key Innovation</th><th>Why It Mattered</th></tr>
+        <tr><td><strong>GPT-3</strong> (2020)</td><td>175B parameters + in-context learning</td><td>Proved scaling alone creates emergent abilities. Models could "learn" from examples in the prompt — no fine-tuning needed.</td></tr>
+        <tr><td><strong>GPT-3.5 / InstructGPT</strong> (2022)</td><td>RLHF fine-tuning</td><td>Aligned language models with human preferences. Turned a document-completer into a conversational assistant. ChatGPT changed the world.</td></tr>
+        <tr><td><strong>GPT-4</strong> (2023)</td><td>Multimodal (text + vision)</td><td>Model could read screenshots, diagrams, and charts. Passed the bar exam in the 90th percentile. Showed that visual understanding emerges from text-only pre-training + vision fine-tuning.</td></tr>
+        <tr><td><strong>GPT-4 Turbo</strong> (2023)</td><td>128K context, 3× cheaper</td><td>Longer context meant whole documents fit in one prompt. Price drops made LLMs economically viable for production.</td></tr>
+        <tr><td><strong>GPT-4o</strong> (2024)</td><td>Native omni (text+vision+audio)</td><td>Single model processed all modalities natively. Voice mode with 232ms latency felt like a real conversation. Free tier democratized access.</td></tr>
+        <tr><td><strong>o1 / o3</strong> (2024–2025)</td><td>Scaled test-time compute (reasoning)</td><td>Models that "think before they speak" — using internal chain-of-thought that scales with compute budget. o3 could use tools inside the reasoning chain.</td></tr>
+        <tr><td><strong>GPT-5</strong> (2025)</td><td>Unified router model</td><td>Merged GPT (fast) and o-series (thinking) into one model. Router decides per-query: fast answer or deliberate reasoning. 400K context.</td></tr>
+        <tr><td><strong>GPT-5.4</strong> (Mar 2026)</td><td>1M context + computer use</td><td>First mainline GPT with native screenshot-based UI interaction. 1M token context for entire codebase analysis.</td></tr>
+        <tr><td><strong>GPT-5.5</strong> (Apr 2026)</td><td>From-scratch retrain (~4T params)</td><td>First foundation model retrained from scratch since GPT-4.5. Agentic coding default. Compaction for long-running agents.</td></tr>
+        <tr><td><strong>GPT-5.6</strong> (Jul 2026)</td><td>Sol/Terra/Luna tiers + multi-agent orchestration</td><td>Ultra Mode spawns parallel sub-agents for complex tasks. Max Reasoning Effort for deep problems. Three cost tiers decoupled from version. First model under US gov pre-release review.</td></tr>
+      </table>
+
+      <div class="callout">
+        <p><strong>💡 nanoGPT connection:</strong> The decoder-only Transformer architecture in nanoGPT is the <em>exact same architecture</em> that powers every GPT model. The difference is scale (10M → 175B → 4T parameters), training data (Shakespeare → the internet), and post-training (RLHF, reasoning fine-tuning). Every innovation from GPT-3 onward was built on that same core.</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ CLAUDE EVOLUTION ═══════════════════ -->
+    <section id="claude-evo">
+      <h2 style="color:var(--anthropic);">Claude Evolution: Claude 1 → Fable 5</h2>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+timeline
+    title Claude Evolution (2023–2026)
+    section Claude 1 (2023) : Constitutional AI
+        Helpful, Honest, Harmless framework
+    section Claude 2 (2023) : 100K context
+        Improved coding, safer outputs
+    section Claude 3 Sonnet/Opus (2024) : Tiered models
+        Opus for intelligence, Sonnet for speed, Haiku for cost
+    section Claude 3.7 Sonnet (Feb 2025) : Hybrid reasoning
+        Extended thinking — pause and think step-by-step
+    section Claude 4 Opus/Sonnet (May 2025) : Generational leap
+        72.5% SWE-bench, Claude Code GA
+    section Opus 4.5 (Nov 2025) : First to break 80% SWE-bench
+        Infinite Chats, auto-summarization
+    section Opus 4.8 (May 2026) : Effort controls
+        Fast Mode, 2.5× speed, 3× cheaper
+    section Fable 5 + Sonnet 5 (Jun 2026) : Mythos-class
+        80.3% SWE-Bench Pro, safety-routed
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">🧠 The Big Arc</div>
+        <p>Claude's journey is about <strong>safety-first excellence</strong>. Starting from Constitutional AI, Claude evolved through increasingly capable tiers (Haiku → Sonnet → Opus → Mythos). The breakthrough came with <strong>hybrid reasoning</strong> (Claude 3.7 Sonnet) — the ability to think step-by-step before answering. Claude Code (May 2025) turned Claude into an autonomous coding agent. Fable 5 represents the first "Mythos-class" model: more capable than any Opus, but with <strong>safety classifiers</strong> that route sensitive requests to Opus 4.8 rather than refusing outright. Sonnet 5 now rivals Opus 4.8 on knowledge work at 40% the list price.</p>
+      </div>
+    </section>
+
+    <section id="claude-key">
+      <h3>What Each Generation Brought</h3>
+      <table>
+        <tr><th>Generation</th><th>Key Innovation</th><th>Why It Mattered</th></tr>
+        <tr><td><strong>Claude 1</strong> (2023)</td><td>Constitutional AI (CAI)</td><td>First model trained with AI-generated feedback instead of human labels for harmlessness. Self-supervision at scale for safety.</td></tr>
+        <tr><td><strong>Claude 2</strong> (2023)</td><td>100K context window</td><td>First major model to handle document-length contexts. Read whole books, entire codebases.</td></tr>
+        <tr><td><strong>Claude 3 Opus/Sonnet/Haiku</strong> (2024)</td><td>Tiered architecture</td><td>Introduced capability-based tiers. Opus matched GPT-4 on benchmarks. Sonnet offered 80% of Opus at half the cost. Near-zero refusal rates on harmless prompts.</td></tr>
+        <tr><td><strong>Claude 3.7 Sonnet</strong> (Feb 2025)</td><td>Hybrid reasoning (extended thinking)</td><td>Model could pause, think step-by-step internally, then respond. First model to combine fast answers with deliberate reasoning in one architecture. Claude Code research preview.</td></tr>
+        <tr><td><strong>Claude 4 Opus/Sonnet</strong> (May 2025)</td><td>Generational leap</td><td>72.5% SWE-bench Verified. Parallel tool calls. Claude Code went GA. Proved coding agents were production-ready.</td></tr>
+        <tr><td><strong>Claude Opus 4.5</strong> (Nov 2025)</td><td>First to break 80% SWE-bench</td><td>80.9% SWE-bench Verified. Infinite Chats (auto-summarization at context limit). Drove massive Claude Code adoption.</td></tr>
+        <tr><td><strong>Claude Opus 4.6</strong> (Feb 2026)</td><td>1M context GA + agent teams</td><td>First Opus with 1M context generally available. Native multi-agent task splitting. 14.5-hour task completion horizon (METR).</td></tr>
+        <tr><td><strong>Claude Opus 4.8</strong> (May 2026)</td><td>Effort controls + Fast Mode</td><td>Users could trade speed for depth (default/extra/max). Fast Mode at 2.5× speed for $10/$50 per M tokens. 4× less likely to let coding errors pass.</td></tr>
+        <tr><td><strong>Claude Fable 5</strong> (Jun 2026)</td><td>Mythos-class frontier model</td><td>80.3% SWE-Bench Pro — 11 points ahead of Opus 4.8. Safety-routed architecture: sensitive queries fall back to Opus 4.8 instead of refusing. Stripe migrated 50M lines of Ruby in one day.</td></tr>
+        <tr><td><strong>Claude Sonnet 5</strong> (Jun 2026)</td><td>Sonnet matches Opus on knowledge work</td><td>Surpassed Opus 4.8 on GDPval-AA (1618 vs 1615). New tokenizer gives up to 42% more tokens for English (hidden cost). 81.2% OSWorld (vs Opus 4.8's 83.4%).</td></tr>
+      </table>
+
+      <div class="callout">
+        <p><strong>💡 The Sonnet-Opus convergence:</strong> By mid-2026, the gap between Sonnet and Opus narrowed dramatically. Sonnet 5 matches Opus 4.8 on knowledge work and trails only 6 points on SWE-Bench Pro. The value tier is eating the premium tier — a pattern also visible in GPT's Luna/Terra/Sol and DeepSeek's V4-Flash/Pro.</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ DEEPSEEK EVOLUTION ═══════════════════ -->
+    <section id="deepseek-evo">
+      <h2 style="color:var(--deepseek);">DeepSeek Evolution: V1 → V4</h2>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+timeline
+    title DeepSeek Evolution (2024–2026)
+    section V1 / LLM (Jan 2024) : 67B dense, 2T tokens
+        Baseline: GQA, beat LLaMA-2 70B
+    section V2 (May 2024) : MLA + MoE revolution
+        KV cache -93.3%, training cost -42.5%
+        DeepSeekMoE: fine-grained + shared experts
+    section V3 (Dec 2024) : 671B MoE, $5.5M training
+        FP8 training, Multi-Token Prediction
+        Matched GPT-4o at 1/20th the cost
+    section R1 (Jan 2025) : Pure RL reasoning
+        "Aha moment" — spontaneous self-reflection
+        GRPO: no value network needed
+    section V3.1 (Aug 2025) : Hybrid reasoning
+        Think/no-think modes in one model
+    section V3.2 (Dec 2025) : Sparse Attention (DSA)
+        O(L·k) long context, IMO/IOI gold
+    section V4 (Apr 2026) : mHC + hybrid attention
+        1.6T params, 1M context, Muon optimizer
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">🧠 The Big Arc</div>
+        <p>DeepSeek's journey is about <strong>efficiency through architecture innovation</strong>. While others scaled by throwing more compute at dense transformers, DeepSeek rewrote the rules: <strong>Multi-Head Latent Attention (MLA)</strong> compressed KV cache by 93%. <strong>DeepSeekMoE</strong> made sparse activation practical at massive scale. <strong>FP8 training</strong> cut costs 10×. <strong>GRPO</strong> enabled reasoning without a critic network. The result: V3 trained for $5.5M matched GPT-4o. V4's <strong>manifold Hyper-Connections (mHC)</strong> solved the deep-network signal problem. DeepSeek is the <strong>cost-efficiency champion</strong> — proving you don't need billions in compute to compete at the frontier.</p>
+      </div>
+    </section>
+
+    <section id="deepseek-key">
+      <h3>What Each Generation Brought</h3>
+      <table>
+        <tr><th>Generation</th><th>Key Innovation</th><th>Why It Mattered</th></tr>
+        <tr><td><strong>DeepSeek LLM / V1</strong> (Jan 2024)</td><td>67B dense, 2T tokens, GQA</td><td>Established the pattern: study scaling laws first, then allocate compute precisely. Beat LLaMA-2 70B and GPT-3.5 with a smaller, well-trained model.</td></tr>
+        <tr><td><strong>DeepSeek-Math</strong> (Feb 2024)</td><td>GRPO (Group Relative Policy Optimization)</td><td>Reinforcement learning without a value network. Radical simplification that became the foundation for R1's pure-RL reasoning.</td></tr>
+        <tr><td><strong>DeepSeek-V2</strong> (May 2024)</td><td>MLA + DeepSeekMoE</td><td><strong>Architecture revolution.</strong> MLA compressed KV cache into a low-dimensional latent space — 93.3% reduction. DeepSeekMoE replaced a few large experts with many fine-grained + shared experts. Training cost dropped 42.5%. Every subsequent DeepSeek model uses both.</td></tr>
+        <tr><td><strong>DeepSeek-V3</strong> (Dec 2024)</td><td>671B MoE, FP8 training, MTP</td><td><strong>The cost earthquake.</strong> 671B total (37B active) trained for $5.5M in 2.8M GPU hours. First to prove FP8 training works at 671B scale. Multi-Token Prediction (MTP) — predict multiple future tokens at once — improved planning and enabled 3× speculative decoding speedup. Matched GPT-4o.</td></tr>
+        <tr><td><strong>DeepSeek-R1</strong> (Jan 2025)</td><td>Pure RL reasoning (the "Aha Moment")</td><td><strong>R1-Zero</strong> applied GRPO to the V3 base with <em>zero</em> supervised data. The model spontaneously learned to <em>self-reflect, backtrack, and re-evaluate</em> — emergent reasoning behaviors researchers called the "Aha Moment." R1 formalized this with cold-start SFT + multi-stage RL, rivaling OpenAI o1.</td></tr>
+        <tr><td><strong>DeepSeek-V3.1</strong> (Aug 2025)</td><td>Hybrid reasoning (think/no-think)</td><td>Single model supporting both fast and thinking modes — similar to Claude's hybrid reasoning but in the MoE + MLA architecture. Optimized agent tool use.</td></tr>
+        <tr><td><strong>DeepSeek-V3.2</strong> (Dec 2025)</td><td>DeepSeek Sparse Attention (DSA)</td><td>Content-aware sparse attention — O(L²) → near O(L·k) for long contexts. V3.2-Speciale won IMO/IOI 2025 gold medals with high-compute reasoning. Matched GPT-5 on reasoning benchmarks.</td></tr>
+        <tr><td><strong>DeepSeek-V4</strong> (Apr 2026)</td><td>mHC + CSA/HCA + Muon</td><td><strong>Three breakthroughs:</strong> (1) Manifold Hyper-Connections (mHC) — constrains residual pathways to a doubly-stochastic manifold, solving deep-network signal decay at just 6.7% training overhead. (2) Compressed Sparse Attention + Heavily Compressed Attention — KV cache at 10% of V3.2. (3) Muon optimizer replaces AdamW — matrix orthogonalization for 2D parameters. 1.6T total, 49B active, 1M context.</td></tr>
+      </table>
+
+      <div class="callout">
+        <p><strong>💡 The DeepSeek secret:</strong> Every major DeepSeek innovation was <strong>published as a paper first</strong> and validated in small-scale experiments before being deployed in the flagship model. MLA, GRPO, FP8 training, DSA, mHC — all followed this pattern. It's a research-lab approach to product development, and it lets them move faster than companies that keep everything behind closed doors.</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ KIMI EVOLUTION ═══════════════════ -->
+    <section id="kimi-evo">
+      <h2 style="color:var(--kimi);">Kimi Evolution: K1 → K2.7</h2>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+timeline
+    title Kimi Evolution (2023–2026)
+    section Kimi (2023) : Long context pioneer
+        200K context window
+    section K1 series : Chat + reasoning
+        Kimi Chat with web search
+    section K2 (Jul 2025) : 1T MoE, open-source
+        MuonClip optimizer, Linear Attention
+        Attention Residuals, -20% training compute
+    section K2.5 (Jan 2026) : Native multimodal MoE
+        Vision RL improves text ability!
+        100 sub-agents, 1500-step tasks
+    section K2.6 (Apr 2026) : 300 sub-agents
+        4000-step tasks, beat GPT-5.4 on SWE-Bench
+    section K2.7 Code (Jun 2026) : Token efficiency
+        -30% thinking tokens, MoonViT vision encoder
+        Open-source, Modified MIT license
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">🧠 The Big Arc</div>
+        <p>Kimi's journey is about <strong>rebuilding the stack from scratch</strong>. Founder Yang Zhilin made a bold bet: halt the K1 series entirely to redesign core AI components — optimizers, attention mechanisms, residual connections — rather than using off-the-shelf AdamW + Transformer. K2 introduced <strong>MuonClip</strong> (a better optimizer), <strong>Kimi Linear Attention</strong> (5-6× faster long-context decoding), and <strong>Attention Residuals</strong> (20% less training compute). K2.5 discovered that visual RL improves text ability — a counterintuitive breakthrough. K2.7 Code, open-sourced under a Modified MIT license, cuts thinking tokens by 30% and targets long-horizon coding agents. Kimi is the <strong>dark horse</strong> — smaller budget, younger team, but willing to question every assumption.</p>
+      </div>
+    </section>
+
+    <section id="kimi-key">
+      <h3>What Each Generation Brought</h3>
+      <table>
+        <tr><th>Generation</th><th>Key Innovation</th><th>Why It Mattered</th></tr>
+        <tr><td><strong>Kimi v1</strong> (2023)</td><td>Long context (200K → 1M+)</td><td>Moonshot's first product was a chat app with the industry's longest context window. Proved you could do useful work with ultra-long inputs — reading whole books, analyzing full codebases.</td></tr>
+        <tr><td><strong>Kimi K1</strong> series (2024)</td><td>Chat + reasoning + web search</td><td>Integrated web search natively into the chat experience. Kimi became a research assistant, not just a chatbot. Strong in Chinese + English bilingual tasks.</td></tr>
+        <tr><td><strong>Kimi K2</strong> (Jul 2025)</td><td>1T MoE, open-source — architecture rewrite</td><td><strong>Boldest move:</strong> Open-sourced a 1T-parameter MoE model. MuonClip optimizer (2× token efficiency vs AdamW). Kimi Linear hybrid attention (5-6× faster long-context decoding). Attention Residuals (20% less training compute). Every component was custom-built, not borrowed.</td></tr>
+        <tr><td><strong>Kimi K2.5</strong> (Jan 2026)</td><td>Native multimodal MoE</td><td><strong>Vision improves text:</strong> Integrating vision at the bottom-most layer of the MoE architecture produced better pure-text reasoning. 100 sub-agents in parallel, 1,500-step tasks. ARR crossed $100M — cumulative 20-day revenue exceeded all of 2025.</td></tr>
+        <tr><td><strong>Kimi K2.6</strong> (Apr 2026)</td><td>300 sub-agents, 4,000-step tasks</td><td>Programming ability leapfrog. Defeated GPT-5.4 on SWE-Bench Pro (58.6%). Could code for 13 hours continuously, modifying 4,000+ lines. Proved agentic coding at scale works.</td></tr>
+        <tr><td><strong>Kimi K2.7 Code</strong> (Jun 2026)</td><td>-30% thinking tokens + open-source</td><td><strong>Efficiency focused:</strong> 30% fewer thinking tokens than K2.6 (direct cost reduction). MoonViT vision encoder (400M params) for image/video input. 256K context. Exclusively thinking mode. Open-source under Modified MIT — anyone can self-host. Ships with Kimi Code terminal agent.</td></tr>
+      </table>
+
+      <div class="callout">
+        <p><strong>💡 Why Kimi's custom stack matters:</strong> Most LLM teams use off-the-shelf components: PyTorch + AdamW + Transformer decoder. Kimi rebuilt the optimizer (MuonClip), the attention (Linear), the residuals, and the vision encoder (MoonViT). This is expensive in the short term but creates a <strong>differentiation moat</strong> — they aren't limited by someone else's design decisions. K3 (next gen) promises "abilities other models have not defined" with an entirely new architecture.</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ ARCHITECTURE SHOWDOWN ═══════════════════ -->
+    <section id="architectures">
+      <h2>Architecture Showdown</h2>
+      <p>Each family made different bets on how to build the model. Here's how they compare at the architectural level:</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph GPTArch["GPT (OpenAI) — Dense + Router"]
+        G1["Dense Transformer<br/>All parameters active"]
+        G2["Router decides per-query:<br/>Instant / Thinking / Pro"]
+        G3["Multi-agent orchestration<br/>spawns sub-agents in Ultra Mode"]
+    end
+
+    subgraph ClaudeArch["Claude (Anthropic) — Dense + Safety"]
+        C1["Dense Transformer<br/>All parameters active"]
+        C2["Safety classifiers gate<br/>sensitive requests → Opus fallback"]
+        C3["Extended thinking as<br/>internal monologue"]
+    end
+
+    subgraph DSArch["DeepSeek — MoE + MLA + mHC"]
+        D1["DeepSeekMoE<br/>Fine-grained experts + shared"]
+        D2["MLA: KV in latent space<br/>93% cache reduction"]
+        D3["mHC: manifold-constrained<br/>residual pathways"]
+    end
+
+    subgraph KimiArch["Kimi (Moonshot) — MoE + Custom Stack"]
+        K1["MoE with custom<br/>MuonClip optimizer"]
+        K2["Kimi Linear Attention<br/>5-6× fast decoding"]
+        K3["Attention Residuals<br/>for deep stability"]
+    end
+
+    style GPTArch fill:#1e293b,stroke:#10a37f
+    style ClaudeArch fill:#1e293b,stroke:#d97706
+    style DSArch fill:#1e293b,stroke:#6366f1
+    style KimiArch fill:#1e293b,stroke:#ec4899
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">🔧 Architectural DNA by Family</div>
+        <table>
+          <tr><th>Dimension</th><th style="color:var(--openai);">OpenAI</th><th style="color:var(--anthropic);">Anthropic</th><th style="color:var(--deepseek);">DeepSeek</th><th style="color:var(--kimi);">Kimi</th></tr>
+          <tr><td>Base Architecture</td><td>Dense Transformer</td><td>Dense Transformer</td><td><span class="tag-moe tag">MoE</span></td><td><span class="tag-moe tag">MoE</span></td></tr>
+          <tr><td>Attention</td><td>Standard MHA</td><td>Standard MHA</td><td>MLA (latent KV)</td><td>Kimi Linear (hybrid)</td></tr>
+          <tr><td>Optimizer</td><td>AdamW</td><td>AdamW</td><td>AdamW → <strong>Muon (V4)</strong></td><td><strong>MuonClip</strong> (custom)</td></tr>
+          <tr><td>Residual Path</td><td>Pre-LN + Skip</td><td>Pre-LN + Skip</td><td>Standard → <strong>mHC (V4)</strong></td><td><strong>Attention Residuals</strong></td></tr>
+          <tr><td>Context Strategy</td><td>Full attention (1.5M)</td><td>Full attention (1M)</td><td>DSA sparse (1M)</td><td>Linear hybrid (256K)</td></tr>
+          <tr><td>KV Cache Efficiency</td><td>Standard (high mem)</td><td>Standard (high mem)</td><td><strong>~10% of standard</strong></td><td>Improved via Linear</td></tr>
+          <tr><td>Training Cost</td><td>Highest (estimated $100M+)</td><td>High (estimated $50M+)</td><td><strong>Lowest ($5.5M V3)</strong></td><td>Moderate</td></tr>
+          <tr><td>Reasoning Method</td><td>Router (Instant vs Thinking)</td><td>Extended thinking (internal)</td><td>Hybrid (think/no-think)</td><td>Exclusive thinking mode</td></tr>
+          <tr><td>Open Source</td><td>No</td><td>No</td><td>Partially (V3 weights)</td><td><strong>Yes (MIT-like)</strong></td></tr>
+          <tr><td>Key Moat</td><td>Scale + distribution</td><td>Safety + agentic coding</td><td>Cost efficiency + architecture</td><td>Custom stack + openness</td></tr>
+        </table>
+      </div>
+    </section>
+
+        <!-- ═══════════════════ PRICING EXPLAINED ═══════════════════ -->
+    <section id="pricing">
+      <h2>💰 Why the Price Differences?</h2>
+      <p>The pricing hierarchy — <strong style="color:var(--anthropic);">Claude &gt; GPT &gt; Kimi &gt; DeepSeek</strong> — is not arbitrary. It's a direct consequence of architectural choices. Each family made different bets on <strong>dense vs. MoE</strong>, <strong>custom vs. off-the-shelf components</strong>, and <strong>safety vs. efficiency</strong>. Let's trace why.</p>
+
+      <h3>From nanoGPT's Dense Transformer → Today's Architecture Bet</h3>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart LR
+    subgraph Dense["Standard Dense (nanoGPT baseline)"]
+        direction LR
+        D1["Every token passes through<br/><b>100% of parameters</b>"]
+        D2["Self-Attention + FFN<br/>+ Residual + LayerNorm"]
+        D3["<b>Bottleneck at scale:</b><br/>Running all params for every token<br/>is extremely expensive"]
+    end
+    subgraph DenseRouter["Dense + Router (GPT-5.6 / Claude)"]
+        direction LR
+        DR1["Multiple dense modes<br/>managed by external Router"]
+        DR2["Router inspects prompt →<br/>forwards to best model"]
+        DR3["<b>Cost:</b> Each mode is a full<br/>dense model = $$$"]
+    end
+    subgraph MoE["MoE — Sparse Activation (DeepSeek / Kimi)"]
+        direction LR
+        M1["FFN split into many<br/>small <b>expert</b> sub-networks"]
+        M2["Gating Router activates<br/>only 2 of 64 experts per token"]
+        M3["<b>Cost:</b> 1.6T total params,<br/>but only 49B active = $"]
+    end
+    subgraph Advanced["MoE + MLA/mHC/Linear Attention"]
+        direction LR
+        A1["MLA compresses KV<br/>cache by 90%+"]
+        A2["mHC / Linear Attention<br/>cuts compute further"]
+        A3["<b>Cost:</b> Frontier performance<br/>at 1/10th the price"]
+    end
+    Dense --> DenseRouter
+    Dense --> MoE
+    MoE --> Advanced
+    style Dense fill:#1e293b,stroke:#64748b
+    style DenseRouter fill:#1e293b,stroke:#10a37f
+    style MoE fill:#1e293b,stroke:#6366f1
+    style Advanced fill:#1e293b,stroke:#4ade80
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📊 Pricing Tiers by Architecture</div>
+        <table>
+          <tr><th>Family</th><th>Architecture</th><th>Why It Costs What It Costs</th></tr>
+          <tr class="brand-anthropic">
+            <td><strong>Anthropic<br>(Claude Fable 5)</strong></td>
+            <td><span class="tag-dense tag">Dense Transformer</span></td>
+            <td><strong>Most expensive.</strong> Dense models activate 100% of parameters for every token. No MoE efficiency tricks. Focus is on <b>deep reasoning coherence</b> and <b>enterprise-grade reliability</b> — every token gets the full model. Safety classifiers + routing add inference overhead. Estimated training cost: $50M+. <strong>$10/$50 per 1M tokens.</strong></td>
+          </tr>
+          <tr class="brand-openai">
+            <td><strong>OpenAI<br>(GPT-5.6 Sol)</strong></td>
+            <td><span class="tag-dense tag">Dense + Router</span></td>
+            <td><strong>Second most expensive.</strong> Dense architecture at massive scale (~4T params estimated). Router adds system-level component but each tier (Sol/Terra/Luna) is still a dense model running all its params. Distribution + API ecosystem costs baked in. <strong>$5/$30 per 1M tokens.</strong></td>
+          </tr>
+          <tr class="brand-kimi">
+            <td><strong>Kimi<br>(K2.7 Code)</strong></td>
+            <td><span class="tag-moe tag">MoE + Linear Attention</span></td>
+            <td><strong>Third.</strong> MoE activates only ~3% of total params per token (1T total, 32B active). Custom Kimi Linear Attention gives 5-6× faster decoding. Open-source (self-host) or API — no massive inference infrastructure costs to recoup. <strong>~$0.50-$2/1M tokens</strong> (est.) or free self-host.</td>
+          </tr>
+          <tr class="brand-deepseek">
+            <td><strong>DeepSeek<br>(V4-Pro)</strong></td>
+            <td><span class="tag-moe tag">MoE + MLA + mHC</span></td>
+            <td><strong>Cheapest.</strong> MoE with 49B active out of 1.6T total. MLA compresses KV cache to <b>~10% of standard</b> — massively reduces memory. Muon optimizer lowers training cost further. V3 trained for just $5.5M. V4 continues the efficiency-first philosophy. <strong>~$0.50/$2 per 1M tokens</strong> (est.) — often 10-20× cheaper than Claude.</td>
+          </tr>
+        </table>
+      </div>
+
+      <h3>The nanoGPT → Frontier Pipeline</h3>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph nanoGPT["nanoGPT (reference)"]
+        N["Standard Dense Transformer<br/>10M params, 100% active"]
+    end
+    subgraph Choices["Architecture Choices at Scale"]
+        direction TB
+        C1["<b>Stay Dense</b><br/><span style='color:#d97706'>Claude</span> <span style='color:#10a37f'>GPT</span><br/>Pay for 100% of params<br/>but get maximum coherence"]
+        C2["<b>Go MoE</b><br/><span style='color:#6366f1'>DeepSeek</span> <span style='color:#ec4899'>Kimi</span><br/>Pay for active params only<br/>massive capacity, low cost"]
+    end
+    subgraph Innovations["Efficiency Multipliers (stack on MoE)"]
+        direction TB
+        I1["<b>MLA</b> — KV cache -93%"]
+        I2["<b>mHC</b> — stable deep nets"]
+        I3["<b>Linear Attn</b> — O(T) decode"]
+        I4["<b>Muon / MuonClip</b> — better optimizer"]
+    end
+    nanoGPT --> Choices
+    C2 --> Innovations
+    style nanoGPT fill:#1e293b,stroke:#38bdf8
+    style Choices fill:#1e293b,stroke:#fbbf24
+    style Innovations fill:#1e293b,stroke:#4ade80
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">🧠 The Strategy Trade-Off</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:0.75rem 0;">
+          <div style="background:rgba(217,119,6,0.06);border:1px solid rgba(217,119,6,0.2);border-radius:10px;padding:1rem;">
+            <h4 style="color:var(--anthropic);font-size:0.9rem;margin:0 0 0.4rem 0;">🟠 Dense (Claude / GPT)</h4>
+            <p style="font-size:0.85rem;color:var(--text-dim);margin:0;">Focus: <strong>deep reasoning coherence</strong>, logic consistency, enterprise agent stability. <strong>Trade-off:</strong> Higher compute per token, but avoids "router jitter" and VRAM allocation overheads of MoE. Every token gets the full model.</p>
+          </div>
+          <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:1rem;">
+            <h4 style="color:var(--deepseek);font-size:0.9rem;margin:0 0 0.4rem 0;">🟣 MoE (DeepSeek / Kimi)</h4>
+            <p style="font-size:0.85rem;color:var(--text-dim);margin:0;">Focus: <strong>maximum compute efficiency</strong>, lower API costs, high throughput. <strong>Trade-off:</strong> High total VRAM footprint (must keep all experts in GPU memory), but delivers frontier performance at a fraction of the training budget (V3: $5.5M).</p>
+          </div>
+        </div>
+
+        <div class="callout warn" style="border-left-color:var(--amber);background:rgba(251,191,36,0.04);margin-top:1rem;">
+          <p><strong>⚡ Bottom-line insight:</strong> You are not paying for "intelligence" — you are paying for the <strong>architecture choice</strong> the company made years ago. Claude's density buys coherence but costs more. DeepSeek's MoE + MLA buys efficiency but needs more total GPU memory. Neither is "right" — they are different points on the cost-coherence curve. Your use case determines which matters more.</p>
+        </div>
+      </div>
+
+    </section>
+
+
+<!-- ═══════════════════ INNOVATION MATRIX ═══════════════════ -->
+    <section id="innovation">
+      <h2>Innovation Matrix</h2>
+      <p>Each family pioneered different breakthroughs. Here's who led on each front:</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+flowchart TB
+    subgraph Innovations["Who Pioneered What"]
+        direction TB
+
+        I1["<b>Scaling Laws</b><br/>GPT-3 (2020)"]
+        I2["<b>RLHF / Alignment</b><br/>InstructGPT / ChatGPT (2022)"]
+        I3["<b>Multimodal (Vision)</b><br/>GPT-4 (2023)"]
+        I4["<b>Constitutional AI</b><br/>Claude 1 (2023)"]
+
+        I5["<b>MoE at Scale</b><br/>DeepSeek-V2 (2024)"]
+        I6["<b>KV Cache Compression</b><br/>DeepSeek-V2 MLA (2024)"]
+        I7["<b>Hybrid Reasoning</b><br/>Claude 3.7 Sonnet (Feb 2025)"]
+        I8["<b>Pure-RL Reasoning</b><br/>DeepSeek-R1 (Jan 2025)"]
+
+        I9["<b>Computer Use</b><br/>GPT-5.4 (Mar 2026)"]
+        I10["<b>Safety Routing</b><br/>Claude Fable 5 (Jun 2026)"]
+        I11["<b>Custom Optimizer</b><br/>Kimi MuonClip (Jul 2025)"]
+        I12["<b>Multi-Agent Orchestration</b><br/>GPT-5.6 Sol (Jul 2026)"]
+
+        I13["<b>Token Efficiency</b><br/>Kimi K2.7 (Jun 2026)"]
+        I14["<b>Manifold Residuals</b><br/>DeepSeek mHC (Apr 2026)"]
+        I15["<b>Sparse Attention</b><br/>DeepSeek DSA (Dec 2025)"]
+        I16["<b>Vision Improves Text</b><br/>Kimi K2.5 (Jan 2026)"]
+    end
+
+    style I1 fill:#1e293b,stroke:#10a37f
+    style I2 fill:#1e293b,stroke:#10a37f
+    style I3 fill:#1e293b,stroke:#10a37f
+    style I4 fill:#1e293b,stroke:#d97706
+    style I5 fill:#1e293b,stroke:#6366f1
+    style I6 fill:#1e293b,stroke:#6366f1
+    style I7 fill:#1e293b,stroke:#d97706
+    style I8 fill:#1e293b,stroke:#6366f1
+    style I9 fill:#1e293b,stroke:#10a37f
+    style I10 fill:#1e293b,stroke:#d97706
+    style I11 fill:#1e293b,stroke:#ec4899
+    style I12 fill:#1e293b,stroke:#10a37f
+    style I13 fill:#1e293b,stroke:#ec4899
+    style I14 fill:#1e293b,stroke:#6366f1
+    style I15 fill:#1e293b,stroke:#6366f1
+    style I16 fill:#1e293b,stroke:#ec4899
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">🏆 Who Leads on Each Dimension (Jul 2026)</div>
+        <table>
+          <tr><th>Dimension</th><th>Leader</th><th>Why</th></tr>
+          <tr><td>Pure Reasoning (SWE-Bench Pro)</td><td style="color:var(--anthropic);font-weight:600;">Claude Fable 5</td><td>80.3% SWE-Bench Pro — 11 points ahead of Opus 4.8. Stripe's 50M-line migration proved it in production.</td></tr>
+          <tr><td>Cost Efficiency</td><td style="color:var(--deepseek);font-weight:600;">DeepSeek V4</td><td>V3 trained for $5.5M matched GPT-4o. V4's KV cache is ~10% of standard. Muon optimizer further reduces training cost.</td></tr>
+          <tr><td>Multi-Agent Orchestration</td><td style="color:var(--openai);font-weight:600;">GPT-5.6 Sol</td><td>Ultra Mode spawns parallel sub-agents. Max Reasoning Effort for deep problems. Most sophisticated task decomposition.</td></tr>
+          <tr><td>Architecture Innovation</td><td style="color:var(--deepseek);font-weight:600;">DeepSeek V4</td><td>MLA + MoE + mHC + CSA/HCA + Muon — five major architectural inventions in two years. Every component is novel.</td></tr>
+          <tr><td>Open-Source</td><td style="color:var(--kimi);font-weight:600;">Kimi K2.7</td><td>Modified MIT license. 1T MoE model anyone can run. K2.7 Code is purpose-built for self-hosted coding agents.</td></tr>
+          <tr><td>Safety Architecture</td><td style="color:var(--anthropic);font-weight:600;">Claude Fable 5</td><td>Safety classifiers route sensitive queries to Opus 4.8 instead of refusing. Mythos 5 is the unrestricted version for vetted partners.</td></tr>
+          <tr><td>Ecosystem & Distribution</td><td style="color:var(--openai);font-weight:600;">GPT-5.6</td><td>Sol/Terra/Luna pricing tiers. Billions of users. Best-in-class API with agents, computer use, and multi-modal.</td></tr>
+          <tr><td>Custom Stack Depth</td><td style="color:var(--kimi);font-weight:600;">Kimi</td><td>MuonClip optimizer, Linear Attention, Attention Residuals, MoonViT — rebuilt from the ground up. K3 promises entirely new architecture.</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ UNIFIED TIMELINE ═══════════════════ -->
+    <section id="timeline">
+      <h2>Unified Timeline</h2>
+      <p>All four families on one timeline. See how each responded to the others:</p>
+
+      <div class="mermaid-box">
+        <div class="mermaid">
+timeline
+    title LLM History at a Glance (2020–2026)
+
+    section 2020–2022 : The Foundation
+        GPT-3 (175B) : In-context learning discovered
+        ChatGPT : RLHF changes everything
+
+    section 2023 : The Wake-Up
+        GPT-4 multimodal : Bar exam 90th percentile
+        Claude 1 : Constitutional AI
+        Kimi v1 : 200K context pioneer
+
+    section 2024 : The Architecture War
+        GPT-4 Turbo : 128K context, 3× cheaper
+        GPT-4o : Native omni (voice + vision + text)
+        Claude 3 Opus : Matches GPT-4
+        DeepSeek-V2 : MLA + MoE revolution
+        DeepSeek-V3 : $5.5M training, matches GPT-4o
+
+    section 2025 : Reasoning & Agents
+        DeepSeek-R1 : Pure-RL "Aha Moment"
+        Claude 3.7 Sonnet : Hybrid reasoning
+        GPT-5 : Unified router model
+        Claude 4 Opus : 72.5% SWE-bench
+        Kimi K2 : 1T open-source MoE
+        o3 : Tool-using reasoning
+        DeepSeek-V3.2 : Sparse attention, IMO gold
+
+    section 2026 : The Frontier
+        Kimi K2.5 : Vision improves text
+        GPT-5.4 : 1M context, computer use
+        DeepSeek-V4 : mHC + Muon + 1M context
+        Claude Opus 4.8 : Effort controls
+        Claude Fable 5 : Mythos-class, 80.3% SWE
+        Kimi K2.7 Code : -30% tokens, open-source
+        GPT-5.6 Sol : Multi-agent tiers (Jul 2026)
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📈 What the Timeline Reveals</div>
+        <ol>
+          <li><strong>2020–2023 was the GPT era</strong> — one company dominated. Everyone else was catching up.</li>
+          <li><strong>2024 was the architecture war</strong> — DeepSeek proved MoE + MLA could match dense models at a fraction of the cost. The entire industry pivoted to sparse architectures.</li>
+          <li><strong>2025 was reasoning's breakout</strong> — R1's "Aha Moment" and Claude's hybrid thinking showed that <em>how</em> you use test-time compute matters as much as scale.</li>
+          <li><strong>2026 is the agent era</strong> — Every model family now ships with some form of autonomous capability: multi-agent (GPT-5.6), long-horizon agents (Claude, Kimi K2.6), or agentic coding (all four). The question is no longer "can the model answer?" but "can the model <em>do</em>?"</li>
+          <li><strong>The gap is closing</strong> — Sonnet 5 rivals Opus 4.8. DeepSeek V4 matches frontier models at 1/10th the cost. Kimi beats GPT-5.4 on SWE-Bench. No single company has a commanding lead today.</li>
+        </ol>
+      </div>
+
+      <div class="callout" style="border-left-color:var(--accent2);">
+        <p><strong>🧬 What nanoGPT taught you applies everywhere:</strong> Every model above — GPT-5.6, Fable 5, V4, K2.7 — is still a <strong>decoder-only Transformer</strong> at its core. The innovations are in <em>how</em> the attention is computed (MLA, Linear, DSA), <em>how</em> the parameters are activated (dense vs MoE), <em>how</em> the model reasons (extended thinking, chain-of-thought, router), and <em>how</em> it's trained (GRPO, Muon, RLHF). But the <strong>fundamental architecture</strong> — token embedding → masked self-attention → feed-forward → residual connections → layer norm → next-token prediction — is the same design you saw in nanoGPT's 300 lines of code. The 300 lines scaled up 10,000× and wrapped in a decade of engineering ingenuity.</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ FOOTER ═══════════════════ -->
+    <div style="border-top:1px solid var(--border);padding-top:1.5rem;margin-top:2rem;text-align:center;color:var(--text-dim);font-size:0.8rem;">
+      <p>Data sourced from official release notes, published papers, and public product changelogs. Current as of July 2026.</p>
+      <p style="margin-top:0.2rem;">Sources: <a href="https://help.openai.com/en/articles/9624314-model-release-notes" style="color:var(--accent);">OpenAI Release Notes</a>, <a href="https://github.com/jqueryscript/anthropic-claude-timeline" style="color:var(--accent);">Claude Timeline</a>, <a href="https://martinfowler.com/articles/deepseek-papers.html" style="color:var(--accent);">DeepSeek Technical Overview</a>, <a href="https://www.kimi.com/resources/kimi-k2-7-code" style="color:var(--accent);">Kimi K2.7</a></p>
+      <p style="margin-top:0.2rem;"><a href="#" onclick="window.print()" style="color:var(--accent);">Print / Save as PDF</a></p>
+    </div>
+  </main>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true, theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1e293b', primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#1e3a5f', lineColor: '#38bdf8',
+      secondaryColor: '#0b1120', tertiaryColor: '#1e293b', fontSize: '14px'
+    },
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+    timeline: { useMaxWidth: true }
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+        const id = entry.target.getAttribute('id');
+        const link = document.querySelector(`.sidebar nav a[href="#${id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  document.querySelectorAll('section[id]').forEach(s => observer.observe(s));
+  document.querySelectorAll('.sidebar nav a').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

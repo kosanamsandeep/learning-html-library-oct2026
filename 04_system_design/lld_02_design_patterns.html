@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLD 02 — Design Patterns Survey</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="index.html"><span class="brand-mark">SD</span><span>LLD · 02 Design
+                    Patterns</span></a>
+            <nav class="top-links">
+                <a href="index.html">Hub</a>
+                <a href="lld_01_oop_solid.html">← Prev</a>
+                <a href="lld_03_uml.html">Next →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="shell">
+            <section class="hero">
+                <p class="eyebrow">Industry-standard solutions to recurring problems</p>
+                <h1>Design Patterns — the 12 that come up in every interview</h1>
+                <p>A design pattern is a <em>named</em> shape for solving a problem you'll meet again. Patterns
+                    give your team a shared vocabulary: when you say "let's use a Strategy here", everyone knows
+                    the structure without you drawing it.</p>
+                <p>The Gang of Four catalogued 23 patterns. In practice, ~12 carry 90% of the value. Those are
+                    here, grouped by intent.</p>
+            </section>
+
+            <div class="layout">
+                <aside class="toc">
+                    <h3>On this page</h3>
+                    <ol>
+                        <li><a href="#creational">Creational</a></li>
+                        <li><a href="#singleton">Singleton</a></li>
+                        <li><a href="#factory">Factory Method</a></li>
+                        <li><a href="#abstract-factory">Abstract Factory</a></li>
+                        <li><a href="#builder">Builder</a></li>
+                        <li><a href="#structural">Structural</a></li>
+                        <li><a href="#adapter">Adapter</a></li>
+                        <li><a href="#decorator">Decorator</a></li>
+                        <li><a href="#facade">Facade</a></li>
+                        <li><a href="#proxy">Proxy</a></li>
+                        <li><a href="#behavioral">Behavioral</a></li>
+                        <li><a href="#strategy">Strategy</a></li>
+                        <li><a href="#observer">Observer</a></li>
+                        <li><a href="#state">State</a></li>
+                        <li><a href="#chain">Chain of Responsibility</a></li>
+                        <li><a href="#when">When NOT to use patterns</a></li>
+                    </ol>
+                </aside>
+
+                <div>
+                    <section class="concept" id="creational">
+                        <h2>Creational patterns <span class="badge">How objects are made</span></h2>
+                        <p>These patterns hide the <em>"new" keyword</em>. They decouple <em>what</em> object is
+                            created from <em>how</em> it's created. Useful when construction is complex or when
+                            the exact type isn't known until runtime.</p>
+                    </section>
+
+                    <section class="concept" id="singleton">
+                        <h2>Singleton</h2>
+                        <p><strong>Intent:</strong> exactly one instance of a class, globally accessible.</p>
+                        <p><strong>Use when:</strong> shared resource manager (logger, config, connection pool).</p>
+                        <pre><code>class Logger:
+    _instance = None
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance</code></pre>
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>With Singleton</h4>
+                                <p>One logger across the app; one config
+                                    read from disk; one connection pool — saves memory and avoids inconsistency.</p>
+                            </div>
+                            <div class="mini bad">
+                                <h4>Without (or overused)</h4>
+                                <p>Without: multiple loggers fight
+                                    over a file handle. <em>Overused:</em> singletons are global state in disguise.
+                                    Hard to test (can't swap). Often a Singleton should just be a dependency-injected
+                                    regular object.</p>
+                            </div>
+                        </div>
+                        <div class="callout warn"><strong>Industry pulse:</strong> singletons are out of fashion;
+                            prefer <em>"create one and pass it around"</em> via dependency injection.</div>
+                    </section>
+
+                    <section class="concept" id="factory">
+                        <h2>Factory Method</h2>
+                        <p><strong>Intent:</strong> a method that returns one of several related concrete types,
+                            letting subclasses decide which.</p>
+                        <pre><code>class Notification(ABC):
+    def send(self, msg): ...
+
+class EmailNotification(Notification): ...
+class SmsNotification(Notification): ...
+class PushNotification(Notification): ...
+
+def notification_factory(channel: str) -&gt; Notification:
+    return {
+        "email": EmailNotification(),
+        "sms":   SmsNotification(),
+        "push":  PushNotification(),
+    }[channel]</code></pre>
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>What if you use it</h4>
+                                <p>Caller says "give me a notifier
+                                    for SMS" and doesn't know about <code>TwilioClient</code>. Swap the SMS provider
+                                    tomorrow — caller code unchanged.</p>
+                            </div>
+                            <div class="mini bad">
+                                <h4>What if you don't</h4>
+                                <p>Every call site has an
+                                    <code>if channel == "sms"</code>. Add WhatsApp in 2 years — touch 40 files.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="concept" id="abstract-factory">
+                        <h2>Abstract Factory</h2>
+                        <p><strong>Intent:</strong> a factory of factories. Produces a <em>family</em> of related
+                            objects that go together.</p>
+                        <p><strong>Real example:</strong> a UI toolkit that renders Buttons + Checkboxes + TextFields
+                            consistently per OS. <code>WindowsFactory.button()</code>,
+                            <code>WindowsFactory.checkbox()</code>
+                            vs <code>MacFactory.button()</code>, <code>MacFactory.checkbox()</code>.
+                        </p>
+                        <p>Use sparingly — only when you truly have multiple <em>families</em> that must stay
+                            consistent. Otherwise plain Factory Method is enough.</p>
+                    </section>
+
+                    <section class="concept" id="builder">
+                        <h2>Builder</h2>
+                        <p><strong>Intent:</strong> construct complex objects step by step. Useful when the
+                            constructor would need 10 parameters with sensible defaults.</p>
+                        <pre><code>pizza = (PizzaBuilder()
+         .with_size("large")
+         .add_topping("mushroom")
+         .add_topping("olive")
+         .with_crust("thin")
+         .build())</code></pre>
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>With Builder</h4>
+                                <p>Reads like English. Optional params
+                                    don't pile up. Each <code>with_*</code> can validate independently.</p>
+                            </div>
+                            <div class="mini bad">
+                                <h4>Without</h4>
+                                <p><code>Pizza("large", ["mushroom", "olive"],
+                                "thin", True, False, None, "marinara")</code> — readers guess what arg 5 means.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="concept" id="structural">
+                        <h2>Structural patterns <span class="badge">How objects are composed</span></h2>
+                    </section>
+
+                    <section class="concept" id="adapter">
+                        <h2>Adapter</h2>
+                        <p><strong>Intent:</strong> make an existing class fit an interface you control.</p>
+                        <div class="story"><strong>Story:</strong> your code calls
+                            <code>payment.charge(amount)</code>. You sign with a new vendor whose SDK exposes
+                            <code>vendor.process_payment_v2(amt_in_cents)</code>. Don't rewrite your codebase —
+                            write a <code>VendorAdapter</code> that translates one call into the other.
+                        </div>
+                        <p>Adapter is the most common pattern in the real world because every team integrates
+                            third-party SDKs.</p>
+                    </section>
+
+                    <section class="concept" id="decorator">
+                        <h2>Decorator</h2>
+                        <p><strong>Intent:</strong> add behavior to an object without changing its class.</p>
+                        <pre><code>class Coffee:
+    def cost(self): return 5
+
+class WithMilk:
+    def __init__(self, coffee): self.c = coffee
+    def cost(self): return self.c.cost() + 1
+
+class WithSugar:
+    def __init__(self, coffee): self.c = coffee
+    def cost(self): return self.c.cost() + 0.5
+
+drink = WithSugar(WithMilk(Coffee()))   # cost = 6.5</code></pre>
+                        <p><strong>What if you instead used inheritance?</strong> You'd need
+                            <code>CoffeeWithMilk</code>, <code>CoffeeWithSugar</code>,
+                            <code>CoffeeWithMilkAndSugar</code>, … a class explosion. Decorator composes at runtime.
+                        </p>
+                    </section>
+
+                    <section class="concept" id="facade">
+                        <h2>Facade</h2>
+                        <p><strong>Intent:</strong> a single simple entry point to a complicated subsystem.</p>
+                        <p><strong>Example:</strong> <code>OrderFacade.place(order)</code> internally calls
+                            inventory check, fraud check, payment, shipping, email. Callers see one method.</p>
+                        <p>Most service classes in real codebases are facades over their domain.</p>
+                    </section>
+
+                    <section class="concept" id="proxy">
+                        <h2>Proxy</h2>
+                        <p><strong>Intent:</strong> stand in front of an object to add behavior without the caller
+                            knowing — caching, lazy-loading, access control, logging.</p>
+                        <p><strong>Examples in the wild:</strong> ORM lazy-loading (a relation is a proxy until you
+                            touch it), HTTP caches, Spring AOP, RPC client stubs.</p>
+                    </section>
+
+                    <section class="concept" id="behavioral">
+                        <h2>Behavioral patterns <span class="badge">How objects communicate</span></h2>
+                    </section>
+
+                    <section class="concept" id="strategy">
+                        <h2>Strategy</h2>
+                        <p><strong>Intent:</strong> a family of interchangeable algorithms; pick one at runtime.</p>
+                        <pre><code>class PricingStrategy(ABC):
+    def price(self, items): ...
+
+class RegularPricing(PricingStrategy):
+    def price(self, items): return sum(i.price for i in items)
+
+class BlackFridayPricing(PricingStrategy):
+    def price(self, items): return sum(i.price for i in items) * 0.6
+
+class Cart:
+    def __init__(self, strategy): self.strategy = strategy
+    def total(self): return self.strategy.price(self.items)</code></pre>
+                        <p><strong>What if you don't?</strong> A giant <code>if season == "black_friday"</code>
+                            inside <code>Cart</code>. Every new sale is a code change to <code>Cart</code> (OCP
+                            violation). Hard to A/B test pricing.</p>
+                    </section>
+
+                    <section class="concept" id="observer">
+                        <h2>Observer (Pub/Sub)</h2>
+                        <p><strong>Intent:</strong> one-to-many notifications. The subject doesn't know who's
+                            listening.</p>
+                        <p><strong>Example:</strong> when <code>OrderPlaced</code> fires, the email service, the
+                            analytics service, and the warehouse service all react — independently, in their own
+                            classes. <code>OrderService</code> doesn't import any of them.</p>
+                        <p>Every event-driven architecture, Kafka consumer, GUI event listener is Observer.</p>
+                    </section>
+
+                    <section class="concept" id="state">
+                        <h2>State</h2>
+                        <p><strong>Intent:</strong> an object's behavior changes based on its internal state, but
+                            without sprawling <code>if/elif</code>.</p>
+                        <p><strong>Example:</strong> an <code>Order</code> behaves differently in
+                            <code>DRAFT</code>, <code>PLACED</code>, <code>SHIPPED</code>, <code>DELIVERED</code>,
+                            <code>CANCELLED</code>. Each state is its own class with allowed transitions.
+                        </p>
+                        <p>See <code>07_learning_projects/p14_state_machine/</code> for a worked example.</p>
+                    </section>
+
+                    <section class="concept" id="chain">
+                        <h2>Chain of Responsibility</h2>
+                        <p><strong>Intent:</strong> pass a request through a pipeline of handlers; each decides
+                            whether to handle or pass on.</p>
+                        <p><strong>Example:</strong> middleware in FastAPI / Express. Request → Auth →
+                            RateLimit → Logging → Route. Each layer decides to block, transform, or forward.</p>
+                    </section>
+
+                    <section class="concept" id="when">
+                        <h2>When NOT to use a pattern <span class="badge warm">Important</span></h2>
+                        <div class="story"><strong>Story:</strong> a junior dev reads the GoF book and applies all
+                            23 patterns to a 200-line CLI tool. The result is unreadable and untestable. Patterns
+                            are <em>answers</em>, not requirements.</div>
+                        <ul>
+                            <li>Don't introduce a pattern <em>before</em> the problem appears. YAGNI (You Aren't
+                                Gonna Need It).</li>
+                            <li>Don't use Singleton just to avoid passing an argument.</li>
+                            <li>Don't use Abstract Factory for a single family.</li>
+                            <li>Don't use Observer where a direct call would do.</li>
+                        </ul>
+                        <p>Rule: when you've written the same <code>if/elif</code> for the third time, <em>then</em>
+                            reach for a pattern. The third repetition is what tells you it's a pattern, not the
+                            first.</p>
+                        <p>👉 Next: <a href="lld_03_uml.html"><strong>UML for the Whiteboard</strong></a>.</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer><a href="index.html">Back to hub</a></footer>
+</body>
+
+</html>

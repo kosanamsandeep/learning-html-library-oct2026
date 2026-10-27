@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W3 · How we Claude Code — Claude Workshops</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>IS</span>Industry Standards</a>
+            <nav class="top-links">
+                <a href="index.html">Workshops hub</a>
+                <a href="../anthropic_building_agents.html">Building Agents</a>
+                <a href="../anthropic_tools_and_skills.html">Tools &amp; Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag anth">CWC · Workshop 3</span></p>
+            <h1>How we Claude Code: interview &rarr; spec &rarr; divergent mockups &rarr; verified build</h1>
+            <p class="lead">The internal Anthropic workflow for shipping AI-assisted products. The trick isn't faster
+                typing — it's <em>three deliberate phases</em>: Claude conducts a spec interview, generates four
+                visually different HTML mockups, then implements one of them as a Vite + React app whose components
+                expose a machine-readable DOM contract so a second Claude run can verify the build.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · What you build</h2>
+            <ul>
+                <li>A short Markdown spec for a bill-splitting app, written by Claude after interviewing you.</li>
+                <li>Four standalone HTML files — each one a deliberately <em>different</em> visual direction.</li>
+                <li>A Vite + React + Tailwind app served by Bun: <code>bun run dev</code> on port <code>:5199</code>.
+                </li>
+                <li>A verifier: <code>bun run verify</code> walks the DOM contract and reports a pass/fail matrix.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>2 · The stack</h2>
+            <div class="flow">
+                <div class="step">Phase 1 · Interview &rarr; spec.md</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Phase 2 · 4 HTML mockups</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">Phase 3 · Vite + React build</div>
+                <div class="arrow">&rarr;</div>
+                <div class="step">DOM contract verifier</div>
+            </div>
+            <p>No Managed Agent here — Claude Code is the protagonist. The lesson generalises: this is how every other
+                workshop's frontend or scaffolding was actually authored.</p>
+        </section>
+
+        <section class="card">
+            <h2>3 · Levers the workshop teaches</h2>
+            <div class="grid">
+                <div class="mini">
+                    <h3>Interview-driven spec</h3>
+                    <p>Claude asks five-to-eight scoped questions before writing a single line of code. The output is a
+                        short Markdown doc that becomes the contract for the rest of the work.</p>
+                </div>
+                <div class="mini">
+                    <h3>Four divergent mockups</h3>
+                    <p>Generate <em>four</em> static HTML designs in parallel so you can pick a direction, not iterate
+                        from a single mediocre starting point.</p>
+                </div>
+                <div class="mini">
+                    <h3>HTML before React</h3>
+                    <p>Static HTML mockups are throwaway, opinionated, and fast — perfect for design decisions. React
+                        comes after the direction is locked.</p>
+                </div>
+                <div class="mini">
+                    <h3>DOM contract per component</h3>
+                    <p>Each React component carries <code>data-*</code> attributes that name its testable behaviour, so
+                        a verifier (or a second Claude) can walk the DOM and assert correctness.</p>
+                </div>
+                <div class="mini">
+                    <h3>Verify matrix</h3>
+                    <p><code>bun run verify</code> emits a per-feature pass/fail. Claude can read the matrix and fix
+                        the failing rows.</p>
+                </div>
+                <div class="mini">
+                    <h3>CLAUDE.md as the workflow ledger</h3>
+                    <p><code>CLAUDE.md</code> records the project conventions and is loaded automatically every time
+                        Claude Code opens the repo.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Use vs don't use — the trade-offs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lever</th>
+                        <th>If you use it</th>
+                        <th>If you skip it</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Interview &rarr; spec.md</td>
+                        <td>The first commit captures intent. Future Claude runs (or new teammates) re-derive context
+                            from the spec, not from memory.</td>
+                        <td>You jump to code, then re-explain the brief every session. The spec lives in a Slack thread
+                            and rots.</td>
+                    </tr>
+                    <tr>
+                        <td>Four divergent mockups (not one)</td>
+                        <td>You see what design space looks like before committing. The "winner" is usually a blend of
+                            two of the four.</td>
+                        <td>You build the first idea Claude suggested. It's competent and forgettable.</td>
+                    </tr>
+                    <tr>
+                        <td>HTML mockups before React</td>
+                        <td>Cheap, fast, deletable. Designers and PMs can read them. No build step gets in the way.</td>
+                        <td>You debate layout inside React, which couples design to state-management plumbing. Iteration
+                            slows by 5&times;.</td>
+                    </tr>
+                    <tr>
+                        <td>DOM contract (<code>data-*</code> attributes)</td>
+                        <td>The verifier and Claude itself can describe the page in structured terms. Tests are stable
+                            against pure-visual refactors.</td>
+                        <td>Tests anchor on CSS selectors and break on every style sweep. Claude has to "read" the
+                            page to test it, which is brittle.</td>
+                    </tr>
+                    <tr>
+                        <td><code>bun run verify</code> matrix</td>
+                        <td>Claude can iterate to green without you watching. Every feature has an obvious "done"
+                            signal.</td>
+                        <td>"Looks fine on my screen" is the spec, and three Claude turns later you regress the basket
+                            calculation.</td>
+                    </tr>
+                    <tr>
+                        <td><code>CLAUDE.md</code></td>
+                        <td>Every Claude Code session starts from the same conventions: port :5199, Bun not npm, the
+                            DOM-contract rule. Onboarding takes seconds.</td>
+                        <td>Each session re-asks "should I use npm or pnpm?" and sometimes guesses wrong.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout anth"><strong>The lesson:</strong> AI-assisted development isn't "Claude writes code
+                faster" — it's "Claude completes a phase, you review the artifact, then Claude picks up the next
+                phase". The phases give humans the right place to intervene.</div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Adoption playbook for your repo</h2>
+            <ol>
+                <li>Add a <code>CLAUDE.md</code> at the repo root with: dev command, port, package manager, conventions
+                    you actually want enforced.</li>
+                <li>For any new feature, start with: <em>"Interview me, then write spec.md"</em>. Do not skip.</li>
+                <li>Ask for <strong>four</strong> divergent HTML mockups (not three, not one). Pick one or merge two.
+                </li>
+                <li>When building, give every interactive component a <code>data-testid</code> /
+                    <code>data-state</code> attribute and write a tiny verifier that asserts the spec.
+                </li>
+                <li>Wire the verifier as the first thing Claude runs after a change. Make passing it the success
+                    criterion in the prompt.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source"
+                    href="https://github.com/anthropics/cwc-workshops/tree/main/how-we-claude-code-workshop"
+                    target="_blank" rel="noopener">cwc-workshops/how-we-claude-code-workshop</a>
+                <a class="source" href="https://www.anthropic.com/engineering/claude-code-best-practices"
+                    target="_blank" rel="noopener">Anthropic — Claude Code best practices</a>
+                <a class="source" href="https://docs.claude.com/en/docs/claude-code/overview" target="_blank"
+                    rel="noopener">Claude Code — Docs</a>
+                <a class="source" href="https://docs.claude.com/en/docs/claude-code/memory" target="_blank"
+                    rel="noopener">Claude Code — CLAUDE.md memory</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

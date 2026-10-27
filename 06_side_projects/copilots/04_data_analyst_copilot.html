@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilot 04 · Data Analyst Copilot (NL→SQL)</title>
+    <link rel="stylesheet" href="../_agent_frameworks.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="left"><span class="cop">CP</span>Copilot · 04 Data Analyst</div>
+        <div class="links">
+            <a href="index.html">Copilots Hub</a>
+            <a href="03_support_copilot.html">← 03</a>
+            <a href="05_devops_copilot.html">Next: 05 →</a>
+        </div>
+    </div>
+
+    <div class="header cop">
+        <p class="badge">Build 04 · Intermediate · "Talk to your database"</p>
+        <h1>📊 Data Analyst Copilot</h1>
+        <p class="subtitle">A copilot that turns a plain-English question into <strong>validated SQL</strong>,
+            runs it against your warehouse, and returns the answer as a number, a table, or a chart — with the
+            query shown so analysts can trust and reuse it.</p>
+    </div>
+
+    <div class="container">
+        <div class="section cop">
+            <h2>The story — why this copilot exists</h2>
+            <p>Every team is "data-driven" until someone needs a number that isn't on a dashboard. Then they
+                file a ticket and wait days for an analyst to write SQL. The analyst, meanwhile, spends their
+                week on trivial one-off queries instead of real analysis.</p>
+            <p>A data analyst copilot lets anyone ask in English — "What were our top 5 products by revenue last
+                month?" — and get an answer in seconds, backed by the exact SQL it ran. Self-serve analytics,
+                without everyone learning SQL.</p>
+            <div class="callout fuchsia">
+                <strong>Inspired by:</strong> <code>vanna-ai/vanna</code>, <code>Canner/WrenAI</code>, and
+                LangChain's SQL agent — leading open-source "chat with your database" projects.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The flow — and why schema context is everything</h2>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart TD
+    Q["'Top 5 products by revenue last month?'"] --> SR["Retrieve relevant schema<br/>(tables, columns, sample rows)"]
+    SR --> GEN["LLM generates SQL"]
+    GEN --> VAL{"Validate:<br/>read-only? parses?<br/>tables exist?"}
+    VAL -->|no| FIX["Repair / ask to clarify"]
+    FIX --> GEN
+    VAL -->|yes| RUN["Execute (read-only role)"]
+    RUN --> FMT["Summarise + table/chart"]
+    FMT --> OUT["Answer + the SQL used"]
+                </pre>
+                <p class="caption">The model can't write correct SQL without knowing your schema — so we
+                    retrieve the relevant tables/columns first (schema-RAG), then validate before running.</p>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — schema-aware SQL generation</h2>
+            <pre><code><span class="c-kw">from</span> sqlalchemy <span class="c-kw">import</span> create_engine, text
+<span class="c-kw">from</span> openai <span class="c-kw">import</span> OpenAI
+
+engine = create_engine(<span class="c-str">"postgresql+psycopg://readonly:***@db/shop"</span>)  <span class="c-com"># read-only role!</span>
+client = OpenAI()
+
+<span class="c-kw">def</span> <span class="c-fn">schema_hint</span>() -> <span class="c-cls">str</span>:
+    <span class="c-str">"""A compact description of relevant tables for the prompt."""</span>
+    <span class="c-kw">return</span> <span class="c-str">"""
+    orders(id, product_id, amount, created_at)
+    products(id, name, category)
+    """</span>
+
+<span class="c-kw">def</span> <span class="c-fn">to_sql</span>(question: <span class="c-cls">str</span>) -> <span class="c-cls">str</span>:
+    prompt = <span class="c-str">f"""You write PostgreSQL. Use ONLY these tables:
+{schema_hint()}
+Return a single SELECT statement (read-only). No comments.
+Question: {question}"""</span>
+    resp = client.chat.completions.create(
+        model=<span class="c-str">"gpt-4o"</span>, temperature=<span class="c-cls">0</span>,
+        messages=[{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: prompt}],
+    )
+    <span class="c-kw">return</span> resp.choices[<span class="c-cls">0</span>].message.content.strip().strip(<span class="c-str">"`"</span>)</code></pre>
+        </div>
+
+        <div class="section cop">
+            <h2>The code — validate, then run safely</h2>
+            <pre><code><span class="c-kw">import</span> sqlparse
+
+<span class="c-kw">def</span> <span class="c-fn">is_safe</span>(sql: <span class="c-cls">str</span>) -> <span class="c-cls">bool</span>:
+    <span class="c-str">"""Allow a single read-only SELECT only."""</span>
+    parsed = sqlparse.parse(sql)
+    <span class="c-kw">if</span> <span class="c-fn">len</span>(parsed) != <span class="c-cls">1</span>:
+        <span class="c-kw">return</span> <span class="c-kw">False</span>
+    stmt = parsed[<span class="c-cls">0</span>]
+    banned = {<span class="c-str">"INSERT"</span>, <span class="c-str">"UPDATE"</span>, <span class="c-str">"DELETE"</span>, <span class="c-str">"DROP"</span>, <span class="c-str">"ALTER"</span>, <span class="c-str">"TRUNCATE"</span>}
+    <span class="c-kw">return</span> stmt.get_type() == <span class="c-str">"SELECT"</span> <span class="c-kw">and</span> <span class="c-kw">not</span> (banned &amp; {t.value.upper() <span class="c-kw">for</span> t <span class="c-kw">in</span> stmt.flatten()})
+
+<span class="c-kw">def</span> <span class="c-fn">answer</span>(question: <span class="c-cls">str</span>):
+    sql = to_sql(question)
+    <span class="c-kw">if</span> <span class="c-kw">not</span> is_safe(sql):
+        <span class="c-kw">raise</span> ValueError(<span class="c-str">"Refusing non-read-only query."</span>)
+    <span class="c-kw">with</span> engine.connect() <span class="c-kw">as</span> conn:
+        rows = conn.execute(text(sql)).fetchall()
+    <span class="c-kw">return</span> sql, rows         <span class="c-com"># show the SQL alongside results for trust</span></code></pre>
+            <div class="callout fuchsia">
+                <strong>Two layers of safety, not one.</strong> A read-only database role makes destructive
+                queries <em>impossible</em> at the engine; the validator gives a friendly error before they ever
+                run. Never rely on the prompt alone.
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>Make it learn your data (the Vanna idea)</h2>
+            <p>Generic schema text only goes so far. The strongest NL→SQL copilots <strong>train on
+                    examples</strong>: store your real tables, documentation, and known-good question→SQL pairs in a
+                vector store, and retrieve the most relevant ones into the prompt for each new question.</p>
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+flowchart LR
+    DDL["Table DDL"] --> VS[("Training store")]
+    DOCS["Business glossary"] --> VS
+    PAIRS["Q → SQL examples"] --> VS
+    NEWQ["New question"] --> RET["Retrieve similar context"]
+    VS --> RET
+    RET --> LLM["LLM → SQL"]
+                </pre>
+                <p class="caption">More relevant examples in context ⇒ dramatically higher SQL accuracy on your
+                    specific schema.</p>
+            </div>
+        </div>
+
+        <div class="section cop">
+            <h2>Advantages this copilot brings</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Advantage</th>
+                        <th>Why it matters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Self-serve analytics</td>
+                        <td>Non-technical staff get answers without filing tickets.</td>
+                    </tr>
+                    <tr>
+                        <td>Analyst leverage</td>
+                        <td>Analysts stop writing one-off SQL, do real analysis.</td>
+                    </tr>
+                    <tr>
+                        <td>Transparent</td>
+                        <td>The SQL is shown — verifiable, reusable, teachable.</td>
+                    </tr>
+                    <tr>
+                        <td>Fast iteration</td>
+                        <td>Follow-up questions refine the query conversationally.</td>
+                    </tr>
+                    <tr>
+                        <td>Accuracy that improves</td>
+                        <td>More training examples ⇒ better results over time.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section cop">
+            <h2>Best practices &amp; guardrails</h2>
+            <ul>
+                <li><strong>Connect with a read-only role</strong> — the single most important safeguard.</li>
+                <li><strong>Validate every query</strong> (single SELECT, allow-listed tables) before running.</li>
+                <li><strong>Add <code>LIMIT</code> by default</strong> to avoid scanning huge tables.</li>
+                <li><strong>Show the SQL</strong> so humans can sanity-check and reuse it.</li>
+                <li><strong>Curate training pairs</strong> for your schema — accuracy comes from examples, not
+                    cleverer prompts.</li>
+            </ul>
+        </div>
+
+        <div class="pager">
+            <a href="03_support_copilot.html"><span class="dir">Previous</span>
+                <div class="ttl">← 03 · Support</div>
+            </a>
+            <a class="next" href="05_devops_copilot.html"><span class="dir">Next</span>
+                <div class="ttl">05 · DevOps/SRE Copilot →</div>
+            </a>
+        </div>
+    </div>
+
+    <footer>Copilots · 04 of 06</footer>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, system-ui, sans-serif' } });
+    </script>
+</body>
+
+</html>

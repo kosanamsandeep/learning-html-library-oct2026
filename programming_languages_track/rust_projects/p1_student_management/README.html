@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust P1 — Student Management</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Rust projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p1_student_management/README.html">Python p1</a>
+                <a href="../../go_projects/p1_student_management/README.html">Go p1</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag rust">Rust · P1</span></p>
+            <h1>Student Management — Rust edition</h1>
+            <p class="lead">Same domain as the Python and Go versions. The interesting bits in Rust:
+                <code>&amp;mut self</code> on the methods that mutate state, <code>Result&lt;T, String&gt;</code>
+                instead of exceptions, <code>Option&lt;&amp;Student&gt;</code> from <code>get</code> instead of
+                <code>None</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>What's new vs Python</h2>
+            <ol>
+                <li><strong>Mutability is explicit.</strong> <code>fn add(&amp;mut self, ...)</code> — only the methods
+                    that need to change <code>self</code> say so. The compiler refuses calls that try to mutate through
+                    a shared borrow.</li>
+                <li><strong>Errors as values.</strong> <code>Result&lt;Student, String&gt;</code>. The caller writes a
+                    <code>match</code> or uses the <code>?</code> operator.</li>
+                <li><strong>Ownership shows up immediately.</strong> <code>insert(s.id, s.clone())</code> — without the
+                    <code>.clone()</code>, the value moves into the map and is unusable afterward.</li>
+                <li><strong><code>derive(Debug, Clone)</code></strong> auto-implements <code>Debug</code> (so you can
+                    <code>println!("{:?}", ...)</code>) and <code>Clone</code> (so <code>s.clone()</code> compiles).
+                </li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>The shape</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>@dataclass
+class Student:
+    id: int
+    name: str
+    grade: int
+
+class StudentService:
+    def __init__(self):
+        self.students = {}
+        self.next_id = 1
+
+    def add(self, name, grade):
+        if not name:
+            raise ValueError("...")
+        s = Student(self.next_id, name, grade)
+        self.students[s.id] = s
+        self.next_id += 1
+        return s</code></pre>
+                </div>
+                <div class="col rust">
+                    <h4>Rust</h4>
+                    <pre><code>#[derive(Debug, Clone)]
+struct Student {
+    id: u64,
+    name: String,
+    grade: u32,
+}
+
+impl StudentService {
+    fn add(&amp;mut self, name: &amp;str, grade: u32)
+        -&gt; Result&lt;Student, String&gt;
+    {
+        if name.trim().is_empty() {
+            return Err("name required".into());
+        }
+        let s = Student { ... };
+        self.students.insert(s.id, s.clone());
+        self.next_id += 1;
+        Ok(s)
+    }
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>Win for Rust</h4>
+                    <p>Three categories of bugs are now compile errors: forgetting to mutate-through-mut, accidentally
+                        consuming a value before you're done with it, ignoring the error case from <code>add</code>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd rust_projects/p1_student_management
+cargo run</code></pre>
+            <p>Files: <a href="src/main.rs">src/main.rs</a> · <a href="Cargo.toml">Cargo.toml</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

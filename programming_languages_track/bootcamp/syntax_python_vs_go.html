@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootcamp 2 — Python vs Go syntax</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="why_go_rust.html">Why</a>
+                <a href="syntax_python_vs_rust.html">Syntax · Rust</a>
+                <a href="why_they_are_fast.html">Why fast</a>
+                <a href="pick_them_fast.html">Pick fast</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Bootcamp · 2 of 5 · <span class="tag go">Go</span></p>
+            <h1>Python ↔ Go syntax in 20 minutes</h1>
+            <p class="lead">Read one row at a time. Each row shows the same idea in Python and in Go. By the end you
+                should be able to read 80% of the Go code in this track without a reference.</p>
+        </section>
+
+        <section class="card">
+            <h2>1 · Hello world</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>print("hello")</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>package main
+import "fmt"
+
+func main() {
+    fmt.Println("hello")
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>Every Go file declares a <code>package</code>. Imports are explicit. <code>main()</code> is the
+                        entry point of <code>package main</code>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>2 · Variables and types</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>name = "Ada"
+age: int = 36
+pi = 3.14</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>name := "Ada"        // inferred string
+var age int = 36     // explicit
+pi := 3.14           // inferred float64</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p><code>:=</code> declares + assigns with inferred type. <code>var x T = …</code> is the explicit
+                        form. Types are static — you can't reassign <code>name</code> to an int.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>3 · Functions</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>def add(a: int, b: int) -&gt; int:
+    return a + b</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>func add(a, b int) int {
+    return a + b
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>Type comes after the name. Same-typed parameters share the type (<code>a, b int</code>). Return
+                        type goes after <code>)</code>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>4 · Multiple return values + errors</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>def divide(a, b):
+    if b == 0:
+        raise ValueError("zero")
+    return a / b
+
+try:
+    r = divide(10, 0)
+except ValueError as e:
+    print(e)</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>func divide(a, b float64) (float64, error) {
+    if b == 0 {
+        return 0, fmt.Errorf("zero")
+    }
+    return a / b, nil
+}
+
+r, err := divide(10, 0)
+if err != nil {
+    fmt.Println(err)
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>Go has no exceptions. Functions return <code>(value, error)</code>. Callers check
+                        <code>if err != nil</code>. This pattern repeats <em>everywhere</em>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>5 · Structs (Go's "classes" — no inheritance)</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>from dataclasses import dataclass
+
+@dataclass
+class Student:
+    id: int
+    name: str
+
+    def greet(self):
+        print(f"hi {self.name}")</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>type Student struct {
+    ID   int
+    Name string
+}
+
+func (s Student) Greet() {
+    fmt.Println("hi", s.Name)
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>Methods are declared <em>outside</em> the struct: <code>func (s Student) Greet()</code>.
+                        Capitalised names are exported (public); lowercase are package-private. No classes, no
+                        inheritance.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>6 · Slices and maps</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>names = ["Ada", "Bob"]
+names.append("Cy")
+
+scores = {"ada": 91, "bob": 88}
+scores["cy"] = 79</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>names := []string{"Ada", "Bob"}
+names = append(names, "Cy")
+
+scores := map[string]int{
+    "ada": 91, "bob": 88,
+}
+scores["cy"] = 79</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p><code>[]T</code> is a slice (Go's list). <code>append</code> returns a new slice — always
+                        reassign. <code>map[K]V</code> is the dict.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>7 · Loops + range</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>for i, name in enumerate(names):
+    print(i, name)
+
+for k, v in scores.items():
+    print(k, v)</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>for i, name := range names {
+    fmt.Println(i, name)
+}
+
+for k, v := range scores {
+    fmt.Println(k, v)
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>Only one loop keyword: <code>for</code>. <code>range</code> over a slice yields
+                        <code>(index, value)</code>; over a map yields <code>(key, value)</code>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>8 · Interfaces (duck typing, but checked at compile time)</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code>class Notifier(Protocol):
+    def send(self, msg: str) -&gt; None: ...
+
+class Email:
+    def send(self, msg): print("email:", msg)
+
+def notify(n: Notifier, m): n.send(m)</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>type Notifier interface {
+    Send(msg string)
+}
+
+type Email struct{}
+func (Email) Send(msg string) { fmt.Println("email:", msg) }
+
+func Notify(n Notifier, m string) { n.Send(m) }</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p>You don't <em>declare</em> that <code>Email</code> implements <code>Notifier</code>. If it has
+                        the methods, it satisfies the interface. Implicit, but checked.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>9 · Concurrency — goroutines + channels</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python (asyncio)</h4>
+                    <pre><code>import asyncio
+
+async def work(x):
+    await asyncio.sleep(0.1)
+    return x * 2
+
+async def main():
+    results = await asyncio.gather(
+        work(1), work(2), work(3)
+    )
+    print(results)
+
+asyncio.run(main())</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>func work(x int, out chan&lt;- int) {
+    time.Sleep(100 * time.Millisecond)
+    out &lt;- x * 2
+}
+
+func main() {
+    out := make(chan int, 3)
+    for _, x := range []int{1, 2, 3} {
+        go work(x, out)
+    }
+    for i := 0; i &lt; 3; i++ {
+        fmt.Println(&lt;-out)
+    }
+}</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p><code>go f()</code> launches a goroutine — cheap (KB-sized stack). Channels (<code>chan T</code>)
+                        coordinate them. No event loop, no <code>await</code>: the runtime schedules goroutines onto OS
+                        threads automatically.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>10 · Pointers (light touch)</h2>
+            <div class="three-col">
+                <div class="col py">
+                    <h4>Python</h4>
+                    <pre><code># Mutation through reference is implicit:
+def add_score(s, n):
+    s["total"] += n
+
+state = {"total": 0}
+add_score(state, 5)</code></pre>
+                </div>
+                <div class="col go">
+                    <h4>Go</h4>
+                    <pre><code>func addScore(s *Stats, n int) {
+    s.total += n
+}
+
+stats := &amp;Stats{}
+addScore(stats, 5)</code></pre>
+                </div>
+                <div class="col">
+                    <h4>What's new</h4>
+                    <p><code>*T</code> is a pointer to T; <code>&amp;x</code> takes its address. Use a pointer when a
+                        method must mutate the receiver. No pointer arithmetic — Go pointers are safe.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>11 · Standard project layout</h2>
+            <pre><code>myapp/
+├── go.mod          # module name + Go version + dependencies
+├── go.sum          # hashes
+├── main.go         # entry point (package main)
+└── internal/       # internal packages (not importable outside this module)
+    └── orders/
+        └── orders.go</code></pre>
+            <p>Initialise with <code>go mod init github.com/you/myapp</code>. Run with <code>go run .</code>. Build with
+                <code>go build -o myapp</code> — produces a single static binary.</p>
+        </section>
+
+        <section class="card">
+            <h2>12 · The 80/20 cheat sheet</h2>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Class</td>
+                        <td><code>type X struct { … }</code> + methods</td>
+                    </tr>
+                    <tr>
+                        <td>List</td>
+                        <td><code>[]T</code></td>
+                    </tr>
+                    <tr>
+                        <td>Dict</td>
+                        <td><code>map[K]V</code></td>
+                    </tr>
+                    <tr>
+                        <td>Tuple</td>
+                        <td>multiple return values, or a struct</td>
+                    </tr>
+                    <tr>
+                        <td>None / null</td>
+                        <td><code>nil</code> (only for pointers, slices, maps, channels, interfaces, funcs)</td>
+                    </tr>
+                    <tr>
+                        <td>try/except</td>
+                        <td><code>if err != nil { return err }</code></td>
+                    </tr>
+                    <tr>
+                        <td>asyncio</td>
+                        <td>goroutines + channels</td>
+                    </tr>
+                    <tr>
+                        <td>list comprehension</td>
+                        <td>plain <code>for</code> loop</td>
+                    </tr>
+                    <tr>
+                        <td>Decorators</td>
+                        <td>middleware functions / higher-order funcs</td>
+                    </tr>
+                    <tr>
+                        <td>pip install</td>
+                        <td><code>go get example.com/pkg</code></td>
+                    </tr>
+                    <tr>
+                        <td>pytest</td>
+                        <td><code>go test ./...</code> with <code>_test.go</code> files</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Sources</h2>
+            <p class="sources">
+                <a class="source" href="https://go.dev/tour/" target="_blank" rel="noopener">A Tour of Go</a>
+                <a class="source" href="https://go.dev/doc/effective_go" target="_blank" rel="noopener">Effective Go</a>
+                <a class="source" href="https://gobyexample.com/" target="_blank" rel="noopener">Go by Example</a>
+            </p>
+        </section>
+    </main>
+</body>
+
+</html>

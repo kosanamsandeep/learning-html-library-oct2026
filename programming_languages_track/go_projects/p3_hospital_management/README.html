@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go P3 — Hospital Management</title>
+    <link rel="stylesheet" href="../../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>GR</span>Go &amp; Rust Track</a>
+            <nav class="top-links">
+                <a href="../index.html">Go projects</a>
+                <a href="../../index.html">Hub</a>
+                <a href="../../../07_learning_projects/p3_hospital_management/README.html">Python p3</a>
+                <a href="../../rust_projects/p3_hospital_management/README.html">Rust p3</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow"><span class="tag go">Go · P3</span></p>
+            <h1>Hospital Management — composition all the way down</h1>
+            <p class="lead">Hospital → Department → Doctor → Appointment. The data is naturally nested, and Go
+                encourages that: structs containing structs, slices of pointers to keep mutations visible.</p>
+        </section>
+
+        <section class="card">
+            <h2>Three Go specifics worth noting</h2>
+            <ol>
+                <li><strong>Pointer vs value semantics for collections.</strong> <code>Doctors []*Doctor</code> (slice
+                    of pointers) means appending an appointment via one reference is visible everywhere.
+                    <code>[]Doctor</code> (slice of values) would copy on each access.</li>
+                <li><strong>The "exists?" idiom.</strong> <code>FindDoctor</code> returns <code>(*Doctor, bool)</code> —
+                    Go's clean way to express "maybe-found". Python uses <code>None</code>.</li>
+                <li><strong>Wrapped errors with context.</strong>
+                    <code>fmt.Errorf("no such department: %s", dept)</code> mirrors Python's f-string in a
+                    <code>raise ValueError(...)</code>.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Run it</h2>
+            <pre><code>cd go_projects/p3_hospital_management
+go run .</code></pre>
+            <p>Files: <a href="main.go">main.go</a> · <a href="go.mod">go.mod</a></p>
+        </section>
+    </main>
+</body>
+
+</html>

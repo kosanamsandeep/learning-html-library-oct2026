@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P1 · Hello pytest — your first tests on a tiny calculator</title>
+    <link rel="stylesheet" href="../_shared.css">
+</head>
+
+<body>
+    <header>
+        <div class="shell nav">
+            <a class="brand" href="../index.html"><span>T</span>Testing Projects</a>
+            <nav class="top-links">
+                <a href="../index.html">Hub</a>
+                <a href="../p2_fixtures_parametrize/README.html">Next: P2</a>
+                <a href="../../index.html">Side projects</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Project 1 · Beginner</p>
+            <h1>Hello pytest — the smallest possible first test</h1>
+            <p class="lead">Forget testing for a moment. This project teaches you the muscle memory: write a
+                function, write a test, run <code>pytest</code>, read the green dot. Once that loop feels natural,
+                everything else in this track will click.</p>
+        </section>
+
+        <section class="card">
+            <h2>The story</h2>
+            <p>You join a team on your first day. Someone hands you a four-function calculator and says, "make sure
+                this still works tomorrow." You could click around in a REPL forever, or you could write five tiny
+                tests and run them every time the code changes. That is the entire idea of automated testing.</p>
+            <p>This project gives you a four-function calculator and five tests. Run them once and you will see the
+                green output that engineers feel slightly addicted to.</p>
+        </section>
+
+        <section class="card">
+            <h2>Files in this project</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>calculator.py</code></td>
+                        <td>The module under test. Pure functions, no side effects.</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_calculator.py</code></td>
+                        <td>Five pytest tests, one per behavior we care about.</td>
+                    </tr>
+                    <tr>
+                        <td><code>requirements.txt</code></td>
+                        <td>Only <code>pytest</code>.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>How pytest finds and runs your tests</h2>
+            <div class="flow">
+                <div class="step">Files named <code>test_*.py</code></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Functions named <code>test_*</code></div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Run automatically</div>
+                <div class="arrow">-&gt;</div>
+                <div class="step">Pass / Fail report</div>
+            </div>
+            <p>You do not register tests anywhere. The naming convention is the contract.</p>
+        </section>
+
+        <section class="card">
+            <h2>Core code — the calculator</h2>
+            <pre><code>def add(a, b):       return a + b
+def subtract(a, b):  return a - b
+def multiply(a, b):  return a * b
+
+def divide(a, b):
+    if b == 0:
+        raise ZeroDivisionError("cannot divide by zero")
+    return a / b</code></pre>
+            <p>Notice that <code>divide</code> explicitly raises on bad input. Raising clear errors is more testable
+                than returning special values like <code>None</code> or <code>-1</code>.</p>
+        </section>
+
+        <section class="card">
+            <h2>Core code — the tests, in AAA shape</h2>
+            <pre><code>def test_add_two_positive_numbers():
+    # Arrange
+    a, b = 2, 3
+    # Act
+    result = add(a, b)
+    # Assert
+    assert result == 5
+
+def test_divide_by_zero_raises():
+    with pytest.raises(ZeroDivisionError):
+        divide(1, 0)</code></pre>
+            <p>Two ideas matter here:</p>
+            <ul>
+                <li><strong>Plain <code>assert</code></strong>. Pytest rewrites it under the hood so the failure
+                    message shows real values like <code>assert 4 == 5</code>.</li>
+                <li><strong><code>pytest.raises</code></strong>. The cleanest way to assert "this should explode." If
+                    no exception is raised, the test fails.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>What "green" and "red" look like</h2>
+            <div class="state-row">
+                <div class="state green">
+                    <h3>Green (all passing)</h3>
+                    <pre><code>===== 5 passed in 0.04s =====</code></pre>
+                    <p>You can refactor with confidence.</p>
+                </div>
+                <div class="state red">
+                    <h3>Red (something broke)</h3>
+                    <pre><code>FAILED test_calculator.py::test_add_two_positive_numbers
+&gt;       assert result == 5
+E       assert 6 == 5</code></pre>
+                    <p>You instantly know which line and which value is wrong.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>How to run it</h2>
+            <pre><code>cd 06_side_projects/testing_projects/p1_hello_pytest
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+
+pytest -v
+# Optional:
+pytest -v -k divide       # run only tests with "divide" in the name
+pytest -x                 # stop at the first failure
+pytest -s                 # show print() output</code></pre>
+        </section>
+
+        <section class="card">
+            <h2>Try to break it (the best way to learn)</h2>
+            <ol>
+                <li>Open <code>calculator.py</code> and change <code>return a + b</code> to
+                    <code>return a + b + 1</code>.</li>
+                <li>Run <code>pytest</code> again. Watch the failure message point right at the lie.</li>
+                <li>Fix it and watch the green output return. That feedback loop is the whole game.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>What you should take away from P1</h2>
+            <ul>
+                <li>A test is just a function that asserts a fact about your code.</li>
+                <li>Pytest discovers tests by filename and function name. No registration code.</li>
+                <li>The AAA shape (Arrange, Act, Assert) keeps tests readable forever.</li>
+                <li>Errors should be raised, not hidden. They are easier to test.</li>
+            </ul>
+            <div class="callout"><strong>Interview-ready answer:</strong> "pytest is the modern Python testing
+                framework. It auto-discovers any <code>test_*.py</code> file, lets me write plain
+                <code>assert</code> statements, and prints rich failure messages. I structure each test as Arrange,
+                Act, Assert, so the intent is clear to anyone reading it."
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Reading order</h2>
+            <ol>
+                <li>Open <code>calculator.py</code> and read the four functions.</li>
+                <li>Open <code>test_calculator.py</code> and read each test.</li>
+                <li>Run <code>pytest -v</code> in this folder.</li>
+                <li>Break a function on purpose and rerun to see the failure output.</li>
+                <li>Go to <a href="../p2_fixtures_parametrize/README.html">P2 · Fixtures and parametrize</a>.</li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

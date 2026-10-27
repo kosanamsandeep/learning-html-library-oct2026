@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOLID Principles in Python</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">SD</span>
+                <span>SOLID Principles Guide</span>
+            </a>
+            <nav class="top-nav" aria-label="Primary">
+                <a href="index.html">Home</a>
+                <a href="python-design-patterns-testing.html">Patterns and Testing</a>
+                <a href="python-project-structure.html">Project Structure</a>
+                <a href="python-dependency-injection.html">Dependency Injection</a>
+                <a href="#solid-overview">SOLID overview</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="shell page-layout">
+        <aside class="page-nav">
+            <h2>On this page</h2>
+            <a href="#solid-overview">What SOLID means</a>
+            <a href="#srp">Single Responsibility</a>
+            <a href="#ocp">Open Closed</a>
+            <a href="#lsp">Liskov Substitution</a>
+            <a href="#isp">Interface Segregation</a>
+            <a href="#dip">Dependency Inversion</a>
+            <a href="#python-angle">SOLID in Python specifically</a>
+            <a href="#practical-use">When to apply it</a>
+        </aside>
+
+        <div class="page-main">
+            <section class="page-intro hero-card" id="solid-overview">
+                <div>
+                    <p class="eyebrow">Design discipline</p>
+                    <h1>SOLID is a set of design principles that helps Python code stay changeable as systems grow.</h1>
+                    <p>SOLID does not mean “use more classes.” It means organize responsibilities so code is easier to
+                        change, extend, and test. The goal is lower coupling and clearer boundaries.</p>
+                    <p>In Python, SOLID should be applied pragmatically. The language is flexible, so the right use of
+                        SOLID often means <strong>better function boundaries, protocols, services, and injected
+                            dependencies</strong>, not Java-style over-architecture.</p>
+                </div>
+                <div class="hero-panel">
+                    <h2>What SOLID stands for</h2>
+                    <ul>
+                        <li><strong>S:</strong> Single Responsibility Principle</li>
+                        <li><strong>O:</strong> Open Closed Principle</li>
+                        <li><strong>L:</strong> Liskov Substitution Principle</li>
+                        <li><strong>I:</strong> Interface Segregation Principle</li>
+                        <li><strong>D:</strong> Dependency Inversion Principle</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section" id="srp">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">S</p>
+                        <h2>Single Responsibility Principle</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Meaning</h3>
+                        <p>A module, class, or function should have one clear reason to change. If one class handles
+                            validation, persistence, and email sending, it will change for too many unrelated reasons.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>Python example</h3>
+                        <p>Keep user creation logic in a service, database logic in a repository, and email delivery in
+                            an adapter. That way, changing email logic does not force edits in data access code.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="ocp">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">O</p>
+                        <h2>Open Closed Principle</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Meaning</h3>
+                        <p>Code should be open for extension but closed for risky modification. Adding a new behavior
+                            should ideally mean adding a new implementation, not rewriting the stable core.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Python example</h3>
+                        <p>Use a strategy object for payment methods or notification types. You can add a new payment
+                            strategy without changing the stable checkout workflow.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="lsp">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">L</p>
+                        <h2>Liskov Substitution Principle</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Meaning</h3>
+                        <p>If one type replaces another, the system should still behave correctly. A subtype should not
+                            break expectations that the calling code relies on.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Python example</h3>
+                        <p>If a repository interface promises <strong>save()</strong> and <strong>get()</strong>, each
+                            implementation should honor the same expected behavior. A fake test repository should behave
+                            like the real one in the ways the service depends on.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="isp">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">I</p>
+                        <h2>Interface Segregation Principle</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Meaning</h3>
+                        <p>Clients should not depend on methods they do not need. Smaller, focused interfaces are
+                            usually better than one large all-purpose interface.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Python example</h3>
+                        <p>Instead of one giant storage interface that forces every implementation to support read,
+                            write, delete, search, and export, split capabilities so each consumer only depends on what
+                            it actually uses.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="dip">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">D</p>
+                        <h2>Dependency Inversion Principle</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Meaning</h3>
+                        <p>High-level business logic should depend on abstractions, not directly on low-level details.
+                            This is one of the most important principles for scalable Python code.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Python example</h3>
+                        <p>A service should depend on a repository contract, not directly on PostgreSQL code. That lets
+                            you switch to a fake repository in tests or a different persistence layer later.</p>
+                    </div>
+                </div>
+                <div class="checkpoint">
+                    <h2>Why this one matters so much</h2>
+                    <p>Dependency inversion is usually the principle that most directly improves testability,
+                        replaceability, and long-term maintainability.</p>
+                </div>
+            </section>
+
+            <section class="section" id="python-angle">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Python-specific view</p>
+                        <h2>How SOLID should be applied in Python</h2>
+                    </div>
+                </div>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Bad interpretation</th>
+                                <th>Better Python interpretation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Create many tiny classes just because SOLID exists</td>
+                                <td>Create boundaries only where they reduce coupling or clarify behavior</td>
+                            </tr>
+                            <tr>
+                                <td>Force inheritance everywhere</td>
+                                <td>Prefer composition, protocols, or simple callables when enough</td>
+                            </tr>
+                            <tr>
+                                <td>Abstract everything from day one</td>
+                                <td>Abstract the parts that change or need test seams</td>
+                            </tr>
+                            <tr>
+                                <td>Translate Java patterns directly</td>
+                                <td>Use Pythonic structures such as dataclasses, protocols, and simple services</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section" id="practical-use">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Practical use</p>
+                        <h2>When SOLID helps and when it hurts</h2>
+                    </div>
+                </div>
+                <div class="grid two">
+                    <div class="warning-card">
+                        <h3>When it helps</h3>
+                        <ul class="stack-list">
+                            <li>The system has multiple integrations or implementations.</li>
+                            <li>Business rules change often.</li>
+                            <li>Testing is difficult because dependencies are tightly coupled.</li>
+                            <li>Multiple engineers need to work in the same codebase safely.</li>
+                        </ul>
+                    </div>
+                    <div class="warning-card">
+                        <h3>When it hurts</h3>
+                        <ul class="stack-list">
+                            <li>The app is small and stable, but the design becomes abstract too early.</li>
+                            <li>The code uses interfaces and classes where a simple function would be clearer.</li>
+                            <li>The team spends more time managing patterns than shipping useful software.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note">
+                    <p><strong>Practical conclusion:</strong> use SOLID to reduce future pain, not to impress yourself
+                        with abstraction. In Python, simple and explicit still wins.</p>
+                </div>
+                <div class="grid two" style="margin-top: 18px;">
+                    <a class="card" href="python-dependency-injection.html">
+                        <span class="tag">Next step</span>
+                        <h3>Dependency injection with FastAPI</h3>
+                        <p>See how dependency inversion becomes concrete with provider functions, overrides, and test
+                            seams.</p>
+                    </a>
+                    <a class="card" href="python-architecture-comparison.html">
+                        <span class="tag warm">Next step</span>
+                        <h3>Monolith vs modular monolith vs microservices</h3>
+                        <p>See how architecture choices interact with Python boundaries, modules, and team scale.</p>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell">
+            <p>This page explains the SOLID principles in simple Python terms and focuses on how they help maintainable,
+                testable application design.</p>
+            <div class="mini-links">
+                <a href="index.html">Back to home</a>
+                <a href="python-design-patterns-testing.html">Patterns and testing</a>
+                <a href="python-project-structure.html">Project structure</a>
+                <a href="python-dependency-injection.html">Dependency injection</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>
