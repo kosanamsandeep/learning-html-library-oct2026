@@ -406,6 +406,7 @@
                         <li><a href="#walkthrough">Worked example</a></li>
                         <li><a href="#sequence">Sequence</a></li>
                         <li><a href="#trust">06 · Why you can trust it</a></li>
+                        <li><a href="#pilot">06b · Pilot &amp; bake-off</a></li>
                         <li class="group">Delivery</li>
                         <li><a href="#delivery">07 · Enterprise delivery</a></li>
                         <li><a href="#apm">Packaging (APM)</a></li>
@@ -427,7 +428,7 @@
                         <p><strong>Optimised for:</strong> permissive licensing, verifiable evidence, 1M+ LOC,
                             incremental runs, and a bundle you can distribute internally without legal exceptions.</p>
                         <div class="meta-row">
-                            <span class="pill verified">✓ MIT / Apache-2.0 / BSD / ISC only</span>
+                            <span class="pill verified">✓ Permissive core · MSAL modules excluded</span>
                             <span class="pill">6 stacks evaluated</span>
                             <span class="pill">Diagrams embedded as SVG · works offline</span>
                         </div>
@@ -435,8 +436,18 @@
                             <strong>The decision in one line</strong>
                             Use <strong>Graphify + CodeGraph + CodeBoarding + SCIP/tree-sitter +
                                 Structurizr/Mermaid</strong> for recovery and design; add <strong>Joern</strong>
-                            for deep data flow and <strong>ast-grep + OpenRewrite</strong> for change. Build the
-                            evidence, critic, eval, and migration-gate layers yourself.
+                            for deep data flow and <strong>ast-grep + OpenRewrite (Apache-2.0 core)</strong> for change. Build the
+                            gate layers yourself.
+                        </div>
+                        <div class="callout warn">
+                            <strong>Review correction — OpenRewrite is not uniformly Apache-2.0</strong>
+                            The engine and core Java/Groovy/Kotlin bindings are Apache-2.0, but
+                            <code>rewrite-spring</code>, <code>rewrite-migrate-java</code>, and the newer
+                            language modules (JS/TS, C#, Python, Go, Ruby, Scala, Android) are under the
+                            Moderne Source Available License (MSAL). MSAL permits internal use on your own
+                            code but prohibits redistribution, bundling into a product, and managed-service
+                            use. They are excluded from the redistributable bundle; only Apache-2.0 core
+                            recipes are allowed. The earlier “0 commercial” claim was wrong.
                         </div>
                     </section>
 
@@ -465,13 +476,15 @@
                             <div class="mini good">
                                 <h4>Chosen</h4>
                                 <p><strong>Graphified evidence + agent synthesis + deterministic change.</strong>
-                                    Every component is MIT or Apache-2.0, every claim is evidence-linked, and
-                                    migration is verified by an independent oracle.</p>
+                                    Every bundled component is MIT or Apache-2.0; MSAL recipe modules are
+                                    excluded. Every claim is evidence-linked, and migration is verified by an
+                                    independent oracle.</p>
                             </div>
                             <div class="mini bad">
                                 <h4>Rejected on licence</h4>
                                 <p>Serena, pyreverse, PlantUML, CodeCompass (GPL); Semgrep, EvoSuite (LGPL);
-                                    TruffleHog (AGPL); D2 (MPL); Graphviz (EPL); CodeQL CLI (proprietary).</p>
+                                    TruffleHog (AGPL); D2 (MPL); Graphviz (EPL); CodeQL CLI (proprietary);
+                                    OpenRewrite MSAL recipe modules (source-available).</p>
                             </div>
                             <div class="mini">
                                 <h4>Rejected on fit</h4>
@@ -480,11 +493,19 @@
                             </div>
                         </div>
 
+                        <div class="callout">
+                            <strong>Default deployment is the baseline, not the full bundle</strong>
+                            SCIP + tree-sitter + Joern + one graph engine. Graphify, CodeGraph, and CodeBoarding
+                            are capability-enabled per repo only after they beat the baseline on a measured
+                            metric. Nothing is all-on by default.
+                        </div>
+
                         <div class="kpis">
-                            <div class="kpi"><div class="v">4.6 / 5</div><div class="l">indicative weighted score, chosen stack</div></div>
-                            <div class="kpi"><div class="v">0</div><div class="l">copyleft or commercial tools in the bundle</div></div>
+                            <div class="kpi"><div class="v">4.3 / 5</div><div class="l">design score only — measured score pending pilot</div></div>
+                            <div class="kpi warn"><div class="v">0</div><div class="l">copyleft tools in the core; MSAL modules excluded</div></div>
                             <div class="kpi"><div class="v">7</div><div class="l">stages, 8 skills, 7 narrow agents</div></div>
                             <div class="kpi warn"><div class="v">1</div><div class="l">writer agent; everything else is read-only</div></div>
+                            <div class="kpi bad"><div class="v">TBD</div><div class="l">measured score — bake-off not run</div></div>
                         </div>
                     </section>
 
@@ -577,10 +598,10 @@
                                     </tr>
                                     <tr>
                                         <td><strong>E · Graph-first hybrid</strong> <span class="badge good">Chosen</span></td>
-                                        <td>Graphify + CodeGraph + CodeBoarding + SCIP/tree-sitter + Structurizr/Mermaid + ast-grep/OpenRewrite</td>
+                                        <td>Graphify + CodeGraph + CodeBoarding + SCIP/tree-sitter + Structurizr/Mermaid + ast-grep/OpenRewrite core</td>
                                         <td>Evidence-first, licence-clean, covers HLD + LLD + migration</td>
                                         <td>More integration work; two young components need pinning</td>
-                                        <td class="num"><strong>4.6</strong></td>
+                                        <td class="num"><strong>4.3</strong></td>
                                     </tr>
                                     <tr>
                                         <td><strong>F · GPL / LSP-heavy</strong></td>
@@ -609,13 +630,37 @@
                                     <tr><td>End-to-end fit (20)</td><td>2</td><td>2</td><td>2</td><td>3</td><td><strong>5</strong></td><td>4</td></tr>
                                     <tr><td>Scale (15)</td><td>1</td><td>2</td><td>4</td><td><strong>5</strong></td><td><strong>5</strong></td><td>4</td></tr>
                                     <tr><td>Languages (10)</td><td>4</td><td><strong>5</strong></td><td>4</td><td>4</td><td>4</td><td><strong>5</strong></td></tr>
-                                    <tr><td>Maturity (10)</td><td>4</td><td>3</td><td>3</td><td><strong>5</strong></td><td>3</td><td>4</td></tr>
-                                    <tr><td>Integration (10)</td><td>4</td><td>4</td><td>4</td><td>4</td><td>4</td><td>4</td></tr>
-                                    <tr><td>Cost (5)</td><td>3</td><td>3</td><td><strong>5</strong></td><td>1</td><td>4</td><td>4</td></tr>
-                                    <tr><td><strong>Weighted total</strong></td><td><strong>2.2</strong></td><td><strong>2.7</strong></td><td><strong>3.3</strong></td><td><strong>3.9</strong></td><td><strong>4.6</strong></td><td><strong>4.1</strong></td></tr>
-                                    <tr><td><strong>Licence gate</strong></td><td>pass</td><td>pass</td><td>pass</td><td><span class="badge warm">commercial</span></td><td><span class="badge good">pass</span></td><td><span class="badge bad">fail</span></td></tr>
+                                    <tr><td>Maturity (10)</td><td>4</td><td>3</td><td>3</td><td><strong>5</strong></td><td>2</td><td>4</td></tr>
+                                    <tr><td>Integration (10)</td><td>4</td><td>4</td><td>4</td><td>4</td><td>3</td><td>4</td></tr>
+                                    <tr><td>Cost (5)</td><td>3</td><td>3</td><td><strong>5</strong></td><td>1</td><td>3</td><td>4</td></tr>
+                                    <tr><td><strong>Weighted total</strong></td><td><strong>2.2</strong></td><td><strong>2.7</strong></td><td><strong>3.3</strong></td><td><strong>3.9</strong></td><td><strong>4.3</strong></td><td><strong>4.1</strong></td></tr>
+                                    <tr><td><strong>Licence gate</strong></td><td>pass</td><td>pass</td><td>pass</td><td><span class="badge warm">commercial</span></td><td><span class="badge good">pass*</span></td><td><span class="badge bad">fail</span></td></tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <p><sup>*</sup> E passes only if OpenRewrite MSAL modules are excluded and the SBOM is
+                            clean. The 4.3 is a <strong>design score</strong>; it is not evidence.</p>
+
+                        <h4>Measured score — intentionally empty until the pilot</h4>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Measured criterion</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Edge recall</td><td>—</td><td>—</td><td>—</td><td>—</td><td><strong>TBD</strong></td><td>—</td></tr>
+                                    <tr><td>Boundary F1 (incl. messy repo)</td><td>—</td><td>—</td><td>—</td><td>—</td><td><strong>TBD</strong></td><td>—</td></tr>
+                                    <tr><td>Incremental cost</td><td>—</td><td>—</td><td>—</td><td>—</td><td><strong>TBD</strong></td><td>—</td></tr>
+                                    <tr><td>Security gate</td><td>—</td><td>—</td><td>—</td><td>—</td><td><strong>TBD</strong></td><td>—</td></tr>
+                                    <tr><td>Migration-safety gate</td><td>—</td><td>—</td><td>—</td><td>—</td><td><strong>TBD</strong></td><td>—</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="callout danger">
+                            <strong>Three hard gates now sit next to licence</strong>
+                            <ul>
+                                <li><strong>Licence:</strong> permissive core; MSAL modules excluded or separately approved; SBOM clean.</li>
+                                <li><strong>Security:</strong> no critical CVEs, secrets clean, no network egress from tools, model data-handling approved.</li>
+                                <li><strong>Migration safety:</strong> characterization tests, contract/schema tests, rollback, canary, architecture-diff gate.</li>
+                            </ul>
                         </div>
                         <div class="callout">
                             <strong>Why the commercial stack is not chosen</strong>
@@ -748,7 +793,7 @@
                                 </thead>
                                 <tbody>
                                     <tr><td><strong>ast-grep</strong> <span class="badge">MIT</span></td><td>Structural search and rewrite</td><td>Tree-sitter-precise, language-agnostic, easy rules in CI</td><td>Semgrep OSS (LGPL)</td></tr>
-                                    <tr><td><strong>OpenRewrite</strong> <span class="badge">Apache-2.0</span></td><td>Type-aware JVM/framework migrations</td><td>Lossless semantic tree, mature recipe ecosystem</td><td>Moderne (commercial, optional)</td></tr>
+                                    <tr><td><strong>OpenRewrite</strong> <span class="badge">Apache-2.0 core</span></td><td>Type-aware JVM/framework migrations</td><td>Lossless semantic tree; <strong>Apache-2.0 core recipes only</strong>. <code>rewrite-spring</code>, <code>rewrite-migrate-java</code>, and newer language modules are MSAL (source-available) and excluded from the bundle.</td><td>Moderne (commercial, optional)</td></tr>
                                     <tr><td><strong>gitleaks</strong> <span class="badge">MIT</span></td><td>Secret scan before any LLM call</td><td>MIT, fast, CI-native</td><td>TruffleHog (AGPL)</td></tr>
                                     <tr><td><strong>Trivy</strong> <span class="badge">Apache-2.0</span></td><td>IaC and dependency scanning</td><td>Permissive, broad coverage, SBOM-friendly</td><td>Snyk (commercial)</td></tr>
                                 </tbody>
@@ -786,6 +831,7 @@
                                     <tr><td><strong>D2</strong></td><td>MPL-2.0</td><td>Strong diagram DSL and layout</td><td>Mermaid</td></tr>
                                     <tr><td><strong>Graphviz</strong></td><td>EPL-1.0</td><td>Graph layout engine</td><td>Mermaid’s built-in layout</td></tr>
                                     <tr><td><strong>CodeQL CLI</strong></td><td>Proprietary</td><td>Deep code queries</td><td>Joern</td></tr>
+                                    <tr><td><strong>OpenRewrite MSAL modules</strong> (<code>rewrite-spring</code>, <code>rewrite-migrate-java</code>, JS/TS, C#, Python, Go, Ruby, Scala, Android)</td><td>Moderne Source Available</td><td>Source-available, not permissive; no redistribution, bundling, or managed service</td><td>Apache-2.0 core recipes; legal review if used internally</td></tr>
                                     <tr><td><strong>Moderne / Sourcegraph / AWS Transform / Google Modernize</strong></td><td>Commercial</td><td>Managed scale and support</td><td>OpenRewrite + ast-grep (optional procurement)</td></tr>
                                     <tr><td><strong>Kiro / Diffblue</strong></td><td>Commercial</td><td>Spec/IDE and test generation</td><td>OpenSpec + agent tests</td></tr>
                                 </tbody>
@@ -834,7 +880,7 @@
                             <div class="mini good">
                                 <p><strong>What we gain</strong></p>
                                 <ul>
-                                    <li>A bundle with no copyleft or commercial dependencies</li>
+                                    <li>A core bundle with no copyleft and no MSAL modules; SBOM-gated</li>
                                     <li>Redistribution-safe IP posture</li>
                                     <li>Full control of the architecture model</li>
                                     <li>Deterministic evidence and reproducibility</li>
@@ -884,7 +930,7 @@
                                     <tr><td><strong>S4 Verify</strong></td><td>Schema validators, graph checks, arch-critic</td><td><code>gaps.md</code>, confidence</td><td><code>arch-critic</code></td><td>Evidence coverage ≥90%; no contradictions</td></tr>
                                     <tr><td><strong>S4b Reflexion</strong></td><td>Graph + target model</td><td><code>reflexion.report.json</code></td><td><code>verifier</code></td><td>Every divergence triaged</td></tr>
                                     <tr><td><strong>S5 Plan</strong></td><td>Graph topo sort, risk scoring</td><td><code>migration.plan.json</code></td><td><code>migration-planner</code></td><td>Slices ordered; rollback defined</td></tr>
-                                    <tr><td><strong>S6 Execute</strong></td><td>ast-grep, OpenRewrite</td><td>PR + verification report</td><td><code>migration-worker</code> (only writer)</td><td>Characterization + contract + arch-diff + canary</td></tr>
+                                    <tr><td><strong>S6 Execute</strong></td><td>ast-grep, OpenRewrite (Apache-2.0 core recipes only)</td><td>PR + verification report</td><td><code>migration-worker</code> (only writer)</td><td>Characterization + contract + arch-diff + canary</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1013,6 +1059,129 @@
                         </div>
                     </section>
 
+                    <!-- ============ 06b PILOT ============ -->
+                    <section class="card" id="pilot">
+                        <h2><span class="num">06b</span> Pilot, bake-off, and what “measured” means</h2>
+                        <p>The architecture is sound but unproven. This is the plan to prove or falsify it before
+                            production — and to stop the toolchain from becoming heavier than the evidence
+                            justifies.</p>
+
+                        <div class="callout danger">
+                            <strong>Production is blocked until the five exit criteria hold</strong>
+                            The 4.3 score is a design score. The measured score stays empty until the bake-off and
+                            golden-repo evaluation are complete.
+                        </div>
+
+                        <h3 id="pilot-schema">1 · Define the evidence schema first</h3>
+                        <p>One versioned, language-neutral schema: symbols, calls, routes, data stores, components,
+                            evidence pointers, and confidence. Stable entity IDs. A written conflict rule for when
+                            two tools disagree about an edge — for example, prefer compiler-accurate SCIP over
+                            heuristic tree-sitter, and record the losing claim as an alternative rather than
+                            silently overwriting it. Build adapters to the schema and treat every tool output as an
+                            input, not truth.</p>
+                        <div class="callout">
+                            <strong>Schema draft v1.0.0 is in the repo</strong>
+                            <a href="evidence-schema.md">Rules, stable IDs, and conflict resolution</a> ·
+                            <a href="evidence-schema.v1.json">JSON Schema 2020-12</a>. The example in the
+                            rules page validates against the schema; hold the schema version fixed across the
+                            bake-off so tools are compared on the same contract.
+                        </div>
+
+                        <h3 id="pilot-bakeoff">2 · Run a bake-off, not a bundle</h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Step</th><th>Add</th><th>Question</th><th>Keep only if</th></tr></thead>
+                                <tbody>
+                                    <tr><td>0</td><td>SCIP + tree-sitter + Joern + one graph engine</td><td>Baseline</td><td>—</td></tr>
+                                    <tr><td>1</td><td>Graphify</td><td>Does the whole-repo graph improve edge recall?</td><td>Measured recall gain at acceptable cost</td></tr>
+                                    <tr><td>2</td><td>CodeGraph</td><td>Do call paths and blast radius improve flow recall?</td><td>Measured flow-recall gain</td></tr>
+                                    <tr><td>3</td><td>CodeBoarding</td><td>Do path-based boundaries beat the baseline?</td><td>Boundary F1 gain, including a messy legacy repo</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p>Enable capabilities per repo, not all-on by default. Treat CodeBoarding as a
+                            <strong>boundary proposer</strong>, not a truth source; test it on at least one
+                            deliberately messy legacy repository, since the supporting evidence comes from two
+                            well-organised ones. Pin exact commits for Graphify and CodeGraph, review maintainers,
+                            release history and dependency trees, mirror them internally, and run them in a
+                            network-isolated container.</p>
+
+                        <h3 id="pilot-eval">3 · Golden repos and metrics</h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Golden repo</th><th>Why it is in the set</th><th>Maintainer labels</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Clean service</td><td>Baseline correctness and evidence quality</td><td>Boundaries, top flows, state transitions</td></tr>
+                                    <tr><td>Large monolith / monorepo</td><td>Scale, incrementality, drift</td><td>Boundaries, ownership, critical flows</td></tr>
+                                    <tr><td>Polyglot or dynamically wired app</td><td>Blind spots: cross-language edges, DI, events</td><td>Cross-language flows, hidden couplings</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Metric</th><th>Target</th><th>Measured</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Edge recall</td><td>≥ 0.85</td><td>TBD</td></tr>
+                                    <tr><td>Boundary F1 (incl. messy repo)</td><td>≥ 0.80</td><td>TBD</td></tr>
+                                    <tr><td>Unsupported claims</td><td>&lt; 5% <strong>and</strong> recall ≥ 0.85</td><td>TBD</td></tr>
+                                    <tr><td>Citation entailment (human spot-check)</td><td>≥ 90%</td><td>TBD</td></tr>
+                                    <tr><td>Incremental vs clean re-index</td><td>Same relevant facts</td><td>TBD</td></tr>
+                                    <tr><td>Non-LLM artifacts on re-run</td><td>Byte-identical</td><td>TBD</td></tr>
+                                    <tr><td>Cold / incremental time</td><td>Within budget</td><td>TBD</td></tr>
+                                    <tr><td>Peak RAM, tokens, cache hit rate, retries</td><td>Within budget</td><td>TBD</td></tr>
+                                    <tr><td>Human correction minutes</td><td>Within budget</td><td>TBD</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p>Freeze baselines before tuning. Pair “unsupported claims &lt;5%” with a recall measure so a
+                            critic cannot pass by deleting everything. A resolvable <code>file:line</code> does not
+                            prove the claim — sample citation entailment by hand. Include one 1M+ LOC polyglot repo
+                            in the cost run.</p>
+
+                        <h3 id="pilot-safety">4 · Migration safety, before any write access</h3>
+                        <p>Choose the oracle tooling now: characterization tests, contract and schema tests,
+                            differential testing where feasible, and mutation testing (PIT for Java, Stryker for
+                            JS/TS/C#, equivalents per language). Do not rely on LLM-written tests alone — they
+                            freeze current bugs. OpenRewrite (Apache-2.0 core recipes) handles supported semantic
+                            recipes; ast-grep handles structural patterns; the agent handles only residue neither
+                            can express. Every change is a reviewable, reproducible PR.</p>
+                        <ul>
+                            <li>Enforce gates in CI, not in prose: deterministic preconditions, architecture diff,
+                                security scan, rollback plan.</li>
+                            <li>Mandatory human approval for high-risk slices; cap the worker's permissions per task.</li>
+                            <li>A cross-model critic is one signal, not the oracle. Deterministic checks and
+                                behavioural tests carry the decisive weight; a critic from another family shares
+                                blind spots.</li>
+                        </ul>
+
+                        <h3 id="pilot-gaps">5 · Close the coverage gaps deliberately</h3>
+                        <ul>
+                            <li><strong>Cross-language edges:</strong> message topics, RPC, shared schemas — choose a
+                                tool or declare out of scope.</li>
+                            <li><strong>Stored procedures:</strong> PL/SQL, T-SQL, and data-model recovery — choose a
+                                tool or declare out of scope.</li>
+                            <li><strong>COBOL / mainframe:</strong> declare in or out of scope; do not let it silently
+                                distort coverage numbers.</li>
+                            <li><strong>Runtime traces:</strong> mandatory for critical flows, not optional.</li>
+                        </ul>
+
+                        <h3 id="pilot-replace">6 · Keep it replaceable</h3>
+                        <p>Version the schema, skills, recipes, and eval datasets independently of the tools. Add
+                            regression tests for every tool upgrade. Keep the method in portable <code>SKILL.md</code>
+                            form and the orchestration thin. Make the agent count configurable; replace an agent with
+                            a deterministic function wherever it works reliably.</p>
+
+                        <h3 id="pilot-exit">7 · Pilot exit criteria</h3>
+                        <ol>
+                            <li>SBOM and legal review pass on the real bundle, including LLM provider terms.</li>
+                            <li>Each retained tool has a measured, non-overlapping win over the baseline.</li>
+                            <li>Targets are met on all three golden repos, including the messy one.</li>
+                            <li>Incremental runs match a clean re-index and stay within the cost budget.</li>
+                            <li>At least one migration slice completes end to end through every gate, including canary
+                                and rollback.</li>
+                        </ol>
+                    </section>
+
                     <!-- ============ 07 DELIVERY ============ -->
                     <section class="card" id="delivery">
                         <h2><span class="num">07</span> Enterprise delivery</h2>
@@ -1078,6 +1247,9 @@
                             </details>
                         </div>
                         <ul>
+                            <li><strong>MSAL modules</strong> are source-available: internal use is allowed, but
+                                redistribution, bundling into a product, and managed-service use are prohibited.
+                                Inventory every module; exclude them from the redistributable bundle by default.</li>
                             <li>Allowlist: MIT, Apache-2.0, BSD-2/3, ISC.</li>
                             <li>Maintain <code>THIRD_PARTY_NOTICES.md</code>; Apache-2.0 requires notices and
                                 includes a patent grant.</li>
@@ -1120,19 +1292,30 @@
                         <h2><span class="num">09</span> Decision record (ADR)</h2>
 
                         <dl class="kv">
-                            <dt>Status</dt><dd>Accepted for pilot; production pending P5 exit criteria</dd>
+                            <dt>Status</dt><dd>Provisional — accepted for pilot only; production gated on the bake-off, the measured scorecard, and the exit criteria</dd>
                             <dt>Date</dt><dd>27 October 2026</dd>
                             <dt>Scope</dt><dd>Enterprise HLD/LLD recovery and dependency-ordered migration from existing codebases</dd>
                             <dt>Constraints</dt><dd>Licence-clean bundle; verifiable evidence; 1M+ LOC; multi-language; incremental; sensitive code</dd>
-                            <dt>Decision</dt><dd>Graphify + CodeGraph + CodeBoarding + SCIP/tree-sitter + Structurizr/Mermaid; Joern optional; ast-grep + OpenRewrite for change; gitleaks + Trivy for security</dd>
+                            <dt>Decision</dt><dd>Graphify + CodeGraph + CodeBoarding + SCIP/tree-sitter + Structurizr/Mermaid; Joern optional; ast-grep + OpenRewrite (Apache-2.0 core recipes only; MSAL modules excluded) for change; gitleaks + Trivy for security</dd>
                         </dl>
+
+                        <h3>Corrections after review</h3>
+                        <ul>
+                            <li><strong>OpenRewrite:</strong> not uniformly Apache-2.0. <code>rewrite-spring</code>,
+                                <code>rewrite-migrate-java</code>, and newer language modules are MSAL. Only core
+                                recipes are bundled.</li>
+                            <li><strong>Scorecard:</strong> split into design and measured. 4.3 is a design score;
+                                measured is TBD until the pilot.</li>
+                            <li><strong>Blueprint:</strong> GPL/LGPL/MSAL tools are marked excluded and the stage
+                                mapping no longer uses them.</li>
+                        </ul>
 
                         <h3>Consequences</h3>
                         <div class="grid-2">
                             <div class="mini good">
                                 <h4>Positive</h4>
                                 <ul>
-                                    <li>No copyleft or commercial dependency in the distributed bundle</li>
+                                    <li>No copyleft in the core bundle; MSAL recipe modules excluded and inventoried; the SBOM gate enforces it</li>
                                     <li>Evidence-grounded HLD and LLD, not generated prose</li>
                                     <li>Machine-readable model that drives migration and architecture diff</li>
                                     <li>Portable skills; one versioned plugin; one eval harness</li>
@@ -1145,6 +1328,8 @@
                                     <li>We lose Serena’s and pyreverse’s convenience</li>
                                     <li>Two young components need pinning and fallbacks</li>
                                     <li>Boundary recovery remains approximate; humans must sign off</li>
+                                    <li>The measured score is unknown until the pilot; 4.3 is a design score</li>
+                                    <li>OpenRewrite migration coverage is narrower than assumed because MSAL modules are excluded</li>
                                 </ul>
                             </div>
                         </div>
@@ -1177,7 +1362,7 @@
                             <li><a href="https://github.com/Graphify-Labs/graphify" target="_blank" rel="noopener">Graphify</a> · <a href="https://github.com/colmbychenry/codegraph" target="_blank" rel="noopener">CodeGraph</a> · <a href="https://github.com/CodeBoarding/CodeBoarding" target="_blank" rel="noopener">CodeBoarding</a></li>
                             <li><a href="https://github.com/scip-code/scip" target="_blank" rel="noopener">SCIP</a> · <a href="https://tree-sitter.github.io/tree-sitter/" target="_blank" rel="noopener">tree-sitter</a> · <a href="https://joern.io/" target="_blank" rel="noopener">Joern</a></li>
                             <li><a href="https://structurizr.com/" target="_blank" rel="noopener">Structurizr</a> · <a href="https://mermaid.js.org/" target="_blank" rel="noopener">Mermaid</a></li>
-                            <li><a href="https://github.com/ast-grep/ast-grep" target="_blank" rel="noopener">ast-grep</a> · <a href="https://github.com/openrewrite/rewrite" target="_blank" rel="noopener">OpenRewrite</a></li>
+                            <li><a href="https://github.com/ast-grep/ast-grep" target="_blank" rel="noopener">ast-grep</a> · <a href="https://github.com/openrewrite/rewrite" target="_blank" rel="noopener">OpenRewrite</a> · <a href="https://docs.openrewrite.org/licensing/openrewrite-licensing" target="_blank" rel="noopener">OpenRewrite licensing</a> · <a href="https://github.com/openrewrite/rewrite-spring/blob/main/LICENSE.md" target="_blank" rel="noopener">rewrite-spring licence</a> · <a href="https://github.com/openrewrite/rewrite-migrate-java/blob/main/LICENSE.md" target="_blank" rel="noopener">rewrite-migrate-java licence</a></li>
                             <li><a href="https://github.com/gitleaks/gitleaks" target="_blank" rel="noopener">gitleaks</a> · <a href="https://trivy.dev/" target="_blank" rel="noopener">Trivy</a> · <a href="https://github.com/anchore/syft" target="_blank" rel="noopener">Syft</a></li>
                             <li><a href="https://github.com/oraios/serena" target="_blank" rel="noopener">Serena</a> (GPL — excluded) · <a href="https://pylint.readthedocs.io/en/stable/additional_tools/pyreverse/index.html" target="_blank" rel="noopener">pyreverse</a> (GPL — excluded)</li>
                             <li><a href="https://code.claude.com/docs/en/plugins/create-marketplace.md" target="_blank" rel="noopener">Claude Code marketplaces</a> · <a href="https://code.claude.com/docs/en/plugins/security.md" target="_blank" rel="noopener">Plugin security</a></li>

@@ -730,8 +730,8 @@
                         </div>
                         <div class="callout good" style="margin-top:18px">
                             <strong>The one-sentence verdict</strong>
-                            No open-source project does archaeology → HLD + LLD → migration end-to-end. Buy the
-                            evidence layer, build the synthesis layer, and treat migration as a separate discipline
+                            No open-source project does archaeology → HLD + LLD → migration end-to-end. Use license-cleared
+                            evidence engines, build the synthesis layer, and treat migration as a separate discipline
                             with deterministic engines and independent oracles.
                         </div>
                     </section>
@@ -739,6 +739,15 @@
                     <!-- ================= SUMMARY ================= -->
                     <section class="card" id="summary">
                         <h2><span class="num">00</span> Executive summary</h2>
+                        <div class="callout danger">
+                            <strong>Licence-clean status — updated after review</strong>
+                            This is a research survey, not the approved bundle. Serena (GPL-3.0), pyreverse
+                            (GPL-2.0), Semgrep (LGPL-2.1), PlantUML (GPL-3.0), CodeCompass (GPL-3.0), EvoSuite
+                            (LGPL-3.0), TruffleHog (AGPL-3.0), D2 (MPL-2.0), Graphviz (EPL-1.0), CodeQL CLI
+                            (proprietary), and OpenRewrite’s MSAL recipe modules are <strong>excluded</strong>
+                            from the redistributable bundle. Replacements and the chosen stack are in the
+                            <a href="stack-decision-record.html">Stack Decision Record</a>.
+                        </div>
                         <p>The research converges on six findings. Everything else in this document is the
                             justification and the build plan.</p>
 
@@ -1009,7 +1018,7 @@
                                         <td><span class="badge good">Data-flow</span> deep call/data queries</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>oraios/serena</strong></td><td class="stars">30.7k</td><td>GPL-3.0 app / MIT SolidLSP</td>
+                                        <td><strong>oraios/serena</strong> <span class="badge bad">Excluded</span></td><td class="stars">30.7k</td><td>GPL-3.0 app / MIT SolidLSP — replace with SCIP + tree-sitter</td>
                                         <td>LSP symbol, reference, search, edit tools; 40+ languages; MCP + CLI</td>
                                         <td><span class="badge good">Retrieval</span> precise symbol access</td>
                                     </tr>
@@ -1019,7 +1028,7 @@
                                         <td><span class="badge good">Cross-refs</span></td>
                                     </tr>
                                     <tr>
-                                        <td><strong>pylint pyreverse</strong></td><td class="stars">5.7k</td><td>GPL-2.0</td>
+                                        <td><strong>pylint pyreverse</strong> <span class="badge bad">Excluded</span></td><td class="stars">5.7k</td><td>GPL-2.0 — replace with tree-sitter → Mermaid</td>
                                         <td>Class/package UML → DOT, PlantUML, Mermaid, SVG/PNG</td>
                                         <td><span class="badge good">Class models</span> Python only</td>
                                     </tr>
@@ -1083,12 +1092,12 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><strong>OpenRewrite + Moderne</strong></td><td>Deterministic (+ orchestration)</td><td>Apache-2.0 core; Moderne commercial</td>
+                                        <td><strong>OpenRewrite + Moderne</strong> <span class="badge warm">Core only</span></td><td>Deterministic (+ orchestration)</td><td>Apache-2.0 core; MSAL for <code>rewrite-spring</code>, <code>rewrite-migrate-java</code>, and newer languages; Moderne commercial. Bundle the Apache-2.0 core only.</td>
                                         <td>Type-aware JVM/framework upgrades; 10k+ recipes; multi-repo via Moderne</td>
                                         <td>Architecture redesign; one-off syntax edits</td>
                                     </tr>
                                     <tr><td><strong>ast-grep</strong></td><td>Deterministic</td><td>MIT · 16.4k★</td><td>Precise tree-sitter structural rewrites, ~20 languages; CLI/API/LSP</td><td>Type-resolved semantics</td></tr>
-                                    <tr><td><strong>Semgrep</strong></td><td>Deterministic</td><td>LGPL-2.1 OSS · 17.3k★</td><td>Impact scan, taint analysis, CI guardrail, autofix</td><td>Deep refactoring engine</td></tr>
+                                    <tr><td><strong>Semgrep</strong> <span class="badge bad">Excluded</span></td><td>Deterministic</td><td>LGPL-2.1 OSS · 17.3k★ — replace with ast-grep + Trivy</td><td>Impact scan, taint analysis, CI guardrail, autofix</td><td>Deep refactoring engine</td></tr>
                                     <tr><td><strong>Codemod CLI</strong></td><td>Deterministic + agentic</td><td>Apache-2.0 · 1.1k★</td><td>Package and orchestrate multi-step codemods; 17+ languages; MCP</td><td>Deep JVM type resolution</td></tr>
                                     <tr><td><strong>Comby</strong></td><td>Deterministic</td><td>Apache-2.0 · 2.7k★</td><td>Language-agnostic structural replace</td><td>AST/type fidelity</td></tr>
                                     <tr><td><strong>GritQL</strong></td><td>Deterministic</td><td>MIT · 4.6k★</td><td>Declarative rewrite + standard patterns</td><td>New strategic investment — roadmap uncertain after Biome donation</td></tr>
@@ -1429,13 +1438,13 @@
                                 </thead>
                                 <tbody>
                                     <tr><td>S0</td><td><code>repo-facts</code></td><td><code>repo-scout</code> — cheap model, read-only</td><td>tree-sitter, manifest/IaC parsers, gitingest, secret scanner</td><td><code>repo.facts.json</code></td></tr>
-                                    <tr><td>S1</td><td><code>graph-build</code></td><td><code>repo-scout</code></td><td>Graphify, CodeGraph, SCIP/Serena, Joern</td><td><code>code.graph.json</code></td></tr>
+                                    <tr><td>S1</td><td><code>graph-build</code></td><td><code>repo-scout</code></td><td>Graphify, CodeGraph, SCIP, tree-sitter, Joern</td><td><code>code.graph.json</code></td></tr>
                                     <tr><td>S2</td><td><code>hld-synthesis</code></td><td><code>hld-architect</code> — frontier, read-only</td><td>CodeBoarding, Structurizr, Mermaid</td><td><code>outline.json</code>, <code>c4.model.json</code></td></tr>
-                                    <tr><td>S3</td><td><code>lld-synthesis</code></td><td><code>lld-analyst</code> × N — read-only</td><td>Serena, Joern, pyreverse</td><td><code>lld/*.json</code></td></tr>
+                                    <tr><td>S3</td><td><code>lld-synthesis</code></td><td><code>lld-analyst</code> × N — read-only</td><td>SCIP, tree-sitter, CodeGraph, Joern</td><td><code>lld/*.json</code></td></tr>
                                     <tr><td>S4</td><td><code>architecture-critic</code></td><td><code>arch-critic</code> — different model</td><td>schema validators, graph checks</td><td><code>gaps.md</code></td></tr>
                                     <tr><td>S4b</td><td><code>reflexion-check</code></td><td><code>verifier</code> — separate model</td><td>graph + target model</td><td><code>reflexion.report.json</code></td></tr>
                                     <tr><td>S5</td><td><code>migration-planner</code></td><td><code>migration-planner</code> — read-only</td><td>graph topo sort, risk scoring</td><td><code>migration.plan.json</code></td></tr>
-                                    <tr><td>S6</td><td><code>migration-executor</code></td><td><code>migration-worker</code> — <strong>only writer</strong>, worktree</td><td>ast-grep, OpenRewrite, Codemod, Semgrep</td><td>PR + report</td></tr>
+                                    <tr><td>S6</td><td><code>migration-executor</code></td><td><code>migration-worker</code> — <strong>only writer</strong>, worktree</td><td>ast-grep, OpenRewrite (Apache core), Trivy</td><td>PR + report</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1672,9 +1681,10 @@
                                     <tr><th>Licence</th><th>Tools</th><th>Enterprise note</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>MIT / Apache-2.0</td><td>Graphify, Archify, CodeGraph, CodeBoarding, code-graph-rag, Joern, SCIP, Mermaid, Structurizr, ast-grep, OpenRewrite core, Codemod, repomix, gitingest, spec-kit, OpenSpec, BMAD, wshobson/agents</td><td>Usually safe for internal use; keep notices</td></tr>
-                                    <tr><td>LGPL-2.1 / LGPL-3.0</td><td>Semgrep OSS, EvoSuite</td><td>Separate-process use generally fine; legal review for distribution</td></tr>
-                                    <tr><td>GPL-2.0 / GPL-3.0</td><td>pyreverse, Serena application, CodeCompass</td><td>Internal use acceptable; do not redistribute inside a proprietary bundle without review</td></tr>
+                                    <tr><td>MIT / Apache-2.0</td><td>Graphify, Archify, CodeGraph, CodeBoarding, code-graph-rag, Joern, SCIP, Mermaid, Structurizr, ast-grep, OpenRewrite core recipes only, Codemod, repomix, gitingest, spec-kit, OpenSpec, BMAD, wshobson/agents</td><td>Usually safe for internal use; keep notices</td></tr>
+                                    <tr><td>LGPL-2.1 / LGPL-3.0</td><td>Semgrep OSS, EvoSuite</td><td>Excluded from the bundle; internal use requires legal review</td></tr>
+                                    <tr><td>GPL-2.0 / GPL-3.0</td><td>pyreverse, Serena application, CodeCompass</td><td>Excluded from the bundle; internal use requires legal review</td></tr>
+                                    <tr><td>MSAL (source-available)</td><td>OpenRewrite <code>rewrite-spring</code>, <code>rewrite-migrate-java</code>, JS/TS, C#, Python, Go, Ruby, Scala, Android modules</td><td>Source-available, not permissive; internal use allowed, but redistribution, bundling, and managed service are prohibited. Excluded from the bundle by default.</td></tr>
                                     <tr><td>Commercial / closed</td><td>Moderne, Sourcegraph, AWS Transform, Copilot modernization, Google Cloud Modernize, Diffblue, Kiro</td><td>Procurement, data residency, exit plan</td></tr>
                                 </tbody>
                             </table>
@@ -1749,7 +1759,7 @@
                                 <tbody>
                                     <tr><td><strong>Skill</strong></td><td><code>skills/&lt;name&gt;/SKILL.md</code> + references/scripts</td><td>Eight skills: facts, graph, HLD, LLD, critic, reflexion, planner, executor</td><td><span class="badge good">Yes</span> — open Agent Skills spec</td></tr>
                                     <tr><td><strong>Agent</strong></td><td><code>agents/&lt;name&gt;.md</code> subagent</td><td>The seven narrow roles, model + tool allowlist + isolation</td><td><span class="badge warm">Claude-specific</span></td></tr>
-                                    <tr><td><strong>Tool</strong></td><td>MCP server, <code>bin/</code>, <code>.mcp.json</code></td><td>Graphify, CodeGraph, Serena, Joern, pyreverse, ast-grep wrappers</td><td><span class="badge good">MCP is cross-harness</span></td></tr>
+                                    <tr><td><strong>Tool</strong></td><td>MCP server, <code>bin/</code>, <code>.mcp.json</code></td><td>Graphify, CodeGraph, SCIP, Joern, ast-grep wrappers</td><td><span class="badge good">MCP is cross-harness</span></td></tr>
                                     <tr><td><strong>Plugin</strong></td><td><code>.claude-plugin/plugin.json</code> + components</td><td><code>repo-archaeology</code> — one installable bundle</td><td><span class="badge warm">Claude-specific</span></td></tr>
                                     <tr><td><strong>Marketplace (APM)</strong></td><td><code>.claude-plugin/marketplace.json</code> in a git repo</td><td>Internal catalog: stable + beta channels</td><td><span class="badge gray">Claude distribution</span></td></tr>
                                 </tbody>
@@ -1803,7 +1813,7 @@ legacy-lens-marketplace/          <span class="c"># git repo = the package index
         │   └── verifier.md
         ├── hooks/
         │   └── hooks.json        <span class="c"># validate JSON/Mermaid; block edits outside slice</span>
-        ├── bin/                  <span class="c"># thin wrappers: graphify, codegraph, pyreverse, ast-grep</span>
+        ├── bin/                  <span class="c"># thin wrappers: graphify, codegraph, scip, ast-grep</span>
         ├── .mcp.json             <span class="c"># graph / LSP / data-flow servers</span>
         └── scripts/              <span class="c"># eval harness, drift report, schema validators</span>
 </div>
